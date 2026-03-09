@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class ApiController extends Controller
 {
@@ -16,7 +17,7 @@ class ApiController extends Controller
     public function login(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'email' => 'required|string',
+            'email' => 'required|email',
             'password' => 'required|string',
         ]);
 
@@ -33,8 +34,19 @@ class ApiController extends Controller
             return response()->json(['error' => 'Account is deactivated'], 403);
         }
 
-        if ($row->PasswordHash !== $validated['password']) {
+        $stored = (string) ($row->PasswordHash ?? '');
+        $looksHashed = str_starts_with($stored, '$2y$') || str_starts_with($stored, '$2a$') || str_starts_with($stored, '$argon2');
+        $ok = $looksHashed ? Hash::check($validated['password'], $stored) : hash_equals($stored, $validated['password']);
+
+        if (!$ok) {
             return response()->json(['error' => 'Invalid email or password'], 401);
+        }
+
+        if (!$looksHashed) {
+            DB::update(
+                'UPDATE "Users" SET "PasswordHash" = ? WHERE "UserID" = ?',
+                [Hash::make($validated['password']), $row->UserID]
+            );
         }
 
         DB::update('UPDATE "Users" SET "LastLogin" = NOW() WHERE "UserID" = ?', [$row->UserID]);
