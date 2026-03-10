@@ -358,7 +358,7 @@ class PasskeyController extends Controller
         }
 
         $user = DB::selectOne(
-            'SELECT "USERID", "EMAIL", "SYSTEMROLE", "ISACTIVE" FROM "USERS" WHERE "USERID" = ?',
+            'SELECT "USERID", "EMAIL", "SYSTEMROLE", "ISACTIVE", "ALIAS" FROM "USERS" WHERE "USERID" = ?',
             [$userId]
         );
 
@@ -372,6 +372,7 @@ class PasskeyController extends Controller
         $request->session()->forget('passkey_challenge');
         $request->session()->put('user_id', $user->USERID);
         $request->session()->put('user_email', $user->EMAIL);
+        $request->session()->put('user_alias', $user->ALIAS ?? '');
         $request->session()->put('user_role', $user->SYSTEMROLE === 'Admin' ? 'admin' : 'dealer');
 
         $redirect = $user->SYSTEMROLE === 'Admin' ? '/admin/dashboard' : '/dealer/dashboard';
