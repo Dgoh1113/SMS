@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'SQL Sales Management System')</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
 </head>
@@ -18,8 +21,8 @@
     <main class="dashboard-main">
         <header class="dashboard-topbar">
             <div class="dashboard-topbar-actions">
-                <a href="#" class="dashboard-icon-btn top-right-btn" type="button"><img src="{{ asset('Guide.ico') }}" alt="Guide" class="dashboard-icon-img"></a>
-                <a href="#" class="dashboard-icon-btn top-right-btn" type="button"><img src="{{ asset('Notification.ico') }}" alt="Notifications" class="dashboard-icon-img"></a>
+                <a href="#" class="dashboard-icon-btn top-right-btn" type="button" title="Notifications"><i class="bi bi-bell"></i></a>
+                <a href="#" class="dashboard-icon-btn top-right-btn" type="button" title="Help"><i class="bi bi-question-circle"></i></a>
                 <div class="dashboard-profile-btn" style="cursor:default;">
                     <div class="dashboard-user-avatar">{{ strtoupper(substr(session('user_email', 'U'), 0, 1)) }}</div>
                 </div>

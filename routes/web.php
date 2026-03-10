@@ -29,5 +29,9 @@ Route::middleware(['auth.sms', 'admin'])->prefix('admin')->name('admin.')->group
 
 Route::middleware(['auth.sms', 'dealer'])->prefix('dealer')->name('dealer.')->group(function () {
     Route::get('/dashboard', [DealerController::class, 'dashboard'])->name('dashboard');
+    Route::get('/inquiries', [DealerController::class, 'inquiries'])->name('inquiries');
     Route::get('/demo', [DealerController::class, 'demo'])->name('demo');
+    Route::get('/rewards', [DealerController::class, 'rewards'])->name('rewards');
+    Route::get('/reports', [DealerController::class, 'reports'])->name('reports');
+    Route::get('/history', [DealerController::class, 'history'])->name('history');
 });
