@@ -1,0 +1,27 @@
+# Firebird 5.0.3 from https://github.com/FirebirdSQL/firebird-docker
+# Start: docker compose up -d
+# Remote access: ensure host firewall allows TCP 3050, then use DB_HOST=<server-ip>
+
+services:
+  firebird:
+    image: firebirdsql/firebird:5.0.3
+    container_name: sms-firebird
+    restart: unless-stopped
+    ports:
+      - "3050:3050"
+    environment:
+      FIREBIRD_ROOT_PASSWORD: masterkey
+      # Create/use DB file inside /var/lib/firebird/data
+      FIREBIRD_DATABASE: SMS.FDB
+      FIREBIRD_DATABASE_DEFAULT_CHARSET: UTF8
+      # Required for some clients (e.g. Laravel/PHP) connecting remotely
+      FIREBIRD_USE_LEGACY_AUTH: "1"
+      FIREBIRD_CONF_WireCrypt: Enabled
+      FIREBIRD_CONF_DatabaseAccess: Full
+      FIREBIRD_CONF_RemoteAccess: "true"
+    volumes:
+      - C:/Firebird-data:/var/lib/firebird/data  # ← Host mount (bridges Windows ↔ Docker)
+      - ./firebird_databases.conf:/opt/firebird/databases.conf:ro
+
+# Named volume block REMOVED — cannot use both named volume   
+# and host mount for the same container path simultaneously

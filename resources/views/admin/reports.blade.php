@@ -1,7 +1,7 @@
 @extends('layouts.app')
-@section('title', 'Monthly Performance Analytics')
+@section('title', 'Report - Monthly Performance Analytics')
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/reports.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/report_monthly_performance_analytics.css') }}">
 @endpush
 @section('content')
 <div class="reports-page">
@@ -11,21 +11,17 @@
         <div id="reportsTitleHover" class="reports-title-hover">
             <div class="reports-title-dropdown">
                 <button id="dropdownHoverButton" data-dropdown-toggle="dropdownHover" data-dropdown-trigger="hover" class="reports-dropdown-btn" type="button">
-                    Monthly Performance Analytics
+                    Report - Monthly Performance Analytics
                     <svg class="reports-dropdown-caret" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7"/></svg>
                 </button>
 
                 <!-- Dropdown menu -->
                 <div id="dropdownHover" class="reports-dropdown-menu" role="menu" aria-labelledby="dropdownHoverButton">
                     <ul class="reports-dropdown-list">
-                        <li><a href="{{ route('admin.dashboard') }}" class="reports-dropdown-item">Dashboard</a></li>
-                        <li><a href="{{ route('admin.inquiries') }}" class="reports-dropdown-item">Leads</a></li>
-                        <li><a href="{{ route('admin.reports') }}" class="reports-dropdown-item">Reports</a></li>
-                        <li><a href="{{ route('logout') }}" class="reports-dropdown-item" onclick="event.preventDefault(); document.getElementById('reportsLogoutForm').submit();">Sign out</a></li>
+                        <li><a href="{{ route('admin.reports') }}" class="reports-dropdown-item">Report - Monthly Performance Analytics</a></li>
+                        <li><a href="{{ route('admin.reports.v2') }}" class="reports-dropdown-item">Report - Dealer Sales Overtime</a></li>
+                        <li><a href="{{ route('admin.reports.revenue') }}" class="reports-dropdown-item">Report - Dealer Revenue Production</a></li>
                     </ul>
-                    <form id="reportsLogoutForm" action="{{ route('logout') }}" method="POST" style="display:none;">
-                        @csrf
-                    </form>
                 </div>
             </div>
             <p class="dashboard-subtitle">Overview of system activities and performance</p>
@@ -216,14 +212,27 @@
                     dropdownBtn.classList.remove('is-open');
                     if (titleHover) titleHover.classList.remove('is-open');
                 };
-                dropdownBtn.addEventListener('click', function (e) {
-                    e.preventDefault();
+                const toggleDropdown = (e) => {
+                    if (e) e.preventDefault();
                     const open = dropdown.classList.toggle('is-open');
                     dropdownBtn.classList.toggle('is-open', open);
                     if (titleHover) titleHover.classList.toggle('is-open', open);
+                };
+                dropdownBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    toggleDropdown(e);
                 });
+                if (titleHover) {
+                    titleHover.addEventListener('click', function (e) {
+                        // Don't re-toggle when clicking inside the menu
+                        if (dropdown.contains(e.target)) return;
+                        // Button (including arrow) already handled above
+                        if (dropdownBtn.contains(e.target)) return;
+                        toggleDropdown(e);
+                    });
+                }
                 document.addEventListener('click', function (e) {
-                    if (!dropdown.contains(e.target) && !dropdownBtn.contains(e.target)) {
+                    if (!dropdown.contains(e.target) && !dropdownBtn.contains(e.target) && !(titleHover && titleHover.contains(e.target))) {
                         closeDropdown();
                     }
                 });

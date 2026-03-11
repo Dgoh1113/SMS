@@ -26,6 +26,7 @@
   display: inline-block;
   border-radius: 10px;
   transition: background-color 1s ease;
+  cursor: pointer;
 }
 .reports-title-hover:hover,
 .reports-title-hover.is-open {

@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
+use Carbon\Carbon;
 
 class AdminController extends Controller
 {
@@ -39,14 +43,103 @@ class AdminController extends Controller
         return view('admin.inquiries', ['items' => $rows, 'currentPage' => 'inquiries']);
     }
 
-    public function dealers(): View
+    public function dealers(Request $request): View
     {
-        $rows = DB::select(
-            'SELECT "USERID","EMAIL","SYSTEMROLE","ISACTIVE","LASTLOGIN"
-             FROM "USERS"
-             ORDER BY "USERID"'
+        $role = $request->query('role');
+        $q = trim((string) $request->query('q', ''));
+
+        $where = [];
+        $params = [];
+
+        if ($role && in_array($role, ['Admin', 'Dealer', 'Manager'], true)) {
+            $where[] = '"SYSTEMROLE" = ?';
+            $params[] = $role;
+        }
+        if ($q !== '') {
+            $where[] = '("EMAIL" LIKE ? OR CAST("USERID" AS VARCHAR(20)) LIKE ?)';
+            $like = '%' . $q . '%';
+            $params[] = $like;
+            $params[] = $like;
+        }
+
+        $sql = 'SELECT "USERID","EMAIL","SYSTEMROLE","ISACTIVE","LASTLOGIN"
+                FROM "USERS"';
+        if ($where) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
+        }
+        $sql .= ' ORDER BY "USERID"';
+
+        $rows = DB::select($sql, $params);
+
+        return view('admin.dealers', [
+            'items' => $rows,
+            'currentPage' => 'dealers',
+            'filterRole' => $role,
+            'filterQuery' => $q,
+        ]);
+    }
+
+    public function dealersStore(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'email' => 'required|email',
+            'role' => 'required|in:Admin,Dealer,Manager',
+            'password' => 'required|string|min:6|confirmed',
+            'is_active' => 'sometimes|boolean',
+        ]);
+
+        $exists = DB::selectOne('SELECT 1 FROM "USERS" WHERE "EMAIL" = ?', [$data['email']]);
+        if ($exists) {
+            return back()->withInput()->with('error', 'Email already exists.');
+        }
+
+        $isActive = !empty($data['is_active']) ? 1 : 0;
+        $hash = Hash::make($data['password']);
+
+        DB::insert(
+            'INSERT INTO "USERS" ("EMAIL","PASSWORDHASH","SYSTEMROLE","ISACTIVE") VALUES (?,?,?,?)',
+            [$data['email'], $hash, $data['role'], $isActive]
         );
-        return view('admin.dealers', ['items' => $rows, 'currentPage' => 'dealers']);
+
+        return redirect()->route('admin.dealers')->with('success', 'User created.');
+    }
+
+    public function dealersUpdate(Request $request, int $userId): RedirectResponse
+    {
+        $action = $request->input('action', 'save');
+
+        if ($action === 'delete') {
+            DB::delete('DELETE FROM "USERS" WHERE "USERID" = ?', [$userId]);
+            return redirect()->route('admin.dealers')->with('success', 'User deleted.');
+        }
+
+        if ($action === 'ban') {
+            DB::update('UPDATE "USERS" SET "ISACTIVE" = 0 WHERE "USERID" = ?', [$userId]);
+            return redirect()->route('admin.dealers')->with('success', 'User banned.');
+        }
+
+        $data = $request->validate([
+            'email' => 'required|email',
+            'role' => 'required|in:Admin,Dealer,Manager',
+            'password' => 'nullable|string|min:6|confirmed',
+            'is_active' => 'sometimes|boolean',
+        ]);
+
+        $isActive = !empty($data['is_active']) ? 1 : 0;
+
+        DB::update(
+            'UPDATE "USERS" SET "EMAIL" = ?, "SYSTEMROLE" = ?, "ISACTIVE" = ? WHERE "USERID" = ?',
+            [$data['email'], $data['role'], $isActive, $userId]
+        );
+
+        if (!empty($data['password'])) {
+            DB::update(
+                'UPDATE "USERS" SET "PASSWORDHASH" = ? WHERE "USERID" = ?',
+                [Hash::make($data['password']), $userId]
+            );
+        }
+
+        return redirect()->route('admin.dealers')->with('success', 'User updated.');
     }
 
     public function rewards(): View
@@ -254,6 +347,226 @@ class AdminController extends Controller
             'inquiryTrend' => $inquiryTrend,
             'inquiryTrendPercentChange' => $inquiryTrendPercentChange,
             'productConversion' => $productConversion,
+        ]);
+    }
+
+    public function reportsV2(): View
+    {
+        // Dynamic: derive metrics from LEAD / LEAD_ACT / USERS
+        $dealerTotals = DB::select(
+            'SELECT l."ASSIGNED_TO" AS dealer_id, u."EMAIL" AS email,
+                    COUNT(*) AS total_c,
+                    SUM(CASE WHEN l."CURRENTSTATUS" = ? THEN 1 ELSE 0 END) AS closed_c
+             FROM "LEAD" l
+             JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
+             WHERE l."ASSIGNED_TO" IS NOT NULL
+             GROUP BY l."ASSIGNED_TO", u."EMAIL"',
+            ['Closed']
+        );
+
+        $totalsByDealer = [];
+        foreach ($dealerTotals as $r) {
+            $id = (string) ($r->DEALER_ID ?? $r->dealer_id ?? '');
+            if ($id === '') continue;
+            $total = (int) ($r->TOTAL_C ?? $r->total_c ?? 0);
+            $closed = (int) ($r->CLOSED_C ?? $r->closed_c ?? 0);
+            $totalsByDealer[$id] = [
+                'dealer_id' => $id,
+                'email' => (string) ($r->EMAIL ?? $r->email ?? $id),
+                'total' => $total,
+                'closed' => $closed,
+                'closed_rate' => $total > 0 ? ($closed / $total * 100) : 0,
+                'rejected' => 0,
+                'rejection_rate' => 0,
+            ];
+        }
+
+        // "Rejection" proxy: Closed leads without any Completed activity record
+        $rejectedRows = DB::select(
+            'SELECT l."ASSIGNED_TO" AS dealer_id, COUNT(*) AS c
+             FROM "LEAD" l
+             WHERE l."ASSIGNED_TO" IS NOT NULL
+               AND l."CURRENTSTATUS" = ?
+               AND NOT EXISTS (
+                    SELECT 1 FROM "LEAD_ACT" a
+                    WHERE a."LEADID" = l."LEADID" AND a."STATUS" = ?
+               )
+             GROUP BY l."ASSIGNED_TO"',
+            ['Closed', 'Completed']
+        );
+        foreach ($rejectedRows as $r) {
+            $id = (string) ($r->DEALER_ID ?? $r->dealer_id ?? '');
+            if ($id === '' || !isset($totalsByDealer[$id])) continue;
+            $rej = (int) ($r->C ?? $r->c ?? 0);
+            $totalsByDealer[$id]['rejected'] = $rej;
+            $total = (int) $totalsByDealer[$id]['total'];
+            $totalsByDealer[$id]['rejection_rate'] = $total > 0 ? ($rej / $total * 100) : 0;
+        }
+
+        $highestClosed = null;
+        $highestRejected = null;
+        foreach ($totalsByDealer as $d) {
+            if ($highestClosed === null || $d['closed_rate'] > $highestClosed['closed_rate']) {
+                $highestClosed = $d;
+            }
+            if ($highestRejected === null || $d['rejection_rate'] > $highestRejected['rejection_rate']) {
+                $highestRejected = $d;
+            }
+        }
+
+        // Variance %: last 90 days vs same period last year, per dealer
+        $varianceRows = DB::select(
+            'SELECT l."ASSIGNED_TO" AS dealer_id,
+                    SUM(CASE WHEN l."CREATEDAT" >= DATEADD(DAY, -90, CURRENT_DATE) AND l."CREATEDAT" <= CURRENT_DATE THEN 1 ELSE 0 END) AS curr_c,
+                    SUM(CASE WHEN l."CREATEDAT" >= DATEADD(YEAR, -1, DATEADD(DAY, -90, CURRENT_DATE)) AND l."CREATEDAT" <= DATEADD(YEAR, -1, CURRENT_DATE) THEN 1 ELSE 0 END) AS last_c
+             FROM "LEAD" l
+             WHERE l."ASSIGNED_TO" IS NOT NULL
+             GROUP BY l."ASSIGNED_TO"'
+        );
+
+        $variance = [];
+        foreach ($varianceRows as $r) {
+            $id = (string) ($r->DEALER_ID ?? $r->dealer_id ?? '');
+            if ($id === '' || !isset($totalsByDealer[$id])) continue;
+            $curr = (int) ($r->CURR_C ?? $r->curr_c ?? 0);
+            $last = (int) ($r->LAST_C ?? $r->last_c ?? 0);
+            $pct = $last > 0 ? (int) round(($curr - $last) / $last * 100) : ($curr > 0 ? 100 : 0);
+            $variance[] = [
+                'dealer_id' => $id,
+                'name' => $totalsByDealer[$id]['email'],
+                'delta' => $pct,
+            ];
+        }
+        usort($variance, function ($a, $b) {
+            return abs($b['delta']) <=> abs($a['delta']);
+        });
+        $variance = array_slice($variance, 0, 10);
+
+        // Action list (at-risk): largest negative variance dealers
+        $neg = array_values(array_filter($variance, fn ($v) => $v['delta'] < 0));
+        usort($neg, fn ($a, $b) => $a['delta'] <=> $b['delta']);
+        $neg = array_slice($neg, 0, 8);
+
+        $atRisk = [];
+        foreach ($neg as $v) {
+            $id = $v['dealer_id'];
+            $atRisk[] = [
+                'name' => $totalsByDealer[$id]['email'],
+                'id' => $id,
+                'comp' => 0,
+                'primary' => 0,
+                'variance' => $v['delta'],
+                'variance_pct' => (float) $v['delta'],
+                'last_activity' => '—',
+            ];
+        }
+
+        return view('admin.reports_v2', [
+            'currentPage' => 'reports',
+            'topVariance' => $variance,
+            'highestClosed' => $highestClosed,
+            'highestRejected' => $highestRejected,
+            'atRisk' => $atRisk,
+        ]);
+    }
+
+    public function reportsRevenue(Request $request): View
+    {
+        $quarter = strtoupper((string) $request->query('quarter', ''));
+        $year = (int) $request->query('year', (int) now()->format('Y'));
+
+        if (!in_array($quarter, ['Q1', 'Q2', 'Q3', 'Q4'], true)) {
+            $m = (int) now()->format('n');
+            $q = (int) ceil($m / 3);
+            $quarter = 'Q' . $q;
+        }
+        if ($year < 2000 || $year > 2100) {
+            $year = (int) now()->format('Y');
+        }
+
+        $qNum = (int) substr($quarter, 1, 1);
+        $startMonth = ($qNum - 1) * 3 + 1;
+        $start = Carbon::create($year, $startMonth, 1, 0, 0, 0);
+        $end = (clone $start)->addMonths(3)->subSecond(); // inclusive end
+
+        $startStr = $start->format('Y-m-d H:i:s');
+        $endStr = $end->format('Y-m-d H:i:s');
+
+        // Dealer performance for selected quarter
+        $rows = DB::select(
+            'SELECT u."USERID" AS dealer_id,
+                    u."EMAIL" AS email,
+                    COUNT(*) AS total_leads,
+                    SUM(CASE WHEN l."CURRENTSTATUS" IN (?, ?) THEN 1 ELSE 0 END) AS closed_leads,
+                    SUM(CASE WHEN l."CURRENTSTATUS" = ? THEN 1 ELSE 0 END) AS rewarded_leads
+             FROM "LEAD" l
+             JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
+             WHERE l."ASSIGNED_TO" IS NOT NULL
+               AND l."CREATEDAT" >= ?
+               AND l."CREATEDAT" <= ?
+             GROUP BY u."USERID", u."EMAIL"
+             ORDER BY total_leads DESC',
+            ['Completed', 'reward', 'reward', $startStr, $endStr]
+        );
+
+        $dealers = [];
+        $totalVolume = 0;
+        $totalLeads = 0;
+        $weightedRejection = 0;
+
+        foreach ($rows as $r) {
+            $total = (int) ($r->TOTAL_LEADS ?? $r->total_leads ?? 0);
+            $closed = (int) ($r->CLOSED_LEADS ?? $r->closed_leads ?? 0);
+            $rewarded = (int) ($r->REWARDED_LEADS ?? $r->rewarded_leads ?? 0);
+            if ($total <= 0) {
+                continue;
+            }
+            $rejectionRate = $total > 0 ? (1 - ($closed / $total)) * 100 : 0;
+            // Simple revenue proxy: closed leads x 1,000
+            $revenue = $closed * 1000;
+
+            $dealers[] = [
+                'dealer_id' => (int) ($r->DEALER_ID ?? $r->dealer_id ?? 0),
+                'email' => (string) ($r->EMAIL ?? $r->email ?? ''),
+                'total' => $total,
+                'closed' => $closed,
+                'rewarded' => $rewarded,
+                'rejection_rate' => $rejectionRate,
+                'revenue' => $revenue,
+            ];
+
+            $totalVolume += $total;
+            $totalLeads += $total;
+            $weightedRejection += $rejectionRate * $total;
+        }
+
+        usort($dealers, fn ($a, $b) => $b['revenue'] <=> $a['revenue']);
+        $topDealer = $dealers[0] ?? null;
+        $avgRejection = $totalLeads > 0 ? $weightedRejection / $totalLeads : 0.0;
+
+        // Chart: top 5 dealers by revenue
+        $chartDealers = array_slice($dealers, 0, 5);
+        $chartLabels = array_column($chartDealers, 'email');
+        $chartVolume = array_column($chartDealers, 'total');
+        $chartClosed = array_column($chartDealers, 'closed');
+        $chartRewarded = array_column($chartDealers, 'rewarded');
+
+        // Rankings table: same top 5 dealers
+        $rankings = $chartDealers;
+
+        return view('admin.reports_revenue', [
+            'currentPage' => 'reports',
+            'selectedQuarter' => $quarter,
+            'selectedYear' => $year,
+            'yearOptions' => range(((int) now()->format('Y')) - 4, ((int) now()->format('Y'))),
+            'totalVolume' => $totalVolume,
+            'avgRejectionRate' => $avgRejection,
+            'topDealer' => $topDealer,
+            'chartLabels' => $chartLabels,
+            'chartVolume' => $chartVolume,
+            'chartClosed' => $chartClosed,
+            'chartRewarded' => $chartRewarded,
+            'rankings' => $rankings,
         ]);
     }
 
