@@ -174,7 +174,7 @@
                     <li>
                         <span class="report-legend-color"
                               style="background-color: {{ $statusColors[$name] ?? '#e5e7eb' }}"></span>
-                        <span class="report-legend-label">{{ $name }}</span>
+                        <span class="report-legend-label">{{ $name === 'reward' ? 'Rewarded' : $name }}</span>
                         <span class="report-legend-value">{{ $value }}</span>
                     </li>
                 @endforeach

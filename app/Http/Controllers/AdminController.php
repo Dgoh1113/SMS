@@ -930,9 +930,13 @@ class AdminController extends Controller
         ];
         $productConversion = [];
         foreach ($productRows as $row) {
-            $pid = (int) $get($row, 'product_id');
+            $pidRaw = $get($row, 'product_id');
+            $pidStr = trim((string) $pidRaw);
+            $pidInt = ctype_digit($pidStr) ? (int) $pidStr : null;
             $productConversion[] = [
-                'label' => $productLabels[$pid] ?? 'Product ' . $pid,
+                'label' => ($pidInt !== null && isset($productLabels[$pidInt]))
+                    ? $productLabels[$pidInt]
+                    : ($pidStr !== '' ? $pidStr : 'Unknown'),
                 'count' => (int) $get($row, 'c'),
             ];
         }
