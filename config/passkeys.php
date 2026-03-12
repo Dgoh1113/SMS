@@ -3,10 +3,10 @@
 return [
     /*
     |--------------------------------------------------------------------------
-    | Passkey / WebAuthn (same concept as SQL SMS PHP reference project)
+    | Passkey / WebAuthn
     |--------------------------------------------------------------------------
-    | For local dev we normalize 127.0.0.1 → localhost. Use http://localhost:PORT
-    | (e.g. http://localhost:8080) so the browser origin matches rpId.
+    | rp_name is shown in the browser during passkey creation. rp_id must match
+    | your app origin; leave null to use the request host.
     */
 
     'rp_name' => env('PASSKEY_RP_NAME', env('APP_NAME', 'SMS')),

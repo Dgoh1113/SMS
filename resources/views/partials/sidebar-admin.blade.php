@@ -1,5 +1,6 @@
 @php
     $current = $currentPage ?? 'dashboard';
+    $role = session('user_role');
 @endphp
 <aside class="dashboard-sidebar">
     <div class="dashboard-sidebar-top">
@@ -8,21 +9,27 @@
                 <img src="{{ asset('sql-logo.png') }}" alt="SQL logo" class="dashboard-brand-logo-img">
                 <span class="dashboard-brand-sms">SMS</span>
             </div>
-            <div class="dashboard-brand-subtitle">Admin Console</div>
+            <div class="dashboard-brand-subtitle">
+                {{ $role === 'manager' ? 'Manager Console' : 'Admin Console' }}
+            </div>
         </div>
     </div>
     <nav class="dashboard-nav">
+        <div class="dashboard-nav-group">
+            @if ($role === 'admin')
+                <div class="dashboard-nav-group-title">Main Menu</div>
+            @endif
         <a href="{{ route('admin.dashboard') }}" class="dashboard-nav-item {{ $current === 'dashboard' ? 'dashboard-nav-item-active' : '' }}">
             <span class="dashboard-nav-icon"><i class="bi {{ $current === 'dashboard' ? 'bi-grid-fill' : 'bi-grid' }}"></i></span>
             <span>Dashboard</span>
         </a>
         <a href="{{ route('admin.inquiries') }}" class="dashboard-nav-item {{ $current === 'inquiries' ? 'dashboard-nav-item-active' : '' }}">
             <span class="dashboard-nav-icon"><i class="bi {{ $current === 'inquiries' ? 'bi-envelope-open' : 'bi-envelope' }}"></i></span>
-            <span>Leads</span>
+            <span>Inquiries</span>
         </a>
         <a href="{{ route('admin.dealers') }}" class="dashboard-nav-item {{ $current === 'dealers' ? 'dashboard-nav-item-active' : '' }}">
             <span class="dashboard-nav-icon"><i class="bi {{ $current === 'dealers' ? 'bi-people-fill' : 'bi-people' }}"></i></span>
-            <span>Users</span>
+            <span>Dealers</span>
         </a>
         <a href="{{ route('admin.rewards') }}" class="dashboard-nav-item {{ $current === 'rewards' ? 'dashboard-nav-item-active' : '' }}">
             <span class="dashboard-nav-icon"><i class="bi {{ $current === 'rewards' ? 'bi-gift-fill' : 'bi-gift' }}"></i></span>
@@ -36,9 +43,20 @@
             <span class="dashboard-nav-icon"><i class="bi {{ $current === 'history' ? 'bi-clock-fill' : 'bi-clock-history' }}"></i></span>
             <span>Lead Activities</span>
         </a>
-        <a href="{{ route('admin.fulldatabase') }}" class="dashboard-nav-item {{ $current === 'fulldatabase' ? 'dashboard-nav-item-active' : '' }}">
-            <span class="dashboard-nav-icon"><i class="bi {{ $current === 'fulldatabase' ? 'bi-database-fill' : 'bi-database' }}"></i></span>
-            <span>Full Database</span>
-        </a>
+        </div>
+
+        @if ($role === 'admin')
+        <div class="dashboard-nav-group dashboard-nav-group-maintain">
+            <div class="dashboard-nav-group-title">Maintenance</div>
+            <a href="{{ route('admin.fulldatabase') }}" class="dashboard-nav-item {{ $current === 'fulldatabase' ? 'dashboard-nav-item-active' : '' }}">
+                <span class="dashboard-nav-icon"><i class="bi {{ $current === 'fulldatabase' ? 'bi-database-fill' : 'bi-database' }}"></i></span>
+                <span>Full Database</span>
+            </a>
+            <a href="{{ route('admin.dealers') }}" class="dashboard-nav-item {{ $current === 'maintain-users' ? 'dashboard-nav-item-active' : '' }}">
+                <span class="dashboard-nav-icon"><i class="bi bi-person-gear"></i></span>
+                <span>Maintain Users</span>
+            </a>
+        </div>
+        @endif
     </nav>
 </aside>

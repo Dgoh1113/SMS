@@ -20,8 +20,46 @@ services:
       FIREBIRD_CONF_DatabaseAccess: Full
       FIREBIRD_CONF_RemoteAccess: "true"
     volumes:
-      - C:/Firebird-data:/var/lib/firebird/data  # ← Host mount (bridges Windows ↔ Docker)
-      - ./firebird_databases.conf:/opt/firebird/databases.conf:ro
+      - C:/firebird-data:/var/lib/firebird/data
+      - ./vendor/firebird_databases.conf:/opt/firebird/databases.conf:ro
 
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: sms-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      - firebird
+
+  web:
+    image: nginx:alpine
+    container_name: sms-web
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+
+  node:
+    image: node:22
+    container_name: sms-node
+    working_dir: /app
+    restart: unless-stopped
+    volumes:
+      - ./:/app
+      - node_modules:/app/node_modules
+    command: ["npm","run","dev","--","--host","0.0.0.0","--port","5173"]
+    ports:
+      - "5173:5173"
 # Named volume block REMOVED — cannot use both named volume   
 # and host mount for the same container path simultaneously
+
+volumes:
+  node_modules:

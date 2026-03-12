@@ -14,12 +14,22 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::get('/passkey/auth/options', [PasskeyController::class, 'authOptions'])->name('passkey.auth.options');
 Route::post('/passkey/auth/verify', [PasskeyController::class, 'authVerify'])->name('passkey.auth.verify');
-Route::post('/passkey/register/options', [PasskeyController::class, 'registerOptions'])->name('passkey.register.options');
-Route::post('/passkey/register/verify', [PasskeyController::class, 'registerVerify'])->name('passkey.register.verify');
+
+Route::middleware(['auth.sms'])->group(function () {
+    Route::get('/passkey/register', [PasskeyController::class, 'showRegisterForm'])->name('passkey.register.form');
+    Route::post('/passkey/register/options', [PasskeyController::class, 'registerOptions'])->name('passkey.register.options');
+    Route::post('/passkey/register/verify', [PasskeyController::class, 'registerVerify'])->name('passkey.register.verify');
+});
 
 Route::middleware(['auth.sms', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/inquiries', [AdminController::class, 'inquiries'])->name('inquiries');
+    Route::get('/inquiries/sync', [AdminController::class, 'inquiriesSync'])->name('inquiries.sync');
+    Route::get('/inquiries/create', [AdminController::class, 'createInquiry'])->name('inquiries.create');
+    Route::post('/inquiries', [AdminController::class, 'storeInquiry'])->name('inquiries.store');
+    Route::post('/inquiries/assign', [AdminController::class, 'assignInquiry'])->name('inquiries.assign');
+    Route::post('/inquiries/mark-failed', [AdminController::class, 'markInquiryFailed'])->name('inquiries.mark-failed');
+    Route::get('/inquiries/{leadId}/status', [AdminController::class, 'leadStatus'])->name('inquiries.lead-status');
     Route::get('/dealers', [AdminController::class, 'dealers'])->name('dealers');
     Route::get('/rewards', [AdminController::class, 'rewards'])->name('rewards');
     Route::get('/reports', [AdminController::class, 'reports'])->name('reports');

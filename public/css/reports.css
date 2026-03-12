@@ -1,0 +1,410 @@
+/* Reports page ~25% zoom - everything bigger */
+.reports-page {
+  background: #f7f7ff;
+  font-size: 125%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+/* Single layout wrapper: uniform gap for 8 cards, Status Report, Product Conversion */
+.reports-page-layout {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(12px, 1.4vw, 20px);
+  padding: clamp(14px, 2vw, 26px);
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.reports-page .dashboard-header .dashboard-title { font-size: 1.5rem; }
+.reports-page .dashboard-header .dashboard-subtitle { font-size: 1rem; }
+
+/* Title dropdown (light purple) */
+.reports-title-dropdown { position: relative; display: inline-flex; }
+.reports-title-hover {
+  display: inline-block;
+  border-radius: 10px;
+  transition: background-color 1s ease;
+}
+.reports-title-hover:hover,
+.reports-title-hover.is-open {
+  background-color: #ede9fe; /* light purple */
+}
+.reports-dropdown-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #1e293b;
+  background: transparent;
+  border: 1px solid transparent;
+  box-shadow: none;
+  font-weight: 700;
+  border-radius: 10px;
+  font-size: 1.5rem; /* match title */
+  padding: 0;
+  cursor: pointer;
+  transition: background-color 1s ease;
+}
+.reports-dropdown-btn:hover,
+.reports-dropdown-btn:focus-visible,
+.reports-dropdown-btn.is-open {
+  background-color: #ede9fe; /* light purple */
+}
+.reports-dropdown-btn:focus-visible { outline: none; }
+.reports-dropdown-caret { width: 16px; height: 16px; }
+
+.reports-dropdown-menu {
+  position: absolute;
+  top: 0;
+  left: calc(100% + 10px); /* open from the side */
+  z-index: 50;
+  display: none;
+  min-width: 180px;
+  background: #faf5ff;
+  border: 1px solid #e9d5ff;
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.12);
+  padding: 8px;
+}
+.reports-dropdown-menu.is-open { display: block; }
+.reports-dropdown-list { list-style: none; padding: 0; margin: 0; }
+.reports-dropdown-item {
+  display: inline-flex;
+  align-items: center;
+  width: 100%;
+  padding: 10px 10px;
+  border-radius: 10px;
+  color: #4c1d95;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 13px;
+}
+.reports-dropdown-item:hover { background: #ede9fe; color: #312e81; }
+
+.dashboard-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(12px, 1.4vw, 20px);
+  align-items: stretch;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.dashboard-metric-caption {
+  margin-top: 4px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.reports-page .dashboard-metric-card {
+  border-radius: 12px;
+  border-color: #e5e7eb;
+  border-width: 2px;
+  background: #fcfcff;
+}
+
+/* Metric cards - auto-resize, fixed 395×185 at full size */
+.reports-page .dashboard-metrics-grid .dashboard-metric-card {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  height: auto;
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(10px, 1.2vw, 16px) clamp(12px, 1.4vw, 20px);
+}
+
+/* Responsive columns */
+@media (max-width: 1200px) {
+  .dashboard-metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
+  .dashboard-metrics-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Responsive layout */
+@media (max-width: 960px) {
+  .dashboard-panels-two-column {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 1600px) {
+  /* Keep the “full size” look on large screens */
+  .dashboard-metrics-grid {
+    /* keep same outer padding as other boxes */
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.reports-page .dashboard-metrics-grid .dashboard-metric-value { font-size: clamp(26px, 2.2vw, 36px); }
+.reports-page .dashboard-metrics-grid .dashboard-metric-label {
+  font-size: clamp(10px, 0.9vw, 12px);
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.15;
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* Metric card top row: label + dealer tag (same start position for all labels) */
+.dashboard-metric-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-shrink: 0;
+  margin-bottom: 6px;
+  min-height: 20px;
+}
+.dashboard-metric-dealer-tag {
+  font-size: 8px;
+  font-weight: 600;
+  color: #6b7280;
+  background: #e5e7eb;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+.dashboard-metric-dealer-spacer {
+  width: 92px;
+  flex-shrink: 0;
+}
+
+/* Trend indicator: percentage vs last month */
+.dashboard-metric-trend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: clamp(9px, 0.8vw, 11px);
+  font-weight: 500;
+  margin-top: 8px;
+}
+.dashboard-metric-trend > span { white-space: normal; }
+.dashboard-metric-trend-up { color: #22c55e; }
+.dashboard-metric-trend-down { color: #ef4444; }
+.dashboard-metric-trend-same { color: #6b7280; }
+.dashboard-metric-trend-icon { flex-shrink: 0; }
+.dashboard-metric-trend-icon-same { transform: rotate(-90deg); }
+
+/* Metric card value + trend - consistent spacing */
+.dashboard-metric-value-row { flex-shrink: 0; }
+.dashboard-metric-trend { flex-shrink: 0; }
+
+/* Metric card action button - fixed at bottom, same position for all */
+.dashboard-metric-btn-wrap {
+  margin-top: auto;
+  min-height: 36px;
+  display: flex;
+  align-items: flex-end;
+  text-align: left;
+}
+.dashboard-metric-btn {
+  padding: 6px 14px;
+  font-size: clamp(10px, 0.9vw, 12px);
+  font-weight: 600;
+  color: #fff;
+  background: #7c3aed;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.dashboard-metric-btn:hover { background: #6d28d9; }
+
+.dashboard-panels-two-column {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px;
+  min-width: 0;
+}
+
+.dashboard-panels-two-column > *,
+.reports-product-section {
+  min-width: 0;
+}
+
+.report-line-chart {
+  margin-top: 14px;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 190px;
+  padding: 10px 10px 18px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #f5f3ff, #ffffff);
+}
+.reports-page .report-line-chart { margin-top: 18px; height: 238px; padding: 14px 14px 22px; }
+
+.report-line-chart-bar {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.report-line-chart-bar-fill {
+  width: 10px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #dec1fa, #bfafef);
+}
+
+.report-line-chart-bar-label {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.report-status-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.report-donut-wrapper {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reports-page .report-donut {
+  width: 196px;
+  height: 196px;
+}
+.report-donut {
+  width: 170px;
+  height: 170px;
+  border-radius: 50%;
+  position: relative;
+}
+
+.reports-page .report-donut-center { inset: 24px; }
+.report-donut-center {
+  position: absolute;
+  inset: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+.reports-page .report-donut-center { inset: 24px; }
+
+.report-donut-total {
+  font-size: 20px;
+  font-weight: 700;
+}
+.reports-page .report-donut-total { font-size: 26px; }
+
+.report-donut-label {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.reports-page .report-donut-label { font-size: 14px; }
+.reports-page .report-donut-center { inset: 24px; }
+
+.reports-page .report-legend { font-size: 15px; gap: 10px 25px; padding: 0 10px 6px; }
+.report-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0 8px 4px 8px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 20px;
+  font-size: 12px;
+}
+
+.report-legend li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.reports-page .report-legend { font-size: 15px; gap: 10px 25px; padding: 0 10px 6px; }
+.reports-page .report-legend-color { width: 12px; height: 12px; }
+.report-legend-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.report-legend-label {
+  flex: 1;
+}
+
+.report-legend-value {
+  font-weight: 600;
+}
+
+.report-product-bars {
+  margin-top: 20px;
+}
+
+/* Inquiry trends area chart card */
+.reports-page .flex { display: flex; }
+.reports-page .justify-between { justify-content: space-between; }
+.reports-page .items-start { align-items: flex-start; }
+.reports-page .items-center { align-items: center; }
+.reports-page .mt-4 { margin-top: 1rem; }
+.reports-page .w-5 { width: 1.25rem; }
+.reports-page .h-5 { height: 1.25rem; }
+.reports-page .inquiry-trend-badge { padding: 0.125rem 0.625rem; }
+.reports-page .font-medium { font-weight: 500; }
+.reports-page .text-center { text-align: center; }
+.reports-page .text-heading { color: #1e293b; font-size: 1.75rem; }
+.reports-page .text-body { color: #64748b; font-size: 17px; }
+.reports-page .dashboard-panel-title { font-size: 1.25rem; }
+.reports-page .text-fg-success { color: #22c55e; }
+.reports-page .text-fg-danger { color: #ef4444; }
+.reports-page .bg-neutral-primary-soft { background: #fcfcff; }
+.reports-page .border-default { border-color: #d1d5db; }
+.reports-page .rounded-base { border-radius: 8px; }
+.reports-page .shadow-xs { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+
+.inquiry-chart-filters {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-left: 0;
+}
+.inquiry-filter-btn {
+    padding: 5px 12px;
+    font-size: 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 5px;
+    background: #fff;
+    color: #64748b;
+    cursor: pointer;
+}
+.inquiry-filter-btn:hover {
+    background: #f8fafc;
+    color: #1e293b;
+}
+.inquiry-filter-btn.active {
+    background: #1447E6;
+    border-color: #1447E6;
+    color: #fff;
+}
+
+.inquiry-chart-box { width: 100%; }
+.inquiry-chart-box .dashboard-panel-body { min-height: 220px !important; }
+/* Match metric card number alignment (same inner padding) */
+.reports-page .inquiry-chart-box {
+  padding-left: 20px !important;
+  padding-right: 20px !important;
+}
+/* Keep the range label above the number */
+#inquiryRangeText { margin: 0 0 4px 0; font-size: 14px; }
+#inquiryTotal { margin: 0; font-size: 1.5rem; }
+
+.reports-page .reports-product-chart-wrapper { height: 290px; }
+
