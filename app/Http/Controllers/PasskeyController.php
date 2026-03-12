@@ -6,14 +6,14 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Routing\Controller;
+use Illuminate\View\View;
 use lbuchs\WebAuthn\WebAuthn;
 use lbuchs\WebAuthn\Binary\ByteBuffer;
 
 class PasskeyController extends Controller
 {
     /**
-     * Same as the working SQL SMS PHP project: use "localhost" for 127.0.0.1/::1
-     * so passkey works when you open http://localhost:8000 (not http://127.0.0.1:8000).
+     * Resolve rpId for WebAuthn. Localhost is normalized for development compatibility.
      */
     private function getRpId(Request $request): string
     {
@@ -36,17 +36,23 @@ class PasskeyController extends Controller
     }
 
     /**
-     * Get registration options. Only users with existing email can register.
+     * Show the "Add passkey" page (only for logged-in users who signed in with email/password).
+     */
+    public function showRegisterForm(): View
+    {
+        return view('auth.register-passkey');
+    }
+
+    /**
+     * Get registration options. Requires user to be logged in (email/password first);
+     * uses session email so passkey can only be registered after first login.
      */
     public function registerOptions(Request $request): JsonResponse
     {
-        try {
-            $request->validate(['email' => 'required|email']);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json(['error' => 'Please enter a valid email address.'], 400);
+        $email = $request->session()->get('user_email');
+        if (!$email) {
+            return response()->json(['error' => 'You must sign in with email and password first to add a passkey.'], 403);
         }
-
-        $email = $request->input('email');
 
         $row = null;
         try {
@@ -358,7 +364,7 @@ class PasskeyController extends Controller
         }
 
         $user = DB::selectOne(
-            'SELECT "USERID", "EMAIL", "SYSTEMROLE", "ISACTIVE" FROM "USERS" WHERE "USERID" = ?',
+            'SELECT "USERID", "EMAIL", "SYSTEMROLE", "ISACTIVE", "ALIAS" FROM "USERS" WHERE "USERID" = ?',
             [$userId]
         );
 
@@ -372,6 +378,7 @@ class PasskeyController extends Controller
         $request->session()->forget('passkey_challenge');
         $request->session()->put('user_id', $user->USERID);
         $request->session()->put('user_email', $user->EMAIL);
+        $request->session()->put('user_alias', $user->ALIAS ?? '');
         $request->session()->put('user_role', $user->SYSTEMROLE === 'Admin' ? 'admin' : 'dealer');
 
         $redirect = $user->SYSTEMROLE === 'Admin' ? '/admin/dashboard' : '/dealer/dashboard';

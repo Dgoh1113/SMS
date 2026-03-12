@@ -1,0 +1,65 @@
+# Firebird 5.0.3 from https://github.com/FirebirdSQL/firebird-docker
+# Start: docker compose up -d
+# Remote access: ensure host firewall allows TCP 3050, then use DB_HOST=<server-ip>
+
+services:
+  firebird:
+    image: firebirdsql/firebird:5.0.3
+    container_name: sms-firebird
+    restart: unless-stopped
+    ports:
+      - "3050:3050"
+    environment:
+      FIREBIRD_ROOT_PASSWORD: masterkey
+      # Create/use DB file inside /var/lib/firebird/data
+      FIREBIRD_DATABASE: SMS.FDB
+      FIREBIRD_DATABASE_DEFAULT_CHARSET: UTF8
+      # Required for some clients (e.g. Laravel/PHP) connecting remotely
+      FIREBIRD_USE_LEGACY_AUTH: "1"
+      FIREBIRD_CONF_WireCrypt: Enabled
+      FIREBIRD_CONF_DatabaseAccess: Full
+      FIREBIRD_CONF_RemoteAccess: "true"
+    volumes:
+      - C:/firebird-data:/var/lib/firebird/data
+      - ./vendor/firebird_databases.conf:/opt/firebird/databases.conf:ro
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: sms-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      - firebird
+
+  web:
+    image: nginx:alpine
+    container_name: sms-web
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+
+  node:
+    image: node:22
+    container_name: sms-node
+    working_dir: /app
+    restart: unless-stopped
+    volumes:
+      - ./:/app
+      - node_modules:/app/node_modules
+    command: ["npm","run","dev","--","--host","0.0.0.0","--port","5173"]
+    ports:
+      - "5173:5173"
+# Named volume block REMOVED — cannot use both named volume   
+# and host mount for the same container path simultaneously
+
+volumes:
+  node_modules:

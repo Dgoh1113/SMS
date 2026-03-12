@@ -12,9 +12,18 @@ class AuthController extends Controller
 {
     public function showLoginForm(Request $request): View|RedirectResponse
     {
+        // After sign-in success we stay on login page to show register passkey; only then go to dashboard.
+        if ($request->session()->has('user_id') && $request->session()->has('show_register_passkey')) {
+            $role = $request->session()->get('user_role');
+            $dashboardUrl = ($role === 'admin' || $role === 'manager') ? '/admin/dashboard' : '/dealer/dashboard';
+            return view('auth.login', ['show_register_passkey' => true, 'dashboard_url' => $dashboardUrl]);
+        }
         if ($request->session()->has('user_role')) {
             $role = $request->session()->get('user_role');
-            return $role === 'admin' ? redirect('/admin/dashboard') : redirect('/dealer/dashboard');
+            if ($role === 'admin' || $role === 'manager') {
+                return redirect('/admin/dashboard');
+            }
+            return redirect('/dealer/dashboard');
         }
         return view('auth.login');
     }
@@ -31,7 +40,7 @@ class AuthController extends Controller
 
         // Database login
         $row = DB::selectOne(
-            'SELECT "USERID", "PASSWORDHASH", "SYSTEMROLE", "ISACTIVE" FROM "USERS" WHERE "EMAIL" = ?',
+            'SELECT "USERID", "PASSWORDHASH", "SYSTEMROLE", "ISACTIVE", "ALIAS" FROM "USERS" WHERE "EMAIL" = ?',
             [$email]
         );
 
@@ -60,12 +69,20 @@ class AuthController extends Controller
 
         DB::update('UPDATE "USERS" SET "LASTLOGIN" = CURRENT_TIMESTAMP WHERE "USERID" = ?', [$row->USERID]);
 
-        $role = $row->SYSTEMROLE === 'Admin' ? 'admin' : 'dealer';
+        $systemRole = strtoupper(trim((string) ($row->SYSTEMROLE ?? '')));
+        $role = match ($systemRole) {
+            'ADMIN' => 'admin',
+            'MANAGER' => 'manager',
+            default => 'dealer',
+        };
         $request->session()->put('user_id', $row->USERID);
         $request->session()->put('user_email', $email);
+        $request->session()->put('user_alias', $row->ALIAS ?? '');
         $request->session()->put('user_role', $role);
 
-        return $role === 'admin' ? redirect('/admin/dashboard') : redirect('/dealer/dashboard');
+        // Stay on login page and show register passkey; redirect to dashboard only after they register or skip.
+        $request->session()->flash('show_register_passkey', true);
+        return redirect()->route('login');
     }
 
     public function logout(Request $request): RedirectResponse

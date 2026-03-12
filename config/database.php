@@ -43,17 +43,16 @@ return [
             'transaction_mode' => 'DEFERRED',
         ],
 
-        'firebird' => [
-            'driver' => 'firebird',
-            'host' => env('DB_HOST', 'localhost'),
-            'port' => env('DB_PORT', '3050'),
+    'firebird' => [
+            'driver'   => 'firebird',
+            'host'     => env('DB_HOST', 'localhost'),
+            'port'     => env('DB_PORT', '3050'),   
             'database' => env('DB_DATABASE', '/path_to/database.fdb'),
             'username' => env('DB_USERNAME', 'sysdba'),
             'password' => env('DB_PASSWORD', 'masterkey'),
-            'charset' => env('DB_CHARSET', 'UTF8'),
-            'role' => env('DB_ROLE'),
-            // For Firebird 3.0+ you typically want false.
-            'legacy_limit_and_offset' => env('DB_LEGACY_LIMIT_AND_OFFSET', true),
+            'charset'  => env('DB_CHARSET', 'UTF8'),
+            'role'     => env('DB_ROLE'),
+            'legacy_limit_and_offset' => env('DB_LEGACY_LIMIT_AND_OFFSET', false),
         ],
 
         'mysql' => [

@@ -10,7 +10,8 @@ class RequireAdmin
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->session()->get('user_role') !== 'admin') {
+        $role = $request->session()->get('user_role');
+        if (!in_array($role, ['admin', 'manager'], true)) {
             return redirect('/login');
         }
         return $next($request);

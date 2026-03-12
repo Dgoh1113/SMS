@@ -1,6 +1,77 @@
 # Firebird in Docker
 
-## Start Firebird
+Uses the official [FirebirdSQL/firebird-docker](https://github.com/FirebirdSQL/firebird-docker) image (Firebird **5.0.3**). Default port: **3050**.
+
+---
+
+## Access the remote Firebird container (192.168.101.239)
+
+If Firebird is running in Docker on **192.168.101.227**, use the following.
+
+### 1. On the remote server (192.168.101.239)
+
+Ensure the container is running and port 3050 is published:
+
+```bash
+# From the project root (where docker-compose.yml is)
+docker compose up -d
+
+# Check that port 3050 is listening
+docker compose ps
+```
+
+Ensure the host firewall allows TCP **3050** (e.g. `sudo ufw allow 3050/tcp` on Linux).
+
+### 2. Connect from your machine
+
+**Option A – Laravel (`.env`):**
+
+```env
+DB_CONNECTION=firebird
+DB_HOST=192.168.101.227
+DB_PORT=3050
+DB_DATABASE=/var/lib/firebird/data/SMS.FDB
+DB_USERNAME=SYSDBA
+DB_PASSWORD=masterkey
+```
+
+Then run `php artisan config:clear` and use the app as usual.
+
+**Option B – isql (Firebird client installed):**
+
+```bash
+isql 192.168.101.227/3050:/var/lib/firebird/data/SMS.FDB -u SYSDBA -p masterkey
+```
+
+**Option C – isql via Docker (no local Firebird client):**
+
+```bash
+docker run -it --rm firebirdsql/firebird:5.0.3 isql 192.168.101.227/3050:/var/lib/firebird/data/SMS.FDB -u SYSDBA -p masterkey
+```
+
+Replace `192.168.101.227` if your server has a different IP.
+
+### 3. Run commands inside the remote container (SSH to server)
+
+If you have SSH access to 192.168.101.239:
+
+```bash
+ssh user@192.168.101.227
+docker exec -it sms-firebird isql /var/lib/firebird/data/SMS.FDB -u sysdba -p masterkey
+```
+
+Or create the database if it does not exist:
+
+```bash
+docker exec -it sms-firebird isql -u sysdba -p masterkey
+# At SQL> prompt:
+# CREATE DATABASE '/var/lib/firebird/data/SMS.FDB' USER 'SYSDBA' PASSWORD 'masterkey' PAGE_SIZE 8192;
+# quit
+```
+
+---
+
+## Start Firebird (local)
 
 ```bash
 docker compose up -d
@@ -40,7 +111,7 @@ docker exec -it sms-firebird isql /var/lib/firebird/data/SMS.FDB -u sysdba -p ma
 **Remote server (from a machine with Firebird client):**
 
 ```bash
-isql 192.168.101.239/3050:/var/lib/firebird/data/SMS.FDB -u sysdba -p masterkey
+isql 192.168.101.227/3050:/var/lib/firebird/data/SMS.FDB -u sysdba -p masterkey
 ```
 
 If this connects, credentials are correct. If it fails, the issue is on the Firebird server.
