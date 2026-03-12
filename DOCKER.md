@@ -6,7 +6,7 @@ Uses the official [FirebirdSQL/firebird-docker](https://github.com/FirebirdSQL/f
 
 ## Access the remote Firebird container (192.168.101.239)
 
-If Firebird is running in Docker on **192.168.101.227**, use the following.
+If Firebird is running in Docker on **192.168.101.239**, use the following.
 
 ### 1. On the remote server (192.168.101.239)
 
@@ -28,7 +28,7 @@ Ensure the host firewall allows TCP **3050** (e.g. `sudo ufw allow 3050/tcp` on 
 
 ```env
 DB_CONNECTION=firebird
-DB_HOST=192.168.101.227
+DB_HOST=192.168.101.239
 DB_PORT=3050
 DB_DATABASE=/var/lib/firebird/data/SMS.FDB
 DB_USERNAME=SYSDBA
@@ -40,23 +40,23 @@ Then run `php artisan config:clear` and use the app as usual.
 **Option B – isql (Firebird client installed):**
 
 ```bash
-isql 192.168.101.227/3050:/var/lib/firebird/data/SMS.FDB -u SYSDBA -p masterkey
+isql 192.168.101.239/3050:/var/lib/firebird/data/SMS.FDB -u SYSDBA -p masterkey
 ```
 
 **Option C – isql via Docker (no local Firebird client):**
 
 ```bash
-docker run -it --rm firebirdsql/firebird:5.0.3 isql 192.168.101.227/3050:/var/lib/firebird/data/SMS.FDB -u SYSDBA -p masterkey
+docker run -it --rm firebirdsql/firebird:5.0.3 isql 192.168.101.239/3050:/var/lib/firebird/data/SMS.FDB -u SYSDBA -p masterkey
 ```
 
-Replace `192.168.101.227` if your server has a different IP.
+Replace `192.168.101.239` if your server has a different IP.
 
 ### 3. Run commands inside the remote container (SSH to server)
 
 If you have SSH access to 192.168.101.239:
 
 ```bash
-ssh user@192.168.101.227
+ssh user@192.168.101.239
 docker exec -it sms-firebird isql /var/lib/firebird/data/SMS.FDB -u sysdba -p masterkey
 ```
 
@@ -111,7 +111,7 @@ docker exec -it sms-firebird isql /var/lib/firebird/data/SMS.FDB -u sysdba -p ma
 **Remote server (from a machine with Firebird client):**
 
 ```bash
-isql 192.168.101.227/3050:/var/lib/firebird/data/SMS.FDB -u sysdba -p masterkey
+isql 192.168.101.239/3050:/var/lib/firebird/data/SMS.FDB -u sysdba -p masterkey
 ```
 
 If this connects, credentials are correct. If it fails, the issue is on the Firebird server.

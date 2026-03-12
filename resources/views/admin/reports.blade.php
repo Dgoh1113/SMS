@@ -38,11 +38,13 @@
     $totalPayouts = array_sum($payoutStatus);
     $totalStatus = max($totalActivities, 1);
     $statusColors = [
+        'Created' => '#94a3b8',
         'Pending' => '#a855f7',
         'FollowUp' => '#22c55e',
         'Demo' => '#0ea5e9',
         'Confirmed' => '#6366f1',
         'Completed' => '#14b8a6',
+        'Failed' => '#dc2626',
         'reward' => '#f97316',
     ];
 @endphp
@@ -109,13 +111,10 @@
                 <p id="inquiryRangeText" class="text-body">Inquiries this month</p>
                 <h5 id="inquiryTotal" class="text-2xl font-semibold text-heading">{{ $displayTotal }}</h5>
             </div>
-            <div class="flex items-center inquiry-trend-badge font-medium text-center {{ ($inquiryTrendPercentChange ?? 0) >= 0 ? 'text-fg-success' : 'text-fg-danger' }}">
-                @if (($inquiryTrendPercentChange ?? 0) >= 0)
-                    <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v13m0-13 4 4m-4-4-4 4"/></svg>
-                @else
-                    <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19V5m0 0-4 4m4-4 4 4"/></svg>
-                @endif
-                {{ ($inquiryTrendPercentChange ?? 0) >= 0 ? '' : '-' }}{{ abs($inquiryTrendPercentChange ?? 0) }}%
+            <div id="inquiryPercentBadge" class="flex items-center inquiry-trend-badge font-medium text-center inquiry-trend-same">
+                <svg class="inquiry-percent-arrow inquiry-percent-arrow-up" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v13m0-13 4 4m-4-4-4 4"/></svg>
+                <svg class="inquiry-percent-arrow inquiry-percent-arrow-down" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19V5m0 0-4 4m4-4 4 4"/></svg>
+                <span id="inquiryPercent" class="inquiry-percent">0%</span>
             </div>
         </div>
         <div class="dashboard-panel-body mt-4">
@@ -256,6 +255,7 @@
                 categories.push((d < 10 ? '0' : '') + d + ' ' + monthName);
                 seriesData.push(trendByDay[d] || 0);
             }
+            const monthTotal = seriesData.reduce((acc, v) => acc + (v || 0), 0);
 
             const getBrandColor = function() {
                 const computedStyle = getComputedStyle(document.documentElement);
@@ -319,12 +319,33 @@
             function updateInquiryHeader(days) {
                 const elTotal = document.getElementById('inquiryTotal');
                 const elRange = document.getElementById('inquiryRangeText');
+                const elPercent = document.getElementById('inquiryPercent');
+                const elBadge = document.getElementById('inquiryPercentBadge');
                 if (!elTotal || !elRange) return;
 
                 const filtered = getFilteredData(days);
                 const total = filtered.data.reduce((acc, v) => acc + (v || 0), 0);
                 elTotal.textContent = formatTotal(total);
                 elRange.textContent = days > 0 ? `Inquiries last ${days} days` : 'Inquiries this month';
+
+                if (elPercent && elBadge) {
+                    const daysInRange = days > 0 ? Math.min(days, currentDay) : currentDay;
+                    const expectedPct = daysInMonth > 0 ? (daysInRange / daysInMonth) * 100 : 100;
+                    const actualPct = monthTotal > 0 ? (total / monthTotal) * 100 : 0;
+                    const diffPct = actualPct - expectedPct;
+
+                    elBadge.classList.remove('inquiry-trend-up', 'inquiry-trend-down', 'inquiry-trend-same');
+                    if (diffPct > 0) {
+                        elBadge.classList.add('inquiry-trend-up');
+                        elPercent.textContent = '+' + Math.round(diffPct) + '%';
+                    } else if (diffPct < 0) {
+                        elBadge.classList.add('inquiry-trend-down');
+                        elPercent.textContent = Math.round(diffPct) + '%';
+                    } else {
+                        elBadge.classList.add('inquiry-trend-same');
+                        elPercent.textContent = '0%';
+                    }
+                }
             }
             if (document.getElementById("area-chart") && typeof ApexCharts !== 'undefined') {
                 const initial = getFilteredData(7);

@@ -180,6 +180,7 @@ class AdminController extends Controller
             'Open' => 0,
             'Ongoing' => 0,
             'Closed' => 0,
+            'Failed' => 0,
         ];
         foreach ($leadStatusRows as $row) {
             $key = (string) $get($row, 'status');
@@ -195,15 +196,20 @@ class AdminController extends Controller
             'SELECT "STATUS" AS status, COUNT(*) AS c FROM "LEAD_ACT" GROUP BY "STATUS"'
         );
         $activityStatus = [
+            'Created' => 0,
             'Pending' => 0,
             'FollowUp' => 0,
             'Demo' => 0,
             'Confirmed' => 0,
             'Completed' => 0,
+            'Failed' => 0,
             'reward' => 0,
         ];
         foreach ($pendingActs as $row) {
             $key = (string) $get($row, 'status');
+            if ($key === 'Rewarded') {
+                $key = 'reward';
+            }
             if (isset($activityStatus[$key])) {
                 $activityStatus[$key] = (int) $get($row, 'c');
             }
@@ -217,15 +223,20 @@ class AdminController extends Controller
              GROUP BY "STATUS"'
         );
         $lastMonthActivity = [
+            'Created' => 0,
             'Pending' => 0,
             'FollowUp' => 0,
             'Demo' => 0,
             'Confirmed' => 0,
             'Completed' => 0,
+            'Failed' => 0,
             'reward' => 0,
         ];
         foreach ($lastMonthActs as $row) {
             $key = (string) $get($row, 'status');
+            if ($key === 'Rewarded') {
+                $key = 'reward';
+            }
             if (isset($lastMonthActivity[$key])) {
                 $lastMonthActivity[$key] = (int) $get($row, 'c');
             }
