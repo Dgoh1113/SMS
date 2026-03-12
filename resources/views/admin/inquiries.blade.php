@@ -3,14 +3,21 @@
 @section('content')
 <div class="inquiries-page-wrap">
 <section class="inquiries-mgmt-summary">
-    <div class="inquiries-summary-card">
+    <div class="inquiries-summary-card" id="incomingSummaryCard">
         <div class="inquiries-summary-icon"><i class="bi bi-inbox"></i></div>
         <div class="inquiries-summary-label">TOTAL NEW INQUIRIES</div>
         <div class="inquiries-summary-value-row">
             <span class="inquiries-summary-value">{{ number_format($totalNewInquiries) }}</span>
-            <span class="inquiries-summary-pill">+12%</span>
         </div>
-        <div class="inquiries-summary-note">Good last 7 days</div>
+        <div class="inquiries-summary-note">New leads waiting to assign</div>
+    </div>
+    <div class="inquiries-summary-card" id="assignedSummaryCard" style="display:none;">
+        <div class="inquiries-summary-icon"><i class="bi bi-arrow-left-right"></i></div>
+        <div class="inquiries-summary-label">TOTAL ONGOING</div>
+        <div class="inquiries-summary-value-row">
+            <span class="inquiries-summary-value">{{ number_format($totalOngoing ?? 0) }}</span>
+        </div>
+        <div class="inquiries-summary-note">Leads currently in progress</div>
     </div>
 </section>
 
@@ -66,7 +73,10 @@
                     <button type="button" class="inquiries-columns-reset" id="inquiryColumnsReset">Reset to default</button>
                 </div>
             </div>
-            <a href="{{ route('admin.inquiries.create') }}" class="inquiries-btn inquiries-btn-primary">Add new</a>
+            <a href="{{ route('admin.inquiries.create') }}" class="inquiries-btn inquiries-btn-primary inquiries-add-btn">
+                <i class="bi bi-plus-lg"></i>
+                <span>Add new inquiry</span>
+            </a>
         </div>
     </div>
     <div class="inquiries-table-wrap">
@@ -1026,6 +1036,18 @@ document.addEventListener('DOMContentLoaded', function() {
             var assignedPanel = document.getElementById('assignedPanel');
             if (incomingPanel) { incomingPanel.classList.toggle('active', t === 'incoming'); incomingPanel.hidden = t !== 'incoming'; }
             if (assignedPanel) { assignedPanel.classList.toggle('active', t === 'assigned'); assignedPanel.hidden = t !== 'assigned'; }
+
+            var incomingSummary = document.getElementById('incomingSummaryCard');
+            var assignedSummary = document.getElementById('assignedSummaryCard');
+            if (incomingSummary && assignedSummary) {
+                if (t === 'incoming') {
+                    incomingSummary.style.display = '';
+                    assignedSummary.style.display = 'none';
+                } else {
+                    incomingSummary.style.display = 'none';
+                    assignedSummary.style.display = '';
+                }
+            }
         });
     });
 
@@ -1102,6 +1124,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             var url = btn.getAttribute('data-sync-url');
             if (!url) url = window.location.href;
+            var syncType = btn.getAttribute('data-sync-type') || 'incoming';
             fetch(url, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 cache: 'no-store'
@@ -1116,6 +1139,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (as && data.assigned !== undefined) {
                     as.innerHTML = data.assigned;
                 }
+
+                // Update summary counts
+                var incomingSummary = document.getElementById('incomingSummaryCard');
+                var assignedSummary = document.getElementById('assignedSummaryCard');
+                if (data.totalNewInquiries !== undefined && incomingSummary) {
+                    var v1 = incomingSummary.querySelector('.inquiries-summary-value');
+                    if (v1) v1.textContent = new Intl.NumberFormat().format(data.totalNewInquiries);
+                }
+                if (data.totalOngoing !== undefined && assignedSummary) {
+                    var v2 = assignedSummary.querySelector('.inquiries-summary-value');
+                    if (v2) v2.textContent = new Intl.NumberFormat().format(data.totalOngoing);
+                }
+
                 // Re-apply current column visibility and filters so layout stays the same
                 applyColumns(getVisibleColumns());
                 applyAssignedColumns(getAssignedVisibleColumns());
