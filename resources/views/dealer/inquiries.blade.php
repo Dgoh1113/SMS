@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'My Inquiries – SQL LMS Dealer Console')
+@section('title', 'Active Inquiries – SQL LMS Dealer Console')
 @section('content')
 @php
     $productNames = [
@@ -9,15 +9,6 @@
     ];
 @endphp
 <div class="dashboard-content inquiries-all-page">
-    <header class="inquiries-all-header">
-        <div class="inquiries-all-title-row">
-            <div>
-                <h1 class="dashboard-title">My Inquiries</h1>
-                <p class="dashboard-subtitle">All Inquiries</p>
-            </div>
-        </div>
-    </header>
-
     <section class="dealer-panel dealer-inquiries-panel inquiries-all-table-panel">
         <div class="dealer-panel-header">
             <h2 class="dealer-panel-title">All Inquiries</h2>
@@ -27,117 +18,117 @@
         </div>
         <div class="dealer-table-wrapper inquiries-table-wrapper">
             <div class="inquiries-table-scroll">
-                <table class="inquiries-table">
+                <table class="inquiries-table" id="dealerInquiriesTable">
                     <thead>
                         <tr class="inquiries-table-header-row">
-                        <th>
-                            <span class="inquiries-col-label">INQUIRY ID</span>
-                            <div class="inquiries-filter-wrap">
-                                <input type="text" class="inquiries-filter-input" placeholder="Search" aria-label="Filter Inquiry ID">
+                        <th class="inquiries-header-cell" data-col="inquiryid">
+                            <span class="inquiries-header-label">INQUIRY ID</span>
+                            <span class="inquiries-filter-wrap">
+                                <input type="text" class="inquiries-grid-filter" data-col="inquiryid">
                                 <i class="bi bi-search inquiries-filter-icon"></i>
-                            </div>
+                            </span>
                         </th>
-                        <th>
-                            <span class="inquiries-col-label">DATE</span>
-                            <div class="inquiries-filter-wrap">
-                                <input type="text" class="inquiries-filter-input" placeholder="Search" aria-label="Filter Date">
+                        <th class="inquiries-header-cell" data-col="date">
+                            <span class="inquiries-header-label">DATE</span>
+                            <span class="inquiries-filter-wrap">
+                                <input type="text" class="inquiries-grid-filter" data-col="date">
                                 <i class="bi bi-search inquiries-filter-icon"></i>
-                            </div>
+                            </span>
                         </th>
-                        <th>
-                            <span class="inquiries-col-label">CUSTOMER</span>
-                            <div class="inquiries-filter-wrap">
-                                <input type="text" class="inquiries-filter-input" placeholder="Search" aria-label="Filter Customer">
+                        <th class="inquiries-header-cell" data-col="customer">
+                            <span class="inquiries-header-label">CUSTOMER</span>
+                            <span class="inquiries-filter-wrap">
+                                <input type="text" class="inquiries-grid-filter" data-col="customer">
                                 <i class="bi bi-search inquiries-filter-icon"></i>
-                            </div>
+                            </span>
                         </th>
-                        <th>
-                            <span class="inquiries-col-label">SOURCE</span>
-                            <div class="inquiries-filter-wrap">
-                                <input type="text" class="inquiries-filter-input" placeholder="Search" aria-label="Filter Source">
+                        <th class="inquiries-header-cell" data-col="source">
+                            <span class="inquiries-header-label">SOURCE</span>
+                            <span class="inquiries-filter-wrap">
+                                <input type="text" class="inquiries-grid-filter" data-col="source">
                                 <i class="bi bi-search inquiries-filter-icon"></i>
-                            </div>
+                            </span>
                         </th>
-                        <th>
-                            <span class="inquiries-col-label">POSTCODE</span>
-                            <div class="inquiries-filter-wrap">
-                                <input type="text" class="inquiries-filter-input" placeholder="Search" aria-label="Filter Postcode">
+                        <th class="inquiries-header-cell" data-col="postcode">
+                            <span class="inquiries-header-label">POSTCODE</span>
+                            <span class="inquiries-filter-wrap">
+                                <input type="text" class="inquiries-grid-filter" data-col="postcode">
                                 <i class="bi bi-search inquiries-filter-icon"></i>
-                            </div>
+                            </span>
                         </th>
-                        <th>
-                            <span class="inquiries-col-label">CONTACT NO</span>
-                            <div class="inquiries-filter-wrap">
-                                <input type="text" class="inquiries-filter-input" placeholder="Search" aria-label="Filter Contact No">
+                        <th class="inquiries-header-cell" data-col="contactno">
+                            <span class="inquiries-header-label">CONTACT NO</span>
+                            <span class="inquiries-filter-wrap">
+                                <input type="text" class="inquiries-grid-filter" data-col="contactno">
                                 <i class="bi bi-search inquiries-filter-icon"></i>
-                            </div>
+                            </span>
                         </th>
-                        <th>
-                            <span class="inquiries-col-label">BUSINESS NATURE</span>
-                            <div class="inquiries-filter-wrap">
-                                <input type="text" class="inquiries-filter-input" placeholder="Search" aria-label="Filter Business Nature">
+                        <th class="inquiries-header-cell" data-col="businessnature">
+                            <span class="inquiries-header-label">BUSINESS NATURE</span>
+                            <span class="inquiries-filter-wrap">
+                                <input type="text" class="inquiries-grid-filter" data-col="businessnature">
                                 <i class="bi bi-search inquiries-filter-icon"></i>
-                            </div>
+                            </span>
                         </th>
-                        <th>
-                            <span class="inquiries-col-label">USERS</span>
-                            <div class="inquiries-filter-wrap">
-                                <input type="text" class="inquiries-filter-input" placeholder="Search" aria-label="Filter Users">
+                        <th class="inquiries-header-cell" data-col="users">
+                            <span class="inquiries-header-label">USERS</span>
+                            <span class="inquiries-filter-wrap">
+                                <input type="text" class="inquiries-grid-filter" data-col="users">
                                 <i class="bi bi-search inquiries-filter-icon"></i>
-                            </div>
+                            </span>
                         </th>
-                        <th>
-                            <span class="inquiries-col-label">EXISTING SW</span>
-                            <div class="inquiries-filter-wrap">
-                                <input type="text" class="inquiries-filter-input" placeholder="Search" aria-label="Filter Existing SW">
+                        <th class="inquiries-header-cell" data-col="existingsw">
+                            <span class="inquiries-header-label">EXISTING SW</span>
+                            <span class="inquiries-filter-wrap">
+                                <input type="text" class="inquiries-grid-filter" data-col="existingsw">
                                 <i class="bi bi-search inquiries-filter-icon"></i>
-                            </div>
+                            </span>
                         </th>
-                        <th>
-                            <span class="inquiries-col-label">DEMO MODE</span>
-                            <div class="inquiries-filter-wrap">
-                                <input type="text" class="inquiries-filter-input" placeholder="Search" aria-label="Filter Demo Mode">
+                        <th class="inquiries-header-cell" data-col="demomode">
+                            <span class="inquiries-header-label">DEMO MODE</span>
+                            <span class="inquiries-filter-wrap">
+                                <input type="text" class="inquiries-grid-filter" data-col="demomode">
                                 <i class="bi bi-search inquiries-filter-icon"></i>
-                            </div>
+                            </span>
                         </th>
-                        <th>
-                            <span class="inquiries-col-label">PRODUCTS</span>
-                            <div class="inquiries-filter-wrap">
-                                <input type="text" class="inquiries-filter-input" placeholder="Search" aria-label="Filter Products">
+                        <th class="inquiries-header-cell" data-col="products">
+                            <span class="inquiries-header-label">PRODUCTS</span>
+                            <span class="inquiries-filter-wrap">
+                                <input type="text" class="inquiries-grid-filter" data-col="products">
                                 <i class="bi bi-search inquiries-filter-icon"></i>
-                            </div>
+                            </span>
                         </th>
-                        <th>
-                            <span class="inquiries-col-label">MESSAGE</span>
-                            <div class="inquiries-filter-wrap">
-                                <input type="text" class="inquiries-filter-input" placeholder="Search" aria-label="Filter Message">
+                        <th class="inquiries-header-cell" data-col="message">
+                            <span class="inquiries-header-label">MESSAGE</span>
+                            <span class="inquiries-filter-wrap">
+                                <input type="text" class="inquiries-grid-filter" data-col="message">
                                 <i class="bi bi-search inquiries-filter-icon"></i>
-                            </div>
+                            </span>
                         </th>
-                        <th>
-                            <span class="inquiries-col-label">REFERRAL CODE</span>
-                            <div class="inquiries-filter-wrap">
-                                <input type="text" class="inquiries-filter-input" placeholder="Search" aria-label="Filter Referral Code">
+                        <th class="inquiries-header-cell" data-col="referralcode">
+                            <span class="inquiries-header-label">REFERRAL CODE</span>
+                            <span class="inquiries-filter-wrap">
+                                <input type="text" class="inquiries-grid-filter" data-col="referralcode">
                                 <i class="bi bi-search inquiries-filter-icon"></i>
-                            </div>
+                            </span>
                         </th>
-                        <th>
-                            <span class="inquiries-col-label">ASSIGN BY</span>
-                            <div class="inquiries-filter-wrap">
-                                <input type="text" class="inquiries-filter-input" placeholder="Search" aria-label="Filter Assign By">
+                        <th class="inquiries-header-cell" data-col="assignby">
+                            <span class="inquiries-header-label">ASSIGN BY</span>
+                            <span class="inquiries-filter-wrap">
+                                <input type="text" class="inquiries-grid-filter" data-col="assignby">
                                 <i class="bi bi-search inquiries-filter-icon"></i>
-                            </div>
+                            </span>
                         </th>
-                        <th>
-                            <span class="inquiries-col-label">STATUS</span>
-                            <div class="inquiries-filter-wrap">
-                                <input type="text" class="inquiries-filter-input" placeholder="Search" aria-label="Filter Status">
+                        <th class="inquiries-header-cell" data-col="status">
+                            <span class="inquiries-header-label">STATUS</span>
+                            <span class="inquiries-filter-wrap">
+                                <input type="text" class="inquiries-grid-filter" data-col="status">
                                 <i class="bi bi-search inquiries-filter-icon"></i>
-                            </div>
+                            </span>
                         </th>
-                        <th>
-                            <span class="inquiries-col-label">ACTION</span>
-                            <button type="button" class="inquiries-clear-filters">Clear filters</button>
+                        <th class="inquiries-col-action inquiries-header-cell">
+                            <span class="inquiries-header-label">ACTION</span>
+                            <button type="button" class="inquiries-filter-clear" id="dealerInquiryClearFilters">Clear filters</button>
                         </th>
                         </tr>
                     </thead>
@@ -153,29 +144,29 @@
                             }
                             if (empty($products)) $products = ['Others'];
                         @endphp
-                        <tr>
-                            <td><strong>#SQL-{{ $r->LEADID }}</strong></td>
-                            <td>{{ $r->CREATEDAT ? date('M j, Y', strtotime($r->CREATEDAT)) : '—' }}</td>
-                            <td>{{ trim(($r->COMPANYNAME ?? '') . ' ' . ($r->CONTACTNAME ?? '')) ?: '—' }}</td>
-                            <td>{{ $r->CREATEDAT ? date('M j, Y', strtotime($r->CREATEDAT)) : '—' }}</td>
-                            <td>{{ $r->POSTCODE ?? '—' }}</td>
-                            <td>{{ $r->CONTACTNO ?? '—' }}</td>
-                            <td>{{ $r->BUSINESSNATURE ?? '—' }}</td>
-                            <td>{{ $r->USERCOUNT ?? '—' }}</td>
-                            <td>{{ $r->EXISTINGSOFTWARE ?? '—' }}</td>
-                            <td>{{ $r->DEMOMODE ?? '—' }}</td>
-                            <td>
+                        <tr class="inquiry-row" data-search="{{ strtolower(trim(($r->COMPANYNAME ?? '').' '.($r->CONTACTNAME ?? '').' '.($r->LEADID ?? ''))) }}">
+                            <td data-col="inquiryid"><strong>#SQL-{{ $r->LEADID }}</strong></td>
+                            <td data-col="date">{{ $r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '—' }}</td>
+                            <td data-col="customer">{{ trim(($r->COMPANYNAME ?? '') . ' ' . ($r->CONTACTNAME ?? '')) ?: '—' }}</td>
+                            <td data-col="source">{{ $r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '—' }}</td>
+                            <td data-col="postcode">{{ $r->POSTCODE ?? '—' }}</td>
+                            <td data-col="contactno">{{ $r->CONTACTNO ?? '—' }}</td>
+                            <td data-col="businessnature">{{ $r->BUSINESSNATURE ?? '—' }}</td>
+                            <td data-col="users">{{ $r->USERCOUNT ?? '—' }}</td>
+                            <td data-col="existingsw">{{ $r->EXISTINGSOFTWARE ?? '—' }}</td>
+                            <td data-col="demomode">{{ $r->DEMOMODE ?? '—' }}</td>
+                            <td data-col="products">
                                 <div class="inquiries-product-pills">
                                     @foreach($products as $p)
                                         <span class="inquiries-product-pill">{{ $p }}</span>
                                     @endforeach
                                 </div>
                             </td>
-                            <td>{{ Str::limit($r->DESCRIPTION ?? '—', 20) }}</td>
-                            <td>{{ $r->REFERRALCODE ?? '—' }}</td>
-                            <td>{{ $r->ASSIGNED_BY_EMAIL ?? '—' }}</td>
-                            <td>@php $s = trim($r->ACT_STATUS ?? ''); echo $s === '' ? '—' : (in_array(strtoupper($s), ['FOLLOWUP', 'FOLLOW UP'], true) ? 'Follow Up' : $s); @endphp</td>
-                            <td>
+                            <td data-col="message">{{ Str::limit($r->DESCRIPTION ?? '—', 20) }}</td>
+                            <td data-col="referralcode">{{ $r->REFERRALCODE ?? '—' }}</td>
+                            <td data-col="assignby">{{ $r->ASSIGNED_BY_EMAIL ?? '—' }}</td>
+                            <td data-col="status">@php $s = trim($r->ACT_STATUS ?? ''); echo $s === '' ? '—' : (in_array(strtoupper($s), ['FOLLOWUP', 'FOLLOW UP'], true) ? 'Follow Up' : $s); @endphp</td>
+                            <td class="inquiries-col-action">
                                 @php $actStatus = strtoupper($r->ACT_STATUS ?? 'PENDING'); $isFailed = $actStatus === 'FAILED'; @endphp
                                 @if ($isFailed)
                                     <button type="button" class="inquiries-view-btn" data-lead-id="{{ $r->LEADID }}" data-customer="{{ trim(($r->COMPANYNAME ?? '') . ' ' . ($r->CONTACTNAME ?? '')) ?: '—' }}">View</button>
@@ -195,14 +186,7 @@
                 </table>
             </div>
         </div>
-        <div class="dealer-table-footer">
-            <span class="dealer-table-count">Showing {{ count($leads) }} of {{ count($leads) }} inquiries</span>
-            <div class="dealer-pagination">
-                <button type="button" class="dealer-pagination-btn" disabled title="Previous"><i class="bi bi-chevron-left"></i></button>
-                <div class="dealer-pagination-pages"><span class="dealer-pagination-btn dealer-pagination-btn--active">1</span></div>
-                <button type="button" class="dealer-pagination-btn" disabled title="Next"><i class="bi bi-chevron-right"></i></button>
-            </div>
-        </div>
+        {{-- No pagination for dealer inquiries; show full table like admin Incoming Inquiries --}}
     </section>
 </div>
 
@@ -225,6 +209,49 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var table = document.getElementById('dealerInquiriesTable');
+    if (!table) return;
+
+    function applyDealerGridFilters() {
+        var filters = {};
+        table.querySelectorAll('.inquiries-grid-filter').forEach(function(inp) {
+            var col = inp.getAttribute('data-col');
+            var val = (inp.value || '').toLowerCase().trim();
+            if (col && val) filters[col] = val;
+        });
+
+        table.querySelectorAll('tbody .inquiry-row').forEach(function(row) {
+            var colMatch = true;
+            for (var col in filters) {
+                var cell = row.querySelector('td[data-col="' + col + '"]');
+                var cellText = (cell && cell.textContent) ? cell.textContent.toLowerCase().trim() : '';
+                if (cellText.indexOf(filters[col]) === -1) { colMatch = false; break; }
+            }
+            row.style.display = colMatch ? '' : 'none';
+        });
+    }
+
+    table.querySelectorAll('.inquiries-grid-filter').forEach(function(inp) {
+        inp.addEventListener('input', applyDealerGridFilters);
+        inp.addEventListener('keyup', applyDealerGridFilters);
+    });
+
+    var clearBtn = document.getElementById('dealerInquiryClearFilters');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function() {
+            table.querySelectorAll('.inquiries-grid-filter').forEach(function(inp) { inp.value = ''; });
+            applyDealerGridFilters();
+        });
+    }
+
+    applyDealerGridFilters();
+});
+</script>
+@endpush
 
 {{-- Update Inquiry Status Modal --}}
 <div class="inquiry-modal-overlay" id="inquiryUpdateModal" aria-hidden="true">

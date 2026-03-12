@@ -3,10 +3,6 @@
 @section('content')
 <div class="dashboard-content reports-page">
     <header class="reports-header">
-        <div>
-            <h1 class="dashboard-title">Performance Analytics</h1>
-            <p class="dashboard-subtitle">Real-time stage metrics and conversion reports</p>
-        </div>
         <div class="reports-header-actions">
             <form method="get" action="{{ route('dealer.reports') }}" class="reports-period-form" id="reportsPeriodForm">
                 <input type="hidden" name="period" id="reportsPeriodInput" value="{{ $period ?? 'month' }}">
@@ -182,19 +178,6 @@
         </div>
     </section>
 
-    {{-- Footer --}}
-    <footer class="dashboard-bottombar">
-        <div class="dashboard-bottombar-left">
-            <button type="button" class="dashboard-sync-btn" title="Refresh"><i class="bi bi-arrow-clockwise dashboard-sync-icon"></i></button>
-            <div class="dashboard-sync-text">
-                <span class="dashboard-sync-title">SYSTEM SYNC STATUS</span>
-                <span class="dashboard-sync-time">Last synced: {{ date('M j, Y, g:i A') }}</span>
-            </div>
-        </div>
-        <div class="dashboard-bottombar-right">
-            © Copyright {{ date('Y') }} SQL Lead Management System. All rights reserved.
-        </div>
-    </footer>
 </div>
 
 @push('scripts')

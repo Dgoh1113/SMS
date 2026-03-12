@@ -2,58 +2,51 @@
 @section('title', 'Dashboard – SQL LMS Dealer Console')
 @section('content')
 <div class="dashboard-content dealer-dashboard-content">
-    <header class="dashboard-header">
-        <div>
-            <h1 class="dashboard-title">Dashboard</h1>
-            <p class="dashboard-subtitle">Overview of inquiries and performance metrics</p>
-        </div>
-    </header>
-
     {{-- Summary Cards --}}
-    <div class="dealer-metrics">
-        <div class="dealer-metric-card">
-            <div class="dealer-metric-header">
-                <div class="dealer-metric-icon dealer-metric-icon-inquiries">
-                    <i class="bi bi-people"></i>
-                </div>
-                <span class="dealer-metric-trend dealer-metric-trend-up">+12% <i class="bi bi-arrow-up"></i></span>
+    <section class="dashboard-metrics dealer-metrics">
+        <div class="dashboard-metric-card">
+            <div class="dashboard-metric-icon dashboard-metric-icon-inquiries">
+                <i class="bi bi-people"></i>
             </div>
-            <div class="dealer-metric-label">My Active Inquiries</div>
-            <div class="dealer-metric-value">{{ $metrics['activeInquiries'] ?? 42 }}</div>
-        </div>
-        <div class="dealer-metric-card">
-            <div class="dealer-metric-header">
-                <div class="dealer-metric-icon dealer-metric-icon-pending">
-                    <i class="bi bi-clock"></i>
-                </div>
-                <span class="dealer-metric-trend dealer-metric-trend-critical">CRITICAL</span>
+            <div class="dashboard-metric-label">Active Inquiries</div>
+            <div class="dashboard-metric-value-row">
+                <div class="dashboard-metric-value">{{ number_format($metrics['activeInquiries'] ?? 0) }}</div>
+                <span class="dashboard-metric-pill dashboard-metric-pill-up">↑12%</span>
             </div>
-            <div class="dealer-metric-label">Pending Follow-ups</div>
-            <div class="dealer-metric-value">{{ $metrics['pendingFollowups'] ?? 8 }}</div>
         </div>
-        <div class="dealer-metric-card">
-            <div class="dealer-metric-header">
-                <div class="dealer-metric-icon dealer-metric-icon-demos">
-                    <i class="bi bi-calendar-check"></i>
-                </div>
-                <span class="dealer-metric-trend dealer-metric-trend-up">+5 <i class="bi bi-arrow-up"></i></span>
+        <div class="dashboard-metric-card">
+            <div class="dashboard-metric-icon dashboard-metric-icon-inquiries">
+                <i class="bi bi-clock"></i>
             </div>
-            <div class="dealer-metric-label">My Closed Case</div>
-            <div class="dealer-metric-value">{{ $metrics['closedCaseCount'] ?? 0 }}</div>
-        </div>
-        <div class="dealer-metric-card">
-            <div class="dealer-metric-header">
-                <div class="dealer-metric-icon dealer-metric-icon-conversion">
-                    <i class="bi bi-graph-up"></i>
-                </div>
-                <span class="dealer-metric-trend dealer-metric-trend-down">-2% <i class="bi bi-arrow-down"></i></span>
+            <div class="dashboard-metric-label">Pending Follow-ups</div>
+            <div class="dashboard-metric-value-row">
+                <div class="dashboard-metric-value">{{ number_format($metrics['pendingFollowups'] ?? 0) }}</div>
+                <span class="dashboard-metric-pill dashboard-metric-pill-critical">CRITICAL</span>
             </div>
-            <div class="dealer-metric-label">My Conversion Rate</div>
-            <div class="dealer-metric-value">{{ $metrics['conversionRate'] ?? 0 }}%</div>
         </div>
-    </div>
+        <div class="dashboard-metric-card">
+            <div class="dashboard-metric-icon dashboard-metric-icon-closed">
+                <i class="bi bi-calendar-check"></i>
+            </div>
+            <div class="dashboard-metric-label">Total Closed</div>
+            <div class="dashboard-metric-value-row">
+                <div class="dashboard-metric-value">{{ number_format($metrics['closedCaseCount'] ?? 0) }}</div>
+                <span class="dashboard-metric-pill dashboard-metric-pill-up">↑5</span>
+            </div>
+        </div>
+        <div class="dashboard-metric-card">
+            <div class="dashboard-metric-icon dashboard-metric-icon-conversion">
+                <i class="bi bi-graph-up"></i>
+            </div>
+            <div class="dashboard-metric-label">Conversion Rate</div>
+            <div class="dashboard-metric-value-row">
+                <div class="dashboard-metric-value">{{ $metrics['conversionRate'] ?? 0 }}%</div>
+                <span class="dashboard-metric-pill dashboard-metric-pill-down">-2%</span>
+            </div>
+        </div>
+    </section>
 
-    {{-- Main Row: My Inquiries + Upcoming Demos --}}
+    {{-- Main Row: Active Inquiries + Upcoming Demos --}}
     <div class="dealer-dashboard-main">
         <div class="dealer-dashboard-main-left">
             <div class="dealer-panel dealer-inquiries-panel">
@@ -62,7 +55,7 @@
                         <div class="dealer-panel-icon dealer-panel-icon-demos">
                             <i class="bi bi-folder2"></i>
                         </div>
-                        <h2 class="dealer-panel-title">My Inquiries</h2>
+                        <h2 class="dealer-panel-title">Active Inquiries</h2>
                     </div>
                     <a href="{{ route('dealer.inquiries') }}" class="dealer-link-btn">View All Inquiries</a>
                 </div>
@@ -132,39 +125,23 @@
             </div>
         </div>
         <div class="dealer-dashboard-main-right">
-            <div class="dealer-panel dealer-closed-case-panel">
+            <div class="dealer-panel dealer-closed-case-panel dashboard-chart-panel">
                 <div class="dealer-panel-header dealer-panel-header--no-action">
                     <div class="dealer-panel-title-row">
                         <div class="dealer-panel-icon dealer-panel-icon-demos">
                             <i class="bi bi-bar-chart-fill"></i>
                         </div>
-                        <h2 class="dealer-panel-title">My Closed Case</h2>
+                        <h2 class="dealer-panel-title">Total Closed</h2>
                     </div>
-                    <div class="dealer-chart-period-selector">
-                        <button type="button" class="dealer-chart-period-btn dealer-chart-period-btn--active" data-period="week">Week</button>
-                        <button type="button" class="dealer-chart-period-btn" data-period="month">Month</button>
-                        <button type="button" class="dealer-chart-period-btn" data-period="year">Year</button>
+                    <div class="dashboard-chart-tabs" id="dealerClosedCaseRangeTabs">
+                        <button type="button" class="dashboard-chart-tab active" data-range="week">Week</button>
+                        <button type="button" class="dashboard-chart-tab" data-range="month">Month</button>
+                        <button type="button" class="dashboard-chart-tab" data-range="year">Year</button>
                     </div>
                 </div>
-                <div class="dealer-closed-case-chart dealer-chart-period-week" id="closedCaseChart"
-                     data-week="{{ json_encode($closedCaseChartData['week'] ?? []) }}"
-                     data-month="{{ json_encode($closedCaseChartData['month'] ?? []) }}"
-                     data-year="{{ json_encode($closedCaseChartData['year'] ?? []) }}">
-                    @php
-                        $chartData = $closedCaseChartData['week'] ?? [];
-                        $maxCount = max(1, collect($chartData)->pluck('count')->max() ?? 1);
-                    @endphp
-                    <div class="dealer-bar-chart-bars" id="closedCaseChartBars">
-                        @foreach($chartData as $item)
-                            <div class="dealer-bar-chart-bar-wrap">
-                                <div class="dealer-bar-chart-bar" style="height: {{ ($item->count / $maxCount) * 100 }}%"></div>
-                            </div>
-                        @endforeach
-                    </div>
-                    <div class="dealer-bar-chart-xaxis" id="closedCaseChartXaxis">
-                        @foreach($chartData as $item)
-                            <span>{{ $item->label }}</span>
-                        @endforeach
+                <div class="dashboard-panel-body">
+                    <div class="dashboard-chart-container">
+                        <canvas id="dealerClosedCaseChart" height="200"></canvas>
                     </div>
                 </div>
             </div>
@@ -200,58 +177,71 @@
         </div>
     </div>
 
-    {{-- Footer --}}
-    <footer class="dashboard-bottombar">
-        <div class="dashboard-bottombar-left">
-            <button type="button" class="dashboard-sync-btn" title="Refresh"><i class="bi bi-arrow-clockwise dashboard-sync-icon"></i></button>
-            <div class="dashboard-sync-text">
-                <span class="dashboard-sync-title">SYSTEM SYNC STATUS</span>
-                <span class="dashboard-sync-time">Last synced: {{ date('M j, Y, g:i A') }}</span>
-            </div>
-        </div>
-        <div class="dashboard-bottombar-right">
-            © Copyright {{ date('Y') }} SQL Lead Management System. All rights reserved.
-        </div>
-    </footer>
 </div>
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script>
 (function() {
-    var chartEl = document.getElementById('closedCaseChart');
-    var barsEl = document.getElementById('closedCaseChartBars');
-    var xaxisEl = document.getElementById('closedCaseChartXaxis');
-    var periodBtns = document.querySelectorAll('.dealer-chart-period-btn');
-    if (!chartEl || !barsEl || !xaxisEl || !periodBtns.length) return;
+    @php
+        $closedLabels = $closedCaseChartData['chartLabels'] ?? ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+        $closedData = $closedCaseChartData['chartData'] ?? [0,0,0,0,0,0,0];
+        $closedMonthLabels = $closedCaseChartData['chartMonthLabels'] ?? range(1, 30);
+        $closedMonthData = $closedCaseChartData['chartMonthData'] ?? array_fill(0, 30, 0);
+        $closedYearLabels = $closedCaseChartData['chartYearLabels'] ?? ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        $closedYearData = $closedCaseChartData['chartYearData'] ?? array_fill(0, 12, 0);
+    @endphp
+    var ctx = document.getElementById('dealerClosedCaseChart')?.getContext('2d');
+    var weekLabels = @json($closedLabels);
+    var weekData = @json($closedData);
+    var monthLabels = @json($closedMonthLabels);
+    var monthData = @json($closedMonthData);
+    var yearLabels = @json($closedYearLabels);
+    var yearData = @json($closedYearData);
 
-    var data = {
-        week: JSON.parse(chartEl.getAttribute('data-week') || '[]'),
-        month: JSON.parse(chartEl.getAttribute('data-month') || '[]'),
-        year: JSON.parse(chartEl.getAttribute('data-year') || '[]')
+    var ranges = {
+        week: { labels: weekLabels, data: weekData },
+        month: { labels: monthLabels, data: monthData },
+        year: { labels: yearLabels, data: yearData }
     };
 
-    function renderChart(period) {
-        var items = data[period] || [];
-        var maxCount = Math.max(1, Math.max.apply(null, items.map(function(i) { return i.count || 0; })));
-
-        chartEl.classList.remove('dealer-chart-period-week', 'dealer-chart-period-month', 'dealer-chart-period-year');
-        chartEl.classList.add('dealer-chart-period-' + period);
-
-        barsEl.innerHTML = items.map(function(item) {
-            var pct = ((item.count || 0) / maxCount) * 100;
-            return '<div class="dealer-bar-chart-bar-wrap"><div class="dealer-bar-chart-bar" style="height:' + pct + '%"></div></div>';
-        }).join('');
-
-        xaxisEl.innerHTML = items.map(function(item) {
-            return '<span>' + (item.label || '') + '</span>';
-        }).join('');
+    var closedChart = null;
+    if (ctx && weekData) {
+        closedChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: weekLabels,
+                datasets: [{
+                    label: 'Closed',
+                    data: weekData,
+                    backgroundColor: 'rgba(127, 90, 240, 0.6)',
+                    borderColor: 'rgba(127, 90, 240, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
     }
 
-    periodBtns.forEach(function(btn) {
+    document.querySelectorAll('#dealerClosedCaseRangeTabs .dashboard-chart-tab[data-range]').forEach(function(btn) {
         btn.addEventListener('click', function() {
-            var period = this.getAttribute('data-period');
-            periodBtns.forEach(function(b) { b.classList.remove('dealer-chart-period-btn--active'); });
-            this.classList.add('dealer-chart-period-btn--active');
-            renderChart(period);
+            var range = btn.getAttribute('data-range');
+            if (!range || !ranges[range]) return;
+
+            document.querySelectorAll('#dealerClosedCaseRangeTabs .dashboard-chart-tab[data-range]').forEach(function(b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+
+            if (closedChart) {
+                closedChart.data.labels = ranges[range].labels;
+                closedChart.data.datasets[0].data = ranges[range].data;
+                closedChart.update();
+            }
         });
     });
 })();

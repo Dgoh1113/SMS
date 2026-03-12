@@ -23,10 +23,14 @@ class DealerController extends Controller
             'demosTrend' => '+5',
             'pendingFollowups' => 0,
         ];
-        $emptyWeek = array_map(fn($d) => (object) ['label' => $d, 'count' => 0], ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
-        $emptyMonth = array_map(fn($l) => (object) ['label' => $l, 'count' => 0], ['W1', 'W2', 'W3', 'W4', 'W5']);
-        $emptyYear = array_map(fn($m) => (object) ['label' => $m, 'count' => 0], ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']);
-        $closedCaseChartData = ['week' => $emptyWeek, 'month' => $emptyMonth, 'year' => $emptyYear];
+        $closedCaseChartData = [
+            'chartLabels' => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            'chartData' => array_fill(0, 7, 0),
+            'chartMonthLabels' => range(1, 30),
+            'chartMonthData' => array_fill(0, 30, 0),
+            'chartYearLabels' => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            'chartYearData' => array_fill(0, 12, 0),
+        ];
         $highPriorityFollowups = [];
         $leadsTotal = 0;
         $inquiriesPage = 1;
@@ -74,9 +78,9 @@ class DealerController extends Controller
             $totalAssignedCount = count($leads);
 
             $closedCountRow = DB::selectOne(
-                'SELECT COUNT(*) AS "CNT" FROM "LEAD"
-                WHERE "ASSIGNED_TO" = ? AND TRIM(COALESCE("CURRENTSTATUS", \'\')) = ?',
-                [$dealerId, 'Closed']
+                'SELECT COUNT(*) AS "CNT" FROM "LEAD_ACT"
+                WHERE "USERID" = ? AND UPPER(TRIM(COALESCE("STATUS", \'\'))) IN (\'COMPLETED\', \'REWARDED\')',
+                [$dealerId]
             );
             $closedCount = (int) ($closedCountRow->CNT ?? 0);
             $conversion = $totalAssignedCount > 0 ? round(($closedCount / $totalAssignedCount) * 100, 1) : 0;
@@ -99,60 +103,72 @@ class DealerController extends Controller
             $yearStart = date('Y') . '-01-01';
             $yearEnd = date('Y') . '-12-31 23:59:59';
 
-            $closedRowsWeek = DB::select(
-                'SELECT l."LASTMODIFIED" FROM "LEAD" l
-                WHERE l."ASSIGNED_TO" = ?
-                AND TRIM(COALESCE(l."CURRENTSTATUS", \'\')) = ?
-                AND l."LASTMODIFIED" >= CAST(? AS TIMESTAMP) AND l."LASTMODIFIED" <= CAST(? AS TIMESTAMP)',
-                [$dealerId, 'Closed', $weekStart, $weekEnd]
-            );
-            $closedRowsMonth = DB::select(
-                'SELECT l."LASTMODIFIED" FROM "LEAD" l
-                WHERE l."ASSIGNED_TO" = ?
-                AND TRIM(COALESCE(l."CURRENTSTATUS", \'\')) = ?
-                AND l."LASTMODIFIED" >= CAST(? AS TIMESTAMP) AND l."LASTMODIFIED" <= CAST(? AS TIMESTAMP)',
-                [$dealerId, 'Closed', $monthStart, $monthEnd]
-            );
-            $closedRowsYear = DB::select(
-                'SELECT l."LASTMODIFIED" FROM "LEAD" l
-                WHERE l."ASSIGNED_TO" = ?
-                AND TRIM(COALESCE(l."CURRENTSTATUS", \'\')) = ?
-                AND l."LASTMODIFIED" >= CAST(? AS TIMESTAMP) AND l."LASTMODIFIED" <= CAST(? AS TIMESTAMP)',
-                [$dealerId, 'Closed', $yearStart, $yearEnd]
-            );
+            $chartLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            $chartData = array_fill(0, 7, 0);
+            $chartMonthLabels = [];
+            $chartMonthData = [];
+            $chartYearLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            $chartYearData = array_fill(0, 12, 0);
 
-            $days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-            $closedByDay = array_fill_keys($days, 0);
-            foreach ($closedRowsWeek as $r) {
-                $ts = $r->LASTMODIFIED ? strtotime($r->LASTMODIFIED) : $now;
-                $dayName = $days[date('N', $ts) - 1];
-                $closedByDay[$dayName]++;
+            try {
+                $startOfWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
+                for ($i = 0; $i < 7; $i++) {
+                    $day = $startOfWeek->copy()->addDays($i)->format('Y-m-d');
+                    $r = DB::selectOne(
+                        'SELECT COUNT(*) AS c FROM "LEAD_ACT"
+                        WHERE "USERID" = ? AND UPPER(TRIM(COALESCE("STATUS", \'\'))) IN (\'COMPLETED\', \'REWARDED\')
+                        AND CAST("CREATIONDATE" AS DATE) = CAST(? AS DATE)',
+                        [$dealerId, $day]
+                    );
+                    $chartData[$i] = (int) ($r->c ?? $r->C ?? 0);
+                }
+            } catch (\Throwable $e) {
+                // keep zeros
             }
-            $closedCaseChartWeek = array_map(fn($d) => (object) ['label' => $d, 'count' => $closedByDay[$d]], $days);
 
-            $weekLabels = ['W1', 'W2', 'W3', 'W4', 'W5'];
-            $closedByWeek = array_fill_keys($weekLabels, 0);
-            foreach ($closedRowsMonth as $r) {
-                $ts = $r->LASTMODIFIED ? strtotime($r->LASTMODIFIED) : $now;
-                $dayOfMonth = (int) date('j', $ts);
-                $weekIdx = min(4, (int) (($dayOfMonth - 1) / 7));
-                $closedByWeek[$weekLabels[$weekIdx]]++;
+            try {
+                $start = Carbon::now()->startOfMonth();
+                $daysInMonth = $start->daysInMonth;
+                for ($i = 1; $i <= $daysInMonth; $i++) {
+                    $chartMonthLabels[] = (string) $i;
+                    $day = $start->copy()->day($i)->format('Y-m-d');
+                    $r = DB::selectOne(
+                        'SELECT COUNT(*) AS c FROM "LEAD_ACT"
+                        WHERE "USERID" = ? AND UPPER(TRIM(COALESCE("STATUS", \'\'))) IN (\'COMPLETED\', \'REWARDED\')
+                        AND CAST("CREATIONDATE" AS DATE) = CAST(? AS DATE)',
+                        [$dealerId, $day]
+                    );
+                    $chartMonthData[] = (int) ($r->c ?? $r->C ?? 0);
+                }
+            } catch (\Throwable $e) {
+                $chartMonthLabels = range(1, 30);
+                $chartMonthData = array_fill(0, count($chartMonthLabels), 0);
             }
-            $closedCaseChartMonth = array_map(fn($l) => (object) ['label' => $l, 'count' => $closedByWeek[$l]], $weekLabels);
 
-            $monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            $closedByMonth = array_fill_keys($monthLabels, 0);
-            foreach ($closedRowsYear as $r) {
-                $ts = $r->LASTMODIFIED ? strtotime($r->LASTMODIFIED) : $now;
-                $monthName = $monthLabels[(int) date('n', $ts) - 1];
-                $closedByMonth[$monthName]++;
+            try {
+                $yearStart = Carbon::now()->startOfYear();
+                for ($m = 0; $m < 12; $m++) {
+                    $monthStart = $yearStart->copy()->addMonths($m);
+                    $monthEnd = $monthStart->copy()->endOfMonth();
+                    $r = DB::selectOne(
+                        'SELECT COUNT(*) AS c FROM "LEAD_ACT"
+                        WHERE "USERID" = ? AND UPPER(TRIM(COALESCE("STATUS", \'\'))) IN (\'COMPLETED\', \'REWARDED\')
+                        AND "CREATIONDATE" >= ? AND "CREATIONDATE" <= ?',
+                        [$dealerId, $monthStart->format('Y-m-d 00:00:00'), $monthEnd->format('Y-m-d 23:59:59')]
+                    );
+                    $chartYearData[$m] = (int) ($r->c ?? $r->C ?? 0);
+                }
+            } catch (\Throwable $e) {
+                $chartYearData = array_fill(0, 12, 0);
             }
-            $closedCaseChartYear = array_map(fn($m) => (object) ['label' => $m, 'count' => $closedByMonth[$m]], $monthLabels);
 
             $closedCaseChartData = [
-                'week' => $closedCaseChartWeek,
-                'month' => $closedCaseChartMonth,
-                'year' => $closedCaseChartYear,
+                'chartLabels' => $chartLabels,
+                'chartData' => $chartData,
+                'chartMonthLabels' => $chartMonthLabels,
+                'chartMonthData' => $chartMonthData,
+                'chartYearLabels' => $chartYearLabels,
+                'chartYearData' => $chartYearData,
             ];
 
             $metrics = [
