@@ -26,6 +26,7 @@
   display: inline-block;
   border-radius: 10px;
   transition: background-color 1s ease;
+  cursor: pointer;
 }
 .reports-title-hover:hover,
 .reports-title-hover.is-open {
@@ -353,7 +354,7 @@
 .reports-page .items-start { align-items: flex-start; }
 .reports-page .items-center { align-items: center; }
 .reports-page .mt-4 { margin-top: 1rem; }
-.reports-page .w-5 { width: 1.25rem; }
+.reports-page .w-5 { width: 1.0rem; }
 .reports-page .h-5 { height: 1.25rem; }
 .reports-page .inquiry-trend-badge { padding: 0.125rem 0.625rem; }
 .reports-page .font-medium { font-weight: 500; }

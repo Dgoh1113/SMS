@@ -1,7 +1,7 @@
 @extends('layouts.app')
-@section('title', 'Monthly Performance Analytics')
+@section('title', 'Report - Monthly Performance Analytics')
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/reports.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/report_monthly_performance_analytics.css') }}">
 @endpush
 @section('content')
 <div class="reports-page">
@@ -11,21 +11,18 @@
         <div id="reportsTitleHover" class="reports-title-hover">
             <div class="reports-title-dropdown">
                 <button id="dropdownHoverButton" data-dropdown-toggle="dropdownHover" data-dropdown-trigger="hover" class="reports-dropdown-btn" type="button">
-                    Monthly Performance Analytics
+                    Report - Monthly Performance Analytics
+                    Report - Monthly Performance Analytics
                     <svg class="reports-dropdown-caret" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7"/></svg>
                 </button>
 
                 <!-- Dropdown menu -->
                 <div id="dropdownHover" class="reports-dropdown-menu" role="menu" aria-labelledby="dropdownHoverButton">
                     <ul class="reports-dropdown-list">
-                        <li><a href="{{ route('admin.dashboard') }}" class="reports-dropdown-item">Dashboard</a></li>
-                        <li><a href="{{ route('admin.inquiries') }}" class="reports-dropdown-item">Leads</a></li>
-                        <li><a href="{{ route('admin.reports') }}" class="reports-dropdown-item">Reports</a></li>
-                        <li><a href="{{ route('logout') }}" class="reports-dropdown-item" onclick="event.preventDefault(); document.getElementById('reportsLogoutForm').submit();">Sign out</a></li>
+                        <li><a href="{{ route('admin.reports') }}" class="reports-dropdown-item">Report - Monthly Performance Analytics</a></li>
+                        <li><a href="{{ route('admin.reports.v2') }}" class="reports-dropdown-item">Report - Dealer Sales Overtime</a></li>
+                        <li><a href="{{ route('admin.reports.revenue') }}" class="reports-dropdown-item">Report - Dealer Revenue Production</a></li>
                     </ul>
-                    <form id="reportsLogoutForm" action="{{ route('logout') }}" method="POST" style="display:none;">
-                        @csrf
-                    </form>
                 </div>
             </div>
             <p class="dashboard-subtitle">Overview of system activities and performance</p>
@@ -42,11 +39,13 @@
     $totalPayouts = array_sum($payoutStatus);
     $totalStatus = max($totalActivities, 1);
     $statusColors = [
+        'Created' => '#94a3b8',
         'Pending' => '#a855f7',
         'FollowUp' => '#22c55e',
         'Demo' => '#0ea5e9',
         'Confirmed' => '#6366f1',
         'Completed' => '#14b8a6',
+        'Failed' => '#dc2626',
         'reward' => '#f97316',
     ];
 @endphp
@@ -113,13 +112,10 @@
                 <p id="inquiryRangeText" class="text-body">Inquiries this month</p>
                 <h5 id="inquiryTotal" class="text-2xl font-semibold text-heading">{{ $displayTotal }}</h5>
             </div>
-            <div class="flex items-center inquiry-trend-badge font-medium text-center {{ ($inquiryTrendPercentChange ?? 0) >= 0 ? 'text-fg-success' : 'text-fg-danger' }}">
-                @if (($inquiryTrendPercentChange ?? 0) >= 0)
-                    <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v13m0-13 4 4m-4-4-4 4"/></svg>
-                @else
-                    <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19V5m0 0-4 4m4-4 4 4"/></svg>
-                @endif
-                {{ ($inquiryTrendPercentChange ?? 0) >= 0 ? '' : '-' }}{{ abs($inquiryTrendPercentChange ?? 0) }}%
+            <div id="inquiryPercentBadge" class="flex items-center inquiry-trend-badge font-medium text-center inquiry-trend-same">
+                <svg class="inquiry-percent-arrow inquiry-percent-arrow-up" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v13m0-13 4 4m-4-4-4 4"/></svg>
+                <svg class="inquiry-percent-arrow inquiry-percent-arrow-down" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19V5m0 0-4 4m4-4 4 4"/></svg>
+                <span id="inquiryPercent" class="inquiry-percent">0%</span>
             </div>
         </div>
         <div class="dashboard-panel-body mt-4">
@@ -216,14 +212,27 @@
                     dropdownBtn.classList.remove('is-open');
                     if (titleHover) titleHover.classList.remove('is-open');
                 };
-                dropdownBtn.addEventListener('click', function (e) {
-                    e.preventDefault();
+                const toggleDropdown = (e) => {
+                    if (e) e.preventDefault();
                     const open = dropdown.classList.toggle('is-open');
                     dropdownBtn.classList.toggle('is-open', open);
                     if (titleHover) titleHover.classList.toggle('is-open', open);
+                };
+                dropdownBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    toggleDropdown(e);
                 });
+                if (titleHover) {
+                    titleHover.addEventListener('click', function (e) {
+                        // Don't re-toggle when clicking inside the menu
+                        if (dropdown.contains(e.target)) return;
+                        // Button (including arrow) already handled above
+                        if (dropdownBtn.contains(e.target)) return;
+                        toggleDropdown(e);
+                    });
+                }
                 document.addEventListener('click', function (e) {
-                    if (!dropdown.contains(e.target) && !dropdownBtn.contains(e.target)) {
+                    if (!dropdown.contains(e.target) && !dropdownBtn.contains(e.target) && !(titleHover && titleHover.contains(e.target))) {
                         closeDropdown();
                     }
                 });
@@ -247,6 +256,7 @@
                 categories.push((d < 10 ? '0' : '') + d + ' ' + monthName);
                 seriesData.push(trendByDay[d] || 0);
             }
+            const monthTotal = seriesData.reduce((acc, v) => acc + (v || 0), 0);
 
             const getBrandColor = function() {
                 const computedStyle = getComputedStyle(document.documentElement);
@@ -310,12 +320,33 @@
             function updateInquiryHeader(days) {
                 const elTotal = document.getElementById('inquiryTotal');
                 const elRange = document.getElementById('inquiryRangeText');
+                const elPercent = document.getElementById('inquiryPercent');
+                const elBadge = document.getElementById('inquiryPercentBadge');
                 if (!elTotal || !elRange) return;
 
                 const filtered = getFilteredData(days);
                 const total = filtered.data.reduce((acc, v) => acc + (v || 0), 0);
                 elTotal.textContent = formatTotal(total);
                 elRange.textContent = days > 0 ? `Inquiries last ${days} days` : 'Inquiries this month';
+
+                if (elPercent && elBadge) {
+                    const daysInRange = days > 0 ? Math.min(days, currentDay) : currentDay;
+                    const expectedPct = daysInMonth > 0 ? (daysInRange / daysInMonth) * 100 : 100;
+                    const actualPct = monthTotal > 0 ? (total / monthTotal) * 100 : 0;
+                    const diffPct = actualPct - expectedPct;
+
+                    elBadge.classList.remove('inquiry-trend-up', 'inquiry-trend-down', 'inquiry-trend-same');
+                    if (diffPct > 0) {
+                        elBadge.classList.add('inquiry-trend-up');
+                        elPercent.textContent = '+' + Math.round(diffPct) + '%';
+                    } else if (diffPct < 0) {
+                        elBadge.classList.add('inquiry-trend-down');
+                        elPercent.textContent = Math.round(diffPct) + '%';
+                    } else {
+                        elBadge.classList.add('inquiry-trend-same');
+                        elPercent.textContent = '0%';
+                    }
+                }
             }
             if (document.getElementById("area-chart") && typeof ApexCharts !== 'undefined') {
                 const initial = getFilteredData(7);

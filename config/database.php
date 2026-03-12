@@ -53,6 +53,9 @@ return [
             'charset'  => env('DB_CHARSET', 'UTF8'),
             'role'     => env('DB_ROLE'),
             'legacy_limit_and_offset' => env('DB_LEGACY_LIMIT_AND_OFFSET', false),
+            'charset'  => env('DB_CHARSET', 'UTF8'),
+            'role'     => env('DB_ROLE'),
+            'legacy_limit_and_offset' => env('DB_LEGACY_LIMIT_AND_OFFSET', false),
         ],
 
         'mysql' => [

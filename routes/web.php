@@ -31,8 +31,12 @@ Route::middleware(['auth.sms', 'admin'])->prefix('admin')->name('admin.')->group
     Route::post('/inquiries/mark-failed', [AdminController::class, 'markInquiryFailed'])->name('inquiries.mark-failed');
     Route::get('/inquiries/{leadId}/status', [AdminController::class, 'leadStatus'])->name('inquiries.lead-status');
     Route::get('/dealers', [AdminController::class, 'dealers'])->name('dealers');
+    Route::post('/dealers', [AdminController::class, 'dealersStore'])->name('dealers.store');
+    Route::post('/dealers/{userId}', [AdminController::class, 'dealersUpdate'])->name('dealers.update');
     Route::get('/rewards', [AdminController::class, 'rewards'])->name('rewards');
     Route::get('/reports', [AdminController::class, 'reports'])->name('reports');
+    Route::get('/reports-v2', [AdminController::class, 'reportsV2'])->name('reports.v2');
+    Route::get('/reports-revenue', [AdminController::class, 'reportsRevenue'])->name('reports.revenue');
     Route::get('/history', [AdminController::class, 'history'])->name('history');
     Route::get('/fulldatabase', [AdminController::class, 'fulldatabase'])->name('fulldatabase');
 });

@@ -1270,6 +1270,123 @@ textarea.inquiry-form-input { resize: vertical; min-height: 80px; }
   margin-top: 12px;
 }
 
+/* Simple form helpers for admin/dealers */
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+}
+.form-field { display: flex; flex-direction: column; gap: 4px; }
+.form-field-inline { flex-direction: row; align-items: center; gap: 10px; }
+.form-label { font-size: 11px; font-weight: 600; color: #4b5563; }
+.form-control {
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+.form-control-sm {
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  padding: 4px 8px;
+  font-size: 12px;
+  width: 100%;
+}
+.form-error { font-size: 11px; color: #dc2626; }
+.form-actions { grid-column: 1 / -1; margin-top: 6px; }
+
+.btn-xs {
+  padding: 4px 8px;
+  font-size: 11px;
+  border-radius: 999px;
+}
+.btn-danger {
+  background: #ef4444;
+  color: #fff;
+  border: none;
+}
+.btn-danger:hover { background: #dc2626; }
+.btn-danger-light {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.dealer-actions {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+/* Toggle switch */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 34px;
+  height: 18px;
+}
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #e5e7eb;
+  transition: .2s;
+  border-radius: 999px;
+}
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: .2s;
+  border-radius: 999px;
+}
+.switch input:checked + .slider {
+  background-color: #4f46e5;
+}
+.switch input:checked + .slider:before {
+  transform: translateX(16px);
+}
+
+/* Simple modal for Add User */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+}
+.modal-panel {
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.25);
+  max-width: 560px;
+  width: 100%;
+  padding: 16px 18px 18px;
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.modal-body { margin-top: 12px; }
+.modal-close {
+  border: none;
+  background: transparent;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  color: #6b7280;
+}
+.modal-close:hover { color: #111827; }
+
 .dashboard-panel-placeholder {
   min-height: 120px;
   display: flex;
