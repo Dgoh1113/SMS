@@ -4,6 +4,7 @@
   font-size: 125%;
   min-width: 0;
   overflow-x: hidden;
+  text-align: left;
 }
 
 /* Single layout wrapper: uniform gap for 8 cards, Status Report, Product Conversion */
@@ -18,7 +19,8 @@
 }
 
 .reports-page .dashboard-header .dashboard-title { font-size: 1.5rem; }
-.reports-page .dashboard-header .dashboard-subtitle { font-size: 1rem; }
+.reports-page .dashboard-header .dashboard-subtitle { font-size: 1rem; text-align: left; }
+.reports-page .dashboard-header > div:first-child { text-align: left; }
 
 /* Title dropdown (light purple) */
 .reports-title-dropdown { position: relative; display: inline-flex; }
@@ -27,6 +29,7 @@
   border-radius: 10px;
   transition: background-color 1s ease;
   cursor: pointer;
+  text-align: left;
 }
 .reports-title-hover:hover,
 .reports-title-hover.is-open {
@@ -35,7 +38,7 @@
 .reports-dropdown-btn {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 8px;
   color: #1e293b;
   background: transparent;
@@ -54,7 +57,8 @@
   background-color: #ede9fe; /* light purple */
 }
 .reports-dropdown-btn:focus-visible { outline: none; }
-.reports-dropdown-caret { width: 16px; height: 16px; }
+.reports-dropdown-btn { text-align: left; }
+.reports-dropdown-caret { width: 16px; height: 16px; flex-shrink: 0; }
 
 .reports-dropdown-menu {
   position: absolute;

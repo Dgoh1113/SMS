@@ -24,7 +24,6 @@
                         </ul>
                     </div>
                 </div>
-                <div class="rrp-title-main">Dealer Revenue Production</div>
                 <div class="rrp-title-sub">Managing growth and partner efficiency for {{ $selectedQuarter ?? 'Q3' }}, {{ $selectedYear ?? now()->format('Y') }}.</div>
             </div>
         </div>

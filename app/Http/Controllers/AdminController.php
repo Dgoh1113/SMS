@@ -967,18 +967,25 @@ class AdminController extends Controller
         ]);
     }
 
-    public function reportsV2(): View
+    public function reportsV2(\Illuminate\Http\Request $request): View
     {
-        // Dynamic: derive metrics from LEAD / LEAD_ACT / USERS
+        $days = (int) $request->query('days', 90);
+        if (!in_array($days, [30, 60, 90], true)) {
+            $days = 90;
+        }
+
+        // Dynamic: derive metrics from LEAD / LEAD_ACT / USERS (filtered by last N days)
         $dealerTotals = DB::select(
-            'SELECT l."ASSIGNED_TO" AS dealer_id, u."EMAIL" AS email,
+            'SELECT l."ASSIGNED_TO" AS dealer_id,
+                    COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL") AS name,
                     COUNT(*) AS total_c,
                     SUM(CASE WHEN l."CURRENTSTATUS" = ? THEN 1 ELSE 0 END) AS closed_c
              FROM "LEAD" l
              JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
              WHERE l."ASSIGNED_TO" IS NOT NULL
-             GROUP BY l."ASSIGNED_TO", u."EMAIL"',
-            ['Closed']
+               AND l."CREATEDAT" >= DATEADD(DAY, ?, CURRENT_DATE)
+             GROUP BY l."ASSIGNED_TO", COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL")',
+            ['Closed', -$days]
         );
 
         $totalsByDealer = [];
@@ -989,7 +996,7 @@ class AdminController extends Controller
             $closed = (int) ($r->CLOSED_C ?? $r->closed_c ?? 0);
             $totalsByDealer[$id] = [
                 'dealer_id' => $id,
-                'email' => (string) ($r->EMAIL ?? $r->email ?? $id),
+                'name' => (string) ($r->NAME ?? $r->name ?? $id),
                 'total' => $total,
                 'closed' => $closed,
                 'closed_rate' => $total > 0 ? ($closed / $total * 100) : 0,
@@ -998,18 +1005,19 @@ class AdminController extends Controller
             ];
         }
 
-        // "Rejection" proxy: Closed leads without any Completed activity record
+        // "Rejection" proxy: Closed leads without any Completed activity record (same period)
         $rejectedRows = DB::select(
             'SELECT l."ASSIGNED_TO" AS dealer_id, COUNT(*) AS c
              FROM "LEAD" l
              WHERE l."ASSIGNED_TO" IS NOT NULL
+               AND l."CREATEDAT" >= DATEADD(DAY, ?, CURRENT_DATE)
                AND l."CURRENTSTATUS" = ?
                AND NOT EXISTS (
                     SELECT 1 FROM "LEAD_ACT" a
                     WHERE a."LEADID" = l."LEADID" AND a."STATUS" = ?
                )
              GROUP BY l."ASSIGNED_TO"',
-            ['Closed', 'Completed']
+            [-$days, 'Closed', 'Completed']
         );
         foreach ($rejectedRows as $r) {
             $id = (string) ($r->DEALER_ID ?? $r->dealer_id ?? '');
@@ -1050,7 +1058,7 @@ class AdminController extends Controller
             $pct = $last > 0 ? (int) round(($curr - $last) / $last * 100) : ($curr > 0 ? 100 : 0);
             $variance[] = [
                 'dealer_id' => $id,
-                'name' => $totalsByDealer[$id]['email'],
+                'name' => $totalsByDealer[$id]['name'],
                 'delta' => $pct,
             ];
         }
@@ -1078,12 +1086,71 @@ class AdminController extends Controller
             ];
         }
 
+        // Top 10 dealers by Failed count (CurrentStatus = Failed), last N days
+        $failedRows = DB::select(
+            'SELECT l."ASSIGNED_TO" AS dealer_id,
+                    COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL") AS name,
+                    COUNT(*) AS failed_c
+             FROM "LEAD" l
+             JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
+             WHERE l."ASSIGNED_TO" IS NOT NULL
+               AND l."CREATEDAT" >= DATEADD(DAY, ?, CURRENT_DATE)
+               AND TRIM(COALESCE(l."CURRENTSTATUS", \'\')) = ?
+             GROUP BY l."ASSIGNED_TO", COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL")
+             ORDER BY failed_c DESC',
+            [-$days, 'Failed']
+        );
+        $top10Failed = [];
+        foreach (array_slice($failedRows, 0, 10) as $r) {
+            $id = (string) ($r->DEALER_ID ?? $r->dealer_id ?? '');
+            $failed = (int) ($r->FAILED_C ?? $r->failed_c ?? 0);
+            $total = isset($totalsByDealer[$id]) ? (int) $totalsByDealer[$id]['total'] : $failed;
+            $top10Failed[] = [
+                'dealer_id' => $id,
+                'name' => (string) ($r->NAME ?? $r->name ?? $id),
+                'count' => $failed,
+                'total_assigned' => $total,
+                'percentage' => $total > 0 ? round($failed / $total * 100, 1) : 0,
+            ];
+        }
+
+        // Top 10 dealers by Closed count (CurrentStatus = Closed), last N days
+        $closedRows = DB::select(
+            'SELECT l."ASSIGNED_TO" AS dealer_id,
+                    COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL") AS name,
+                    COUNT(*) AS closed_c
+             FROM "LEAD" l
+             JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
+             WHERE l."ASSIGNED_TO" IS NOT NULL
+               AND l."CREATEDAT" >= DATEADD(DAY, ?, CURRENT_DATE)
+               AND TRIM(COALESCE(l."CURRENTSTATUS", \'\')) = ?
+             GROUP BY l."ASSIGNED_TO", COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL")
+             ORDER BY closed_c DESC',
+            [-$days, 'Closed']
+        );
+        $top10Closed = [];
+        foreach (array_slice($closedRows, 0, 10) as $r) {
+            $id = (string) ($r->DEALER_ID ?? $r->dealer_id ?? '');
+            $closed = (int) ($r->CLOSED_C ?? $r->closed_c ?? 0);
+            $total = isset($totalsByDealer[$id]) ? (int) $totalsByDealer[$id]['total'] : $closed;
+            $top10Closed[] = [
+                'dealer_id' => $id,
+                'name' => (string) ($r->NAME ?? $r->name ?? $id),
+                'count' => $closed,
+                'total_assigned' => $total,
+                'percentage' => $total > 0 ? round($closed / $total * 100, 1) : 0,
+            ];
+        }
+
         return view('admin.reports_v2', [
             'currentPage' => 'reports',
             'topVariance' => $variance,
             'highestClosed' => $highestClosed,
             'highestRejected' => $highestRejected,
             'atRisk' => $atRisk,
+            'top10Failed' => $top10Failed,
+            'top10Closed' => $top10Closed,
+            'chartDays' => $days,
         ]);
     }
 

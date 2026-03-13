@@ -11,6 +11,13 @@
   gap: 16px;
   margin-bottom: 18px;
 }
+.rv2-header-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 0 0 auto;
+  max-width: 100%;
+}
 
 .rv2-title-row { display: flex; align-items: center; gap: 10px; }
 .rv2-title {
@@ -117,7 +124,7 @@
   gap: 12px;
   border-bottom: 1px solid #eef2ff;
 }
-.rv2-section-title { font-size: 13px; font-weight: 800; color: #0f172a; }
+.rv2-section-title { font-size: 13px; font-weight: 800; color: #0f172a; text-align: left; }
 .rv2-section-subtitle { font-size: 11px; color: #94a3b8; margin-top: 2px; }
 
 .rv2-legend { display: flex; align-items: center; gap: 16px; font-size: 11px; color: #64748b; }
@@ -169,7 +176,7 @@
   padding: 10px 12px;
   min-height: 240px;
 }
-.rv2-chart-wrap canvas { width: 100% !important; height: 220px !important; }
+.rv2-chart-wrap canvas { width: 100% !important; max-height: 100%; }
 
 .rv2-badge-danger {
   background: rgba(239, 68, 68, 0.12);
@@ -288,4 +295,3 @@
   .rv2-variance-grid { grid-template-columns: 1fr; }
   .rv2-cards { grid-template-columns: 1fr; }
 }
-

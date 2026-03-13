@@ -14,7 +14,6 @@
                         <svg class="reports-dropdown-caret" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7"/></svg>
                     </button>
 
-                    <!-- Dropdown menu -->
                     <div id="dropdownHover" class="reports-dropdown-menu" role="menu" aria-labelledby="dropdownHoverButton">
                         <ul class="reports-dropdown-list">
                             <li><a href="{{ route('admin.reports') }}" class="reports-dropdown-item">Report - Monthly Performance Analytics</a></li>
@@ -56,63 +55,56 @@
     </header>
 
     <section class="rv2-panel">
+        <div class="rv2-panel-head">
+            <div>
+                <div class="rv2-section-title">Top 10 Dealers — Failed vs Closed</div>
+                <div class="rv2-section-subtitle">Primary vs comparison period. Left: % failed (red). Right: % closed (green).</div>
+            </div>
+        </div>
         <div class="rv2-panel-top">
-            <div class="rv2-filters">
+            <form method="GET" class="rv2-filters rv2-filters-form">
                 <div class="rv2-filter">
                     <div class="rv2-filter-label">PRIMARY PERIOD</div>
-                    <button class="rv2-filter-btn" type="button">Last 90 Days
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-                            <path d="m19 9-7 7-7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </button>
+                    <select name="days" class="rv2-filter-select">
+                        @php $primaryDays = (int) request('days', $chartDays ?? 90); @endphp
+                        <option value="30" {{ $primaryDays === 30 ? 'selected' : '' }}>Last 30 days</option>
+                        <option value="60" {{ $primaryDays === 60 ? 'selected' : '' }}>Last 60 days</option>
+                        <option value="90" {{ $primaryDays === 90 ? 'selected' : '' }}>Last 90 days</option>
+                        <option value="custom" {{ request('primary_from') || request('primary_to') ? 'selected' : '' }}>Custom range…</option>
+                    </select>
+                    <div class="rv2-date-range">
+                        <input type="date" name="primary_from" value="{{ request('primary_from') }}">
+                        <span>to</span>
+                        <input type="date" name="primary_to" value="{{ request('primary_to') }}">
+                    </div>
                 </div>
                 <div class="rv2-filter">
                     <div class="rv2-filter-label">COMPARE AGAINST</div>
-                    <button class="rv2-filter-btn" type="button">Same Period Last Year
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-                            <path d="m19 9-7 7-7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </button>
+                    @php $compareDays = (int) request('compare_days', 30); @endphp
+                    <select name="compare_days" class="rv2-filter-select">
+                        <option value="30" {{ $compareDays === 30 ? 'selected' : '' }}>Last 30 days</option>
+                        <option value="60" {{ $compareDays === 60 ? 'selected' : '' }}>Last 60 days</option>
+                        <option value="90" {{ $compareDays === 90 ? 'selected' : '' }}>Last 90 days</option>
+                        <option value="custom" {{ request('compare_from') || request('compare_to') ? 'selected' : '' }}>Custom range…</option>
+                    </select>
+                    <div class="rv2-date-range">
+                        <input type="date" name="compare_from" value="{{ request('compare_from') }}">
+                        <span>to</span>
+                        <input type="date" name="compare_to" value="{{ request('compare_to') }}">
+                    </div>
                 </div>
-                <div class="rv2-filter">
-                    <div class="rv2-filter-label">ANALYSIS RANGE</div>
-                    <button class="rv2-filter-btn" type="button">Nov 29 - Feb 27 vs Same Dates 2024
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-                            <path d="m19 9-7 7-7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </button>
+                <div class="rv2-filter rv2-filter-apply">
+                    <button type="submit" class="rv2-filter-btn">Apply</button>
                 </div>
-            </div>
+            </form>
         </div>
-
         <div class="rv2-panel-body">
-            <div class="rv2-variance-header">
-                <div>
-                    <div class="rv2-section-title">Top 10 Performance Variance</div>
-                    <div class="rv2-section-subtitle">Sales volume change vs Same Period Last Year (Seasonality Adjusted)</div>
-                </div>
-                <div class="rv2-legend">
-                    <span class="rv2-legend-item"><span class="rv2-dot rv2-dot-red"></span> Drop-off</span>
-                    <span class="rv2-legend-item"><span class="rv2-dot rv2-dot-green"></span> Growth</span>
-                </div>
+            <div class="rv2-bar-chart-title-row">
+                <div class="rv2-bar-chart-title rv2-bar-chart-title-failed">Top 10 Failed (left)</div>
+                <div class="rv2-bar-chart-title rv2-bar-chart-title-closed">Top 10 Closed (right)</div>
             </div>
-
-            <div class="rv2-variance-grid">
-                <div class="rv2-side-card">
-                    <div class="rv2-side-title">Highest Closed Rate</div>
-                    <div class="rv2-side-name">{{ $highestClosed['email'] ?? '—' }}</div>
-                    <div class="rv2-side-metric">{{ isset($highestClosed['closed_rate']) ? number_format($highestClosed['closed_rate'], 1) : '0.0' }}%</div>
-                </div>
-
-                <div class="rv2-chart-wrap">
-                    <canvas id="varianceChart"></canvas>
-                </div>
-
-                <div class="rv2-side-card">
-                    <div class="rv2-side-title">Highest Rejection Rate</div>
-                    <div class="rv2-side-name">{{ $highestRejected['email'] ?? '—' }}</div>
-                    <div class="rv2-side-metric">{{ isset($highestRejected['rejection_rate']) ? number_format($highestRejected['rejection_rate'], 1) : '0.0' }}%</div>
-                </div>
+            <div class="rv2-chart-wrap rv2-bar-chart-wrap rv2-bar-chart-wrap-full">
+                <canvas id="top10FailedClosedChart"></canvas>
             </div>
         </div>
     </section>
@@ -203,6 +195,7 @@
 
 @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             // Title dropdown (shared across reports)
@@ -241,123 +234,58 @@
                     if (e.key === 'Escape') closeDropdown();
                 });
             }
-            // Dynamic rows (server data)
-            const rows = @json($topVariance);
 
-            // Minimal Utils (so your snippet works as-is)
-            const Utils = {
-                rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; },
-                numbers(cfg) {
-                    const out = [];
-                    for (let i = 0; i < (cfg.count || 0); i++) out.push(this.rand(cfg.min ?? 0, cfg.max ?? 100));
-                    return out;
-                },
-                months({count}) {
-                    const out = [];
-                    for (let i = 0; i < count; i++) out.push(`Item ${i + 1}`);
-                    return out;
-                },
-                namedColor(i) {
-                    const colors = ['#ef4444', '#3b82f6', '#22c55e', '#a855f7', '#f59e0b', '#14b8a6', '#6366f1'];
-                    return colors[i % colors.length];
-                },
-                transparentize(hex, opacity) {
-                    const h = hex.replace('#', '');
-                    const r = parseInt(h.substring(0, 2), 16);
-                    const g = parseInt(h.substring(2, 4), 16);
-                    const b = parseInt(h.substring(4, 6), 16);
-                    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
-                },
-                CHART_COLORS: {
-                    red: '#ef4444',
-                    blue: '#3b82f6',
+            // Toggle custom date ranges when "Custom range..." is selected
+            document.querySelectorAll('.rv2-filter-select').forEach(function (sel) {
+                function syncRange() {
+                    var wrapper = sel.closest('.rv2-filter')?.querySelector('.rv2-date-range');
+                    if (!wrapper) return;
+                    wrapper.style.display = sel.value === 'custom' ? 'flex' : 'none';
                 }
-            };
+                sel.addEventListener('change', syncRange);
+                syncRange();
+            });
 
-            const actions = [
-                {
-                    name: 'Randomize',
-                    handler(chart) {
-                        chart.data.datasets.forEach(dataset => {
-                            dataset.data = Utils.numbers({count: chart.data.labels.length, min: -100, max: 100});
-                        });
-                        chart.update();
-                    }
-                },
-                {
-                    name: 'Add Dataset',
-                    handler(chart) {
-                        const data = chart.data;
-                        const dsColor = Utils.namedColor(chart.data.datasets.length);
-                        const newDataset = {
-                            label: 'Dataset ' + (data.datasets.length + 1),
-                            backgroundColor: Utils.transparentize(dsColor, 0.5),
-                            borderColor: dsColor,
-                            borderWidth: 1,
-                            data: Utils.numbers({count: data.labels.length, min: -100, max: 100}),
-                        };
-                        chart.data.datasets.push(newDataset);
-                        chart.update();
-                    }
-                },
-                {
-                    name: 'Add Data',
-                    handler(chart) {
-                        const data = chart.data;
-                        if (data.datasets.length > 0) {
-                            data.labels = Utils.months({count: data.labels.length + 1});
+            // ——— Top 10 Failed / Top 10 Closed bar charts (side by side) ———
+            const top10Failed = @json($top10Failed ?? []);
+            const top10Closed = @json($top10Closed ?? []);
+            // Bar colors: Failed red, Closed green (dark border, light inner fill)
+            const BAR_RED = 'rgba(220, 38, 38, 0.6)';
+            const BAR_RED_BORDER = 'rgba(220, 38, 38, 1)';
+            const BAR_CLOSED = 'rgba(34, 197, 94, 0.4)';
+            const BAR_CLOSED_BORDER = 'rgba(22, 163, 74, 1)';
 
-                            for (let index = 0; index < data.datasets.length; ++index) {
-                                data.datasets[index].data.push(Utils.rand(-100, 100));
-                            }
+            if (window.Chart && typeof window.ChartDataLabels !== 'undefined') {
+                window.Chart.register(window.ChartDataLabels);
+            }
 
-                            chart.update();
-                        }
-                    }
-                },
-                {
-                    name: 'Remove Dataset',
-                    handler(chart) {
-                        chart.data.datasets.pop();
-                        chart.update();
-                    }
-                },
-                {
-                    name: 'Remove Data',
-                    handler(chart) {
-                        chart.data.labels.splice(-1, 1); // remove the label first
+            const rowCount = Math.max(top10Failed.length, top10Closed.length, 0);
+            const failedName = Array.from({ length: rowCount }, (_, i) => (top10Failed[i]?.name ?? top10Failed[i]?.dealer_id ?? '—'));
+            const closedName = Array.from({ length: rowCount }, (_, i) => (top10Closed[i]?.name ?? top10Closed[i]?.dealer_id ?? '—'));
+            const failedPct = Array.from({ length: rowCount }, (_, i) => top10Failed[i]?.percentage ?? 0);
+            const closedPct = Array.from({ length: rowCount }, (_, i) => top10Closed[i]?.percentage ?? 0);
 
-                        chart.data.datasets.forEach(dataset => {
-                            dataset.data.pop();
-                        });
-
-                        chart.update();
-                    }
-                }
-            ];
-
-            // Use your variables, but feed dynamic data
-            const DATA_COUNT = rows.length || 7;
-            const NUMBER_CFG = {count: DATA_COUNT, min: -100, max: 100};
-
-            const labels = rows.length ? rows.map(r => r.name) : Utils.months({count: 7});
-            const dataset1 = rows.length ? rows.map(r => (r.delta < 0 ? r.delta : 0)) : Utils.numbers(NUMBER_CFG);
-            const dataset2 = rows.length ? rows.map(r => (r.delta > 0 ? r.delta : 0)) : Utils.numbers(NUMBER_CFG);
-
+            const labels = Array.from({ length: rowCount }, (_, i) => `#${i + 1}`);
             const data = {
                 labels: labels,
                 datasets: [
                     {
-                        label: 'Dataset 1',
-                        data: dataset1,
-                        borderColor: Utils.CHART_COLORS.red,
-                        backgroundColor: Utils.transparentize(Utils.CHART_COLORS.red, 0.5),
+                        label: 'Failed',
+                        data: Array.from({ length: rowCount }, (_, i) => -Math.min(100, Math.abs(failedPct[i] ?? 0))),
+                        backgroundColor: Array.from({ length: rowCount }, () => BAR_RED),
+                        borderColor: Array.from({ length: rowCount }, () => BAR_RED_BORDER),
+                        borderWidth: 1,
+                        barThickness: 21,
+                        maxBarThickness: 24
                     },
                     {
-                        label: 'Dataset 2',
-                        data: dataset2,
-                        borderColor: Utils.CHART_COLORS.blue,
-                        backgroundColor: Utils.transparentize(Utils.CHART_COLORS.blue, 0.5),
+                        label: 'Closed',
+                        data: Array.from({ length: rowCount }, (_, i) => Math.min(100, Math.abs(closedPct[i] ?? 0))),
+                        backgroundColor: Array.from({ length: rowCount }, () => BAR_CLOSED),
+                        borderColor: Array.from({ length: rowCount }, () => BAR_CLOSED_BORDER),
+                        borderWidth: 1,
+                        barThickness: 21,
+                        maxBarThickness: 24
                     }
                 ]
             };
@@ -367,41 +295,94 @@
                 data: data,
                 options: {
                     indexAxis: 'y',
-                    // Elements options apply to all of the options unless overridden in a dataset
-                    // In this case, we are setting the border of each horizontal bar to be 2px wide
-                    elements: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: { padding: { left: 0, right: 0, top: 4, bottom: 4 } },
+                    datasets: {
                         bar: {
-                            borderWidth: 2,
+                            categoryPercentage: 1.0,
+                            barPercentage: 1.0
                         }
                     },
-                    responsive: true,
                     plugins: {
-                        legend: {
-                            position: 'right',
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    const pct = Math.abs(Number(ctx.raw) || 0);
+                                    const idx = ctx.dataIndex;
+                                    const name = ctx.dataset.label === 'Failed' ? failedName[idx] : closedName[idx];
+                                    return `${ctx.dataset.label}: ${pct}% — ${name}`;
+                                }
+                            }
                         },
-                        title: {
-                            display: true,
-                            text: 'Chart.js Horizontal Bar Chart'
+                        datalabels: {
+                            clip: false,
+                            labels: {
+                                // Only show percentages inside the bars
+                                pct: {
+                                    color: '#ffffff',
+                                    font: { size: 10, weight: '700' },
+                                    formatter: function(_value, ctx) {
+                                        const i = ctx.dataIndex;
+                                        return ctx.dataset.label === 'Failed' ? `${failedPct[i]}%` : `${closedPct[i]}%`;
+                                    },
+                                    anchor: 'center',
+                                    align: 'center'
+                                }
+                            }
                         }
                     },
                     scales: {
                         x: {
-                            grid: { display: false },
-                            ticks: { callback: (v) => `${v}%` }
+                            min: -100,
+                            max: 100,
+                            grid: { color: 'rgba(148, 163, 184, 0.25)' },
+                            ticks: {
+                                stepSize: 20,
+                                callback: function(v) { return Math.abs(v); }
+                            },
+                            title: { display: true, text: 'Percentage of cases', font: { size: 10 } }
                         },
-                        y: { grid: { display: false } }
+                        // Left Sidebar Alignment (Failed Names)
+                        y: {
+                            position: 'left',
+                            grid: { display: false, drawBorder: false },
+                            ticks: {
+                                autoSkip: false,
+                                color: '#334155',
+                                font: { size: 10, weight: '700' },
+                                callback: function(value, index) {
+                                    const name = failedName[index] ?? '—';
+                                    return name.length > 15 ? name.substring(0, 15) + '…' : name;
+                                }
+                            }
+                        },
+                        // Right Sidebar Alignment (Closed Names)
+                        yRight: {
+                            position: 'right',
+                            grid: { display: false, drawBorder: false },
+                            ticks: {
+                                autoSkip: false,
+                                color: '#334155',
+                                font: { size: 10, weight: '700' },
+                                callback: function(value, index) {
+                                    const name = closedName[index] ?? '—';
+                                    return name.length > 15 ? name.substring(0, 15) + '…' : name;
+                                }
+                            }
+                        }
                     }
-                },
+                }
             };
 
-            const el = document.getElementById('varianceChart');
-            if (el && window.Chart) {
-                const chart = new Chart(el.getContext('2d'), config);
-                // actions[] is available if you want to wire buttons later
-                void(actions);
-                void(chart);
+            const divergeEl = document.getElementById('top10FailedClosedChart');
+            if (divergeEl && window.Chart && rowCount > 0) {
+                const base = 50;      // Height for the X axis
+                const perRow = 26;    // Bar is 21px thick, so 26px leaves only a tiny 5px gap between rows
+                divergeEl.height = base + (perRow * rowCount);
+                new Chart(divergeEl.getContext('2d'), config);
             }
         });
     </script>
 @endpush
-
