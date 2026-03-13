@@ -52,7 +52,12 @@
                 {{-- Row 1: Company name + Email --}}
                 <label class="inquiry-form-label">
                     <span class="inquiry-form-label-title">Company name <span class="required">*</span></span>
-                    <input type="text" name="COMPANYNAME" value="{{ old('COMPANYNAME') }}" required maxlength="255" class="inquiry-form-input">
+                    <div class="inquiry-company-wrapper">
+                        <input type="text" name="COMPANYNAME" id="companyInput" value="{{ old('COMPANYNAME') }}" required maxlength="255" class="inquiry-form-input">
+                        <button type="button" class="inquiry-company-copy-btn" id="copyCompanyBtn" title="Copy from existing lead" hidden>
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </button>
+                    </div>
                 </label>
                 <label class="inquiry-form-label">
                     <span class="inquiry-form-label-title">Email <span class="required">*</span></span>
@@ -216,6 +221,91 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
         } catch (e) {}
+    }
+
+    // Company duplicate lookup + copy existing data
+    var companyInput = document.getElementById('companyInput');
+    var copyBtn = document.getElementById('copyCompanyBtn');
+    var lastCompanyData = null;
+    var lookupTimer = null;
+    var lookupUrl = "{{ route('admin.inquiries.company-lookup') }}";
+
+    function scheduleCompanyLookup() {
+        if (!companyInput || !copyBtn || !lookupUrl) return;
+        var val = (companyInput.value || '').trim();
+        if (lookupTimer) clearTimeout(lookupTimer);
+        if (val.length < 3) {
+            lastCompanyData = null;
+            copyBtn.hidden = true;
+            return;
+        }
+        lookupTimer = setTimeout(function () {
+            fetch(lookupUrl + '?q=' + encodeURIComponent(val), {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            }).then(function (res) {
+                return res.ok ? res.json() : Promise.reject();
+            }).then(function (data) {
+                if (data && data.found) {
+                    lastCompanyData = data;
+                    copyBtn.hidden = false;
+                } else {
+                    lastCompanyData = null;
+                    copyBtn.hidden = true;
+                }
+            }).catch(function () {
+                lastCompanyData = null;
+                copyBtn.hidden = true;
+            });
+        }, 500);
+    }
+
+    if (companyInput && copyBtn) {
+        companyInput.addEventListener('input', scheduleCompanyLookup);
+        copyBtn.addEventListener('click', function () {
+            if (!lastCompanyData) return;
+            var map = {
+                EMAIL: 'email',
+                CONTACTNAME: 'contactname',
+                CONTACTNO: 'contactno',
+                CITY: 'city',
+                POSTCODE: 'postcode',
+                BUSINESSNATURE: 'businessnature',
+                ADDRESS1: 'address1',
+                ADDRESS2: 'address2',
+                EXISTINGSOFTWARE: 'existingsoftware',
+                USERCOUNT: 'usercount'
+            };
+            Object.keys(map).forEach(function (field) {
+                var key = map[field];
+                var value = lastCompanyData[key];
+                var input = document.querySelector('[name="' + field + '"]');
+                if (!input) return;
+                if (field === 'USERCOUNT') {
+                    var num = parseInt(value, 10);
+                    if (!isNaN(num) && num > 0) {
+                        // Always prefer the existing lead's user count over the default (1)
+                        input.value = String(num);
+                    }
+                    return;
+                }
+                if (typeof value === 'string' && value !== '' && (!input.value || input.value.trim() === '')) {
+                    input.value = value;
+                }
+            });
+
+            // Demo mode toggle (Zoom / On-site) from existing lead
+            if (lastCompanyData.demomode) {
+                var dm = String(lastCompanyData.demomode);
+                var demoInput = document.getElementById('demoModeInput');
+                var toggle = document.querySelector('.inquiry-toggle[data-toggle="demomode"]');
+                if (demoInput && toggle && (dm === 'Zoom' || dm === 'On-site')) {
+                    demoInput.value = dm;
+                    toggle.querySelectorAll('.inquiry-toggle-option').forEach(function (b) {
+                        b.classList.toggle('is-active', b.getAttribute('data-value') === dm);
+                    });
+                }
+            }
+        });
     }
 });
 </script>

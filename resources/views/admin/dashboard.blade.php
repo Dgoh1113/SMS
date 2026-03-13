@@ -7,7 +7,8 @@
         <div class="dashboard-metric-label">Total Leads</div>
         <div class="dashboard-metric-value-row">
             <div class="dashboard-metric-value">{{ number_format($totalLeads) }}</div>
-            <span class="dashboard-metric-pill dashboard-metric-pill-up">↑12%</span>
+            @php $p = (float)($pctLeads ?? 0); $up = $p >= 0; @endphp
+            <span class="dashboard-metric-pill {{ $up ? 'dashboard-metric-pill-up' : 'dashboard-metric-pill-down' }}">{{ $up ? '↑' : '↓' }}{{ abs($p) }}% vs last week</span>
         </div>
     </div>
     <div class="dashboard-metric-card">
@@ -15,7 +16,8 @@
         <div class="dashboard-metric-label">Total Closed</div>
         <div class="dashboard-metric-value-row">
             <div class="dashboard-metric-value">{{ number_format($totalClosed) }}</div>
-            <span class="dashboard-metric-pill dashboard-metric-pill-up">↑8%</span>
+            @php $p = (float)($pctClosed ?? 0); $up = $p >= 0; @endphp
+            <span class="dashboard-metric-pill {{ $up ? 'dashboard-metric-pill-up' : 'dashboard-metric-pill-down' }}">{{ $up ? '↑' : '↓' }}{{ abs($p) }}% vs last week</span>
         </div>
     </div>
     <div class="dashboard-metric-card">
@@ -23,7 +25,8 @@
         <div class="dashboard-metric-label">Active Inquiries</div>
         <div class="dashboard-metric-value-row">
             <div class="dashboard-metric-value">{{ number_format($activeInquiries) }}</div>
-            <span class="dashboard-metric-pill dashboard-metric-pill-up">↑5%</span>
+            @php $p = (float)($pctActive ?? 0); $up = $p >= 0; @endphp
+            <span class="dashboard-metric-pill {{ $up ? 'dashboard-metric-pill-up' : 'dashboard-metric-pill-down' }}">{{ $up ? '↑' : '↓' }}{{ abs($p) }}% vs last week</span>
         </div>
     </div>
     <div class="dashboard-metric-card">
@@ -31,7 +34,8 @@
         <div class="dashboard-metric-label">Conversion Rate</div>
         <div class="dashboard-metric-value-row">
             <div class="dashboard-metric-value">{{ $conversionRate }}%</div>
-            <span class="dashboard-metric-pill dashboard-metric-pill-up">↑2.4%</span>
+            @php $p = (float)($conversionRateChange ?? 0); $up = $p >= 0; @endphp
+            <span class="dashboard-metric-pill {{ $up ? 'dashboard-metric-pill-up' : 'dashboard-metric-pill-down' }}">{{ $up ? '↑' : '↓' }}{{ abs($p) }}% pts vs last week</span>
         </div>
     </div>
 </section>
@@ -48,6 +52,22 @@
         <div class="dashboard-panel dashboard-chart-panel">
             <div class="dashboard-panel-header">
                 <div class="dashboard-panel-title">
+                    Recent Referral Activity
+                    <i class="bi bi-info-circle dashboard-info-icon"
+                       title="Count of leads turning into Follow-Up status by dealer (weekly/monthly/yearly)."></i>
+                </div>
+                @php $p = (float)($pctReferral ?? 0); $up = $p >= 0; @endphp
+                <span class="dashboard-metric-pill {{ $up ? 'dashboard-metric-pill-up' : 'dashboard-metric-pill-down' }}">{{ $up ? '+' : '' }}{{ $p }}% vs last week</span>
+            </div>
+            <div class="dashboard-panel-body">
+                <div class="dashboard-chart-container">
+                    <canvas id="referralChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="dashboard-panel dashboard-chart-panel">
+            <div class="dashboard-panel-header">
+                <div class="dashboard-panel-title">
                     Closed Case
                     <i class="bi bi-info-circle dashboard-info-icon"
                        title="Count of leads turned into closed cases grouped by creation date (week/month/year)."></i>
@@ -56,21 +76,6 @@
             <div class="dashboard-panel-body">
                 <div class="dashboard-chart-container">
                     <canvas id="closedCaseChart" height="200"></canvas>
-                </div>
-            </div>
-        </div>
-        <div class="dashboard-panel dashboard-chart-panel">
-            <div class="dashboard-panel-header">
-                <div class="dashboard-panel-title">
-                    Recent Referral Activity
-                    <i class="bi bi-info-circle dashboard-info-icon"
-                       title="Count of leads turning into Follow-Up status by dealer (weekly/monthly/yearly)."></i>
-                </div>
-                <span class="dashboard-metric-pill dashboard-metric-pill-up">+14% vs last week</span>
-            </div>
-            <div class="dashboard-panel-body">
-                <div class="dashboard-chart-container">
-                    <canvas id="referralChart" height="200"></canvas>
                 </div>
             </div>
         </div>
@@ -87,9 +92,11 @@
             <table class="dashboard-table">
                 <thead>
                     <tr>
+                        <th>Rank</th>
                         <th>Dealer Name</th>
                         <th>Location</th>
                         <th>Leads</th>
+                        <th>Ongoing</th>
                         <th>Closed</th>
                         <th>Failed</th>
                         <th>Conversion</th>
@@ -98,10 +105,24 @@
                 </thead>
                 <tbody>
                     @forelse($topDealers as $d)
+                        @php
+                            $i = $loop->iteration;
+                            if ($i > 5) { break; }
+                            $rankEmoji = match($i) {
+                                1 => '🥇',
+                                2 => '🥈',
+                                3 => '🥉',
+                                4 => '🏅',
+                                5 => '🏅',
+                                default => '',
+                            };
+                        @endphp
                         <tr>
+                            <td><span class="dashboard-rank-emoji">{{ $rankEmoji }}</span></td>
                             <td>{{ $d['dealer_name'] }}</td>
                             <td>{{ $d['location'] }}</td>
                             <td>{{ number_format($d['total_leads']) }}</td>
+                            <td>{{ number_format($d['ongoing_count'] ?? 0) }}</td>
                             <td>{{ number_format($d['closed_count']) }}</td>
                             <td>{{ number_format($d['failed_count'] ?? 0) }}</td>
                             @php
@@ -118,7 +139,7 @@
                             <td>{{ $d['avg_closing_time'] }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="7">No dealer data yet.</td></tr>
+                        <tr><td colspan="9">No dealer data yet.</td></tr>
                     @endforelse
                 </tbody>
             </table>

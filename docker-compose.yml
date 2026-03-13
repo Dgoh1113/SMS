@@ -10,6 +10,7 @@ services:
     ports:
       - "3050:3050"
     environment:
+      TZ: Asia/Kuala_Lumpur
       FIREBIRD_ROOT_PASSWORD: masterkey
       # Create/use DB file inside /var/lib/firebird/data
       FIREBIRD_DATABASE: SMS.FDB
@@ -30,15 +31,34 @@ services:
     container_name: sms-app
     restart: unless-stopped
     working_dir: /var/www/html
+    environment:
+      TZ: Asia/Kuala_Lumpur
     volumes:
       - ./:/var/www/html
     depends_on:
       - firebird
 
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: sms-scheduler
+    restart: unless-stopped
+    working_dir: /var/www/html
+    environment:
+      TZ: Asia/Kuala_Lumpur
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      - firebird
+    command: ["php", "artisan", "schedule:work"]
+
   web:
     image: nginx:alpine
     container_name: sms-web
     restart: unless-stopped
+    environment:
+      TZ: Asia/Kuala_Lumpur
     ports:
       - "8000:80"
     volumes:
@@ -51,6 +71,8 @@ services:
     image: node:22
     container_name: sms-node
     working_dir: /app
+    environment:
+      TZ: Asia/Kuala_Lumpur
     restart: unless-stopped
     volumes:
       - ./:/app

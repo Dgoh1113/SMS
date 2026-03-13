@@ -1,6 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Inquiries Management – Admin')
 @section('content')
+@php $assignUndo = session('assign_undo'); @endphp
 <div class="inquiries-page-wrap">
 <section class="inquiries-mgmt-summary">
     <div class="inquiries-summary-card" id="incomingSummaryCard">
@@ -20,6 +21,24 @@
         <div class="inquiries-summary-note">Leads currently in progress</div>
     </div>
 </section>
+
+@if($assignUndo)
+<div id="assignUndoToast" class="assign-undo-toast assign-undo-toast-hidden"
+     data-lead-id="{{ $assignUndo['lead_id'] ?? '' }}"
+     data-prev-assigned-to="{{ $assignUndo['prev_assigned_to'] ?? '' }}"
+     data-new-assigned-to="{{ $assignUndo['new_assigned_to'] ?? '' }}">
+    <span class="assign-undo-message">
+        Lead #SQL-{{ $assignUndo['lead_id'] ?? '' }} assigned.
+    </span>
+    <button type="button" class="assign-undo-btn">Undo</button>
+</div>
+
+<form id="assignUndoForm" method="POST" action="{{ route('admin.inquiries.assign-undo') }}" style="display:none;">
+    @csrf
+    <input type="hidden" name="LEADID" id="assignUndoLeadId">
+    <input type="hidden" name="PREV_ASSIGNED_TO" id="assignUndoPrevAssigned">
+</form>
+@endif
 
 <section class="inquiries-mgmt-search">
     <div class="inquiries-search-wrap">
@@ -374,6 +393,21 @@
                 @endforelse
             </tbody>
         </table>
+        <div class="inquiries-assigned-pagination" id="assignedPagination" data-assigned-total="{{ $assignedTotal ?? 0 }}" data-assigned-last-page="{{ $assignedLastPage ?? 1 }}" data-assigned-current-page="1" data-assigned-per-page="{{ $assignedPerPage ?? 10 }}" data-assigned-page-url="{{ route('admin.inquiries.assigned-page') }}" @if(($assignedTotal ?? 0) <= 10) style="display:none;" @endif>
+            @php
+    $assignedPagPerPage = $assignedPerPage ?? 10;
+    $assignedPagTotal = $assignedTotal ?? 0;
+    $assignedPagTo = $assignedPagTotal === 0 ? 0 : min($assignedPagPerPage, $assignedPagTotal);
+@endphp
+            <span class="inquiries-assigned-pagination-info" id="assignedPaginationInfo">Showing {{ $assignedPagTotal === 0 ? 0 : 1 }} to {{ $assignedPagTo }} of {{ $assignedPagTotal }} entries (Page 1)</span>
+            <div class="inquiries-assigned-pagination-nav">
+                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="assignedPaginationFirst" aria-label="First page (latest inquiries)" title="First page – latest inquiries">First</button>
+                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="assignedPaginationPrev" aria-label="Previous page">Previous</button>
+                <span class="inquiries-assigned-page-numbers" id="assignedPageNumbers"></span>
+                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="assignedPaginationNext" aria-label="Next page">Next</button>
+                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="assignedPaginationLast" aria-label="Last page (oldest inquiries)" title="Last page – oldest inquiries">Last</button>
+            </div>
+        </div>
     </div>
 </section>
 </div>
@@ -415,8 +449,8 @@
                                 <th><span class="inquiries-filter-wrap"><input type="text" class="inquiries-assign-filter" data-col="company"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                                 <th><span class="inquiries-filter-wrap"><input type="text" class="inquiries-assign-filter" data-col="postcode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                                 <th><span class="inquiries-filter-wrap"><input type="text" class="inquiries-assign-filter" data-col="city"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                                <th><span class="inquiries-filter-wrap"><input type="text" class="inquiries-assign-filter" data-col="active"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                                 <th><span class="inquiries-filter-wrap"><input type="text" class="inquiries-assign-filter" data-col="email"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                                <th><span class="inquiries-filter-wrap"><input type="text" class="inquiries-assign-filter" data-col="active"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                                 <th><span class="inquiries-filter-wrap"><input type="text" class="inquiries-assign-filter" data-col="totallead"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                                 <th><span class="inquiries-filter-wrap"><input type="text" class="inquiries-assign-filter" data-col="totalclosed"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                                 <th><span class="inquiries-filter-wrap"><input type="text" class="inquiries-assign-filter" data-col="conversion"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
@@ -470,7 +504,7 @@
             </div>
             <div class="inquiries-assign-actions">
                 <button type="button" class="inquiries-btn inquiries-btn-secondary" data-assign-close="1">Cancel</button>
-                <button type="submit" class="inquiries-btn inquiries-btn-primary">Assign</button>
+                <button type="submit" class="inquiries-btn inquiries-btn-primary" id="assignSubmitBtn" disabled>Assign</button>
             </div>
         </form>
     </div>
@@ -628,6 +662,36 @@ document.addEventListener('DOMContentLoaded', function() {
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape' && !modal.hidden) close();
         });
+    })();
+
+    // Assign undo toast (Gmail-style)
+    (function initAssignUndoToast() {
+        var toast = document.getElementById('assignUndoToast');
+        if (!toast) return;
+        var form = document.getElementById('assignUndoForm');
+        var leadInput = document.getElementById('assignUndoLeadId');
+        var prevInput = document.getElementById('assignUndoPrevAssigned');
+        if (!form || !leadInput || !prevInput) return;
+
+        var leadId = toast.getAttribute('data-lead-id') || '';
+        var prevAssigned = toast.getAttribute('data-prev-assigned-to') || '';
+        if (!leadId) return;
+        leadInput.value = leadId;
+        prevInput.value = prevAssigned;
+
+        toast.classList.remove('assign-undo-toast-hidden');
+
+        var timer = setTimeout(function () {
+            toast.classList.add('assign-undo-toast-hidden');
+        }, 5000);
+
+        var btn = toast.querySelector('.assign-undo-btn');
+        if (btn) {
+            btn.addEventListener('click', function () {
+                clearTimeout(timer);
+                form.submit();
+            });
+        }
     })();
 
     var STORAGE_KEY = 'inquiryVisibleColumns';
@@ -1058,12 +1122,14 @@ document.addEventListener('DOMContentLoaded', function() {
         var leadIdInput = document.getElementById('assignLeadId');
         var leadLabel = document.getElementById('assignLeadLabel');
         var hiddenTo = document.getElementById('assignToHidden');
+        var assignBtn = document.getElementById('assignSubmitBtn');
 
         function close() { modal.hidden = true; }
         function open(leadId, label) {
             if (leadIdInput) leadIdInput.value = String(leadId || '');
             if (leadLabel) leadLabel.textContent = label || ('#SQL-' + leadId);
             if (hiddenTo) hiddenTo.value = '';
+            if (assignBtn) assignBtn.disabled = true;
             modal.querySelectorAll('.inquiries-assign-filter').forEach(function(inp) { inp.value = ''; });
             modal.querySelectorAll('.inquiries-assign-dealer-row').forEach(function(r) { r.style.display = ''; });
             modal.querySelectorAll('.inquiries-assign-dealer-row').forEach(function(r) { r.classList.remove('selected'); });
@@ -1102,6 +1168,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (row && modal.contains(row)) {
                 var uid = row.getAttribute('data-assign-userid') || '';
                 if (hiddenTo) hiddenTo.value = uid;
+                if (assignBtn) assignBtn.disabled = !uid;
                 modal.querySelectorAll('.inquiries-assign-dealer-row.selected').forEach(function(r) { r.classList.remove('selected'); });
                 row.classList.add('selected');
                 return;
@@ -1151,6 +1218,28 @@ document.addEventListener('DOMContentLoaded', function() {
                     var v2 = assignedSummary.querySelector('.inquiries-summary-value');
                     if (v2) v2.textContent = new Intl.NumberFormat().format(data.totalOngoing);
                 }
+                var paginationEl = document.getElementById('assignedPagination');
+                if (paginationEl && data.assignedTotal !== undefined) {
+                    paginationEl.setAttribute('data-assigned-total', data.assignedTotal);
+                    paginationEl.setAttribute('data-assigned-last-page', data.assignedLastPage || 1);
+                    paginationEl.setAttribute('data-assigned-current-page', '1');
+                    var perPage = parseInt(paginationEl.getAttribute('data-assigned-per-page') || '10', 10);
+                    var total = parseInt(data.assignedTotal || 0, 10);
+                    var lastP = parseInt(data.assignedLastPage || 1, 10);
+                    var to = Math.min(perPage, total);
+                    var infoEl = document.getElementById('assignedPaginationInfo');
+                    if (infoEl) infoEl.textContent = 'Showing 1 to ' + to + ' of ' + total + ' entries (Page 1)';
+                    paginationEl.style.display = (data.assignedTotal || 0) > 10 ? '' : 'none';
+                    var firstBtn = document.getElementById('assignedPaginationFirst');
+                    var prevBtn = document.getElementById('assignedPaginationPrev');
+                    var nextBtn = document.getElementById('assignedPaginationNext');
+                    var lastBtn = document.getElementById('assignedPaginationLast');
+                    if (firstBtn) firstBtn.disabled = true;
+                    if (prevBtn) prevBtn.disabled = true;
+                    if (nextBtn) nextBtn.disabled = lastP <= 1;
+                    if (lastBtn) lastBtn.disabled = lastP <= 1;
+                    if (typeof renderAssignedPageNumbers === 'function') renderAssignedPageNumbers(1, lastP);
+                }
 
                 // Re-apply current column visibility and filters so layout stays the same
                 applyColumns(getVisibleColumns());
@@ -1174,6 +1263,141 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     });
+
+    // Assigned pagination: First / Previous / page numbers / Next / Last; "Showing X to Y of Z entries (Page N)"
+    (function initAssignedPagination() {
+        var paginationEl = document.getElementById('assignedPagination');
+        if (!paginationEl) return;
+        var infoEl = document.getElementById('assignedPaginationInfo');
+        var firstBtn = document.getElementById('assignedPaginationFirst');
+        var prevBtn = document.getElementById('assignedPaginationPrev');
+        var nextBtn = document.getElementById('assignedPaginationNext');
+        var lastBtn = document.getElementById('assignedPaginationLast');
+        var pageNumbersEl = document.getElementById('assignedPageNumbers');
+        var tbody = document.querySelector('#assignedTable tbody');
+
+        function getPerPage() { return parseInt(paginationEl.getAttribute('data-assigned-per-page') || '10', 10); }
+        function getTotal() { return parseInt(paginationEl.getAttribute('data-assigned-total') || '0', 10); }
+        function getLastPage() { return parseInt(paginationEl.getAttribute('data-assigned-last-page') || '1', 10); }
+        function getCurrent() { return parseInt(paginationEl.getAttribute('data-assigned-current-page') || '1', 10); }
+
+        function updateInfoText(current, lastPage, total) {
+            if (!infoEl) return;
+            var perPage = getPerPage();
+            var from = total === 0 ? 0 : (current - 1) * perPage + 1;
+            var to = Math.min(current * perPage, total);
+            if (total === 0) infoEl.textContent = 'Showing 0 to 0 of 0 entries (Page 1)';
+            else infoEl.textContent = 'Showing ' + from + ' to ' + to + ' of ' + total + ' entries (Page ' + current + ')';
+        }
+
+        window.renderAssignedPageNumbers = function(current, lastPage) {
+            if (!pageNumbersEl) return;
+            pageNumbersEl.innerHTML = '';
+            if (lastPage <= 1) return;
+            var frag = document.createDocumentFragment();
+            var show = [];
+            if (lastPage <= 5) {
+                for (var i = 1; i <= lastPage; i++) show.push(i);
+            } else {
+                show.push(1, 2, 3);
+                if (current > 3 && current < lastPage) show.push('...', current);
+                if (lastPage > 3) show.push('...', lastPage);
+            }
+            show.forEach(function(p) {
+                if (p === '...') {
+                    var span = document.createElement('span');
+                    span.className = 'inquiries-pagination-ellipsis';
+                    span.textContent = '...';
+                    frag.appendChild(span);
+                } else {
+                    var a = document.createElement('button');
+                    a.type = 'button';
+                    a.className = 'inquiries-pagination-num' + (p === current ? ' inquiries-pagination-num-active' : '');
+                    a.textContent = String(p);
+                    a.setAttribute('data-page', String(p));
+                    frag.appendChild(a);
+                }
+            });
+            pageNumbersEl.appendChild(frag);
+        };
+
+        function updatePaginationState(current, lastPage, total) {
+            total = total !== undefined ? total : getTotal();
+            paginationEl.setAttribute('data-assigned-current-page', String(current));
+            updateInfoText(current, lastPage, total);
+            if (firstBtn) firstBtn.disabled = current <= 1;
+            if (prevBtn) prevBtn.disabled = current <= 1;
+            if (nextBtn) nextBtn.disabled = current >= lastPage;
+            if (lastBtn) lastBtn.disabled = current >= lastPage;
+            renderAssignedPageNumbers(current, lastPage);
+        }
+
+        var lastPage = getLastPage();
+        var current = getCurrent();
+        var total = getTotal();
+        updateInfoText(current, lastPage, total);
+        if (firstBtn) firstBtn.disabled = current <= 1;
+        if (prevBtn) prevBtn.disabled = current <= 1;
+        if (nextBtn) nextBtn.disabled = current >= lastPage;
+        if (lastBtn) lastBtn.disabled = current >= lastPage;
+        renderAssignedPageNumbers(current, lastPage);
+
+        function loadAssignedPage(page) {
+            var url = paginationEl.getAttribute('data-assigned-page-url');
+            if (!url || !tbody) return;
+            var u = url + (url.indexOf('?') !== -1 ? '&' : '?') + 'page=' + encodeURIComponent(page);
+            fetch(u, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' })
+                .then(function(res) { return res.ok ? res.json() : Promise.reject(); })
+                .then(function(data) {
+                    if (data.html !== undefined) tbody.innerHTML = data.html;
+                    var last = parseInt(data.lastPage || 1, 10);
+                    var cur = parseInt(data.currentPage || 1, 10);
+                    var total = parseInt(data.assignedTotal || 0, 10);
+                    paginationEl.setAttribute('data-assigned-last-page', String(last));
+                    paginationEl.setAttribute('data-assigned-total', String(total));
+                    updatePaginationState(cur, last, total);
+                    applyAssignedColumns(getAssignedVisibleColumns());
+                    applyAssignedGridFilters();
+                    if (typeof setInitialOrder === 'function') setInitialOrder('assignedTable');
+                    if (typeof clearInquiriesSort === 'function') clearInquiriesSort('assignedTable');
+                })
+                .catch(function() {});
+        }
+
+        function goToPage(deltaOrPage) {
+            var cur = getCurrent();
+            var last = getLastPage();
+            var page;
+            if (deltaOrPage === 'next') page = cur + 1;
+            else if (deltaOrPage === 'prev') page = cur - 1;
+            else if (typeof deltaOrPage === 'number' && deltaOrPage >= 1 && deltaOrPage <= last) page = deltaOrPage;
+            else return;
+            if (page >= 1 && page <= last) loadAssignedPage(page);
+        }
+
+        var navEl = document.querySelector('#assignedPagination .inquiries-assigned-pagination-nav');
+        if (navEl) {
+            navEl.addEventListener('click', function(e) {
+                var btn = e.target && e.target.closest ? e.target.closest('button.inquiries-pagination-btn') : null;
+                if (!btn || btn.disabled) return;
+                var id = btn.id || '';
+                if (id === 'assignedPaginationFirst') loadAssignedPage(1);
+                else if (id === 'assignedPaginationPrev') goToPage('prev');
+                else if (id === 'assignedPaginationNext') goToPage('next');
+                else if (id === 'assignedPaginationLast') loadAssignedPage(getLastPage());
+            });
+        }
+
+        if (pageNumbersEl) {
+            pageNumbersEl.addEventListener('click', function(e) {
+                var btn = e.target && e.target.closest && e.target.closest('.inquiries-pagination-num');
+                if (btn && !btn.classList.contains('inquiries-pagination-num-active')) {
+                    var p = parseInt(btn.getAttribute('data-page') || '1', 10);
+                    loadAssignedPage(p);
+                }
+            });
+        }
+    })();
 });
 </script>
 @endsection

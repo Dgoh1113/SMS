@@ -606,6 +606,20 @@ body {
   overflow-y: auto;
 }
 
+.dashboard-rank-emoji {
+  font-size: 18px;
+  display: inline-block;
+}
+
+.sidebar-section {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color:  #6b7280;
+  padding: 14px 16px 6px;
+}
+
 .dashboard-nav-item {
   border: none;
   background: transparent;
@@ -4588,6 +4602,70 @@ button.dealer-pagination-btn:disabled {
 .inquiries-search-btn:hover {
   background: #6d4ad9;
 }
+
+.inquiry-company-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.inquiry-company-wrapper .inquiry-form-input {
+  flex: 1;
+}
+
+.inquiry-company-copy-btn {
+  border: none;
+  background: #eff6ff;
+  color: #2563eb;
+  border-radius: 999px;
+  padding: 6px 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.inquiry-company-copy-btn:hover {
+  background: #dbeafe;
+}
+
+.inquiry-company-copy-btn[hidden] {
+  display: none !important;
+}
+
+.assign-undo-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  background: #111827;
+  color: #f9fafb;
+  padding: 10px 16px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  box-shadow: 0 10px 30px rgba(15,23,42,0.4);
+  z-index: 10000;
+}
+
+.assign-undo-toast-hidden {
+  display: none;
+}
+
+.assign-undo-btn {
+  border: none;
+  background: transparent;
+  color: #93c5fd;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.assign-undo-btn:hover {
+  text-decoration: underline;
+}
 /* Inquiries page: fill height so incoming box stretches to bottom */
 .inquiries-page-wrap {
   display: flex;
@@ -4744,6 +4822,11 @@ button.dealer-pagination-btn:disabled {
   color: #fff;
 }
 
+.inquiries-btn-primary[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Make the Inquiries "Add new" button stand out more */
 .inquiries-header .inquiries-add-btn {
   font-weight: 700;
@@ -4780,6 +4863,61 @@ button.dealer-pagination-btn:disabled {
   overflow: auto; /* avoid nested scroll containers (breaks sticky) */
   max-width: 100%;
   position: relative;
+}
+.inquiries-assigned-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  margin-top: 8px;
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
+  border-radius: 8px;
+  font-size: 13px;
+}
+.inquiries-assigned-pagination-info {
+  color: #5b21b6;
+}
+.inquiries-assigned-pagination-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.inquiries-assigned-pagination .inquiries-btn:disabled,
+.inquiries-assigned-pagination .inquiries-pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.inquiries-assigned-page-numbers {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 4px;
+}
+.inquiries-pagination-num {
+  min-width: 28px;
+  padding: 4px 8px;
+  border: 1px solid #c4b5fd;
+  background: #fff;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  color: #5b21b6;
+}
+.inquiries-pagination-num:hover:not(:disabled) {
+  background: #ede9fe;
+}
+.inquiries-pagination-num-active {
+  background: #ddd6fe;
+  border-color: #7c3aed;
+  font-weight: 600;
+  cursor: default;
+}
+.inquiries-pagination-ellipsis {
+  padding: 0 4px;
+  color: #6b7280;
+  font-size: 13px;
 }
 .inquiries-table#unassignedTable,
 .inquiries-table#assignedTable {
@@ -5174,7 +5312,7 @@ button.dealer-pagination-btn:disabled {
 .inquiries-assign-backdrop { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.35); }
 .inquiries-assign-window {
   position: relative;
-  width: min(920px, calc(100vw - 32px));
+  width: min(1120px, calc(100vw - 32px));
   margin: 12vh auto 0;
   background: #ffffff;
   border-radius: 14px;

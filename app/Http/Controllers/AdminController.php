@@ -33,6 +33,75 @@ class AdminController extends Controller
         // Conversion rate: closed / total leads
         $conversionRate = $totalLeads > 0 ? round(($totalClosed / $totalLeads) * 100, 1) : 0;
 
+        // Week-over-week comparison (this week vs last week by timestamp)
+        $startThisWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
+        $endLastWeek = $startThisWeek->copy()->subSecond();
+        $startLastWeek = $startThisWeek->copy()->subWeek();
+        $leadsThisWeek = 0;
+        $leadsLastWeek = 0;
+        $closedThisWeek = 0;
+        $closedLastWeek = 0;
+        $referralThisWeek = 0;
+        $referralLastWeek = 0;
+        $activeThisWeek = 0;
+        $activeLastWeek = 0;
+        try {
+            $r = DB::selectOne(
+                'SELECT COUNT(*) AS c FROM "LEAD" WHERE "CREATEDAT" >= ? AND "CREATEDAT" <= ?',
+                [$startThisWeek->format('Y-m-d H:i:s'), Carbon::now()->format('Y-m-d 23:59:59')]
+            );
+            $leadsThisWeek = (int) ($r->c ?? $r->C ?? 0);
+            $r = DB::selectOne(
+                'SELECT COUNT(*) AS c FROM "LEAD" WHERE "CREATEDAT" >= ? AND "CREATEDAT" <= ?',
+                [$startLastWeek->format('Y-m-d H:i:s'), $endLastWeek->format('Y-m-d 23:59:59')]
+            );
+            $leadsLastWeek = (int) ($r->c ?? $r->C ?? 0);
+
+            $r = DB::selectOne(
+                'SELECT COUNT(*) AS c FROM "LEAD_ACT" WHERE UPPER(TRIM("STATUS")) = \'COMPLETED\' AND "CREATIONDATE" >= ? AND "CREATIONDATE" <= ?',
+                [$startThisWeek->format('Y-m-d H:i:s'), Carbon::now()->format('Y-m-d 23:59:59')]
+            );
+            $closedThisWeek = (int) ($r->c ?? $r->C ?? 0);
+            $r = DB::selectOne(
+                'SELECT COUNT(*) AS c FROM "LEAD_ACT" WHERE UPPER(TRIM("STATUS")) = \'COMPLETED\' AND "CREATIONDATE" >= ? AND "CREATIONDATE" <= ?',
+                [$startLastWeek->format('Y-m-d H:i:s'), $endLastWeek->format('Y-m-d 23:59:59')]
+            );
+            $closedLastWeek = (int) ($r->c ?? $r->C ?? 0);
+
+            $r = DB::selectOne(
+                'SELECT COUNT(*) AS c FROM "LEAD_ACT" WHERE "STATUS" = \'FollowUp\' AND "CREATIONDATE" >= ? AND "CREATIONDATE" <= ?',
+                [$startThisWeek->format('Y-m-d H:i:s'), Carbon::now()->format('Y-m-d 23:59:59')]
+            );
+            $referralThisWeek = (int) ($r->c ?? $r->C ?? 0);
+            $r = DB::selectOne(
+                'SELECT COUNT(*) AS c FROM "LEAD_ACT" WHERE "STATUS" = \'FollowUp\' AND "CREATIONDATE" >= ? AND "CREATIONDATE" <= ?',
+                [$startLastWeek->format('Y-m-d H:i:s'), $endLastWeek->format('Y-m-d 23:59:59')]
+            );
+            $referralLastWeek = (int) ($r->c ?? $r->C ?? 0);
+
+            $r = DB::selectOne(
+                'SELECT COUNT(*) AS c FROM "LEAD" WHERE "CREATEDAT" >= ? AND "CREATEDAT" <= ? AND UPPER(TRIM("CURRENTSTATUS")) = \'ONGOING\'',
+                [$startThisWeek->format('Y-m-d H:i:s'), Carbon::now()->format('Y-m-d 23:59:59')]
+            );
+            $activeThisWeek = (int) ($r->c ?? $r->C ?? 0);
+            $r = DB::selectOne(
+                'SELECT COUNT(*) AS c FROM "LEAD" WHERE "CREATEDAT" >= ? AND "CREATEDAT" <= ? AND UPPER(TRIM("CURRENTSTATUS")) = \'ONGOING\'',
+                [$startLastWeek->format('Y-m-d H:i:s'), $endLastWeek->format('Y-m-d 23:59:59')]
+            );
+            $activeLastWeek = (int) ($r->c ?? $r->C ?? 0);
+        } catch (\Throwable $e) {
+            $activeThisWeek = 0;
+            $activeLastWeek = 0;
+        }
+
+        $pctLeads = $leadsLastWeek > 0 ? round((($leadsThisWeek - $leadsLastWeek) / $leadsLastWeek) * 100, 1) : ($leadsThisWeek > 0 ? 100 : 0);
+        $pctClosed = $closedLastWeek > 0 ? round((($closedThisWeek - $closedLastWeek) / $closedLastWeek) * 100, 1) : ($closedThisWeek > 0 ? 100 : 0);
+        $pctActive = $activeLastWeek > 0 ? round((($activeThisWeek - $activeLastWeek) / $activeLastWeek) * 100, 1) : ($activeThisWeek > 0 ? 100 : 0);
+        $pctReferral = $referralLastWeek > 0 ? round((($referralThisWeek - $referralLastWeek) / $referralLastWeek) * 100, 1) : ($referralThisWeek > 0 ? 100 : 0);
+        $convThisWeek = $leadsThisWeek > 0 ? ($closedThisWeek / $leadsThisWeek) * 100 : 0;
+        $convLastWeek = $leadsLastWeek > 0 ? ($closedLastWeek / $leadsLastWeek) * 100 : 0;
+        $conversionRateChange = round($convThisWeek - $convLastWeek, 1);
+
         $dealerStats = [];
         try {
             // Top Active Dealers (USERS + LEAD) per requested logic:
@@ -71,20 +140,25 @@ class AdminController extends Controller
                     'SELECT COUNT(*) as c FROM "LEAD" WHERE TRIM(CAST("ASSIGNED_TO" AS VARCHAR(50))) = TRIM(CAST(? AS VARCHAR(50))) AND UPPER(TRIM("CURRENTSTATUS")) = \'FAILED\'',
                     [$userId]
                 );
+                $ongoingRow = DB::selectOne(
+                    'SELECT COUNT(*) as c FROM "LEAD" WHERE TRIM(CAST("ASSIGNED_TO" AS VARCHAR(50))) = TRIM(CAST(? AS VARCHAR(50))) AND UPPER(TRIM("CURRENTSTATUS")) = \'ONGOING\'',
+                    [$userId]
+                );
                 $leads = (int) ($leadsRow->c ?? $leadsRow->C ?? current((array) $leadsRow) ?? 0);
                 $closed = (int) ($closedRow->c ?? $closedRow->C ?? current((array) $closedRow) ?? 0);
                 $failed = (int) ($failedRow->c ?? $failedRow->C ?? current((array) $failedRow) ?? 0);
+                $ongoing = (int) ($ongoingRow->c ?? $ongoingRow->C ?? current((array) $ongoingRow) ?? 0);
                 $conversion = $leads > 0 ? ($closed / $leads) : 0;
                 $company = trim((string) ($d->COMPANY ?? ''));
 
-                // Avg. Closing Time: average(Completed.CREATIONDATE - Pending.CREATIONDATE) per LEADID for this dealer.
+                // Avg. Closing Time: average(Completed status CREATIONDATE − Pending status CREATIONDATE) per LEADID for this dealer.
                 $avgClosingSeconds = null;
                 try {
                     $rows = DB::select(
                         'SELECT
                             a."LEADID" AS lead_id,
-                            MIN(CASE WHEN a."STATUS" = \'Pending\' THEN a."CREATIONDATE" END) AS pending_at,
-                            MIN(CASE WHEN a."STATUS" = \'Completed\' THEN a."CREATIONDATE" END) AS completed_at
+                            MIN(CASE WHEN UPPER(TRIM(a."STATUS")) = \'PENDING\' THEN a."CREATIONDATE" END) AS pending_at,
+                            MIN(CASE WHEN UPPER(TRIM(a."STATUS")) = \'COMPLETED\' THEN a."CREATIONDATE" END) AS completed_at
                          FROM "LEAD_ACT" a
                          JOIN "LEAD" l ON l."LEADID" = a."LEADID"
                          WHERE TRIM(CAST(l."ASSIGNED_TO" AS VARCHAR(50))) = TRIM(CAST(? AS VARCHAR(50)))
@@ -135,18 +209,33 @@ class AdminController extends Controller
                     'dealer_name' => $company,
                     'location' => $location,
                     'total_leads' => $leads,
+                    'ongoing_count' => $ongoing,
                     'closed_count' => $closed,
                     'failed_count' => $failed,
                     'conversion_rate' => round($conversion * 100, 1),
                     'avg_closing_time' => $avgClosingDisplay,
+                    // raw seconds for sorting (smaller = faster closing)
+                    'avg_closing_seconds' => $avgClosingSeconds,
                 ];
             })
-                // Highest conversion rate first; tie-breakers: closed, leads
+                // Highest conversion rate first; tie-breakers: fastest avg closing, then closed, then leads
                 ->sort(function (array $a, array $b) {
                     $c = ($b['conversion_rate'] <=> $a['conversion_rate']);
                     if ($c !== 0) return $c;
-                    $c2 = ($b['closed_count'] <=> $a['closed_count']);
-                    if ($c2 !== 0) return $c2;
+                    // Prefer smaller average closing time (in seconds). Nulls go last.
+                    $ta = $a['avg_closing_seconds'] ?? null;
+                    $tb = $b['avg_closing_seconds'] ?? null;
+                    $hasA = is_int($ta);
+                    $hasB = is_int($tb);
+                    if ($hasA && $hasB) {
+                        $c2 = ($ta <=> $tb);
+                        if ($c2 !== 0) return $c2;
+                    } elseif ($hasA !== $hasB) {
+                        // Dealer with a real value comes before one without.
+                        return $hasA ? -1 : 1;
+                    }
+                    $c3 = ($b['closed_count'] <=> $a['closed_count']);
+                    if ($c3 !== 0) return $c3;
                     return ($b['total_leads'] <=> $a['total_leads']);
                 })
                 ->values()
@@ -236,6 +325,11 @@ class AdminController extends Controller
             'totalClosed' => $totalClosed,
             'activeInquiries' => $activeInquiries,
             'conversionRate' => $conversionRate,
+            'pctLeads' => $pctLeads,
+            'pctClosed' => $pctClosed,
+            'pctActive' => $pctActive,
+            'conversionRateChange' => $conversionRateChange,
+            'pctReferral' => $pctReferral,
             'topDealers' => $dealerStats,
             'chartLabels' => $chartLabels,
             'chartData' => $chartData,
@@ -381,11 +475,22 @@ class AdminController extends Controller
             // fall back to raw ids
         }
         $totalNewInquiries = count($unassigned);
+        // Total Ongoing: assigned leads where LEAD.CURRENTSTATUS = 'Ongoing'
         $totalOngoing = 0;
-        foreach ($assigned as $r) {
-            $status = strtoupper(trim((string)($r->CURRENTSTATUS ?? '')));
-            if ($status === 'ONGOING') {
-                $totalOngoing++;
+        try {
+            $ongoingRow = DB::selectOne(
+                'SELECT COUNT(*) AS cnt FROM "LEAD"
+                 WHERE "ASSIGNED_TO" IS NOT NULL AND TRIM(CAST("ASSIGNED_TO" AS VARCHAR(50))) <> \'\'
+                 AND UPPER(TRIM("CURRENTSTATUS")) = \'ONGOING\''
+            );
+            $totalOngoing = (int) ($ongoingRow->cnt ?? $ongoingRow->CNT ?? 0);
+        } catch (\Throwable $e) {
+            // fallback: count from assigned array by status
+            foreach ($assigned as $r) {
+                $status = strtoupper(trim((string)($r->CURRENTSTATUS ?? '')));
+                if ($status === 'ONGOING') {
+                    $totalOngoing++;
+                }
             }
         }
         $productLabels = [
@@ -451,14 +556,139 @@ class AdminController extends Controller
             // leave empty
         }
 
+        $assignedPerPage = 10;
+        $assignedTotal = count($assigned);
+        $assignedForView = array_slice($assigned, 0, $assignedPerPage);
+        $assignedLastPage = $assignedTotal > 0 ? (int) ceil($assignedTotal / $assignedPerPage) : 1;
+
         return view('admin.inquiries', [
             'unassigned' => $unassigned,
-            'assigned' => $assigned,
+            'assigned' => $assignedForView,
+            'assignedTotal' => $assignedTotal,
+            'assignedPerPage' => $assignedPerPage,
+            'assignedCurrentPage' => 1,
+            'assignedLastPage' => $assignedLastPage,
             'totalNewInquiries' => $totalNewInquiries,
             'totalOngoing' => $totalOngoing,
             'productLabels' => $productLabels,
             'dealers' => $dealers,
             'currentPage' => 'inquiries',
+        ]);
+    }
+
+    public function inquiriesAssignedPage(Request $request): JsonResponse
+    {
+        $page = max(1, (int) $request->get('page', 1));
+        $perPage = 10;
+
+        $rows = DB::select(
+            'SELECT FIRST 200
+                "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL","ADDRESS1","ADDRESS2","CITY","POSTCODE",
+                "BUSINESSNATURE","USERCOUNT","EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION","REFERRALCODE",
+                "CURRENTSTATUS","CREATEDAT","CREATEDBY","ASSIGNED_TO","LASTMODIFIED"
+            FROM "LEAD"
+            ORDER BY "LEADID" DESC'
+        );
+        $assigned = [];
+        foreach ($rows as $r) {
+            if (trim((string) ($r->ASSIGNED_TO ?? '')) !== '') {
+                $assigned[] = $r;
+            }
+        }
+        usort($assigned, function ($a, $b) {
+            $ta = strtotime($a->LASTMODIFIED ?? $a->CREATEDAT ?? '0');
+            $tb = strtotime($b->LASTMODIFIED ?? $b->CREATEDAT ?? '0');
+            return $tb <=> $ta;
+        });
+
+        $leadIds = array_values(array_unique(array_filter(array_map(function ($r) { return (int)($r->LEADID ?? 0); }, $rows))));
+        if (!empty($leadIds)) {
+            $placeholders = implode(',', array_fill(0, count($leadIds), '?'));
+            try {
+                $acts = DB::select(
+                    'SELECT a."LEADID", a."STATUS"
+                     FROM "LEAD_ACT" a
+                     JOIN (
+                         SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
+                         FROM "LEAD_ACT"
+                         WHERE "LEADID" IN (' . $placeholders . ')
+                         GROUP BY "LEADID"
+                     ) x
+                       ON x."LEADID" = a."LEADID" AND x.MAXCD = a."CREATIONDATE"
+                     WHERE a."LEADID" IN (' . $placeholders . ')',
+                    array_merge($leadIds, $leadIds)
+                );
+                $statusMap = [];
+                foreach ($acts as $a) {
+                    $lid = (int)($a->LEADID ?? 0);
+                    if ($lid > 0) $statusMap[$lid] = trim((string)($a->STATUS ?? ''));
+                }
+                foreach ($rows as $r) {
+                    $lid = (int)($r->LEADID ?? 0);
+                    if ($lid > 0 && isset($statusMap[$lid]) && $statusMap[$lid] !== '') {
+                        $r->CURRENTSTATUS = $statusMap[$lid];
+                    }
+                }
+            } catch (\Throwable $e) {
+                // keep CURRENTSTATUS from LEAD
+            }
+        }
+
+        $ids = [];
+        foreach ($rows as $r) {
+            $to = trim((string) ($r->ASSIGNED_TO ?? ''));
+            $by = trim((string) ($r->CREATEDBY ?? ''));
+            if ($to !== '') $ids[$to] = true;
+            if ($by !== '') $ids[$by] = true;
+        }
+        $ids = array_keys($ids);
+        if (!empty($ids)) {
+            $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            try {
+                $users = DB::select('SELECT "USERID","SYSTEMROLE","ALIAS","COMPANY","EMAIL" FROM "USERS" WHERE CAST("USERID" AS VARCHAR(50)) IN (' . $placeholders . ')', $ids);
+                $userMap = [];
+                foreach ($users as $u) {
+                    $uid = trim((string) ($u->USERID ?? ''));
+                    if ($uid === '') continue;
+                    $role = trim((string) ($u->SYSTEMROLE ?? ''));
+                    $alias = trim((string) ($u->ALIAS ?? ''));
+                    $fallback = trim((string) ($u->COMPANY ?? ''));
+                    if ($fallback === '') $fallback = trim((string) ($u->EMAIL ?? ''));
+                    if ($fallback === '') $fallback = $uid;
+                    $userMap[$uid] = ($role !== '' && $alias !== '') ? ($role . '- ' . $alias) : (($role !== '' ? $role . '- ' . $fallback : ($alias !== '' ? $alias : $fallback)));
+                }
+                foreach ($rows as $r) {
+                    $to = trim((string) ($r->ASSIGNED_TO ?? ''));
+                    $by = trim((string) ($r->CREATEDBY ?? ''));
+                    if ($to !== '' && isset($userMap[$to])) $r->ASSIGNED_TO_NAME = $userMap[$to];
+                    if ($by !== '' && isset($userMap[$by])) $r->CREATEDBY_NAME = $userMap[$by];
+                }
+            } catch (\Throwable $e) {
+                // fallback raw ids
+            }
+        }
+
+        $productLabels = [
+            1 => 'Account', 2 => 'Payroll', 3 => 'Production', 4 => 'Mobile Sales', 5 => 'Ecommerce',
+            6 => 'EBI POS', 7 => 'Sudu AI', 8 => 'X-Store', 9 => 'Vision', 10 => 'HRMS', 11 => 'Others',
+        ];
+        $assignedTotal = count($assigned);
+        $assignedLastPage = $assignedTotal > 0 ? (int) ceil($assignedTotal / $perPage) : 1;
+        $page = min($page, $assignedLastPage);
+        $offset = ($page - 1) * $perPage;
+        $assignedSlice = array_slice($assigned, $offset, $perPage);
+
+        $html = view('admin.partials.inquiries_assigned_rows', [
+            'assigned' => $assignedSlice,
+            'productLabels' => $productLabels,
+        ])->render();
+
+        return response()->json([
+            'html' => $html,
+            'assignedTotal' => $assignedTotal,
+            'assignedPerPage' => $perPage,
+            'currentPage' => $page,
+            'lastPage' => $assignedLastPage,
         ]);
     }
 
@@ -476,6 +706,8 @@ class AdminController extends Controller
             'assigned' => $assignedHtml,
             'totalNewInquiries' => $data['totalNewInquiries'] ?? 0,
             'totalOngoing' => $data['totalOngoing'] ?? 0,
+            'assignedTotal' => $data['assignedTotal'] ?? 0,
+            'assignedLastPage' => $data['assignedLastPage'] ?? 1,
         ]);
     }
 
@@ -521,7 +753,22 @@ class AdminController extends Controller
         $fromLabel = $fromUserId !== '' ? ($nameMap[$fromUserId] ?? $fromUserId) : 'System';
         $toLabel = $nameMap[$assignedTo] ?? $assignedTo;
 
+        // Remember previous assignee for possible undo
+        $prevAssignedTo = null;
         try {
+            $current = DB::selectOne(
+                'SELECT "ASSIGNED_TO" FROM "LEAD" WHERE "LEADID" = ?',
+                [$leadId]
+            );
+            if ($current) {
+                $prevAssignedTo = trim((string) ($current->ASSIGNED_TO ?? ''));
+            }
+        } catch (\Throwable $e) {
+            $prevAssignedTo = null;
+        }
+
+        try {
+            DB::beginTransaction();
             // Set assigner in session context so the LEAD trigger can use it for LEAD_ACT.USERID (assigned-by, not assigned-to)
             if ($fromUserId !== '') {
                 DB::statement(
@@ -533,11 +780,93 @@ class AdminController extends Controller
                 'UPDATE "LEAD" SET "ASSIGNED_TO" = ?, "LASTMODIFIED" = CURRENT_TIMESTAMP WHERE "LEADID" = ?',
                 [$assignedTo, $leadId]
             );
+            DB::commit();
         } catch (\Throwable $e) {
+            DB::rollBack();
             return back()->with('error', 'Could not assign lead: ' . $e->getMessage());
         }
 
-        return redirect()->route('admin.inquiries')->with('success', 'Lead asssigned successfully.');
+        $undoPayload = [
+            'lead_id' => $leadId,
+            'prev_assigned_to' => $prevAssignedTo,
+            'new_assigned_to' => $assignedTo,
+        ];
+
+        return redirect()->route('admin.inquiries')
+            ->with('success', 'Lead assigned successfully.')
+            ->with('assign_undo', $undoPayload);
+    }
+
+    public function undoAssignInquiry(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'LEADID' => 'required|integer|min:1',
+            'PREV_ASSIGNED_TO' => 'nullable|string|max:50',
+        ]);
+        $leadId = (int) $validated['LEADID'];
+        $prev = trim((string) ($validated['PREV_ASSIGNED_TO'] ?? ''));
+
+        try {
+            DB::beginTransaction();
+
+            $row = DB::selectOne(
+                'SELECT "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL",
+                    "ADDRESS1","ADDRESS2","CITY","POSTCODE","BUSINESSNATURE","USERCOUNT",
+                    "EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION","REFERRALCODE",
+                    "CURRENTSTATUS","CREATEDAT","CREATEDBY"
+                 FROM "LEAD" WHERE "LEADID" = ?',
+                [$leadId]
+            );
+            if (!$row) {
+                DB::rollBack();
+                return redirect()->route('admin.inquiries')->with('error', 'Lead not found.');
+            }
+
+            $assignedTo = $prev !== '' ? $prev : null;
+
+            // Delete activity for this lead so we can delete the lead row (FK)
+            DB::delete('DELETE FROM "LEAD_ACT" WHERE "LEADID" = ?', [$leadId]);
+            DB::delete('DELETE FROM "LEAD" WHERE "LEADID" = ?', [$leadId]);
+
+            // Re-insert same lead with the same LEADID (get back the id we just deleted); status back to Open
+            DB::insert(
+                'INSERT INTO "LEAD" (
+                    "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL",
+                    "ADDRESS1","ADDRESS2","CITY","POSTCODE","BUSINESSNATURE","USERCOUNT",
+                    "EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION","REFERRALCODE",
+                    "CURRENTSTATUS","CREATEDAT","CREATEDBY","ASSIGNED_TO","LASTMODIFIED"
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)',
+                [
+                    $leadId,
+                    $row->PRODUCTID ?? null,
+                    $row->COMPANYNAME ?? null,
+                    $row->CONTACTNAME ?? null,
+                    $row->CONTACTNO ?? null,
+                    $row->EMAIL ?? null,
+                    $row->ADDRESS1 ?? null,
+                    $row->ADDRESS2 ?? null,
+                    $row->CITY ?? null,
+                    $row->POSTCODE ?? null,
+                    $row->BUSINESSNATURE ?? null,
+                    $row->USERCOUNT ?? null,
+                    $row->EXISTINGSOFTWARE ?? null,
+                    $row->DEMOMODE ?? null,
+                    $row->DESCRIPTION ?? null,
+                    $row->REFERRALCODE ?? null,
+                    'Open',
+                    $row->CREATEDAT ?? null,
+                    $row->CREATEDBY ?? null,
+                    $assignedTo,
+                ]
+            );
+
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return redirect()->route('admin.inquiries')->with('error', 'Could not undo assignment: ' . $e->getMessage());
+        }
+
+        return redirect()->route('admin.inquiries')->with('success', 'Assignment undone.');
     }
 
     public function markInquiryFailed(Request $request): RedirectResponse
@@ -597,6 +926,49 @@ class AdminController extends Controller
             'STATUS' => $r->STATUS,
         ], $rows);
         return response()->json(['items' => $items]);
+    }
+
+    public function companyLookup(Request $request): JsonResponse
+    {
+        $name = trim((string) $request->query('q', ''));
+        if ($name === '') {
+            return response()->json(['found' => false]);
+        }
+
+        try {
+            $row = DB::selectOne(
+                'SELECT FIRST 1
+                    "LEADID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL",
+                    "ADDRESS1","ADDRESS2","CITY","POSTCODE","BUSINESSNATURE",
+                    "EXISTINGSOFTWARE","USERCOUNT","DEMOMODE"
+                 FROM "LEAD"
+                 WHERE UPPER(TRIM("COMPANYNAME")) = UPPER(TRIM(?))
+                 ORDER BY "LEADID" DESC',
+                [$name]
+            );
+            if (!$row) {
+                return response()->json(['found' => false]);
+            }
+
+            return response()->json([
+                'found' => true,
+                'leadId' => (int) ($row->LEADID ?? 0),
+                'companyname' => (string) ($row->COMPANYNAME ?? ''),
+                'contactname' => (string) ($row->CONTACTNAME ?? ''),
+                'contactno' => (string) ($row->CONTACTNO ?? ''),
+                'email' => (string) ($row->EMAIL ?? ''),
+                'address1' => (string) ($row->ADDRESS1 ?? ''),
+                'address2' => (string) ($row->ADDRESS2 ?? ''),
+                'city' => (string) ($row->CITY ?? ''),
+                'postcode' => (string) ($row->POSTCODE ?? ''),
+                'businessnature' => (string) ($row->BUSINESSNATURE ?? ''),
+                'existingsoftware' => (string) ($row->EXISTINGSOFTWARE ?? ''),
+                'usercount' => (string) ($row->USERCOUNT ?? ''),
+                'demomode' => (string) ($row->DEMOMODE ?? ''),
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['found' => false]);
+        }
     }
 
     public function createInquiry(): View
@@ -728,11 +1100,11 @@ class AdminController extends Controller
         try {
             DB::insert(
                 'INSERT INTO "LEAD" (
-                    "PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL",
+                    "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL",
                     "ADDRESS1","ADDRESS2","CITY","POSTCODE","BUSINESSNATURE","USERCOUNT",
                     "EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION","REFERRALCODE",
                     "CURRENTSTATUS","CREATEDAT","CREATEDBY","ASSIGNED_TO","LASTMODIFIED"
-                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,?,?,CURRENT_TIMESTAMP)',
+                ) VALUES (GEN_ID(GEN_LEADID, 1),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,?,?,CURRENT_TIMESTAMP)',
                 [
                     $productIdValue,
                     $validated['COMPANYNAME'],
@@ -776,6 +1148,7 @@ class AdminController extends Controller
                 'SELECT
                     TRIM(CAST("ASSIGNED_TO" AS VARCHAR(50))) AS UID,
                     COUNT(*) AS TOTAL_LEAD,
+                    SUM(CASE WHEN UPPER(TRIM("CURRENTSTATUS")) = \'ONGOING\' THEN 1 ELSE 0 END) AS TOTAL_ONGOING,
                     SUM(CASE WHEN "CURRENTSTATUS" = \'Closed\' THEN 1 ELSE 0 END) AS TOTAL_CLOSED,
                     SUM(CASE WHEN UPPER(TRIM("CURRENTSTATUS")) = \'FAILED\' THEN 1 ELSE 0 END) AS TOTAL_FAILED
                  FROM "LEAD"
@@ -786,10 +1159,12 @@ class AdminController extends Controller
                 $uid = trim((string) ($sr->UID ?? $sr->uid ?? ''));
                 if ($uid === '') continue;
                 $totalLead = (int) ($sr->TOTAL_LEAD ?? $sr->total_lead ?? 0);
+                $totalOngoing = (int) ($sr->TOTAL_ONGOING ?? $sr->total_ongoing ?? 0);
                 $totalClosed = (int) ($sr->TOTAL_CLOSED ?? $sr->total_closed ?? 0);
                 $totalFailed = (int) ($sr->TOTAL_FAILED ?? $sr->total_failed ?? 0);
                 $leadStats[$uid] = [
                     'totalLead' => $totalLead,
+                    'totalOngoing' => $totalOngoing,
                     'totalClosed' => $totalClosed,
                     'totalFailed' => $totalFailed,
                 ];
@@ -801,10 +1176,12 @@ class AdminController extends Controller
         $items = array_map(function ($r) use ($leadStats) {
             $uid = trim((string) ($r->USERID ?? ''));
             $totalLead = $leadStats[$uid]['totalLead'] ?? 0;
+            $totalOngoing = $leadStats[$uid]['totalOngoing'] ?? 0;
             $totalClosed = $leadStats[$uid]['totalClosed'] ?? 0;
             $totalFailed = $leadStats[$uid]['totalFailed'] ?? 0;
             $conversion = $totalLead > 0 ? ($totalClosed / $totalLead) * 100 : 0;
             $r->TOTAL_LEAD = $totalLead;
+            $r->TOTAL_ONGOING = $totalOngoing;
             $r->TOTAL_CLOSED = $totalClosed;
             $r->TOTAL_FAILED = $totalFailed;
             $r->CONVERSION_RATE = $conversion;

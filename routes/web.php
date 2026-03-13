@@ -25,10 +25,13 @@ Route::middleware(['auth.sms', 'admin'])->prefix('admin')->name('admin.')->group
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/inquiries', [AdminController::class, 'inquiries'])->name('inquiries');
     Route::get('/inquiries/sync', [AdminController::class, 'inquiriesSync'])->name('inquiries.sync');
+    Route::get('/inquiries/assigned-page', [AdminController::class, 'inquiriesAssignedPage'])->name('inquiries.assigned-page');
     Route::get('/inquiries/create', [AdminController::class, 'createInquiry'])->name('inquiries.create');
     Route::post('/inquiries', [AdminController::class, 'storeInquiry'])->name('inquiries.store');
     Route::post('/inquiries/assign', [AdminController::class, 'assignInquiry'])->name('inquiries.assign');
+    Route::post('/inquiries/assign/undo', [AdminController::class, 'undoAssignInquiry'])->name('inquiries.assign-undo');
     Route::post('/inquiries/mark-failed', [AdminController::class, 'markInquiryFailed'])->name('inquiries.mark-failed');
+    Route::get('/inquiries/company-lookup', [AdminController::class, 'companyLookup'])->name('inquiries.company-lookup');
     Route::get('/inquiries/{leadId}/status', [AdminController::class, 'leadStatus'])->name('inquiries.lead-status');
     Route::get('/dealers', [AdminController::class, 'dealers'])->name('dealers');
     Route::post('/dealers', [AdminController::class, 'dealersStore'])->name('dealers.store');
