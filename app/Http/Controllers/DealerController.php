@@ -77,9 +77,23 @@ class DealerController extends Controller
             $activeInquiriesCount = (int) ($activeCountRow->CNT ?? 0);
             $totalAssignedCount = count($leads);
 
+            // Total closed should only count leads whose latest status for this dealer
+            // is COMPLETED or REWARDED (and not later marked as FAILED).
             $closedCountRow = DB::selectOne(
-                'SELECT COUNT(*) AS "CNT" FROM "LEAD_ACT"
-                WHERE "USERID" = ? AND UPPER(TRIM(COALESCE("STATUS", \'\'))) IN (\'COMPLETED\', \'REWARDED\')',
+                'SELECT COUNT(*) AS "CNT"
+                 FROM (
+                     SELECT DISTINCT la."LEADID",
+                         (
+                             SELECT FIRST 1 la2."STATUS"
+                             FROM "LEAD_ACT" la2
+                             WHERE la2."LEADID" = la."LEADID"
+                               AND la2."USERID" = la."USERID"
+                             ORDER BY la2."CREATIONDATE" DESC
+                         ) AS "LATEST_STATUS"
+                     FROM "LEAD_ACT" la
+                     WHERE la."USERID" = ?
+                 ) x
+                 WHERE UPPER(TRIM(COALESCE(x."LATEST_STATUS", \'\'))) IN (\'COMPLETED\', \'REWARDED\')',
                 [$dealerId]
             );
             $closedCount = (int) ($closedCountRow->CNT ?? 0);
@@ -303,6 +317,37 @@ class DealerController extends Controller
         return view('dealer.inquiries', ['leads' => $leads, 'currentPage' => 'inquiries']);
     }
 
+    public function inquiriesSync(Request $request): JsonResponse
+    {
+        // Reuse the same data-loading logic as the main dealer inquiries page
+        $view = $this->inquiries($request);
+        $data = $view->getData();
+
+        // Ensure product name labels are available to the partial so it can
+        // render friendly product names instead of "Product 1/2/3" fallbacks.
+        if (!isset($data['productNames'])) {
+            $data['productNames'] = [
+                1 => 'SQL Account',
+                2 => 'SQL Payroll',
+                3 => 'SQL Production',
+                4 => 'Mobile Sales',
+                5 => 'SQL Ecommerce',
+                6 => 'SQL EBI Wellness POS',
+                7 => 'SQL X Suduai',
+                8 => 'SQL X-Store',
+                9 => 'SQL Vision',
+                10 => 'SQL HRMS',
+                11 => 'Others',
+            ];
+        }
+
+        $rowsHtml = view('dealer.partials.inquiries_rows', $data)->render();
+
+        return response()->json([
+            'rows' => $rowsHtml,
+        ]);
+    }
+
     public function inquiryFailedDescription(Request $request, int $leadId): JsonResponse
     {
         $dealerId = $request->session()->get('user_id');
@@ -350,13 +395,25 @@ class DealerController extends Controller
             if (strtoupper($status) === 'CREATED') {
                 continue;
             }
+
+            // Normalize activity timestamp to an ISO‑8601 string in the app's timezone
+            // so the frontend can reliably compute \"X min ago\" from the user's \"now\".
+            $createdAtIso = null;
+            if (!empty($r->CREATIONDATE)) {
+                try {
+                    $createdAtIso = Carbon::parse($r->CREATIONDATE)->toIso8601String();
+                } catch (\Throwable $e) {
+                    $createdAtIso = (string) $r->CREATIONDATE;
+                }
+            }
+
             $activities[] = [
                 'type' => 'activity',
                 'user' => trim($r->USER_EMAIL ?? 'System'),
                 'subject' => trim($r->SUBJECT ?? ''),
                 'description' => trim($r->DESCRIPTION ?? ''),
                 'status' => $status,
-                'created_at' => $r->CREATIONDATE,
+                'created_at' => $createdAtIso,
             ];
         }
 
@@ -372,11 +429,16 @@ class DealerController extends Controller
             [$leadId]
         );
         if ($lastRow && $lastRow->CREATIONDATE) {
-            $ts = strtotime($lastRow->CREATIONDATE);
+            try {
+                $created = Carbon::parse($lastRow->CREATIONDATE);
+            } catch (\Throwable $e) {
+                $created = Carbon::createFromTimestamp(strtotime($lastRow->CREATIONDATE));
+            }
+
             $lastReward = [
-                'created_at' => $lastRow->CREATIONDATE,
-                'date' => date('Y-m-d', $ts),
-                'time' => date('H:i', $ts),
+                'created_at' => $created->toIso8601String(),
+                'date' => $created->format('Y-m-d'),
+                'time' => $created->format('H:i'),
                 'description' => trim($lastRow->DESCRIPTION ?? ''),
             ];
         }

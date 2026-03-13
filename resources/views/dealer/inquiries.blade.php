@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Active Inquiries – SQL LMS Dealer Console')
+@section('title', 'All Inquiries – SQL LMS Dealer Console')
 @section('content')
 @php
     $productNames = [
@@ -8,185 +8,73 @@
         9 => 'SQL Vision', 10 => 'SQL HRMS', 11 => 'Others',
     ];
 @endphp
-<div class="dashboard-content inquiries-all-page">
-    <section class="dealer-panel dealer-inquiries-panel inquiries-all-table-panel">
-        <div class="dealer-panel-header">
-            <h2 class="dealer-panel-title">All Inquiries</h2>
-            <button type="button" class="inquiries-btn inquiries-btn-columns">
-                <span>Columns</span>
-            </button>
-        </div>
-        <div class="dealer-table-wrapper inquiries-table-wrapper">
-            <div class="inquiries-table-scroll">
-                <table class="inquiries-table" id="dealerInquiriesTable">
-                    <thead>
-                        <tr class="inquiries-table-header-row">
-                        <th class="inquiries-header-cell" data-col="inquiryid">
-                            <span class="inquiries-header-label">INQUIRY ID</span>
-                            <span class="inquiries-filter-wrap">
-                                <input type="text" class="inquiries-grid-filter" data-col="inquiryid">
-                                <i class="bi bi-search inquiries-filter-icon"></i>
-                            </span>
-                        </th>
-                        <th class="inquiries-header-cell" data-col="date">
-                            <span class="inquiries-header-label">DATE</span>
-                            <span class="inquiries-filter-wrap">
-                                <input type="text" class="inquiries-grid-filter" data-col="date">
-                                <i class="bi bi-search inquiries-filter-icon"></i>
-                            </span>
-                        </th>
-                        <th class="inquiries-header-cell" data-col="customer">
-                            <span class="inquiries-header-label">CUSTOMER</span>
-                            <span class="inquiries-filter-wrap">
-                                <input type="text" class="inquiries-grid-filter" data-col="customer">
-                                <i class="bi bi-search inquiries-filter-icon"></i>
-                            </span>
-                        </th>
-                        <th class="inquiries-header-cell" data-col="source">
-                            <span class="inquiries-header-label">SOURCE</span>
-                            <span class="inquiries-filter-wrap">
-                                <input type="text" class="inquiries-grid-filter" data-col="source">
-                                <i class="bi bi-search inquiries-filter-icon"></i>
-                            </span>
-                        </th>
-                        <th class="inquiries-header-cell" data-col="postcode">
-                            <span class="inquiries-header-label">POSTCODE</span>
-                            <span class="inquiries-filter-wrap">
-                                <input type="text" class="inquiries-grid-filter" data-col="postcode">
-                                <i class="bi bi-search inquiries-filter-icon"></i>
-                            </span>
-                        </th>
-                        <th class="inquiries-header-cell" data-col="contactno">
-                            <span class="inquiries-header-label">CONTACT NO</span>
-                            <span class="inquiries-filter-wrap">
-                                <input type="text" class="inquiries-grid-filter" data-col="contactno">
-                                <i class="bi bi-search inquiries-filter-icon"></i>
-                            </span>
-                        </th>
-                        <th class="inquiries-header-cell" data-col="businessnature">
-                            <span class="inquiries-header-label">BUSINESS NATURE</span>
-                            <span class="inquiries-filter-wrap">
-                                <input type="text" class="inquiries-grid-filter" data-col="businessnature">
-                                <i class="bi bi-search inquiries-filter-icon"></i>
-                            </span>
-                        </th>
-                        <th class="inquiries-header-cell" data-col="users">
-                            <span class="inquiries-header-label">USERS</span>
-                            <span class="inquiries-filter-wrap">
-                                <input type="text" class="inquiries-grid-filter" data-col="users">
-                                <i class="bi bi-search inquiries-filter-icon"></i>
-                            </span>
-                        </th>
-                        <th class="inquiries-header-cell" data-col="existingsw">
-                            <span class="inquiries-header-label">EXISTING SW</span>
-                            <span class="inquiries-filter-wrap">
-                                <input type="text" class="inquiries-grid-filter" data-col="existingsw">
-                                <i class="bi bi-search inquiries-filter-icon"></i>
-                            </span>
-                        </th>
-                        <th class="inquiries-header-cell" data-col="demomode">
-                            <span class="inquiries-header-label">DEMO MODE</span>
-                            <span class="inquiries-filter-wrap">
-                                <input type="text" class="inquiries-grid-filter" data-col="demomode">
-                                <i class="bi bi-search inquiries-filter-icon"></i>
-                            </span>
-                        </th>
-                        <th class="inquiries-header-cell" data-col="products">
-                            <span class="inquiries-header-label">PRODUCTS</span>
-                            <span class="inquiries-filter-wrap">
-                                <input type="text" class="inquiries-grid-filter" data-col="products">
-                                <i class="bi bi-search inquiries-filter-icon"></i>
-                            </span>
-                        </th>
-                        <th class="inquiries-header-cell" data-col="message">
-                            <span class="inquiries-header-label">MESSAGE</span>
-                            <span class="inquiries-filter-wrap">
-                                <input type="text" class="inquiries-grid-filter" data-col="message">
-                                <i class="bi bi-search inquiries-filter-icon"></i>
-                            </span>
-                        </th>
-                        <th class="inquiries-header-cell" data-col="referralcode">
-                            <span class="inquiries-header-label">REFERRAL CODE</span>
-                            <span class="inquiries-filter-wrap">
-                                <input type="text" class="inquiries-grid-filter" data-col="referralcode">
-                                <i class="bi bi-search inquiries-filter-icon"></i>
-                            </span>
-                        </th>
-                        <th class="inquiries-header-cell" data-col="assignby">
-                            <span class="inquiries-header-label">ASSIGN BY</span>
-                            <span class="inquiries-filter-wrap">
-                                <input type="text" class="inquiries-grid-filter" data-col="assignby">
-                                <i class="bi bi-search inquiries-filter-icon"></i>
-                            </span>
-                        </th>
-                        <th class="inquiries-header-cell" data-col="status">
-                            <span class="inquiries-header-label">STATUS</span>
-                            <span class="inquiries-filter-wrap">
-                                <input type="text" class="inquiries-grid-filter" data-col="status">
-                                <i class="bi bi-search inquiries-filter-icon"></i>
-                            </span>
-                        </th>
-                        <th class="inquiries-col-action inquiries-header-cell">
-                            <span class="inquiries-header-label">ACTION</span>
-                            <button type="button" class="inquiries-filter-clear" id="dealerInquiryClearFilters">Clear filters</button>
-                        </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    @forelse($leads as $r)
-                        @php
-                            $products = [];
-                            if (isset($r->PRODUCTID) && $r->PRODUCTID !== '' && $r->PRODUCTID !== null) {
-                                $ids = is_numeric($r->PRODUCTID) ? [(int)$r->PRODUCTID] : array_map('intval', array_filter(explode(',', (string)$r->PRODUCTID)));
-                                foreach ($ids as $id) {
-                                    if ($id > 0) $products[] = $productNames[$id] ?? ('Product ' . $id);
-                                }
-                            }
-                            if (empty($products)) $products = ['Others'];
-                        @endphp
-                        <tr class="inquiry-row" data-search="{{ strtolower(trim(($r->COMPANYNAME ?? '').' '.($r->CONTACTNAME ?? '').' '.($r->LEADID ?? ''))) }}">
-                            <td data-col="inquiryid"><strong>#SQL-{{ $r->LEADID }}</strong></td>
-                            <td data-col="date">{{ $r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '—' }}</td>
-                            <td data-col="customer">{{ trim(($r->COMPANYNAME ?? '') . ' ' . ($r->CONTACTNAME ?? '')) ?: '—' }}</td>
-                            <td data-col="source">{{ $r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '—' }}</td>
-                            <td data-col="postcode">{{ $r->POSTCODE ?? '—' }}</td>
-                            <td data-col="contactno">{{ $r->CONTACTNO ?? '—' }}</td>
-                            <td data-col="businessnature">{{ $r->BUSINESSNATURE ?? '—' }}</td>
-                            <td data-col="users">{{ $r->USERCOUNT ?? '—' }}</td>
-                            <td data-col="existingsw">{{ $r->EXISTINGSOFTWARE ?? '—' }}</td>
-                            <td data-col="demomode">{{ $r->DEMOMODE ?? '—' }}</td>
-                            <td data-col="products">
-                                <div class="inquiries-product-pills">
-                                    @foreach($products as $p)
-                                        <span class="inquiries-product-pill">{{ $p }}</span>
-                                    @endforeach
-                                </div>
-                            </td>
-                            <td data-col="message">{{ Str::limit($r->DESCRIPTION ?? '—', 20) }}</td>
-                            <td data-col="referralcode">{{ $r->REFERRALCODE ?? '—' }}</td>
-                            <td data-col="assignby">{{ $r->ASSIGNED_BY_EMAIL ?? '—' }}</td>
-                            <td data-col="status">@php $s = trim($r->ACT_STATUS ?? ''); echo $s === '' ? '—' : (in_array(strtoupper($s), ['FOLLOWUP', 'FOLLOW UP'], true) ? 'Follow Up' : $s); @endphp</td>
-                            <td class="inquiries-col-action">
-                                @php $actStatus = strtoupper($r->ACT_STATUS ?? 'PENDING'); $isFailed = $actStatus === 'FAILED'; @endphp
-                                @if ($isFailed)
-                                    <button type="button" class="inquiries-view-btn" data-lead-id="{{ $r->LEADID }}" data-customer="{{ trim(($r->COMPANYNAME ?? '') . ' ' . ($r->CONTACTNAME ?? '')) ?: '—' }}">View</button>
-                                @else
-                                    <button type="button" class="inquiries-update-btn" data-lead-id="{{ $r->LEADID }}" data-customer="{{ trim(($r->COMPANYNAME ?? '') . ' ' . ($r->CONTACTNAME ?? '')) ?: '—' }}" data-status="{{ $actStatus }}">Update</button>
-                                @endif
-                            </td>
-                        </tr>
-                    @empty
-                        <tr class="inquiries-empty-row">
-                            <td colspan="16" class="inquiries-empty-cell">
-                                <div class="dealer-table-empty">No inquiries assigned yet.</div>
-                            </td>
-                        </tr>
-                    @endforelse
-                    </tbody>
-                </table>
+<div class="dashboard-content inquiries-page-wrap">
+    <section class="inquiries-mgmt-panel">
+        <div class="inquiries-panel-header">
+            <div class="inquiries-panel-title-wrap">
+                <i class="bi bi-folder2-open inquiries-panel-icon"></i>
+                <h2 class="inquiries-panel-title">All Inquiries</h2>
+            </div>
+            <div class="inquiries-panel-actions">
+                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-sync-btn" data-sync-url="{{ route('dealer.inquiries.sync') }}">
+                    <i class="bi bi-arrow-repeat inquiries-sync-icon"></i>
+                    <span class="inquiries-sync-label">Sync</span>
+                </button>
+                <div class="inquiries-columns-dropdown">
+                    <button type="button" class="inquiries-btn inquiries-btn-secondary" id="dealerInquiryColumnsBtn" aria-haspopup="true" aria-expanded="false">Columns</button>
+                    <div class="inquiries-columns-menu" id="dealerInquiryColumnsMenu" hidden>
+                        <div class="inquiries-columns-menu-title">Show columns</div>
+                        <label class="inquiries-columns-check"><input type="checkbox" data-col="inquiryid"> INQUIRY ID</label>
+                        <label class="inquiries-columns-check"><input type="checkbox" data-col="date"> DATE</label>
+                        <label class="inquiries-columns-check"><input type="checkbox" data-col="customer"> CUSTOMER</label>
+                        <label class="inquiries-columns-check"><input type="checkbox" data-col="source"> SOURCE</label>
+                        <label class="inquiries-columns-check"><input type="checkbox" data-col="postcode"> POSTCODE</label>
+                        <label class="inquiries-columns-check"><input type="checkbox" data-col="contactno"> CONTACT NO</label>
+                        <label class="inquiries-columns-check"><input type="checkbox" data-col="businessnature"> BUSINESS NATURE</label>
+                        <label class="inquiries-columns-check"><input type="checkbox" data-col="users"> USERS</label>
+                        <label class="inquiries-columns-check"><input type="checkbox" data-col="existingsw"> EXISTING SW</label>
+                        <label class="inquiries-columns-check"><input type="checkbox" data-col="demomode"> DEMO MODE</label>
+                        <label class="inquiries-columns-check"><input type="checkbox" data-col="products"> PRODUCTS</label>
+                        <label class="inquiries-columns-check"><input type="checkbox" data-col="message"> MESSAGE</label>
+                        <label class="inquiries-columns-check"><input type="checkbox" data-col="referralcode"> REFERRAL CODE</label>
+                        <label class="inquiries-columns-check"><input type="checkbox" data-col="assignby"> ASSIGN BY</label>
+                        <label class="inquiries-columns-check"><input type="checkbox" data-col="status"> STATUS</label>
+                        <div class="inquiries-columns-actions">
+                            <button type="button" class="inquiries-columns-action-btn" id="dealerInquiryColumnsAll">All</button>
+                            <button type="button" class="inquiries-columns-action-btn" id="dealerInquiryColumnsNone">None</button>
+                        </div>
+                        <button type="button" class="inquiries-columns-reset" id="dealerInquiryColumnsReset">Reset to default</button>
+                    </div>
+                </div>
             </div>
         </div>
-        {{-- No pagination for dealer inquiries; show full table like admin Incoming Inquiries --}}
+        <div class="inquiries-table-wrap">
+            <table class="inquiries-table" id="dealerInquiriesTable">
+                <thead>
+                    <tr class="inquiries-header-row">
+                        <th data-col="inquiryid" class="inquiries-header-cell"><span class="inquiries-header-label">INQUIRY ID</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="inquiryid"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="date" class="inquiries-header-cell"><span class="inquiries-header-label">DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="date"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="customer" class="inquiries-header-cell"><span class="inquiries-header-label">CUSTOMER</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="customer"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="source" class="inquiries-header-cell"><span class="inquiries-header-label">SOURCE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="source"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="postcode" class="inquiries-header-cell"><span class="inquiries-header-label">POSTCODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="postcode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="contactno" class="inquiries-header-cell"><span class="inquiries-header-label">CONTACT NO</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="contactno"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="businessnature" class="inquiries-header-cell"><span class="inquiries-header-label">BUSINESS NATURE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="businessnature"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="users" class="inquiries-header-cell"><span class="inquiries-header-label">USERS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="users"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="existingsw" class="inquiries-header-cell"><span class="inquiries-header-label">EXISTING SW</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="existingsw"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="demomode" class="inquiries-header-cell"><span class="inquiries-header-label">DEMO MODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="demomode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="products" class="inquiries-header-cell"><span class="inquiries-header-label">PRODUCTS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="products"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="message" class="inquiries-header-cell"><span class="inquiries-header-label">MESSAGE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="message"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="referralcode" class="inquiries-header-cell"><span class="inquiries-header-label">REFERRAL CODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="referralcode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="assignby" class="inquiries-header-cell"><span class="inquiries-header-label">ASSIGN BY</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="assignby"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="status" class="inquiries-header-cell"><span class="inquiries-header-label">STATUS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="status"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th class="inquiries-col-action inquiries-header-cell"><span class="inquiries-header-label">ACTION</span><button type="button" class="inquiries-filter-clear" id="dealerInquiryClearFilters">Clear filters</button></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @include('dealer.partials.inquiries_rows', ['leads' => $leads, 'productNames' => $productNames])
+                </tbody>
+            </table>
+        </div>
     </section>
 </div>
 
@@ -215,6 +103,64 @@
 document.addEventListener('DOMContentLoaded', function() {
     var table = document.getElementById('dealerInquiriesTable');
     if (!table) return;
+
+    // Columns dropdown (admin-like)
+    var colsBtn = document.getElementById('dealerInquiryColumnsBtn');
+    var colsMenu = document.getElementById('dealerInquiryColumnsMenu');
+    var colsAll = document.getElementById('dealerInquiryColumnsAll');
+    var colsNone = document.getElementById('dealerInquiryColumnsNone');
+    var colsReset = document.getElementById('dealerInquiryColumnsReset');
+    var storageKey = 'dealer_inquiries_visible_cols_v1';
+    var defaultCols = ['inquiryid','date','customer','source','postcode','contactno','businessnature','users','existingsw','demomode','products','message','referralcode','assignby','status'];
+
+    function setMenuOpen(open) {
+        if (!colsMenu || !colsBtn) return;
+        colsMenu.hidden = !open;
+        colsBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+
+    function setColVisible(col, visible) {
+        table.querySelectorAll('th[data-col="' + col + '"], td[data-col="' + col + '"]').forEach(function(el) {
+            el.style.display = visible ? '' : 'none';
+        });
+    }
+
+    function getSelectedColsFromMenu() {
+        if (!colsMenu) return defaultCols.slice();
+        var cols = [];
+        colsMenu.querySelectorAll('input[type="checkbox"][data-col]').forEach(function(cb) {
+            if (cb.checked) cols.push(cb.getAttribute('data-col'));
+        });
+        return cols;
+    }
+
+    function applyVisibleCols(cols) {
+        // hide/show based on cols; keep ACTION column always visible
+        var allCols = defaultCols.slice();
+        allCols.forEach(function(c) { setColVisible(c, cols.indexOf(c) !== -1); });
+        // sync checkboxes
+        if (colsMenu) {
+            colsMenu.querySelectorAll('input[type="checkbox"][data-col]').forEach(function(cb) {
+                var c = cb.getAttribute('data-col');
+                cb.checked = cols.indexOf(c) !== -1;
+            });
+        }
+    }
+
+    function saveCols(cols) {
+        try { localStorage.setItem(storageKey, JSON.stringify(cols)); } catch (e) {}
+    }
+
+    function loadCols() {
+        try {
+            var raw = localStorage.getItem(storageKey);
+            if (!raw) return null;
+            var parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed : null;
+        } catch (e) {
+            return null;
+        }
+    }
 
     function applyDealerGridFilters() {
         var filters = {};
@@ -248,7 +194,83 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // init columns
+    var initialCols = loadCols() || defaultCols.slice();
+    applyVisibleCols(initialCols);
+
+    if (colsBtn && colsMenu) {
+        colsBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            setMenuOpen(colsMenu.hidden);
+        });
+        document.addEventListener('click', function() { setMenuOpen(false); });
+        colsMenu.addEventListener('click', function(e) { e.stopPropagation(); });
+
+        colsMenu.querySelectorAll('input[type="checkbox"][data-col]').forEach(function(cb) {
+            cb.addEventListener('change', function() {
+                var cols = getSelectedColsFromMenu();
+                applyVisibleCols(cols);
+                saveCols(cols);
+            });
+        });
+    }
+    if (colsAll) {
+        colsAll.addEventListener('click', function() {
+            applyVisibleCols(defaultCols.slice());
+            saveCols(defaultCols.slice());
+        });
+    }
+    if (colsNone) {
+        colsNone.addEventListener('click', function() {
+            applyVisibleCols([]);
+            saveCols([]);
+        });
+    }
+    if (colsReset) {
+        colsReset.addEventListener('click', function() {
+            applyVisibleCols(defaultCols.slice());
+            saveCols(defaultCols.slice());
+        });
+    }
+
     applyDealerGridFilters();
+
+    // Sync button (same behaviour pattern as admin inquiries sync)
+    document.querySelectorAll('.inquiries-sync-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            if (btn.classList.contains('is-syncing')) return;
+            btn.classList.add('is-syncing');
+            var icon = btn.querySelector('.inquiries-sync-icon');
+            if (icon) {
+                icon.classList.add('spinning');
+            }
+
+            var url = btn.getAttribute('data-sync-url') || window.location.href;
+            fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                cache: 'no-store'
+            }).then(function(res) {
+                return res.ok ? res.json() : Promise.reject();
+            }).then(function(data) {
+                var tbody = table.querySelector('tbody');
+                if (tbody && data.rows !== undefined) {
+                    tbody.innerHTML = data.rows;
+                }
+                // Re-apply filters and column visibility after replacing rows
+                applyDealerGridFilters();
+                var currentCols = loadCols() || defaultCols.slice();
+                applyVisibleCols(currentCols);
+            }).catch(function() {
+                // swallow errors for now; button state will reset below
+            }).finally(function() {
+                btn.classList.remove('is-syncing');
+                if (icon) {
+                    icon.classList.remove('spinning');
+                }
+            });
+        });
+    });
 });
 </script>
 @endpush
@@ -502,22 +524,54 @@ document.addEventListener('DOMContentLoaded', function() {
         productBoxes.forEach(function(b) { b.disabled = readOnly; });
     }
 
-    function formatActivityTime(isoStr) {
+    function formatActivityTime(isoStr, now) {
         if (!isoStr) return '—';
-        var d = new Date(isoStr);
+
+        var d = null;
+
+        // Prefer parsing as local wall-clock time (ignore timezone), so
+        // \"now\" in the database and \"now\" in the browser line up visually.
+        if (typeof isoStr === 'string') {
+            var m = isoStr.match(/^(\\d{4})-(\\d{2})-(\\d{2})[ T](\\d{2}):(\\d{2})(?::(\\d{2}))?/);
+            if (m) {
+                var year = parseInt(m[1], 10);
+                var month = parseInt(m[2], 10) - 1;
+                var day = parseInt(m[3], 10);
+                var hour = parseInt(m[4], 10);
+                var min = parseInt(m[5], 10);
+                var sec = m[6] ? parseInt(m[6], 10) : 0;
+                d = new Date(year, month, day, hour, min, sec);
+            }
+        }
+
+        if (!d) {
+            d = new Date(isoStr);
+        }
+
         if (isNaN(d.getTime())) return isoStr;
-        var now = new Date();
-        var diff = Math.floor((now - d) / 1000);
-        if (diff < 60) return 'just now';
-        if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
-        if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
-        if (diff < 604800) return Math.floor(diff / 86400) + 'd ago';
-        return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        if (!now || !(now instanceof Date)) now = new Date();
+        var diffSec = Math.floor((now - d) / 1000);
+        if (diffSec < 0) return 'just now';
+        if (diffSec < 60) return 'just now';
+        if (diffSec < 3600) return Math.floor(diffSec / 60) + ' min ago';
+        if (diffSec < 86400) return Math.floor(diffSec / 3600) + ' hr ago';
+        if (diffSec < 172800) return '1 day ago';
+        if (diffSec < 604800) {
+            var days = Math.floor(diffSec / 86400);
+            return days + ' day' + (days === 1 ? '' : 's') + ' ago';
+        }
+        if (diffSec < 1209600) return '1 week ago';
+        if (diffSec < 2592000) return Math.floor(diffSec / 604800) + ' weeks ago';
+        if (diffSec < 5184000) return '1 month ago';
+        if (diffSec < 31536000) return Math.floor(diffSec / 2592000) + ' months ago';
+        if (diffSec < 63072000) return '1 year ago';
+        return Math.floor(diffSec / 31536000) + ' years ago';
     }
 
     function renderActivity(activities) {
         if (!activityTimeline) return;
         activityTimeline.innerHTML = '';
+        var now = new Date();
         if (!activities || activities.length === 0) {
             activityTimeline.innerHTML = '<div class="inquiry-activity-item"><span class="inquiry-activity-bullet"></span><div class="inquiry-activity-content">No activity yet.</div></div>';
             return;
@@ -526,7 +580,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var item = document.createElement('div');
             item.className = 'inquiry-activity-item';
             var user = (a.user || 'System').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            var timeStr = formatActivityTime(a.created_at);
+            var timeStr = formatActivityTime(a.created_at, now);
             var html = '<span class="inquiry-activity-bullet"></span><div class="inquiry-activity-content">';
             if (a.type === 'created') {
                 html += '<strong>' + user + '</strong> created inquiry <span class="inquiry-activity-link">#SQL-' + currentLeadId + '</span>';
@@ -649,21 +703,27 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    document.querySelectorAll('.inquiries-update-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            openModal(btn.dataset.leadId, btn.dataset.customer, btn.dataset.status);
-        });
-    });
-
     var viewModal = document.getElementById('inquiryViewModal');
     var viewSubtitle = document.getElementById('inquiryViewModalSubtitle');
     var viewContent = document.getElementById('inquiryViewMessageContent');
     var viewCloseBtn = document.getElementById('inquiryViewModalClose');
     var viewCloseBtnFooter = document.getElementById('inquiryViewModalCloseBtn');
-    document.querySelectorAll('.inquiries-view-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            var leadId = btn.dataset.leadId;
-            var customer = btn.dataset.customer || '—';
+
+    // Delegate click handling for Update / View buttons so it continues to work
+    // after the table body is replaced by Sync.
+    document.addEventListener('click', function(e) {
+        var updateBtnEl = e.target.closest('.inquiries-update-btn');
+        if (updateBtnEl) {
+            e.preventDefault();
+            openModal(updateBtnEl.dataset.leadId, updateBtnEl.dataset.customer, updateBtnEl.dataset.status);
+            return;
+        }
+
+        var viewBtnEl = e.target.closest('.inquiries-view-btn');
+        if (viewBtnEl) {
+            e.preventDefault();
+            var leadId = viewBtnEl.dataset.leadId;
+            var customer = viewBtnEl.dataset.customer || '—';
             if (viewSubtitle) viewSubtitle.textContent = 'Inquiry ID: #SQL-' + leadId + ' • ' + customer;
             if (viewContent) viewContent.textContent = 'Loading...';
             viewModal.setAttribute('aria-hidden', 'false');
@@ -679,7 +739,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(function() {
                 if (viewContent) viewContent.textContent = '—';
             });
-        });
+        }
     });
     function closeViewModal() {
         viewModal.setAttribute('aria-hidden', 'true');

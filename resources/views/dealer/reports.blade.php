@@ -165,8 +165,12 @@
                     @endforeach
                 </div>
                 <div class="reports-bar-chart-bars">
-                    @foreach ($productCounts as $cnt)
-                    <div class="reports-bar-row"><div class="reports-bar-fill" style="width:{{ $productMax > 0 ? round(($cnt / $productMax) * 100, 1) : 0 }}%"></div></div>
+                    @foreach ($productCounts as $i => $cnt)
+                    @php $pid = $i + 1; @endphp
+                    <div class="reports-bar-row">
+                        <div class="reports-bar-fill reports-product-fill reports-product-fill-p{{ $pid }}"
+                             style="width:{{ $productMax > 0 ? round(($cnt / $productMax) * 100, 1) : 0 }}%"></div>
+                    </div>
                     @endforeach
                 </div>
             </div>

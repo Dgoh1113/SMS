@@ -94,9 +94,8 @@
                                     @for($i = 0; $i < 6; $i++)
                                         @php
                                             $isFilled = $i < $filledCount;
-                                            $segmentColor = $i < 2 ? 'red' : ($i < 4 ? 'yellow' : 'green');
                                         @endphp
-                                        <div class="dealer-status-segment dealer-status-segment--{{ $segmentColor }} {{ $isFilled ? 'dealer-status-segment--filled' : '' }}"></div>
+                                        <div class="dealer-status-segment dealer-status-segment--{{ $i }} {{ $isFilled ? 'dealer-status-segment--filled' : '' }}"></div>
                                     @endfor
                                 </div>
                             </div>

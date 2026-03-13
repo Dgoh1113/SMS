@@ -2090,15 +2090,27 @@ textarea.inquiry-form-input { resize: vertical; min-height: 140px; }
   background: #fecaca;
   color: #b91c1c;
 }
+.inquiry-step--done.inquiry-step--red[data-step="FOLLOW UP"] {
+  background: #dc2626;
+  color: #ffffff;
+}
 
 .inquiry-step--done.inquiry-step--yellow {
   background: #fef08a;
   color: #854d0e;
 }
+.inquiry-step--done.inquiry-step--yellow[data-step="CONFIRMED"] {
+  background: #eab308;
+  color: #ffffff;
+}
 
 .inquiry-step--done.inquiry-step--green {
   background: #bbf7d0;
   color: #15803d;
+}
+.inquiry-step--done.inquiry-step--green[data-step="REWARDED"] {
+  background: #22c55e;
+  color: #ffffff;
 }
 
 /* Active/selected step: color */
@@ -2106,15 +2118,27 @@ textarea.inquiry-form-input { resize: vertical; min-height: 140px; }
   background: #fecaca;
   color: #b91c1c;
 }
+.inquiry-step--active.inquiry-step--red[data-step="FOLLOW UP"] {
+  background: #dc2626;
+  color: #ffffff;
+}
 
 .inquiry-step--active.inquiry-step--yellow {
   background: #fef08a;
   color: #854d0e;
 }
+.inquiry-step--active.inquiry-step--yellow[data-step="CONFIRMED"] {
+  background: #eab308;
+  color: #ffffff;
+}
 
 .inquiry-step--active.inquiry-step--green {
   background: #bbf7d0;
   color: #15803d;
+}
+.inquiry-step--active.inquiry-step--green[data-step="REWARDED"] {
+  background: #22c55e;
+  color: #ffffff;
 }
 
 .inquiry-step--clickable {
@@ -3297,17 +3321,13 @@ textarea.inquiry-form-input { resize: vertical; min-height: 140px; }
   transition: background 0.2s ease;
 }
 
-.dealer-status-segment--filled.dealer-status-segment--red {
-  background: #dc2626;
-}
-
-.dealer-status-segment--filled.dealer-status-segment--yellow {
-  background: #eab308;
-}
-
-.dealer-status-segment--filled.dealer-status-segment--green {
-  background: #22c55e;
-}
+/* Match inquiries page status colors: PENDING, FOLLOW UP, DEMO, CONFIRMED, COMPLETED, REWARDED */
+.dealer-status-segment--filled.dealer-status-segment--0 { background: #fecaca; } /* Pending */
+.dealer-status-segment--filled.dealer-status-segment--1 { background: #dc2626; } /* Follow Up */
+.dealer-status-segment--filled.dealer-status-segment--2 { background: #fef08a; } /* Demo */
+.dealer-status-segment--filled.dealer-status-segment--3 { background: #eab308; } /* Confirmed */
+.dealer-status-segment--filled.dealer-status-segment--4 { background: #bbf7d0; } /* Completed */
+.dealer-status-segment--filled.dealer-status-segment--5 { background: #22c55e; } /* Rewarded */
 
 .dealer-progress-text {
   font-size: 11px;
@@ -4607,7 +4627,19 @@ button.dealer-pagination-btn:disabled {
   display: flex;
   flex-direction: column;
 }
+.inquiries-page-wrap > .inquiries-mgmt-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
 .inquiries-page-wrap .inquiries-tab-panel .inquiries-table-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto; /* the ONLY scroller for tables */
+  position: relative;
+}
+.inquiries-page-wrap > .inquiries-mgmt-panel > .inquiries-table-wrap {
   flex: 1;
   min-height: 0;
   overflow: auto; /* the ONLY scroller for tables */
@@ -4780,9 +4812,41 @@ button.dealer-pagination-btn:disabled {
   overflow: auto; /* avoid nested scroll containers (breaks sticky) */
   max-width: 100%;
   position: relative;
+  scrollbar-width: none; /* Firefox: hide until hover */
+}
+.inquiries-table-wrap:hover {
+  scrollbar-width: thin;
+}
+.inquiries-table-wrap::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+.inquiries-table-wrap:hover::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.inquiries-table-wrap::-webkit-scrollbar-track {
+  background: transparent;
+}
+.inquiries-table-wrap:hover::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 6px;
+}
+.inquiries-table-wrap::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 6px;
+}
+.inquiries-table-wrap:hover::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+.inquiries-table-wrap:hover::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 .inquiries-table#unassignedTable,
 .inquiries-table#assignedTable {
+  table-layout: auto;
+}
+.inquiries-table#dealerInquiriesTable {
   table-layout: auto;
 }
 .inquiries-table {
@@ -4915,6 +4979,74 @@ button.dealer-pagination-btn:disabled {
   width: 1%;
   max-width: 110px; /* +15px */
   white-space: nowrap;
+}
+
+#dealerInquiriesTable th[data-col="inquiryid"],
+#dealerInquiriesTable td[data-col="inquiryid"] {
+  width: 1%;
+  max-width: 110px;
+  white-space: nowrap;
+}
+#dealerInquiriesTable th[data-col="postcode"],
+#dealerInquiriesTable td[data-col="postcode"] {
+  width: 1%;
+  max-width: 85px;
+  white-space: nowrap;
+}
+#dealerInquiriesTable th[data-col="date"],
+#dealerInquiriesTable td[data-col="date"] {
+  width: 1%;
+  max-width: 97px;
+  white-space: nowrap;
+}
+#dealerInquiriesTable th[data-col="date"] .inquiries-grid-filter {
+  max-width: 97px;
+}
+#dealerInquiriesTable th[data-col="source"],
+#dealerInquiriesTable td[data-col="source"] {
+  max-width: 150px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#dealerInquiriesTable th[data-col="contactno"],
+#dealerInquiriesTable td[data-col="contactno"] {
+  width: 1%;
+  max-width: 125px;
+  white-space: nowrap;
+}
+#dealerInquiriesTable th[data-col="users"],
+#dealerInquiriesTable td[data-col="users"] {
+  width: 1%;
+  max-width: 80px;
+  white-space: nowrap;
+}
+#dealerInquiriesTable th[data-col="demomode"],
+#dealerInquiriesTable td[data-col="demomode"] {
+  width: 1%;
+  max-width: 90px;
+  white-space: nowrap;
+}
+#dealerInquiriesTable th[data-col="referralcode"],
+#dealerInquiriesTable td[data-col="referralcode"] {
+  max-width: 112px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#dealerInquiriesTable th[data-col="businessnature"],
+#dealerInquiriesTable td[data-col="businessnature"] {
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#dealerInquiriesTable th[data-col="message"],
+#dealerInquiriesTable td[data-col="message"] {
+  min-width: 260px;
+  max-width: 420px;
+  white-space: normal;
+  word-break: break-word;
 }
 #unassignedTable th[data-col="postcode"],
 #unassignedTable td[data-col="postcode"] {
@@ -5312,23 +5444,28 @@ button.dealer-pagination-btn:disabled {
   background: #52c41a; /* generic active/green */
 }
 .inquiries-status-pending {
-  background: #ff4d4f;
+  background: #fecaca;
+  color: #b91c1c;
 }
 .inquiries-status-followup {
-  background: #ffa940;
+  background: #dc2626;
+  color: #ffffff;
 }
 .inquiries-status-demo {
-  background: #ffd666;
-  color: #4a3300;
+  background: #fef08a;
+  color: #854d0e;
 }
 .inquiries-status-confirmed {
-  background: #73d13d;
+  background: #eab308;
+  color: #ffffff;
 }
 .inquiries-status-completed {
-  background: #52c41a;
+  background: #bbf7d0;
+  color: #15803d;
 }
 .inquiries-status-rewarded {
-  background: #237804;
+  background: #22c55e;
+  color: #ffffff;
 }
 .inquiries-status-failed {
   background: #434343;
@@ -5827,6 +5964,20 @@ button.dealer-pagination-btn:disabled {
   border-radius: 6px;
   transition: width 0.3s ease;
 }
+
+/* Product Conversion: color bars by product id (match inquiries pills) */
+.reports-product-fill { background: #64748b; }
+.reports-product-fill-p1 { background: #662d91; } /* SQL Account */
+.reports-product-fill-p2 { background: #cd2027; } /* SQL Payroll */
+.reports-product-fill-p3 { background: #662d91; } /* SQL Production */
+.reports-product-fill-p4 { background: #662d91; } /* Mobile Sales */
+.reports-product-fill-p5 { background: orange; } /* SQL Ecommerce */
+.reports-product-fill-p6 { background: #8cc63f; } /* SQL EBI Wellness POS */
+.reports-product-fill-p7 { background: #111827; } /* SQL X Suduai */
+.reports-product-fill-p8 { background: orange; } /* SQL X-Store */
+.reports-product-fill-p9 { background: #c4b5fd; } /* SQL Vision */
+.reports-product-fill-p10 { background: #cd2027; } /* SQL HRMS */
+.reports-product-fill-p11 { background: #64748b; } /* Others */
 
 .reports-bar-chart-xaxis {
   display: flex;
