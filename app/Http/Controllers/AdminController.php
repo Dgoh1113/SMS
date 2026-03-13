@@ -381,6 +381,13 @@ class AdminController extends Controller
             // fall back to raw ids
         }
         $totalNewInquiries = count($unassigned);
+        $totalOngoing = 0;
+        foreach ($assigned as $r) {
+            $status = strtoupper(trim((string)($r->CURRENTSTATUS ?? '')));
+            if ($status === 'ONGOING') {
+                $totalOngoing++;
+            }
+        }
         $productLabels = [
             1 => 'Account',
             2 => 'Payroll',
@@ -448,6 +455,7 @@ class AdminController extends Controller
             'unassigned' => $unassigned,
             'assigned' => $assigned,
             'totalNewInquiries' => $totalNewInquiries,
+            'totalOngoing' => $totalOngoing,
             'productLabels' => $productLabels,
             'dealers' => $dealers,
             'currentPage' => 'inquiries',
@@ -466,6 +474,8 @@ class AdminController extends Controller
         return response()->json([
             'unassigned' => $unassignedHtml,
             'assigned' => $assignedHtml,
+            'totalNewInquiries' => $data['totalNewInquiries'] ?? 0,
+            'totalOngoing' => $data['totalOngoing'] ?? 0,
         ]);
     }
 
@@ -627,25 +637,85 @@ class AdminController extends Controller
 
     public function storeInquiry(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'COMPANYNAME' => 'required|string|max:255',
-            'CONTACTNAME' => 'required|string|max:255',
-            'CONTACTNO' => 'required|string|max:100',
-            'EMAIL' => 'required|email|max:255',
-            'ADDRESS1' => 'nullable|string|max:255',
-            'ADDRESS2' => 'nullable|string|max:255',
-            'CITY' => 'required|string|max:100',
-            'POSTCODE' => 'required|string|max:20',
-            'BUSINESSNATURE' => 'required|string|max:255',
-            'USERCOUNT' => 'nullable|string|max:50',
-            'EXISTINGSOFTWARE' => 'required|string|max:255',
-            'DEMOMODE' => 'required|string|in:Zoom,On-site',
-            'product_interested' => 'required|array',
-            'product_interested.*' => 'integer|in:1,2,3,4,5,6,7,8,9,10,11',
-            'DESCRIPTION' => 'nullable|string|max:4000',
-            'REFERRALCODE' => 'nullable|string|max:100',
-            'ASSIGNED_TO' => 'nullable|string|max:50',
-        ]);
+        $validated = $request->validate(
+            [
+                'COMPANYNAME' => 'required|string|max:255',
+                'CONTACTNAME' => 'required|string|max:255',
+                'CONTACTNO' => 'required|string|min:10|max:15',
+                'EMAIL' => 'required|email|max:255',
+                'ADDRESS1' => 'nullable|string|max:255',
+                'ADDRESS2' => 'nullable|string|max:255',
+                'CITY' => 'required|string|max:100',
+                'POSTCODE' => 'required|string|digits:5',
+                'BUSINESSNATURE' => 'required|string|max:255',
+                'USERCOUNT' => 'nullable|string|max:50',
+                'EXISTINGSOFTWARE' => 'required|string|max:255',
+                'DEMOMODE' => 'required|string|in:Zoom,On-site',
+                'product_interested' => 'required|array',
+                'product_interested.*' => 'integer|in:1,2,3,4,5,6,7,8,9,10,11',
+                'DESCRIPTION' => 'nullable|string|max:4000',
+                'REFERRALCODE' => 'nullable|string|max:100',
+                'ASSIGNED_TO' => 'nullable|string|max:50',
+            ],
+            [
+                'CONTACTNO.min'          => 'Invalid Contact Number.',
+                'CONTACTNO.max'          => 'Invalid Contact Number.',
+                'POSTCODE.digits'        => 'Invalid PostCode.',
+                'product_interested.*'   => 'Please select at least one product.',
+                'product_interested.min' => 'Please select at least one product.',
+                'product_interested.required' => 'Please select at least one product.',
+            ],
+            [
+                'CONTACTNO' => 'Contact no',
+                'POSTCODE'  => 'Post code',
+            ]
+        );
+
+        // Soft-check for existing lead with the same company name (case-insensitive).
+        // First submit: show a friendly warning; second submit with duplicate_ok=1: proceed.
+        if (!$request->boolean('duplicate_ok')) {
+            try {
+                $existing = DB::selectOne(
+                    'SELECT FIRST 1 "LEADID","COMPANYNAME","CONTACTNAME","EMAIL","CURRENTSTATUS","CREATEDAT"
+                     FROM "LEAD"
+                     WHERE UPPER(TRIM("COMPANYNAME")) = UPPER(TRIM(?))',
+                    [$validated['COMPANYNAME']]
+                );
+                if ($existing) {
+                    $leadId = (int) ($existing->LEADID ?? 0);
+                    $company = trim((string) ($existing->COMPANYNAME ?? $existing->companyname ?? ''));
+                    $status = trim((string) ($existing->CURRENTSTATUS ?? $existing->currentstatus ?? ''));
+                    $created = $existing->CREATEDAT ?? $existing->createdat ?? null;
+                    $createdLabel = $created ? date('d/m/Y', strtotime((string) $created)) : null;
+
+                    // Example:
+                    // This company already has an open inquiry.
+                    // Lead #SQL-4 was created on 12/03/2026 with status Pending.
+                    $line1 = 'This company already has an open inquiry.';
+                    $parts = [];
+                    if ($leadId > 0) {
+                        $parts[] = 'Lead #SQL-' . $leadId;
+                    }
+                    if ($createdLabel) {
+                        $parts[] = 'was created on ' . $createdLabel;
+                    }
+                    if ($status !== '') {
+                        $parts[] = 'with status ' . $status;
+                    }
+                    $line2 = $parts ? implode(' ', $parts) . '.' : '';
+                    $message = trim($line1 . "\n\n" . $line2);
+
+                    $input = $request->all();
+                    $input['duplicate_ok'] = 1;
+
+                    return back()
+                        ->withInput($input)
+                        ->with('duplicate_warning', $message);
+                }
+            } catch (\Throwable $e) {
+                // If lookup fails, continue with normal flow.
+            }
+        }
 
         $userId = $request->session()->get('user_id');
         $productInterested = array_map('intval', $validated['product_interested']);
