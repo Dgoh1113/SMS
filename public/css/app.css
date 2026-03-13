@@ -16,7 +16,13 @@
 *::after {
   box-sizing: border-box;
 }
-
+th{
+  background-color: #ddd6fe;  ;
+  color: #4c1d95;
+  font-weight: 600;
+  padding: 8px 10px;
+  border-bottom: 1px solid #ddd6fe;
+}
 html,
 body {
   margin: 0;
@@ -507,14 +513,58 @@ body {
   transition: grid-template-columns 0.8s ease;
 }
 
-/* Toggle: hamburger when sidebar collapsed, cross when sidebar open */
+/* Prevent sidebar jump/flicker on navigation before JS runs */
+html.dashboard-root-sidebar-collapsed-preload .dashboard-root {
+  grid-template-columns: 60px minmax(0, 1fr);
+}
+html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
+  width: 60px;
+  min-width: 60px;
+  padding: 24px 6px 20px;
+  transition: none !important;
+}
+
+/* Print styles: for reports, include only main report content (no layout chrome) */
+@media print {
+  /* Hide global layout chrome */
+  .dashboard-sidebar,
+  .dashboard-topbar,
+  .dashboard-bottombar {
+    display: none !important;
+  }
+
+  /* Make main area full width */
+  .dashboard-root {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  /* Remove background/padding so PDF is clean */
+  .reports-page,
+  .rv2-page,
+  .rrp-page {
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+
+  /* Hide buttons/controls we don't want in PDF */
+  .rv2-export-btn,
+  .rrp-pill,
+  .btn.btn-outline,
+  .rv2-filters,
+  .inquiry-chart-filters,
+  .maintain-users-add-btn {
+    display: none !important;
+  }
+}
+
+/* Toggle: hamburger when sidebar collapsed, cross when sidebar open; same footprint as other icons */
 .dashboard-sidebar-toggle {
   position: relative;
   width: 20px;
   height: 20px;
   min-width: 20px;
   margin: 0;
-  margin-left: auto;
+  margin-left: 8px;
   padding: 0;
   border: none;
   background: transparent;
@@ -548,8 +598,8 @@ body {
   position: absolute;
   left: 0;
   width: 100%;
-  height: 2px;
-  top: calc(50% - 1px);
+  height: 1.5px;
+  top: calc(50% - 0.75px);
   background: #6b7280;
   transition: transform 0.25s ease, background 0.2s ease;
 }
@@ -572,7 +622,7 @@ body {
 .dashboard-sidebar-toggle:hover .dashboard-sidebar-toggle-inner,
 .dashboard-sidebar-toggle:focus-visible .dashboard-sidebar-toggle-inner {
   background: #4f46e5;
-  box-shadow: 0 -5px 0 0 #4f46e5, 0 5px 0 0 #4f46e5;
+  box-shadow: 0 -4px 0 0 #4f46e5, 0 4px 0 0 #4f46e5;
 }
 
 .dashboard-root-sidebar-collapsed .dashboard-sidebar-toggle::before,
@@ -582,13 +632,19 @@ body {
 
 .dashboard-root-sidebar-collapsed .dashboard-sidebar-toggle {
   margin-left: 0;
+  margin-right: 0;
+  transform: none;
   order: -1;
 }
-
+/* Extra padding for nav area when sidebar is minimized */
+.dashboard-root-sidebar-collapsed .dashboard-sidebar .dashboard-nav {
+  padding-top: 18px;    
+}
 .dashboard-sidebar-top {
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
+  align-items: center;
+  flex-wrap: nowrap;
   gap: 8px;
   flex-shrink: 0;
 }
@@ -606,6 +662,7 @@ body {
   gap: 4px;
   margin-left: 4px;
   transition: margin 0.8s ease, opacity 0.8s ease;
+  min-width: 0;
 }
 
 /* When minimized: hide SQL logo and SMS entirely */
@@ -637,6 +694,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 
 .dashboard-brand-sms {
@@ -646,6 +704,9 @@ body {
   text-transform: uppercase;
   color: #7f5af0;
   margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .dashboard-brand-logo-img {
@@ -682,6 +743,10 @@ body {
   letter-spacing: 0.18em;
   text-transform: uppercase;
   font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .dashboard-logo {
@@ -717,6 +782,7 @@ body {
   flex-direction: column;
   gap: 4px;
   flex: 1;
+  padding-top: 10px;
   min-height: 0;
   overflow-y: auto;
 }
@@ -759,16 +825,11 @@ body {
   justify-content: center;
   padding: 10px 12px;
   min-width: 44px;
+  gap: 0;
 }
 
 .dashboard-root-sidebar-collapsed .dashboard-sidebar .dashboard-nav-item span:not(.dashboard-nav-icon) {
-  overflow: hidden;
-  width: 0;
-  opacity: 0;
-  padding: 0;
-  margin: 0;
-  white-space: nowrap;
-  transition: width 0.8s ease, opacity 0.8s ease, padding 0.8s ease, margin 0.8s ease;
+  display: none;
 }
 
 .dashboard-sidebar-collapsed .dashboard-nav-icon,
@@ -776,7 +837,8 @@ body {
   font-size: 18px;
 }
 
-.dashboard-root-sidebar-collapsed .dashboard-sidebar .dashboard-nav-group-title {
+.dashboard-root-sidebar-collapsed .dashboard-sidebar .dashboard-nav-group-title,
+.dashboard-root-sidebar-collapsed .dashboard-sidebar .sidebar-section {
   overflow: hidden;
   width: 0;
   height: 0;
@@ -861,7 +923,7 @@ body {
 .dashboard-main-body {
   flex: 1;
   min-height: 0;
-  padding: 24px 28px 24px 24px;
+  padding: 0px 28px 24px 24px;
   background: #f3f4ff;
   overflow-y: auto;
   display: flex;
@@ -1784,6 +1846,7 @@ textarea.inquiry-form-input { resize: vertical; min-height: 140px; }
   }
 }
 
+/* Generic dashboard table base, aligned with inquiries table look */
 .dashboard-table-wrapper {
   margin-top: 10px;
   overflow-x: auto;
@@ -1797,18 +1860,22 @@ textarea.inquiry-form-input { resize: vertical; min-height: 140px; }
 
 .dashboard-table th,
 .dashboard-table td {
-  padding: 10px 8px;
+  padding: 10px 12px;
   text-align: left;
-}
-
-.dashboard-table thead {
   border-bottom: 1px solid #e5e7eb;
-  color: var(--text-muted);
-  font-size: 12px;
 }
 
-.dashboard-table tbody tr:nth-child(even) {
-  background: #f9fafb;
+.dashboard-table thead th {
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #4c1d95;            /* match inquiries header color */
+  background: #ede9fe;       /* light purple header background */
+}
+
+.dashboard-table tbody tr:hover {
+  background: #f9fafb;       /* same hover as inquiries */
 }
 
 .dashboard-table th.dashboard-table-sortable {

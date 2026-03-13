@@ -8,6 +8,17 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <script>
+        // Apply sidebar state ASAP (prevents flicker on page navigation)
+        (function () {
+            try {
+                var collapsed = localStorage.getItem('dashboard-sidebar-collapsed') === '1';
+                if (collapsed) {
+                    document.documentElement.classList.add('dashboard-root-sidebar-collapsed-preload');
+                }
+            } catch (e) {}
+        })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
@@ -114,7 +125,14 @@
         });
     }
 
-    // Sidebar hamburger toggle: 0.8s expand/collapse, collapsed shows icon + SQL logo + SMS only
+    // Sidebar: apply preload state immediately (avoids flicker)
+    if (document.documentElement.classList.contains('dashboard-root-sidebar-collapsed-preload')) {
+        var r = document.getElementById('dashboardRoot');
+        if (r) r.classList.add('dashboard-root-sidebar-collapsed');
+        document.documentElement.classList.remove('dashboard-root-sidebar-collapsed-preload');
+    }
+
+    // Sidebar hamburger toggle: state persists (localStorage)
     (function() {
         var root = document.querySelector('.dashboard-root');
         var toggle = document.getElementById('sidebarToggle');

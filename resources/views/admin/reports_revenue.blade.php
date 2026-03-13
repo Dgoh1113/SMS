@@ -54,11 +54,8 @@
                     @endforeach
                 </div>
             </div>
-            <button type="button" class="rrp-pill rrp-pill-green">
-                Export to Excel
-            </button>
-            <button type="button" class="rrp-pill rrp-pill-purple">
-                Print to PDF
+            <button type="button" class="rrp-pill rrp-pill-purple" id="rrpDownloadPdfBtn">
+                Download PDF
             </button>
         </div>
     </header>
@@ -150,6 +147,13 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            const pdfBtn = document.getElementById('rrpDownloadPdfBtn');
+            if (pdfBtn) {
+                pdfBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    window.print();
+                });
+            }
             // Quarter/Year dropdowns -> reload with query params
             const quarterBtn = document.getElementById('rrpQuarterBtn');
             const quarterMenu = document.getElementById('rrpQuarterMenu');
