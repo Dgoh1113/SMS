@@ -111,10 +111,10 @@ class AdminController extends Controller
             // Pull dealer list first (company is display name).
             // Some schemas may not have COMPANY populated; still return rows.
             $topDealersRaw = [];
-            try {
-                $topDealersRaw = DB::select(
+        try {
+            $topDealersRaw = DB::select(
                     'SELECT u."USERID", u."EMAIL", u."COMPANY" AS "COMPANY", u."POSTCODE" AS "POSTCODE", u."CITY" AS "CITY"
-                     FROM "USERS" u
+                FROM "USERS" u
                      WHERE UPPER(TRIM(u."SYSTEMROLE")) LIKE \'%DEALER%\''
                 );
             } catch (\Throwable $e) {
@@ -204,13 +204,13 @@ class AdminController extends Controller
                 $postcode = trim((string) ($d->POSTCODE ?? ''));
                 $city = trim((string) ($d->CITY ?? ''));
                 $location = trim(trim($postcode . ' ' . $city));
-                return [
+            return [
                     // Per requirement: show company column for dealers.
                     'dealer_name' => $company,
                     'location' => $location,
-                    'total_leads' => $leads,
+                'total_leads' => $leads,
                     'ongoing_count' => $ongoing,
-                    'closed_count' => $closed,
+                'closed_count' => $closed,
                     'failed_count' => $failed,
                     'conversion_rate' => round($conversion * 100, 1),
                     'avg_closing_time' => $avgClosingDisplay,
@@ -443,32 +443,44 @@ class AdminController extends Controller
             if (!empty($ids)) {
                 $placeholders = implode(',', array_fill(0, count($ids), '?'));
                 $users = DB::select('SELECT "USERID","SYSTEMROLE","ALIAS","COMPANY","EMAIL" FROM "USERS" WHERE CAST("USERID" AS VARCHAR(50)) IN (' . $placeholders . ')', $ids);
-                $userMap = [];
+                $assignedToMap = [];
+                $createdByMap = [];
                 foreach ($users as $u) {
                     $uid = trim((string) ($u->USERID ?? ''));
                     if ($uid === '') continue;
                     $role = trim((string) ($u->SYSTEMROLE ?? ''));
+                    $company = trim((string) ($u->COMPANY ?? ''));
                     $alias = trim((string) ($u->ALIAS ?? ''));
-                    $fallback = trim((string) ($u->COMPANY ?? ''));
-                    if ($fallback === '') $fallback = trim((string) ($u->EMAIL ?? ''));
-                    if ($fallback === '') $fallback = $uid;
+                    $email = trim((string) ($u->EMAIL ?? ''));
+                    $fallback = $email !== '' ? $email : $uid;
 
-                    if ($role !== '' && $alias !== '') {
-                        $label = $role . '- ' . $alias;
-                    } elseif ($role !== '') {
-                        $label = $role . '- ' . $fallback;
+                    // Assigned To: COMPANY-ALIAS (preferred)
+                    if ($company !== '' && $alias !== '') {
+                        $assignedToMap[$uid] = $company . '- ' . $alias;
+                    } elseif ($company !== '') {
+                        $assignedToMap[$uid] = $company;
                     } elseif ($alias !== '') {
-                        $label = $alias;
+                        $assignedToMap[$uid] = $alias;
                     } else {
-                        $label = $fallback;
+                        $assignedToMap[$uid] = $fallback;
                     }
-                    $userMap[$uid] = $label;
+
+                    // Created By / Assigned By: SYSTEMROLE-ALIAS (original style)
+                    if ($role !== '' && $alias !== '') {
+                        $createdByMap[$uid] = $role . '- ' . $alias;
+                    } elseif ($role !== '') {
+                        $createdByMap[$uid] = $role . '- ' . ($company !== '' ? $company : ($email !== '' ? $email : $uid));
+                    } elseif ($alias !== '') {
+                        $createdByMap[$uid] = $alias;
+                    } else {
+                        $createdByMap[$uid] = $fallback;
+                    }
                 }
                 foreach ($rows as $r) {
                     $to = trim((string) ($r->ASSIGNED_TO ?? ''));
                     $by = trim((string) ($r->CREATEDBY ?? ''));
-                    if ($to !== '' && isset($userMap[$to])) $r->ASSIGNED_TO_NAME = $userMap[$to];
-                    if ($by !== '' && isset($userMap[$by])) $r->CREATEDBY_NAME = $userMap[$by];
+                    if ($to !== '' && isset($assignedToMap[$to])) $r->ASSIGNED_TO_NAME = $assignedToMap[$to];
+                    if ($by !== '' && isset($createdByMap[$by])) $r->CREATEDBY_NAME = $createdByMap[$by];
                 }
             }
         } catch (\Throwable $e) {
@@ -646,22 +658,42 @@ class AdminController extends Controller
             $placeholders = implode(',', array_fill(0, count($ids), '?'));
             try {
                 $users = DB::select('SELECT "USERID","SYSTEMROLE","ALIAS","COMPANY","EMAIL" FROM "USERS" WHERE CAST("USERID" AS VARCHAR(50)) IN (' . $placeholders . ')', $ids);
-                $userMap = [];
+                $assignedToMap = [];
+                $createdByMap = [];
                 foreach ($users as $u) {
                     $uid = trim((string) ($u->USERID ?? ''));
                     if ($uid === '') continue;
                     $role = trim((string) ($u->SYSTEMROLE ?? ''));
+                    $company = trim((string) ($u->COMPANY ?? ''));
                     $alias = trim((string) ($u->ALIAS ?? ''));
-                    $fallback = trim((string) ($u->COMPANY ?? ''));
-                    if ($fallback === '') $fallback = trim((string) ($u->EMAIL ?? ''));
-                    if ($fallback === '') $fallback = $uid;
-                    $userMap[$uid] = ($role !== '' && $alias !== '') ? ($role . '- ' . $alias) : (($role !== '' ? $role . '- ' . $fallback : ($alias !== '' ? $alias : $fallback)));
+                    $email = trim((string) ($u->EMAIL ?? ''));
+                    $fallback = $email !== '' ? $email : $uid;
+                    // Assigned To: COMPANY-ALIAS
+                    if ($company !== '' && $alias !== '') {
+                        $assignedToMap[$uid] = $company . '- ' . $alias;
+                    } elseif ($company !== '') {
+                        $assignedToMap[$uid] = $company;
+                    } elseif ($alias !== '') {
+                        $assignedToMap[$uid] = $alias;
+                    } else {
+                        $assignedToMap[$uid] = $fallback;
+                    }
+                    // Created By: SYSTEMROLE-ALIAS
+                    if ($role !== '' && $alias !== '') {
+                        $createdByMap[$uid] = $role . '- ' . $alias;
+                    } elseif ($role !== '') {
+                        $createdByMap[$uid] = $role . '- ' . ($company !== '' ? $company : ($email !== '' ? $email : $uid));
+                    } elseif ($alias !== '') {
+                        $createdByMap[$uid] = $alias;
+                    } else {
+                        $createdByMap[$uid] = $fallback;
+                    }
                 }
                 foreach ($rows as $r) {
                     $to = trim((string) ($r->ASSIGNED_TO ?? ''));
                     $by = trim((string) ($r->CREATEDBY ?? ''));
-                    if ($to !== '' && isset($userMap[$to])) $r->ASSIGNED_TO_NAME = $userMap[$to];
-                    if ($by !== '' && isset($userMap[$by])) $r->CREATEDBY_NAME = $userMap[$by];
+                    if ($to !== '' && isset($assignedToMap[$to])) $r->ASSIGNED_TO_NAME = $assignedToMap[$to];
+                    if ($by !== '' && isset($createdByMap[$by])) $r->CREATEDBY_NAME = $createdByMap[$by];
                 }
             } catch (\Throwable $e) {
                 // fallback raw ids

@@ -91,15 +91,15 @@
                     <input type="text" name="ADDRESS2" value="{{ old('ADDRESS2') }}" maxlength="255" class="inquiry-form-input">
                 </label>
                 <label class="inquiry-form-label">
-                    <span class="inquiry-form-label-title">City <span class="required">*</span></span>
-                    <input type="text" name="CITY" value="{{ old('CITY') }}" required maxlength="100" class="inquiry-form-input">
-                </label>
-                <label class="inquiry-form-label">
                     <span class="inquiry-form-label-title">Post code <span class="required">*</span></span>
                     <input type="text" name="POSTCODE" value="{{ old('POSTCODE') }}" required maxlength="5" class="inquiry-form-input @error('POSTCODE') inquiry-input-error @enderror">
                     @error('POSTCODE')
                         <div class="inquiry-field-error">{{ $message }}</div>
                     @enderror
+                </label>
+                <label class="inquiry-form-label">
+                    <span class="inquiry-form-label-title">City <span class="required">*</span></span>
+                    <input type="text" name="CITY" value="{{ old('CITY') }}" required maxlength="100" class="inquiry-form-input">
                 </label>
                 <div class="inquiry-form-full inquiry-form-row3">
                     <label class="inquiry-form-label">

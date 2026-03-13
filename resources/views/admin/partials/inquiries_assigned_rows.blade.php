@@ -84,9 +84,9 @@
     @php $canMarkFailed = !in_array($arawStatus, ['COMPLETED', 'REWARDED', 'FAILED'], true); @endphp
     <td data-col="status"><span class="inquiries-status {{ $astatusClass }}">{{ $arawStatus !== '' ? $arawStatus : 'PENDING' }}</span></td>
     <td class="inquiries-col-action inquiries-action-cell {{ $canMarkFailed ? '' : 'inquiries-action-cell-single' }}">
-        <button type="button" class="inquiries-btn inquiries-btn-small inquiries-view-status-btn" data-lead-id="{{ $r->LEADID }}" title="View Status">View Status</button>
+        <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-view-status-btn" data-lead-id="{{ $r->LEADID }}" title="View Status">View Status</button>
         @if($canMarkFailed)
-        <button type="button" class="inquiries-btn inquiries-btn-small inquiries-btn-secondary inquiries-mark-failed-btn" data-lead-id="{{ $r->LEADID }}" title="Mark As Failed">Mark As Failed</button>
+        <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-btn-assign-danger inquiries-mark-failed-btn" data-lead-id="{{ $r->LEADID }}" title="Mark As Failed">Mark As Failed</button>
         @endif
     </td>
 </tr>

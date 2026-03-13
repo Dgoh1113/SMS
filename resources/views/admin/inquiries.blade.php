@@ -70,7 +70,7 @@
                 <div class="inquiries-columns-menu" id="inquiryColumnsMenu" hidden>
                     <div class="inquiries-columns-menu-title">Show columns</div>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="inquiryid"> INQUIRY ID</label>
-                    <label class="inquiries-columns-check"><input type="checkbox" data-col="date"> DATE</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="date"> INQUIRY DATE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="customername"> CUSTOMER NAME</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="source"> SOURCE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="postcode"> POSTCODE</label>
@@ -99,6 +99,7 @@
         </div>
     </div>
     <div class="inquiries-table-wrap">
+        <div class="inquiries-table-scroll">
         <table class="inquiries-table" id="unassignedTable">
             <thead>
                 <tr class="inquiries-header-row">
@@ -221,6 +222,28 @@
                 @endforelse
             </tbody>
         </table>
+        </div>
+        @php
+            $incomingPerPage = $incomingPerPage ?? 10;
+            $incomingTotal = isset($unassignedTotal) ? $unassignedTotal : count($unassigned);
+            $incomingTo = $incomingTotal === 0 ? 0 : min($incomingPerPage, $incomingTotal);
+        @endphp
+        <div class="inquiries-assigned-pagination" id="incomingPagination"
+             data-incoming-total="{{ $incomingTotal }}"
+             data-incoming-per-page="{{ $incomingPerPage }}"
+             data-incoming-current-page="1"
+             @if($incomingTotal <= $incomingPerPage) style="display:none;" @endif>
+            <span class="inquiries-assigned-pagination-info" id="incomingPaginationInfo">
+                Showing {{ $incomingTotal === 0 ? 0 : 1 }} to {{ $incomingTo }} of {{ $incomingTotal }} entries (Page 1)
+            </span>
+            <div class="inquiries-assigned-pagination-nav">
+                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="incomingPaginationFirst" aria-label="First page">First</button>
+                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="incomingPaginationPrev" aria-label="Previous page">Previous</button>
+                <span class="inquiries-assigned-page-numbers" id="incomingPageNumbers"></span>
+                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="incomingPaginationNext" aria-label="Next page">Next</button>
+                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="incomingPaginationLast" aria-label="Last page">Last</button>
+            </div>
+        </div>
     </div>
 </section>
 </div>
@@ -270,11 +293,12 @@
         </div>
     </div>
     <div class="inquiries-table-wrap">
+        <div class="inquiries-table-scroll">
         <table class="inquiries-table" id="assignedTable">
-            <thead>
+                <thead>
                 <tr class="inquiries-header-row">
                     <th data-col="inquiryid" class="inquiries-header-cell"><span class="inquiries-header-label">INQUIRY ID</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="inquiryid"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                    <th data-col="date" class="inquiries-header-cell"><span class="inquiries-header-label">DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="date"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                    <th data-col="date" class="inquiries-header-cell"><span class="inquiries-header-label">INQUIRY DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="date"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="customername" class="inquiries-header-cell"><span class="inquiries-header-label">CUSTOMER NAME</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="customername"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="source" class="inquiries-header-cell"><span class="inquiries-header-label">SOURCE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="source"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="postcode" class="inquiries-header-cell"><span class="inquiries-header-label">POSTCODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="postcode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
@@ -293,9 +317,9 @@
                     <th data-col="assigndate" class="inquiries-header-cell"><span class="inquiries-header-label">ASSIGN DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="assigndate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="status" class="inquiries-header-cell"><span class="inquiries-header-label">STATUS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="status"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th class="inquiries-col-action inquiries-header-cell"><span class="inquiries-header-label">ACTION</span><button type="button" class="inquiries-filter-clear" id="assignedClearFilters">Clear filters</button></th>
-                </tr>
-            </thead>
-            <tbody>
+                    </tr>
+                </thead>
+                <tbody>
                 @forelse($assigned as $r)
                 <tr class="inquiry-row" data-search="{{ strtolower(($r->COMPANYNAME ?? '').' '.($r->CONTACTNAME ?? '').' '.($r->LEADID ?? '')) }}">
                     <td data-col="inquiryid">#SQL-{{ $r->LEADID }}</td>
@@ -382,17 +406,18 @@
                     @php $canMarkFailed = !in_array($arawStatus, ['COMPLETED', 'REWARDED', 'FAILED'], true); @endphp
                     <td data-col="status"><span class="inquiries-status {{ $astatusClass }}">{{ $arawStatus !== '' ? $arawStatus : 'PENDING' }}</span></td>
                     <td class="inquiries-col-action inquiries-action-cell {{ $canMarkFailed ? '' : 'inquiries-action-cell-single' }}">
-                        <button type="button" class="inquiries-btn inquiries-btn-small inquiries-view-status-btn" data-lead-id="{{ $r->LEADID }}" title="View Status">View Status</button>
+                        <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-view-status-btn" data-lead-id="{{ $r->LEADID }}" title="View Status">View Status</button>
                         @if($canMarkFailed)
-                        <button type="button" class="inquiries-btn inquiries-btn-small inquiries-btn-secondary inquiries-mark-failed-btn" data-lead-id="{{ $r->LEADID }}" title="Mark As Failed">Mark As Failed</button>
+                        <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-btn-assign-danger inquiries-mark-failed-btn" data-lead-id="{{ $r->LEADID }}" title="Mark As Failed">Mark As Failed</button>
                         @endif
                     </td>
-                </tr>
-                @empty
+                        </tr>
+                    @empty
                 <tr><td colspan="20" class="inquiries-empty">No assigned inquiries.</td></tr>
-                @endforelse
-            </tbody>
-        </table>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
         <div class="inquiries-assigned-pagination" id="assignedPagination" data-assigned-total="{{ $assignedTotal ?? 0 }}" data-assigned-last-page="{{ $assignedLastPage ?? 1 }}" data-assigned-current-page="1" data-assigned-per-page="{{ $assignedPerPage ?? 10 }}" data-assigned-page-url="{{ route('admin.inquiries.assigned-page') }}" @if(($assignedTotal ?? 0) <= 10) style="display:none;" @endif>
             @php
     $assignedPagPerPage = $assignedPerPage ?? 10;
@@ -697,7 +722,8 @@ document.addEventListener('DOMContentLoaded', function() {
     var STORAGE_KEY = 'inquiryVisibleColumns';
     var DEFAULT_COLUMNS = ['inquiryid', 'date', 'customername', 'postcode', 'city', 'businessnature', 'products', 'message'];
     var ASSIGNED_STORAGE_KEY = 'assignedVisibleColumns';
-    var ASSIGNED_DEFAULT_COLUMNS = ['inquiryid', 'date', 'customername', 'postcode', 'city', 'assignedby', 'assignedto', 'assigndate', 'status'];
+    // Default Assigned layout (can still toggle INQUIRY DATE from Columns menu)
+    var ASSIGNED_DEFAULT_COLUMNS = ['inquiryid', 'customername', 'postcode', 'city', 'assignedto', 'assigndate', 'status'];
 
     function getVisibleColumns() {
         try {
@@ -833,6 +859,8 @@ document.addEventListener('DOMContentLoaded', function() {
         resetBtn.addEventListener('click', function() {
             setVisibleColumns(DEFAULT_COLUMNS.slice());
             refreshColumnState();
+            var wrap = document.querySelector('#incomingPanel .inquiries-table-scroll');
+            if (wrap) wrap.scrollLeft = 0;
         });
     }
 
@@ -893,6 +921,8 @@ document.addEventListener('DOMContentLoaded', function() {
         aReset.addEventListener('click', function() {
             setAssignedVisibleColumns(ASSIGNED_DEFAULT_COLUMNS.slice());
             refreshAssignedColumnState();
+            var wrap = document.querySelector('#assignedPanel .inquiries-table-scroll');
+            if (wrap) wrap.scrollLeft = 0;
         });
     }
 
@@ -1218,6 +1248,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     var v2 = assignedSummary.querySelector('.inquiries-summary-value');
                     if (v2) v2.textContent = new Intl.NumberFormat().format(data.totalOngoing);
                 }
+                var incomingPag = document.getElementById('incomingPagination');
+                if (incomingPag && data.totalNewInquiries !== undefined) {
+                    var inTotal = parseInt(data.totalNewInquiries || 0, 10);
+                    var inPer = parseInt(incomingPag.getAttribute('data-incoming-per-page') || '10', 10);
+                    var inInfo = document.getElementById('incomingPaginationInfo');
+                    var inTo = inTotal === 0 ? 0 : Math.min(inPer, inTotal);
+                    incomingPag.setAttribute('data-incoming-total', String(inTotal));
+                    incomingPag.setAttribute('data-incoming-current-page', '1');
+                    if (inInfo) {
+                        inInfo.textContent = 'Showing ' + (inTotal === 0 ? 0 : 1) + ' to ' + inTo + ' of ' + inTotal + ' entries (Page 1)';
+                    }
+                    if (typeof refreshIncomingPagination === 'function') refreshIncomingPagination();
+                }
                 var paginationEl = document.getElementById('assignedPagination');
                 if (paginationEl && data.assignedTotal !== undefined) {
                     paginationEl.setAttribute('data-assigned-total', data.assignedTotal);
@@ -1263,6 +1306,97 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     });
+
+    // Incoming pagination (client-side, 10 per page)
+    (function initIncomingPagination() {
+        var paginationEl = document.getElementById('incomingPagination');
+        if (!paginationEl) return;
+        var infoEl = document.getElementById('incomingPaginationInfo');
+        var firstBtn = document.getElementById('incomingPaginationFirst');
+        var prevBtn = document.getElementById('incomingPaginationPrev');
+        var nextBtn = document.getElementById('incomingPaginationNext');
+        var lastBtn = document.getElementById('incomingPaginationLast');
+        var pageNumbersEl = document.getElementById('incomingPageNumbers');
+        var tbody = document.querySelector('#unassignedTable tbody');
+        if (!tbody) return;
+
+        function getPerPage() { return parseInt(paginationEl.getAttribute('data-incoming-per-page') || '10', 10); }
+
+        function getAllRows() {
+            return Array.from(tbody.querySelectorAll('tr.inquiry-row'));
+        }
+
+        function applyPage(current) {
+            var per = getPerPage();
+            var rows = getAllRows();
+            var total = rows.length;
+            var lastPage = total === 0 ? 1 : Math.ceil(total / per);
+            if (current < 1) current = 1;
+            if (current > lastPage) current = lastPage;
+            var from = (current - 1) * per;
+            var to = current * per;
+            rows.forEach(function(row, idx) {
+                row.style.display = (idx >= from && idx < to) ? '' : 'none';
+            });
+            paginationEl.setAttribute('data-incoming-current-page', String(current));
+            if (infoEl) {
+                var showFrom = total === 0 ? 0 : from + 1;
+                var showTo = Math.min(to, total);
+                infoEl.textContent = 'Showing ' + (total === 0 ? 0 : showFrom) + ' to ' + showTo + ' of ' + total + ' entries (Page ' + current + ')';
+            }
+            if (firstBtn) firstBtn.disabled = current <= 1;
+            if (prevBtn) prevBtn.disabled = current <= 1;
+            if (nextBtn) nextBtn.disabled = current >= lastPage;
+            if (lastBtn) lastBtn.disabled = current >= lastPage;
+
+            if (pageNumbersEl) {
+                pageNumbersEl.innerHTML = '';
+                if (lastPage > 1) {
+                    for (var i = 1; i <= lastPage; i++) {
+                        var b = document.createElement('button');
+                        b.type = 'button';
+                        b.className = 'inquiries-pagination-num' + (i === current ? ' inquiries-pagination-num-active' : '');
+                        b.textContent = String(i);
+                        b.setAttribute('data-page', String(i));
+                        pageNumbersEl.appendChild(b);
+                    }
+                }
+            }
+            paginationEl.style.display = total > per ? '' : 'none';
+        }
+
+        // Initial render
+        applyPage(1);
+
+        var navEl = document.querySelector('#incomingPagination .inquiries-assigned-pagination-nav');
+        if (navEl) {
+            navEl.addEventListener('click', function(e) {
+                var btn = e.target && e.target.closest ? e.target.closest('button.inquiries-pagination-btn') : null;
+                if (!btn || btn.disabled) return;
+                var id = btn.id || '';
+                var cur = parseInt(paginationEl.getAttribute('data-incoming-current-page') || '1', 10);
+                var rows = getAllRows();
+                var per = getPerPage();
+                var last = rows.length === 0 ? 1 : Math.ceil(rows.length / per);
+                if (id === 'incomingPaginationFirst') applyPage(1);
+                else if (id === 'incomingPaginationPrev') applyPage(cur - 1);
+                else if (id === 'incomingPaginationNext') applyPage(cur + 1);
+                else if (id === 'incomingPaginationLast') applyPage(last);
+            });
+        }
+        if (pageNumbersEl) {
+            pageNumbersEl.addEventListener('click', function(e) {
+                var btn = e.target && e.target.closest ? e.target.closest('.inquiries-pagination-num') : null;
+                if (!btn || btn.classList.contains('inquiries-pagination-num-active')) return;
+                var p = parseInt(btn.getAttribute('data-page') || '1', 10);
+                applyPage(p);
+            });
+        }
+
+        window.refreshIncomingPagination = function() {
+            applyPage(1);
+        };
+    })();
 
     // Assigned pagination: First / Previous / page numbers / Next / Last; "Showing X to Y of Z entries (Page N)"
     (function initAssignedPagination() {
