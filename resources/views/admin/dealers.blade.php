@@ -2,14 +2,6 @@
 @section('title', 'Dealers – Admin')
 @section('content')
 <section class="dashboard-panel dashboard-table-panel">
-    <div class="inquiries-search-section" style="margin-bottom:12px;">
-        <div class="inquiries-search-row">
-            <div class="inquiries-search-wrap">
-                <span class="inquiries-search-icon"><i class="bi bi-search"></i></span>
-                <input type="text" class="inquiries-search-input" id="dealersSearchInput" placeholder="Search table..." autocomplete="off">
-            </div>
-        </div>
-    </div>
     <div class="dashboard-panel-body">
         <div class="dealers-panel-actions dealers-panel-actions-right" style="margin-bottom: 12px;">
             <div class="dealers-panel-buttons">
