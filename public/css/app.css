@@ -2155,12 +2155,22 @@ textarea.inquiry-form-input { resize: vertical; min-height: 140px; }
   border-bottom: 1px solid #e5e7eb;
 }
 
+.inquiries-table td.inquiries-col-action {
+  border-bottom: none; /* remove horizontal line behind action buttons */
+}
+
 .inquiries-table td {
   white-space: normal;
 }
 
 .inquiries-table tbody tr:hover {
   background: #f9fafb;
+}
+
+/* Incoming & Assigned: reserve space for 10 rows when fewer are shown (min-height set by JS) */
+#unassignedTable tbody,
+#assignedTable tbody {
+  box-sizing: border-box;
 }
 
 .inquiries-empty-row td.inquiries-empty-cell {
@@ -3223,15 +3233,17 @@ textarea.inquiry-form-input { resize: vertical; min-height: 140px; }
   padding: 10px 12px;
 }
 
-/* Sticky ACTION column: only details scroll, ACTION stays visible */
+/* Sticky ACTION column: only details scroll, ACTION stays visible; fixed width always */
 .inquiries-table th.inquiries-col-action,
 .inquiries-table td.inquiries-col-action {
   position: sticky;
   right: 0;
   z-index: 1;
-  background: #ffffff;
-  box-shadow: -4px 0 8px rgba(0, 0, 0, 0.06);
-  /* Match other cell box sizing/padding */
+  width: 140px;
+  min-width: 140px;
+  max-width: 140px;
+  background: #ffffff; /* solid panel so text behind does not show */
+  box-shadow: -4px 0 8px rgba(0, 0, 0, 0.06); /* subtle divider from other columns */
   padding: 10px 12px;
   box-sizing: border-box;
   vertical-align: middle;
@@ -3239,7 +3251,7 @@ textarea.inquiry-form-input { resize: vertical; min-height: 140px; }
 
 .inquiries-table thead th.inquiries-col-action {
   z-index: 2;
-  background: #ffffff;
+  background: #ede9fe; /* keep header same as other headers */
 }
 
 .inquiries-table-with-filter .inquiries-thead-header th.inquiries-col-action,
@@ -4897,6 +4909,11 @@ button.dealer-pagination-btn:disabled {
 .inquiries-mgmt-search {
   margin-bottom: 20px;
 }
+.inquiries-search-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 
 .inquiries-tabs {
   display: flex;
@@ -4931,7 +4948,9 @@ button.dealer-pagination-btn:disabled {
 .inquiries-search-wrap {
   display: flex;
   align-items: center;
-  max-width: 720px;
+  flex: 1;
+  min-width: 280px;
+  max-width: 960px;
   background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 10px;
@@ -4944,10 +4963,10 @@ button.dealer-pagination-btn:disabled {
 }
 .inquiries-search-input {
   flex: 1;
+  min-width: 200px;
   border: none;
   padding: 12px 8px 12px 0;
   font-size: 14px;
-  min-width: 0;
 }
 .inquiries-search-input:focus {
   outline: none;
@@ -4960,9 +4979,26 @@ button.dealer-pagination-btn:disabled {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  border-radius: 6px;
 }
 .inquiries-search-btn:hover {
   background: #6d4ad9;
+}
+.inquiries-search-row .inquiries-search-clear-btn {
+  flex-shrink: 0;
+  background: #e5e7eb;
+  color: #1f2937;
+  border: 1px solid #d1d5db;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.inquiries-search-row .inquiries-search-clear-btn:hover {
+  background: #d1d5db;
+  border-color: #9ca3af;
+  color: #111827;
 }
 
 /* Shared: role select (Maintain Users) – same look as inquiries search wrap */
@@ -5127,6 +5163,26 @@ button.dealer-pagination-btn:disabled {
 .assign-undo-btn:hover {
   text-decoration: underline;
 }
+
+.inquiries-mark-failed-blocked-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  background: #111827;
+  color: #f9fafb;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.4);
+  z-index: 10000;
+  max-width: 90%;
+  transition: opacity 0.2s ease;
+}
+.inquiries-mark-failed-blocked-toast-hidden {
+  display: none;
+}
+
 /* Inquiries page: fill height so incoming box stretches to bottom */
 .inquiries-page-wrap {
   display: flex;
@@ -5155,13 +5211,13 @@ button.dealer-pagination-btn:disabled {
 .inquiries-page-wrap .inquiries-tab-panel .inquiries-table-wrap {
   flex: 1;
   min-height: 0;
-  overflow: auto; /* the ONLY scroller for tables */
+  overflow: visible; /* scroller moved to .inquiries-table-scroll */
   position: relative;
 }
 .inquiries-page-wrap > .inquiries-mgmt-panel > .inquiries-table-wrap {
   flex: 1;
   min-height: 0;
-  overflow: auto; /* the ONLY scroller for tables */
+  overflow: visible; /* scroller moved to .inquiries-table-scroll */
   position: relative;
 }
 
@@ -5322,8 +5378,12 @@ button.dealer-pagination-btn:disabled {
 .inquiries-btn-assign {
   background: #7f5af0;
   color: #fff;
-  padding: 6px 14px;
-  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  font-size: 11px;
+  line-height: 1.1;
   font-weight: 600;
   border-radius: 6px;
   cursor: pointer;
@@ -5333,7 +5393,7 @@ button.dealer-pagination-btn:disabled {
   background: #6d4ad9;
 }
 .inquiries-table-wrap {
-  overflow: auto; /* avoid nested scroll containers (breaks sticky) */
+  overflow: visible; /* scroller moved to .inquiries-table-scroll */
   max-width: 100%;
   position: relative;
   scrollbar-width: none; /* Firefox: hide until hover */
@@ -5348,6 +5408,30 @@ button.dealer-pagination-btn:disabled {
 .inquiries-table-wrap:hover::-webkit-scrollbar {
   width: 10px;
   height: 10px;
+}
+.inquiries-table-scroll {
+  overflow: auto; /* x-scroll on data rows/table only */
+  max-width: 100%;
+  position: relative;
+  background: #ffffff; /* solid white behind both Incoming & Assigned rows/buttons */
+  scrollbar-width: none; /* Firefox: hide until hover */
+}
+.inquiries-table-scroll:hover {
+  scrollbar-width: thin;
+}
+.inquiries-table-scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+.inquiries-table-scroll:hover::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+/* Inquiries page: fixed table height for 10 rows on both Incoming and Assigned so layout doesn't shrink */
+.inquiries-page-wrap .inquiries-table-scroll,
+#incomingPanel .inquiries-table-scroll,
+#assignedPanel .inquiries-table-scroll {
+  min-height: 460px;
 }
 .inquiries-table-wrap::-webkit-scrollbar-track {
   background: transparent;
@@ -5368,6 +5452,7 @@ button.dealer-pagination-btn:disabled {
 }
 .inquiries-assigned-pagination {
   display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -5377,6 +5462,9 @@ button.dealer-pagination-btn:disabled {
   border: 1px solid #ddd6fe;
   border-radius: 8px;
   font-size: 13px;
+  width: 100%;                    /* always stretch to table-wrap width */
+  min-height: 44px;              /* fixed size so pagination bar doesn't jump */
+  flex-shrink: 0;
 }
 .inquiries-assigned-pagination-info {
   color: #5b21b6;
@@ -5385,6 +5473,7 @@ button.dealer-pagination-btn:disabled {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap; /* allow controls to wrap when space is small */
 }
 .inquiries-assigned-pagination .inquiries-btn:disabled,
 .inquiries-assigned-pagination .inquiries-pagination-btn:disabled {
@@ -5553,6 +5642,14 @@ button.dealer-pagination-btn:disabled {
 }
 
 /* Default grid: inquiry id and postcode smaller, message bigger */
+#unassignedTable th,
+#unassignedTable td,
+#assignedTable th,
+#assignedTable td {
+  /* Keep Incoming + Assigned the same sizing */
+  white-space: nowrap;
+}
+
 #unassignedTable th[data-col="inquiryid"],
 #unassignedTable td[data-col="inquiryid"] {
   width: 1%;
@@ -5664,6 +5761,10 @@ button.dealer-pagination-btn:disabled {
 #unassignedTable th[data-col="date"] .inquiries-grid-filter {
   max-width: 97px;
 }
+/* Assigned By: make the whole filter area narrower so input and icon stay aligned */
+#assignedTable th[data-col="assignedby"] .inquiries-filter-wrap {
+  max-width: 130px;
+}
 
 #unassignedTable th[data-col="source"],
 #unassignedTable td[data-col="source"],
@@ -5733,10 +5834,11 @@ button.dealer-pagination-btn:disabled {
 #assignedTable td[data-col="assignedby"],
 #assignedTable th[data-col="assignedto"],
 #assignedTable td[data-col="assignedto"] {
-  max-width: 140px;
+  min-width: 150px;   /* compact but consistent width */
+  max-width: none;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
+  text-overflow: clip;
 }
 
 #assignedTable th[data-col="postcode"],
@@ -5976,7 +6078,8 @@ button.dealer-pagination-btn:disabled {
 .inquiries-assign-dealers-table td {
   padding: 8px 10px;
   border-bottom: 1px solid #f3f4f6;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
 }
 .inquiries-assign-dealer-row { cursor: pointer; }
 .inquiries-assign-dealer-row:hover { background: #f9fafb; }
@@ -6061,6 +6164,56 @@ button.dealer-pagination-btn:disabled {
   min-width: 52px;
   text-align: center;
 }
+.inquiries-action-cell .inquiries-btn-assign {
+  flex: 1 1 0;
+  min-width: 96px;
+  text-align: center;
+}
+/* Icon-only action buttons: no purple, transparent background, bigger icons */
+.inquiries-action-cell .inquiries-view-status-btn,
+.inquiries-action-cell .inquiries-mark-failed-btn {
+  background: transparent !important;
+  color: #4b5563;
+  min-width: 36px;
+  padding: 6px;
+  border: none;
+}
+.inquiries-action-cell .inquiries-view-status-btn .bi,
+.inquiries-action-cell .inquiries-mark-failed-btn .bi {
+  font-size: 1.35rem;
+}
+.inquiries-action-cell .inquiries-view-status-btn:hover,
+.inquiries-action-cell .inquiries-mark-failed-btn:hover {
+  background: rgba(0, 0, 0, 0.06) !important;
+  color: #374151;
+}
+/* Incoming tab: Assign, Edit, Delete icon buttons – same style as Assigned */
+.inquiries-action-cell .inquiries-incoming-assign-btn,
+.inquiries-action-cell .inquiries-edit-inquiry-btn,
+.inquiries-action-cell .inquiries-delete-inquiry-btn {
+  background: transparent !important;
+  color: #4b5563;
+  min-width: 36px;
+  padding: 6px;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.inquiries-action-cell .inquiries-incoming-assign-btn .bi,
+.inquiries-action-cell .inquiries-edit-inquiry-btn .bi,
+.inquiries-action-cell .inquiries-delete-inquiry-btn .bi {
+  font-size: 1.35rem;
+}
+.inquiries-action-cell .inquiries-incoming-assign-btn:hover,
+.inquiries-action-cell .inquiries-edit-inquiry-btn:hover,
+.inquiries-action-cell .inquiries-delete-inquiry-btn:hover {
+  background: rgba(0, 0, 0, 0.06) !important;
+  color: #374151;
+}
 .inquiries-action-cell-single {
   justify-content: center;
 }
@@ -6070,6 +6223,17 @@ button.dealer-pagination-btn:disabled {
 .inquiries-btn-small {
   padding: 3px 8px;
   font-size: 11px;
+}
+.inquiries-btn-assign.inquiries-btn-assign-danger {
+  /* Use same background as standard Assign so Assigned actions match Incoming */
+  background: #7f5af0;
+}
+.inquiries-btn-assign.inquiries-btn-assign-danger:hover {
+  background: #6d4ad9;
+}
+/* Keep icon-only buttons in action cell transparent (override danger purple) */
+.inquiries-action-cell .inquiries-mark-failed-btn.inquiries-btn-assign-danger:hover {
+  background: rgba(0, 0, 0, 0.06) !important;
 }
 .inquiries-status-table-wrap {
   max-height: 60vh;

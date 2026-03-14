@@ -111,10 +111,10 @@ class AdminController extends Controller
             // Pull dealer list first (company is display name).
             // Some schemas may not have COMPANY populated; still return rows.
             $topDealersRaw = [];
-            try {
-                $topDealersRaw = DB::select(
+        try {
+            $topDealersRaw = DB::select(
                     'SELECT u."USERID", u."EMAIL", u."COMPANY" AS "COMPANY", u."POSTCODE" AS "POSTCODE", u."CITY" AS "CITY"
-                     FROM "USERS" u
+                FROM "USERS" u
                      WHERE UPPER(TRIM(u."SYSTEMROLE")) LIKE \'%DEALER%\''
                 );
             } catch (\Throwable $e) {
@@ -204,13 +204,13 @@ class AdminController extends Controller
                 $postcode = trim((string) ($d->POSTCODE ?? ''));
                 $city = trim((string) ($d->CITY ?? ''));
                 $location = trim(trim($postcode . ' ' . $city));
-                return [
+            return [
                     // Per requirement: show company column for dealers.
                     'dealer_name' => $company,
                     'location' => $location,
-                    'total_leads' => $leads,
+                'total_leads' => $leads,
                     'ongoing_count' => $ongoing,
-                    'closed_count' => $closed,
+                'closed_count' => $closed,
                     'failed_count' => $failed,
                     'conversion_rate' => round($conversion * 100, 1),
                     'avg_closing_time' => $avgClosingDisplay,
@@ -443,32 +443,44 @@ class AdminController extends Controller
             if (!empty($ids)) {
                 $placeholders = implode(',', array_fill(0, count($ids), '?'));
                 $users = DB::select('SELECT "USERID","SYSTEMROLE","ALIAS","COMPANY","EMAIL" FROM "USERS" WHERE CAST("USERID" AS VARCHAR(50)) IN (' . $placeholders . ')', $ids);
-                $userMap = [];
+                $assignedToMap = [];
+                $createdByMap = [];
                 foreach ($users as $u) {
                     $uid = trim((string) ($u->USERID ?? ''));
                     if ($uid === '') continue;
                     $role = trim((string) ($u->SYSTEMROLE ?? ''));
+                    $company = trim((string) ($u->COMPANY ?? ''));
                     $alias = trim((string) ($u->ALIAS ?? ''));
-                    $fallback = trim((string) ($u->COMPANY ?? ''));
-                    if ($fallback === '') $fallback = trim((string) ($u->EMAIL ?? ''));
-                    if ($fallback === '') $fallback = $uid;
+                    $email = trim((string) ($u->EMAIL ?? ''));
+                    $fallback = $email !== '' ? $email : $uid;
 
-                    if ($role !== '' && $alias !== '') {
-                        $label = $role . '- ' . $alias;
-                    } elseif ($role !== '') {
-                        $label = $role . '- ' . $fallback;
+                    // Assigned To: COMPANY-ALIAS (preferred)
+                    if ($company !== '' && $alias !== '') {
+                        $assignedToMap[$uid] = $company . '- ' . $alias;
+                    } elseif ($company !== '') {
+                        $assignedToMap[$uid] = $company;
                     } elseif ($alias !== '') {
-                        $label = $alias;
+                        $assignedToMap[$uid] = $alias;
                     } else {
-                        $label = $fallback;
+                        $assignedToMap[$uid] = $fallback;
                     }
-                    $userMap[$uid] = $label;
+
+                    // Created By / Assigned By: SYSTEMROLE-ALIAS (original style)
+                    if ($role !== '' && $alias !== '') {
+                        $createdByMap[$uid] = $role . '- ' . $alias;
+                    } elseif ($role !== '') {
+                        $createdByMap[$uid] = $role . '- ' . ($company !== '' ? $company : ($email !== '' ? $email : $uid));
+                    } elseif ($alias !== '') {
+                        $createdByMap[$uid] = $alias;
+                    } else {
+                        $createdByMap[$uid] = $fallback;
+                    }
                 }
                 foreach ($rows as $r) {
                     $to = trim((string) ($r->ASSIGNED_TO ?? ''));
                     $by = trim((string) ($r->CREATEDBY ?? ''));
-                    if ($to !== '' && isset($userMap[$to])) $r->ASSIGNED_TO_NAME = $userMap[$to];
-                    if ($by !== '' && isset($userMap[$by])) $r->CREATEDBY_NAME = $userMap[$by];
+                    if ($to !== '' && isset($assignedToMap[$to])) $r->ASSIGNED_TO_NAME = $assignedToMap[$to];
+                    if ($by !== '' && isset($createdByMap[$by])) $r->CREATEDBY_NAME = $createdByMap[$by];
                 }
             }
         } catch (\Throwable $e) {
@@ -558,7 +570,7 @@ class AdminController extends Controller
 
         $assignedPerPage = 10;
         $assignedTotal = count($assigned);
-        $assignedForView = array_slice($assigned, 0, $assignedPerPage);
+        $assignedForView = $assigned;
         $assignedLastPage = $assignedTotal > 0 ? (int) ceil($assignedTotal / $assignedPerPage) : 1;
 
         return view('admin.inquiries', [
@@ -646,22 +658,42 @@ class AdminController extends Controller
             $placeholders = implode(',', array_fill(0, count($ids), '?'));
             try {
                 $users = DB::select('SELECT "USERID","SYSTEMROLE","ALIAS","COMPANY","EMAIL" FROM "USERS" WHERE CAST("USERID" AS VARCHAR(50)) IN (' . $placeholders . ')', $ids);
-                $userMap = [];
+                $assignedToMap = [];
+                $createdByMap = [];
                 foreach ($users as $u) {
                     $uid = trim((string) ($u->USERID ?? ''));
                     if ($uid === '') continue;
                     $role = trim((string) ($u->SYSTEMROLE ?? ''));
+                    $company = trim((string) ($u->COMPANY ?? ''));
                     $alias = trim((string) ($u->ALIAS ?? ''));
-                    $fallback = trim((string) ($u->COMPANY ?? ''));
-                    if ($fallback === '') $fallback = trim((string) ($u->EMAIL ?? ''));
-                    if ($fallback === '') $fallback = $uid;
-                    $userMap[$uid] = ($role !== '' && $alias !== '') ? ($role . '- ' . $alias) : (($role !== '' ? $role . '- ' . $fallback : ($alias !== '' ? $alias : $fallback)));
+                    $email = trim((string) ($u->EMAIL ?? ''));
+                    $fallback = $email !== '' ? $email : $uid;
+                    // Assigned To: COMPANY-ALIAS
+                    if ($company !== '' && $alias !== '') {
+                        $assignedToMap[$uid] = $company . '- ' . $alias;
+                    } elseif ($company !== '') {
+                        $assignedToMap[$uid] = $company;
+                    } elseif ($alias !== '') {
+                        $assignedToMap[$uid] = $alias;
+                    } else {
+                        $assignedToMap[$uid] = $fallback;
+                    }
+                    // Created By: SYSTEMROLE-ALIAS
+                    if ($role !== '' && $alias !== '') {
+                        $createdByMap[$uid] = $role . '- ' . $alias;
+                    } elseif ($role !== '') {
+                        $createdByMap[$uid] = $role . '- ' . ($company !== '' ? $company : ($email !== '' ? $email : $uid));
+                    } elseif ($alias !== '') {
+                        $createdByMap[$uid] = $alias;
+                    } else {
+                        $createdByMap[$uid] = $fallback;
+                    }
                 }
                 foreach ($rows as $r) {
                     $to = trim((string) ($r->ASSIGNED_TO ?? ''));
                     $by = trim((string) ($r->CREATEDBY ?? ''));
-                    if ($to !== '' && isset($userMap[$to])) $r->ASSIGNED_TO_NAME = $userMap[$to];
-                    if ($by !== '' && isset($userMap[$by])) $r->CREATEDBY_NAME = $userMap[$by];
+                    if ($to !== '' && isset($assignedToMap[$to])) $r->ASSIGNED_TO_NAME = $assignedToMap[$to];
+                    if ($by !== '' && isset($createdByMap[$by])) $r->CREATEDBY_NAME = $createdByMap[$by];
                 }
             } catch (\Throwable $e) {
                 // fallback raw ids
@@ -1007,6 +1039,54 @@ class AdminController extends Controller
         ]);
     }
 
+    public function editInquiry(int $leadId): View|RedirectResponse
+    {
+        $row = DB::selectOne(
+            'SELECT "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL",
+                "ADDRESS1","ADDRESS2","CITY","POSTCODE","BUSINESSNATURE","USERCOUNT",
+                "EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION","REFERRALCODE"
+             FROM "LEAD" WHERE "LEADID" = ?',
+            [$leadId]
+        );
+        if (!$row) {
+            return redirect()->route('admin.inquiries')->with('error', 'Lead not found.');
+        }
+
+        $dealers = [];
+        try {
+            $dealers = DB::select(
+                'SELECT "USERID", "COMPANY", "EMAIL" FROM "USERS" WHERE UPPER(TRIM("SYSTEMROLE")) LIKE \'%DEALER%\' ORDER BY "COMPANY"'
+            );
+        } catch (\Throwable $e) {
+            try {
+                $dealers = DB::select(
+                    'SELECT "USERID", "EMAIL" FROM "USERS" WHERE UPPER(TRIM("SYSTEMROLE")) LIKE \'%DEALER%\' ORDER BY "USERID"'
+                );
+            } catch (\Throwable $e2) {
+            }
+        }
+        $productInterestedList = [
+            1 => 'SQL Account',
+            2 => 'SQL Payroll',
+            3 => 'SQL Production',
+            4 => 'Mobile Sales',
+            5 => 'SQL Ecommerce',
+            6 => 'SQL EBI Wellness POS',
+            7 => 'SQL X Suduai',
+            8 => 'SQL X-Store',
+            9 => 'SQL Vision',
+            10 => 'SQL HRMS',
+            11 => 'Others',
+        ];
+
+        return view('admin.inquiries-create', [
+            'dealers' => $dealers,
+            'productInterestedList' => $productInterestedList,
+            'currentPage' => 'inquiries',
+            'inquiry' => $row,
+        ]);
+    }
+
     public function storeInquiry(Request $request): RedirectResponse
     {
         $validated = $request->validate(
@@ -1054,35 +1134,34 @@ class AdminController extends Controller
                     [$validated['COMPANYNAME']]
                 );
                 if ($existing) {
-                    $leadId = (int) ($existing->LEADID ?? 0);
-                    $company = trim((string) ($existing->COMPANYNAME ?? $existing->companyname ?? ''));
-                    $status = trim((string) ($existing->CURRENTSTATUS ?? $existing->currentstatus ?? ''));
-                    $created = $existing->CREATEDAT ?? $existing->createdat ?? null;
-                    $createdLabel = $created ? date('d/m/Y', strtotime((string) $created)) : null;
+                    $status = strtoupper(trim((string) ($existing->CURRENTSTATUS ?? $existing->currentstatus ?? '')));
+                    // If existing lead is Failed, accept without confirmation; otherwise show confirmation.
+                    if ($status !== 'FAILED') {
+                        $leadId = (int) ($existing->LEADID ?? 0);
+                        $created = $existing->CREATEDAT ?? $existing->createdat ?? null;
+                        $createdLabel = $created ? date('d/m/Y', strtotime((string) $created)) : null;
 
-                    // Example:
-                    // This company already has an open inquiry.
-                    // Lead #SQL-4 was created on 12/03/2026 with status Pending.
-                    $line1 = 'This company already has an open inquiry.';
-                    $parts = [];
-                    if ($leadId > 0) {
-                        $parts[] = 'Lead #SQL-' . $leadId;
-                    }
-                    if ($createdLabel) {
-                        $parts[] = 'was created on ' . $createdLabel;
-                    }
-                    if ($status !== '') {
-                        $parts[] = 'with status ' . $status;
-                    }
-                    $line2 = $parts ? implode(' ', $parts) . '.' : '';
-                    $message = trim($line1 . "\n\n" . $line2);
+                        $line1 = 'This company already has an open inquiry.';
+                        $parts = [];
+                        if ($leadId > 0) {
+                            $parts[] = 'Lead #SQL-' . $leadId;
+                        }
+                        if ($createdLabel) {
+                            $parts[] = 'was created on ' . $createdLabel;
+                        }
+                        if ($status !== '') {
+                            $parts[] = 'with status ' . $status;
+                        }
+                        $line2 = $parts ? implode(' ', $parts) . '.' : '';
+                        $message = trim($line1 . "\n\n" . $line2);
 
-                    $input = $request->all();
-                    $input['duplicate_ok'] = 1;
+                        $input = $request->all();
+                        $input['duplicate_ok'] = 1;
 
-                    return back()
-                        ->withInput($input)
-                        ->with('duplicate_warning', $message);
+                        return back()
+                            ->withInput($input)
+                            ->with('duplicate_warning', $message);
+                    }
                 }
             } catch (\Throwable $e) {
                 // If lookup fails, continue with normal flow.
@@ -1131,6 +1210,212 @@ class AdminController extends Controller
         }
 
         return redirect()->route('admin.inquiries')->with('success', 'Inquiry created.');
+    }
+
+    public function updateInquiry(Request $request, int $leadId): RedirectResponse
+    {
+        $validated = $request->validate(
+            [
+                'COMPANYNAME' => 'required|string|max:255',
+                'CONTACTNAME' => 'required|string|max:255',
+                'CONTACTNO' => 'required|string|min:10|max:15',
+                'EMAIL' => 'required|email|max:255',
+                'ADDRESS1' => 'nullable|string|max:255',
+                'ADDRESS2' => 'nullable|string|max:255',
+                'CITY' => 'required|string|max:100',
+                'POSTCODE' => 'required|string|digits:5',
+                'BUSINESSNATURE' => 'required|string|max:255',
+                'USERCOUNT' => 'nullable|string|max:50',
+                'EXISTINGSOFTWARE' => 'required|string|max:255',
+                'DEMOMODE' => 'required|string|in:Zoom,On-site',
+                'product_interested' => 'required|array',
+                'product_interested.*' => 'integer|in:1,2,3,4,5,6,7,8,9,10,11',
+                'DESCRIPTION' => 'nullable|string|max:4000',
+                'REFERRALCODE' => 'nullable|string|max:100',
+            ],
+            [
+                'CONTACTNO.min'          => 'Invalid Contact Number.',
+                'CONTACTNO.max'          => 'Invalid Contact Number.',
+                'POSTCODE.digits'        => 'Invalid PostCode.',
+                'product_interested.*'   => 'Please select at least one product.',
+                'product_interested.required' => 'Please select at least one product.',
+            ],
+            [
+                'CONTACTNO' => 'Contact no',
+                'POSTCODE'  => 'Post code',
+            ]
+        );
+
+        $exists = DB::selectOne('SELECT "LEADID" FROM "LEAD" WHERE "LEADID" = ?', [$leadId]);
+        if (!$exists) {
+            return redirect()->route('admin.inquiries')->with('error', 'Lead not found.');
+        }
+
+        // Same as create: if company name exists on another lead, show confirmation (exclude current lead)
+        if (!$request->boolean('duplicate_ok')) {
+            try {
+                $existing = DB::selectOne(
+                    'SELECT FIRST 1 "LEADID","COMPANYNAME","CONTACTNAME","EMAIL","CURRENTSTATUS","CREATEDAT"
+                     FROM "LEAD"
+                     WHERE UPPER(TRIM("COMPANYNAME")) = UPPER(TRIM(?)) AND "LEADID" <> ?',
+                    [$validated['COMPANYNAME'], $leadId]
+                );
+                if ($existing) {
+                    $status = strtoupper(trim((string) ($existing->CURRENTSTATUS ?? $existing->currentstatus ?? '')));
+                    // If existing lead is Failed, accept without confirmation; otherwise show confirmation.
+                    if ($status !== 'FAILED') {
+                        $otherLeadId = (int) ($existing->LEADID ?? 0);
+                        $created = $existing->CREATEDAT ?? $existing->createdat ?? null;
+                        $createdLabel = $created ? date('d/m/Y', strtotime((string) $created)) : null;
+
+                        $line1 = 'This company already has an open inquiry.';
+                        $parts = [];
+                        if ($otherLeadId > 0) {
+                            $parts[] = 'Lead #SQL-' . $otherLeadId;
+                        }
+                        if ($createdLabel) {
+                            $parts[] = 'was created on ' . $createdLabel;
+                        }
+                        if ($status !== '') {
+                            $parts[] = 'with status ' . $status;
+                        }
+                        $line2 = $parts ? implode(' ', $parts) . '.' : '';
+                        $message = trim($line1 . "\n\n" . $line2);
+
+                        $input = $request->all();
+                        $input['duplicate_ok'] = 1;
+
+                        return redirect()
+                            ->route('admin.inquiries.edit', $leadId)
+                            ->withInput($input)
+                            ->with('duplicate_warning', $message);
+                    }
+                }
+            } catch (\Throwable $e) {
+                // If lookup fails, continue with normal flow.
+            }
+        }
+
+        $productInterested = array_map('intval', $validated['product_interested']);
+        $productInterested = array_unique(array_filter($productInterested));
+        sort($productInterested, SORT_NUMERIC);
+        $productIdValue = implode(',', $productInterested);
+        $description = trim($validated['DESCRIPTION'] ?? '');
+        $descriptionValue = $description !== '' ? $description : null;
+
+        try {
+            DB::update(
+                'UPDATE "LEAD" SET
+                    "PRODUCTID" = ?, "COMPANYNAME" = ?, "CONTACTNAME" = ?, "CONTACTNO" = ?, "EMAIL" = ?,
+                    "ADDRESS1" = ?, "ADDRESS2" = ?, "CITY" = ?, "POSTCODE" = ?, "BUSINESSNATURE" = ?,
+                    "USERCOUNT" = ?, "EXISTINGSOFTWARE" = ?, "DEMOMODE" = ?, "DESCRIPTION" = ?, "REFERRALCODE" = ?,
+                    "LASTMODIFIED" = CURRENT_TIMESTAMP
+                 WHERE "LEADID" = ?',
+                [
+                    $productIdValue,
+                    $validated['COMPANYNAME'],
+                    $validated['CONTACTNAME'],
+                    $validated['CONTACTNO'],
+                    $validated['EMAIL'],
+                    $validated['ADDRESS1'] ?? null,
+                    $validated['ADDRESS2'] ?? null,
+                    $validated['CITY'],
+                    $validated['POSTCODE'],
+                    $validated['BUSINESSNATURE'],
+                    $validated['USERCOUNT'] ?? null,
+                    $validated['EXISTINGSOFTWARE'],
+                    $validated['DEMOMODE'],
+                    $descriptionValue,
+                    $validated['REFERRALCODE'] ?? null,
+                    $leadId,
+                ]
+            );
+        } catch (\Throwable $e) {
+            return back()->withInput($request->only(array_keys($validated)))->with('error', 'Could not update inquiry: ' . $e->getMessage());
+        }
+
+        return redirect()->route('admin.inquiries')->with('success', 'Inquiry updated.');
+    }
+
+    public function deleteInquiry(Request $request, int $leadId): \Illuminate\Http\JsonResponse
+    {
+        $row = DB::selectOne(
+            'SELECT "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL",
+                "ADDRESS1","ADDRESS2","CITY","POSTCODE","BUSINESSNATURE","USERCOUNT",
+                "EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION","REFERRALCODE",
+                "CURRENTSTATUS","CREATEDAT","CREATEDBY","ASSIGNED_TO","LASTMODIFIED"
+             FROM "LEAD" WHERE "LEADID" = ?',
+            [$leadId]
+        );
+        if (!$row) {
+            return response()->json(['success' => false, 'message' => 'Lead not found.'], 404);
+        }
+
+        try {
+            DB::delete('DELETE FROM "LEAD_ACT" WHERE "LEADID" = ?', [$leadId]);
+            DB::delete('DELETE FROM "LEAD" WHERE "LEADID" = ?', [$leadId]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => 'Could not delete inquiry.'], 500);
+        }
+
+        // Store for undo (re-insert same lead if user clicks Undo)
+        $request->session()->put('delete_undo', [
+            'lead_id' => $leadId,
+            'lead' => (array) $row,
+        ]);
+
+        return response()->json(['success' => true]);
+    }
+
+    public function undoDeleteInquiry(Request $request): RedirectResponse
+    {
+        $validated = $request->validate(['LEADID' => 'required|integer|min:1']);
+        $leadId = (int) $validated['LEADID'];
+
+        $data = $request->session()->get('delete_undo');
+        if (!$data || (int) ($data['lead_id'] ?? 0) !== $leadId) {
+            return redirect()->route('admin.inquiries')->with('error', 'Cannot undo: delete session expired or invalid.');
+        }
+
+        $lead = $data['lead'];
+        try {
+            DB::insert(
+                'INSERT INTO "LEAD" (
+                    "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL",
+                    "ADDRESS1","ADDRESS2","CITY","POSTCODE","BUSINESSNATURE","USERCOUNT",
+                    "EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION","REFERRALCODE",
+                    "CURRENTSTATUS","CREATEDAT","CREATEDBY","ASSIGNED_TO","LASTMODIFIED"
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)',
+                [
+                    $leadId,
+                    $lead['PRODUCTID'] ?? null,
+                    $lead['COMPANYNAME'] ?? null,
+                    $lead['CONTACTNAME'] ?? null,
+                    $lead['CONTACTNO'] ?? null,
+                    $lead['EMAIL'] ?? null,
+                    $lead['ADDRESS1'] ?? null,
+                    $lead['ADDRESS2'] ?? null,
+                    $lead['CITY'] ?? null,
+                    $lead['POSTCODE'] ?? null,
+                    $lead['BUSINESSNATURE'] ?? null,
+                    $lead['USERCOUNT'] ?? null,
+                    $lead['EXISTINGSOFTWARE'] ?? null,
+                    $lead['DEMOMODE'] ?? null,
+                    $lead['DESCRIPTION'] ?? null,
+                    $lead['REFERRALCODE'] ?? null,
+                    $lead['CURRENTSTATUS'] ?? 'Open',
+                    $lead['CREATEDAT'] ?? null,
+                    $lead['CREATEDBY'] ?? null,
+                    $lead['ASSIGNED_TO'] ?? null,
+                ]
+            );
+        } catch (\Throwable $e) {
+            return redirect()->route('admin.inquiries')->with('error', 'Could not undo delete: ' . $e->getMessage());
+        }
+
+        $request->session()->forget('delete_undo');
+
+        return redirect()->route('admin.inquiries')->with('success', 'Delete undone. Lead #SQL-' . $leadId . ' restored.');
     }
 
     public function dealers(): View

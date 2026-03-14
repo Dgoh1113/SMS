@@ -40,11 +40,24 @@
 </form>
 @endif
 
+{{-- Delete undo toast (shown via JS after delete) --}}
+<div id="deleteUndoToast" class="assign-undo-toast assign-undo-toast-hidden" style="display:none;">
+    <span class="assign-undo-message" id="deleteUndoToastMessage">Lead deleted.</span>
+    <button type="button" class="assign-undo-btn" id="deleteUndoBtn">Undo</button>
+</div>
+<form id="deleteUndoForm" method="POST" action="{{ route('admin.inquiries.delete-undo') }}" style="display:none;">
+    @csrf
+    <input type="hidden" name="LEADID" id="deleteUndoLeadId">
+</form>
+
 <section class="inquiries-mgmt-search">
-    <div class="inquiries-search-wrap">
-        <span class="inquiries-search-icon"><i class="bi bi-search"></i></span>
-        <input type="text" class="inquiries-search-input" placeholder="Search by customer, company, or Inquiry ID..." id="inquirySearchInput">
-        <button type="button" class="inquiries-search-btn" id="inquirySearchBtn">Search</button>
+    <div class="inquiries-search-row">
+        <div class="inquiries-search-wrap">
+            <span class="inquiries-search-icon"><i class="bi bi-search"></i></span>
+            <input type="text" class="inquiries-search-input" placeholder="Search by customer, company, or Inquiry ID..." id="inquirySearchInput">
+            <button type="button" class="inquiries-search-btn" id="inquirySearchBtn">Search</button>
+        </div>
+        <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-search-clear-btn" id="inquiryClearSearchBtn" title="Clear search">Clear</button>
     </div>
 </section>
 
@@ -70,7 +83,7 @@
                 <div class="inquiries-columns-menu" id="inquiryColumnsMenu" hidden>
                     <div class="inquiries-columns-menu-title">Show columns</div>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="inquiryid"> INQUIRY ID</label>
-                    <label class="inquiries-columns-check"><input type="checkbox" data-col="date"> DATE</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="date"> INQUIRY DATE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="customername"> CUSTOMER NAME</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="source"> SOURCE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="postcode"> POSTCODE</label>
@@ -99,6 +112,7 @@
         </div>
     </div>
     <div class="inquiries-table-wrap">
+        <div class="inquiries-table-scroll">
         <table class="inquiries-table" id="unassignedTable">
             <thead>
                 <tr class="inquiries-header-row">
@@ -203,24 +217,43 @@
                         }
                     @endphp
                     <td data-col="status"><span class="inquiries-status {{ $statusClass }}">{{ $rawStatus !== '' ? $rawStatus : 'PENDING' }}</span></td>
-                    <td class="inquiries-col-action">
+                    <td class="inquiries-col-action inquiries-action-cell">
                         @php
                             $acompany = trim((string)($r->COMPANYNAME ?? ''));
                             $acontact = trim((string)($r->CONTACTNAME ?? ''));
                             $assignLeadLabel = $acompany !== '' && $acontact !== '' ? ($acompany . ' - ' . $acontact) : ($acompany !== '' ? $acompany : ($acontact !== '' ? $acontact : ('#SQL-' . ($r->LEADID ?? ''))));
                         @endphp
-                        <button type="button" class="inquiries-btn inquiries-btn-assign"
-                            data-assign-lead="{{ $r->LEADID }}"
-                            data-assign-name="{{ e($assignLeadLabel) }}">
-                            Assign
-                        </button>
+                        <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-incoming-assign-btn" data-assign-lead="{{ $r->LEADID }}" data-assign-name="{{ e($assignLeadLabel) }}" title="Assign" aria-label="Assign"><i class="bi bi-person-check" aria-hidden="true"></i></button>
+                        <a href="{{ route('admin.inquiries.edit', $r->LEADID) }}" class="inquiries-btn inquiries-btn-assign inquiries-edit-inquiry-btn" data-lead-id="{{ $r->LEADID }}" title="Edit" aria-label="Edit"><i class="bi bi-pencil-square" aria-hidden="true"></i></a>
+                        <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-delete-inquiry-btn" data-lead-id="{{ $r->LEADID }}" title="Delete" aria-label="Delete"><i class="bi bi-trash" aria-hidden="true"></i></button>
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="15" class="inquiries-empty">No unassigned inquiries.</td></tr>
+                <tr><td colspan="17" class="inquiries-empty">No unassigned inquiries.</td></tr>
                 @endforelse
             </tbody>
         </table>
+        </div>
+        @php
+            $incomingPerPage = $incomingPerPage ?? 10;
+            $incomingTotal = isset($unassignedTotal) ? $unassignedTotal : count($unassigned);
+            $incomingTo = $incomingTotal === 0 ? 0 : min($incomingPerPage, $incomingTotal);
+        @endphp
+        <div class="inquiries-assigned-pagination" id="incomingPagination"
+             data-incoming-total="{{ $incomingTotal }}"
+             data-incoming-per-page="{{ $incomingPerPage }}"
+             data-incoming-current-page="1">
+            <span class="inquiries-assigned-pagination-info" id="incomingPaginationInfo">
+                Showing {{ $incomingTotal === 0 ? 0 : 1 }} to {{ $incomingTo }} of {{ $incomingTotal }} entries (Page 1)
+            </span>
+            <div class="inquiries-assigned-pagination-nav">
+                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="incomingPaginationFirst" aria-label="First page">First</button>
+                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="incomingPaginationPrev" aria-label="Previous page">Previous</button>
+                <span class="inquiries-assigned-page-numbers" id="incomingPageNumbers"></span>
+                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="incomingPaginationNext" aria-label="Next page">Next</button>
+                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="incomingPaginationLast" aria-label="Last page">Last</button>
+            </div>
+        </div>
     </div>
 </section>
 </div>
@@ -270,11 +303,12 @@
         </div>
     </div>
     <div class="inquiries-table-wrap">
+        <div class="inquiries-table-scroll">
         <table class="inquiries-table" id="assignedTable">
-            <thead>
+                <thead>
                 <tr class="inquiries-header-row">
                     <th data-col="inquiryid" class="inquiries-header-cell"><span class="inquiries-header-label">INQUIRY ID</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="inquiryid"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                    <th data-col="date" class="inquiries-header-cell"><span class="inquiries-header-label">DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="date"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                    <th data-col="date" class="inquiries-header-cell"><span class="inquiries-header-label">INQUIRY DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="date"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="customername" class="inquiries-header-cell"><span class="inquiries-header-label">CUSTOMER NAME</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="customername"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="source" class="inquiries-header-cell"><span class="inquiries-header-label">SOURCE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="source"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="postcode" class="inquiries-header-cell"><span class="inquiries-header-label">POSTCODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="postcode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
@@ -293,9 +327,9 @@
                     <th data-col="assigndate" class="inquiries-header-cell"><span class="inquiries-header-label">ASSIGN DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="assigndate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="status" class="inquiries-header-cell"><span class="inquiries-header-label">STATUS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="status"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th class="inquiries-col-action inquiries-header-cell"><span class="inquiries-header-label">ACTION</span><button type="button" class="inquiries-filter-clear" id="assignedClearFilters">Clear filters</button></th>
-                </tr>
-            </thead>
-            <tbody>
+                    </tr>
+                </thead>
+                <tbody>
                 @forelse($assigned as $r)
                 <tr class="inquiry-row" data-search="{{ strtolower(($r->COMPANYNAME ?? '').' '.($r->CONTACTNAME ?? '').' '.($r->LEADID ?? '')) }}">
                     <td data-col="inquiryid">#SQL-{{ $r->LEADID }}</td>
@@ -379,21 +413,20 @@
                             default:           $astatusClass = 'inquiries-status-new'; break;
                         }
                     @endphp
-                    @php $canMarkFailed = !in_array($arawStatus, ['COMPLETED', 'REWARDED', 'FAILED'], true); @endphp
-                    <td data-col="status"><span class="inquiries-status {{ $astatusClass }}">{{ $arawStatus !== '' ? $arawStatus : 'PENDING' }}</span></td>
-                    <td class="inquiries-col-action inquiries-action-cell {{ $canMarkFailed ? '' : 'inquiries-action-cell-single' }}">
-                        <button type="button" class="inquiries-btn inquiries-btn-small inquiries-view-status-btn" data-lead-id="{{ $r->LEADID }}" title="View Status">View Status</button>
-                        @if($canMarkFailed)
-                        <button type="button" class="inquiries-btn inquiries-btn-small inquiries-btn-secondary inquiries-mark-failed-btn" data-lead-id="{{ $r->LEADID }}" title="Mark As Failed">Mark As Failed</button>
-                        @endif
+                    @php $arawStatusDisp = $arawStatus !== '' ? $arawStatus : 'PENDING'; @endphp
+                    <td data-col="status"><span class="inquiries-status {{ $astatusClass }}">{{ $arawStatusDisp }}</span></td>
+                    <td class="inquiries-col-action inquiries-action-cell">
+                        <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-view-status-btn" data-lead-id="{{ $r->LEADID }}" title="View Status" aria-label="View Status"><i class="bi bi-eye" aria-hidden="true"></i></button>
+                        <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-btn-assign-danger inquiries-mark-failed-btn" data-lead-id="{{ $r->LEADID }}" data-status="{{ $arawStatusDisp }}" title="Mark As Failed" aria-label="Mark As Failed"><i class="bi bi-flag" aria-hidden="true"></i></button>
                     </td>
-                </tr>
-                @empty
+                        </tr>
+                    @empty
                 <tr><td colspan="20" class="inquiries-empty">No assigned inquiries.</td></tr>
-                @endforelse
-            </tbody>
-        </table>
-        <div class="inquiries-assigned-pagination" id="assignedPagination" data-assigned-total="{{ $assignedTotal ?? 0 }}" data-assigned-last-page="{{ $assignedLastPage ?? 1 }}" data-assigned-current-page="1" data-assigned-per-page="{{ $assignedPerPage ?? 10 }}" data-assigned-page-url="{{ route('admin.inquiries.assigned-page') }}" @if(($assignedTotal ?? 0) <= 10) style="display:none;" @endif>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        <div class="inquiries-assigned-pagination" id="assignedPagination" data-assigned-total="{{ $assignedTotal ?? 0 }}" data-assigned-last-page="{{ $assignedLastPage ?? 1 }}" data-assigned-current-page="1" data-assigned-per-page="{{ $assignedPerPage ?? 10 }}" data-assigned-page-url="{{ route('admin.inquiries.assigned-page') }}">
             @php
     $assignedPagPerPage = $assignedPerPage ?? 10;
     $assignedPagTotal = $assignedTotal ?? 0;
@@ -608,6 +641,11 @@ document.addEventListener('DOMContentLoaded', function() {
         document.addEventListener('click', function(e) {
             var btn = e.target && e.target.closest ? e.target.closest('.inquiries-mark-failed-btn') : null;
             if (btn) {
+                var status = (btn.getAttribute('data-status') || '').toUpperCase();
+                if (['COMPLETED', 'FAILED', 'REWARDED'].indexOf(status) !== -1) {
+                    showMarkFailedBlockedToast();
+                    return;
+                }
                 var leadId = btn.getAttribute('data-lead-id');
                 if (leadId) {
                     input.value = leadId;
@@ -620,6 +658,23 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             if (e.target && (e.target.getAttribute('data-markfailed-close') === '1')) close();
         });
+        function showMarkFailedBlockedToast() {
+            var id = 'inquiries-mark-failed-blocked-toast';
+            var el = document.getElementById(id);
+            if (!el) {
+                el = document.createElement('div');
+                el.id = id;
+                el.className = 'inquiries-mark-failed-blocked-toast';
+                el.setAttribute('role', 'status');
+                document.body.appendChild(el);
+            }
+            el.textContent = 'Status Completed, Failed or Rewarded cannot be marked as failed.';
+            el.classList.remove('inquiries-mark-failed-blocked-toast-hidden');
+            clearTimeout(el._hideTimer);
+            el._hideTimer = setTimeout(function() {
+                el.classList.add('inquiries-mark-failed-blocked-toast-hidden');
+            }, 4000);
+        }
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape' && modal && !modal.hidden) close();
         });
@@ -697,7 +752,8 @@ document.addEventListener('DOMContentLoaded', function() {
     var STORAGE_KEY = 'inquiryVisibleColumns';
     var DEFAULT_COLUMNS = ['inquiryid', 'date', 'customername', 'postcode', 'city', 'businessnature', 'products', 'message'];
     var ASSIGNED_STORAGE_KEY = 'assignedVisibleColumns';
-    var ASSIGNED_DEFAULT_COLUMNS = ['inquiryid', 'date', 'customername', 'postcode', 'city', 'assignedby', 'assignedto', 'assigndate', 'status'];
+    // Default Assigned layout (can still toggle INQUIRY DATE from Columns menu)
+    var ASSIGNED_DEFAULT_COLUMNS = ['inquiryid', 'customername', 'postcode', 'city', 'assignedto', 'assigndate', 'status'];
 
     function getVisibleColumns() {
         try {
@@ -833,6 +889,8 @@ document.addEventListener('DOMContentLoaded', function() {
         resetBtn.addEventListener('click', function() {
             setVisibleColumns(DEFAULT_COLUMNS.slice());
             refreshColumnState();
+            var wrap = document.querySelector('#incomingPanel .inquiries-table-scroll');
+            if (wrap) wrap.scrollLeft = 0;
         });
     }
 
@@ -893,6 +951,8 @@ document.addEventListener('DOMContentLoaded', function() {
         aReset.addEventListener('click', function() {
             setAssignedVisibleColumns(ASSIGNED_DEFAULT_COLUMNS.slice());
             refreshAssignedColumnState();
+            var wrap = document.querySelector('#assignedPanel .inquiries-table-scroll');
+            if (wrap) wrap.scrollLeft = 0;
         });
     }
 
@@ -913,10 +973,21 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    function rowMatchesBigSearch(row, q) {
+        if (!q) return true;
+        var idCell = row.querySelector('td[data-col="inquiryid"]');
+        var nameCell = row.querySelector('td[data-col="customername"]');
+        var idText = (idCell && idCell.textContent) ? idCell.textContent.toLowerCase().trim() : '';
+        var nameText = (nameCell && nameCell.textContent) ? nameCell.textContent.toLowerCase().trim() : '';
+        var searchable = (idText + ' ' + nameText).replace(/\s+/g, '');
+        var normQ = q.replace(/\s+/g, '');
+        return searchable.indexOf(normQ) !== -1;
+    }
+
     function applyGridFilters() {
         var table = document.getElementById('unassignedTable');
         var searchInput = document.getElementById('inquirySearchInput');
-        var q = (searchInput && searchInput.value) ? (searchInput.value || '').toLowerCase().trim() : '';
+        var q = (searchInput && searchInput.value) ? (searchInput.value || '').toLowerCase().trim().replace(/\s+/g, ' ') : '';
         var filters = {};
         if (table) {
             table.querySelectorAll('.inquiries-grid-filter').forEach(function(inp) {
@@ -925,7 +996,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (col && val) filters[col] = val;
             });
             table.querySelectorAll('tbody .inquiry-row').forEach(function(row) {
-                var searchMatch = !q || (row.getAttribute('data-search') || '').indexOf(q) !== -1;
+                var searchMatch = rowMatchesBigSearch(row, q);
                 var colMatch = true;
                 for (var col in filters) {
                     var cell = row.querySelector('td[data-col="' + col + '"]');
@@ -934,30 +1005,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 row.style.display = (searchMatch && colMatch) ? '' : 'none';
             });
+            if (typeof window.refreshIncomingPagination === 'function') window.refreshIncomingPagination();
         }
     }
 
     function applyAssignedGridFilters() {
-        var table = document.getElementById('assignedTable');
-        var searchInput = document.getElementById('inquirySearchInput');
-        var q = (searchInput && searchInput.value) ? (searchInput.value || '').toLowerCase().trim() : '';
-        var filters = {};
-        if (!table) return;
-        table.querySelectorAll('.inquiries-grid-filter-assigned').forEach(function(inp) {
-            var col = inp.getAttribute('data-col');
-            var val = (inp.value || '').toLowerCase().trim();
-            if (col && val) filters[col] = val;
-        });
-        table.querySelectorAll('tbody .inquiry-row').forEach(function(row) {
-            var searchMatch = !q || (row.getAttribute('data-search') || '').indexOf(q) !== -1;
-            var colMatch = true;
-            for (var col in filters) {
-                var cell = row.querySelector('td[data-col="' + col + '"]');
-                var cellText = (cell && cell.textContent) ? cell.textContent.toLowerCase().trim() : '';
-                if (cellText.indexOf(filters[col]) === -1) { colMatch = false; break; }
-            }
-            row.style.display = (searchMatch && colMatch) ? '' : 'none';
-        });
+        if (typeof window.refreshAssignedPagination === 'function') window.refreshAssignedPagination();
     }
 
     var table = document.getElementById('unassignedTable');
@@ -994,12 +1047,26 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    var clearSearchBtn = document.getElementById('inquiryClearSearchBtn');
+    if (clearSearchBtn) {
+        clearSearchBtn.addEventListener('click', function() {
+            var searchInput = document.getElementById('inquirySearchInput');
+            if (searchInput) searchInput.value = '';
+            applyGridFilters();
+            applyAssignedGridFilters();
+            if (typeof window.refreshIncomingPagination === 'function') window.refreshIncomingPagination();
+            if (typeof window.refreshAssignedPagination === 'function') window.refreshAssignedPagination();
+        });
+    }
+
     var input = document.getElementById('inquirySearchInput');
     var btn = document.getElementById('inquirySearchBtn');
     if (input) {
         function filterRows() {
             applyGridFilters();
             applyAssignedGridFilters();
+            if (typeof window.refreshIncomingPagination === 'function') window.refreshIncomingPagination();
+            if (typeof window.refreshAssignedPagination === 'function') window.refreshAssignedPagination();
         }
         if (btn) btn.addEventListener('click', filterRows);
         input.addEventListener('keydown', function(e) { if (e.key === 'Enter') filterRows(); });
@@ -1180,6 +1247,62 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     })();
 
+    // Delete inquiry (Incoming): confirm, then POST; show undo toast on success
+    (function initDeleteInquiry() {
+        var baseUrl = '{{ route("admin.inquiries") }}';
+        var deleteToast = document.getElementById('deleteUndoToast');
+        var deleteToastMessage = document.getElementById('deleteUndoToastMessage');
+        var deleteUndoForm = document.getElementById('deleteUndoForm');
+        var deleteUndoLeadId = document.getElementById('deleteUndoLeadId');
+        var deleteUndoBtn = document.getElementById('deleteUndoBtn');
+        var deleteUndoTimer = null;
+
+        function showDeleteUndoToast(leadId) {
+            if (!deleteToast || !deleteToastMessage || !deleteUndoForm || !deleteUndoLeadId) return;
+            deleteToastMessage.textContent = 'Lead #SQL-' + leadId + ' deleted.';
+            deleteUndoLeadId.value = leadId;
+            deleteToast.style.display = '';
+            deleteToast.classList.remove('assign-undo-toast-hidden');
+            if (deleteUndoTimer) clearTimeout(deleteUndoTimer);
+            deleteUndoTimer = setTimeout(function() {
+                deleteToast.classList.add('assign-undo-toast-hidden');
+                deleteToast.style.display = 'none';
+            }, 5000);
+        }
+
+        if (deleteUndoBtn && deleteUndoForm) {
+            deleteUndoBtn.addEventListener('click', function() {
+                if (deleteUndoTimer) clearTimeout(deleteUndoTimer);
+                deleteUndoForm.submit();
+            });
+        }
+
+        document.addEventListener('click', function(e) {
+            var btn = e.target && e.target.closest ? e.target.closest('.inquiries-delete-inquiry-btn') : null;
+            if (!btn) return;
+            e.preventDefault();
+            var leadId = btn.getAttribute('data-lead-id');
+            if (!leadId) return;
+            if (!confirm('Delete inquiry #SQL-' + leadId + '? You can undo this from the message below.')) return;
+            var deleteUrl = baseUrl + '/' + leadId + '/delete';
+            var csrf = document.querySelector('meta[name="csrf-token"]');
+            var token = csrf ? csrf.getAttribute('content') : '';
+            fetch(deleteUrl, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': token, 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                body: JSON.stringify({ _token: token })
+            }).then(function(res) {
+                if (res.ok) {
+                    var row = btn.closest('tr');
+                    if (row) row.remove();
+                    showDeleteUndoToast(leadId);
+                } else {
+                    res.json().catch(function() { return {}; }).then(function(d) { alert(d.message || 'Could not delete inquiry.'); });
+                }
+            }).catch(function() { alert('Could not delete inquiry.'); });
+        });
+    })();
+
     // Sync buttons (fetch latest inquiries without full reload)
     document.querySelectorAll('.inquiries-sync-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
@@ -1218,18 +1341,31 @@ document.addEventListener('DOMContentLoaded', function() {
                     var v2 = assignedSummary.querySelector('.inquiries-summary-value');
                     if (v2) v2.textContent = new Intl.NumberFormat().format(data.totalOngoing);
                 }
+                var incomingPag = document.getElementById('incomingPagination');
+                if (incomingPag && data.totalNewInquiries !== undefined) {
+                    var inTotal = parseInt(data.totalNewInquiries || 0, 10);
+                    var inPer = parseInt(incomingPag.getAttribute('data-incoming-per-page') || '10', 10);
+                    var inInfo = document.getElementById('incomingPaginationInfo');
+                    var inTo = inTotal === 0 ? 0 : Math.min(inPer, inTotal);
+                    incomingPag.setAttribute('data-incoming-total', String(inTotal));
+                    incomingPag.setAttribute('data-incoming-current-page', '1');
+                    if (inInfo) {
+                        inInfo.textContent = 'Showing ' + (inTotal === 0 ? 0 : 1) + ' to ' + inTo + ' of ' + inTotal + ' entries (Page 1)';
+                    }
+                    if (typeof refreshIncomingPagination === 'function') refreshIncomingPagination();
+                }
                 var paginationEl = document.getElementById('assignedPagination');
                 if (paginationEl && data.assignedTotal !== undefined) {
                     paginationEl.setAttribute('data-assigned-total', data.assignedTotal);
                     paginationEl.setAttribute('data-assigned-last-page', data.assignedLastPage || 1);
                     paginationEl.setAttribute('data-assigned-current-page', '1');
-                    var perPage = parseInt(paginationEl.getAttribute('data-assigned-per-page') || '10', 10);
+                    var perPage = parseInt(data.assignedPerPage || paginationEl.getAttribute('data-assigned-per-page') || '10', 10);
+                    if (data.assignedPerPage !== undefined) paginationEl.setAttribute('data-assigned-per-page', data.assignedPerPage);
                     var total = parseInt(data.assignedTotal || 0, 10);
                     var lastP = parseInt(data.assignedLastPage || 1, 10);
                     var to = Math.min(perPage, total);
                     var infoEl = document.getElementById('assignedPaginationInfo');
-                    if (infoEl) infoEl.textContent = 'Showing 1 to ' + to + ' of ' + total + ' entries (Page 1)';
-                    paginationEl.style.display = (data.assignedTotal || 0) > 10 ? '' : 'none';
+                    if (infoEl) infoEl.textContent = 'Showing ' + (total === 0 ? 0 : 1) + ' to ' + to + ' of ' + total + ' entries (Page 1)';
                     var firstBtn = document.getElementById('assignedPaginationFirst');
                     var prevBtn = document.getElementById('assignedPaginationPrev');
                     var nextBtn = document.getElementById('assignedPaginationNext');
@@ -1264,7 +1400,132 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Assigned pagination: First / Previous / page numbers / Next / Last; "Showing X to Y of Z entries (Page N)"
+    // Incoming pagination (client-side, 10 per page) – operates on filtered rows only (big search + column filters)
+    (function initIncomingPagination() {
+        var paginationEl = document.getElementById('incomingPagination');
+        if (!paginationEl) return;
+        var infoEl = document.getElementById('incomingPaginationInfo');
+        var firstBtn = document.getElementById('incomingPaginationFirst');
+        var prevBtn = document.getElementById('incomingPaginationPrev');
+        var nextBtn = document.getElementById('incomingPaginationNext');
+        var lastBtn = document.getElementById('incomingPaginationLast');
+        var pageNumbersEl = document.getElementById('incomingPageNumbers');
+        var table = document.getElementById('unassignedTable');
+        var tbody = table ? table.querySelector('tbody') : null;
+        if (!tbody) return;
+
+        function getPerPage() { return parseInt(paginationEl.getAttribute('data-incoming-per-page') || '10', 10); }
+
+        function getAllRows() {
+            return Array.from(tbody.querySelectorAll('tr.inquiry-row'));
+        }
+
+        function getMatchingRows() {
+            var searchInput = document.getElementById('inquirySearchInput');
+            var q = (searchInput && searchInput.value) ? (searchInput.value || '').toLowerCase().trim().replace(/\s+/g, ' ') : '';
+            var filters = {};
+            if (table) {
+                table.querySelectorAll('.inquiries-grid-filter').forEach(function(inp) {
+                    var col = inp.getAttribute('data-col');
+                    var val = (inp.value || '').toLowerCase().trim();
+                    if (col && val) filters[col] = val;
+                });
+            }
+            return getAllRows().filter(function(row) {
+                var searchMatch = !q || rowMatchesBigSearch(row, q);
+                if (!searchMatch) return false;
+                for (var col in filters) {
+                    var cell = row.querySelector('td[data-col="' + col + '"]');
+                    var cellText = (cell && cell.textContent) ? cell.textContent.toLowerCase().trim() : '';
+                    if (cellText.indexOf(filters[col]) === -1) return false;
+                }
+                return true;
+            });
+        }
+
+        var ROW_HEIGHT_PX = 44;
+        function ensureFixedHeight(visibleDataCount) {
+            var per = getPerPage();
+            if (visibleDataCount >= per) {
+                tbody.style.minHeight = '';
+            } else {
+                tbody.style.minHeight = (per * ROW_HEIGHT_PX) + 'px';
+            }
+        }
+
+        function applyPage(current) {
+            var per = getPerPage();
+            var matchingRows = getMatchingRows();
+            var total = matchingRows.length;
+            var lastPage = total === 0 ? 1 : Math.ceil(total / per);
+            if (current < 1) current = 1;
+            if (current > lastPage) current = lastPage;
+            var from = (current - 1) * per;
+            var to = current * per;
+            var pageRows = matchingRows.slice(from, to);
+            getAllRows().forEach(function(row) {
+                row.style.display = pageRows.indexOf(row) !== -1 ? '' : 'none';
+            });
+            ensureFixedHeight(pageRows.length);
+            paginationEl.setAttribute('data-incoming-current-page', String(current));
+            if (infoEl) {
+                var showFrom = total === 0 ? 0 : from + 1;
+                var showTo = Math.min(to, total);
+                infoEl.textContent = 'Showing ' + (total === 0 ? 0 : showFrom) + ' to ' + showTo + ' of ' + total + ' entries (Page ' + current + ')';
+            }
+            if (firstBtn) firstBtn.disabled = current <= 1;
+            if (prevBtn) prevBtn.disabled = current <= 1;
+            if (nextBtn) nextBtn.disabled = current >= lastPage;
+            if (lastBtn) lastBtn.disabled = current >= lastPage;
+
+            if (pageNumbersEl) {
+                pageNumbersEl.innerHTML = '';
+                if (lastPage > 1) {
+                    for (var i = 1; i <= lastPage; i++) {
+                        var b = document.createElement('button');
+                        b.type = 'button';
+                        b.className = 'inquiries-pagination-num' + (i === current ? ' inquiries-pagination-num-active' : '');
+                        b.textContent = String(i);
+                        b.setAttribute('data-page', String(i));
+                        pageNumbersEl.appendChild(b);
+                    }
+                }
+            }
+        }
+
+        // Initial render
+        applyPage(1);
+
+        var navEl = document.querySelector('#incomingPagination .inquiries-assigned-pagination-nav');
+        if (navEl) {
+            navEl.addEventListener('click', function(e) {
+                var btn = e.target && e.target.closest ? e.target.closest('button.inquiries-pagination-btn') : null;
+                if (!btn || btn.disabled) return;
+                var id = btn.id || '';
+                var cur = parseInt(paginationEl.getAttribute('data-incoming-current-page') || '1', 10);
+                var matchingRows = getMatchingRows();
+                var last = matchingRows.length === 0 ? 1 : Math.ceil(matchingRows.length / getPerPage());
+                if (id === 'incomingPaginationFirst') applyPage(1);
+                else if (id === 'incomingPaginationPrev') applyPage(cur - 1);
+                else if (id === 'incomingPaginationNext') applyPage(cur + 1);
+                else if (id === 'incomingPaginationLast') applyPage(last);
+            });
+        }
+        if (pageNumbersEl) {
+            pageNumbersEl.addEventListener('click', function(e) {
+                var btn = e.target && e.target.closest ? e.target.closest('.inquiries-pagination-num') : null;
+                if (!btn || btn.classList.contains('inquiries-pagination-num-active')) return;
+                var p = parseInt(btn.getAttribute('data-page') || '1', 10);
+                applyPage(p);
+            });
+        }
+
+        window.refreshIncomingPagination = function() {
+            applyPage(1);
+        };
+    })();
+
+    // Assigned pagination: client-side filter-aware (like Incoming); "Showing X to Y of Z" uses filtered count
     (function initAssignedPagination() {
         var paginationEl = document.getElementById('assignedPagination');
         if (!paginationEl) return;
@@ -1274,12 +1535,39 @@ document.addEventListener('DOMContentLoaded', function() {
         var nextBtn = document.getElementById('assignedPaginationNext');
         var lastBtn = document.getElementById('assignedPaginationLast');
         var pageNumbersEl = document.getElementById('assignedPageNumbers');
-        var tbody = document.querySelector('#assignedTable tbody');
+        var assignedTable = document.getElementById('assignedTable');
+        var tbody = assignedTable ? assignedTable.querySelector('tbody') : null;
+        if (!tbody) return;
 
         function getPerPage() { return parseInt(paginationEl.getAttribute('data-assigned-per-page') || '10', 10); }
-        function getTotal() { return parseInt(paginationEl.getAttribute('data-assigned-total') || '0', 10); }
-        function getLastPage() { return parseInt(paginationEl.getAttribute('data-assigned-last-page') || '1', 10); }
         function getCurrent() { return parseInt(paginationEl.getAttribute('data-assigned-current-page') || '1', 10); }
+
+        function getAllRowsAssigned() {
+            return Array.from(tbody.querySelectorAll('tr.inquiry-row'));
+        }
+
+        function getMatchingRowsAssigned() {
+            var searchInput = document.getElementById('inquirySearchInput');
+            var q = (searchInput && searchInput.value) ? (searchInput.value || '').toLowerCase().trim().replace(/\s+/g, ' ') : '';
+            var filters = {};
+            if (assignedTable) {
+                assignedTable.querySelectorAll('.inquiries-grid-filter-assigned').forEach(function(inp) {
+                    var col = inp.getAttribute('data-col');
+                    var val = (inp.value || '').toLowerCase().trim();
+                    if (col && val) filters[col] = val;
+                });
+            }
+            return getAllRowsAssigned().filter(function(row) {
+                var searchMatch = !q || rowMatchesBigSearch(row, q);
+                if (!searchMatch) return false;
+                for (var col in filters) {
+                    var cell = row.querySelector('td[data-col="' + col + '"]');
+                    var cellText = (cell && cell.textContent) ? cell.textContent.toLowerCase().trim() : '';
+                    if (cellText.indexOf(filters[col]) === -1) return false;
+                }
+                return true;
+            });
+        }
 
         function updateInfoText(current, lastPage, total) {
             if (!infoEl) return;
@@ -1321,9 +1609,34 @@ document.addEventListener('DOMContentLoaded', function() {
             pageNumbersEl.appendChild(frag);
         };
 
-        function updatePaginationState(current, lastPage, total) {
-            total = total !== undefined ? total : getTotal();
+        var ROW_HEIGHT_PX = 44;
+
+        function ensureFixedHeight(visibleDataCount) {
+            var per = getPerPage();
+            if (visibleDataCount >= per) {
+                tbody.style.minHeight = '';
+            } else {
+                tbody.style.minHeight = (per * ROW_HEIGHT_PX) + 'px';
+            }
+        }
+
+        function applyAssignedPage(current) {
+            var per = getPerPage();
+            var matchingRows = getMatchingRowsAssigned();
+            var total = matchingRows.length;
+            var lastPage = total === 0 ? 1 : Math.ceil(total / per);
+            if (current < 1) current = 1;
+            if (current > lastPage) current = lastPage;
+            var from = (current - 1) * per;
+            var to = current * per;
+            var pageRows = matchingRows.slice(from, to);
+            getAllRowsAssigned().forEach(function(row) {
+                row.style.display = pageRows.indexOf(row) !== -1 ? '' : 'none';
+            });
+            ensureFixedHeight(pageRows.length);
             paginationEl.setAttribute('data-assigned-current-page', String(current));
+            paginationEl.setAttribute('data-assigned-total', String(total));
+            paginationEl.setAttribute('data-assigned-last-page', String(lastPage));
             updateInfoText(current, lastPage, total);
             if (firstBtn) firstBtn.disabled = current <= 1;
             if (prevBtn) prevBtn.disabled = current <= 1;
@@ -1332,48 +1645,9 @@ document.addEventListener('DOMContentLoaded', function() {
             renderAssignedPageNumbers(current, lastPage);
         }
 
-        var lastPage = getLastPage();
-        var current = getCurrent();
-        var total = getTotal();
-        updateInfoText(current, lastPage, total);
-        if (firstBtn) firstBtn.disabled = current <= 1;
-        if (prevBtn) prevBtn.disabled = current <= 1;
-        if (nextBtn) nextBtn.disabled = current >= lastPage;
-        if (lastBtn) lastBtn.disabled = current >= lastPage;
-        renderAssignedPageNumbers(current, lastPage);
+        window.refreshAssignedPagination = function() { applyAssignedPage(1); };
 
-        function loadAssignedPage(page) {
-            var url = paginationEl.getAttribute('data-assigned-page-url');
-            if (!url || !tbody) return;
-            var u = url + (url.indexOf('?') !== -1 ? '&' : '?') + 'page=' + encodeURIComponent(page);
-            fetch(u, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' })
-                .then(function(res) { return res.ok ? res.json() : Promise.reject(); })
-                .then(function(data) {
-                    if (data.html !== undefined) tbody.innerHTML = data.html;
-                    var last = parseInt(data.lastPage || 1, 10);
-                    var cur = parseInt(data.currentPage || 1, 10);
-                    var total = parseInt(data.assignedTotal || 0, 10);
-                    paginationEl.setAttribute('data-assigned-last-page', String(last));
-                    paginationEl.setAttribute('data-assigned-total', String(total));
-                    updatePaginationState(cur, last, total);
-                    applyAssignedColumns(getAssignedVisibleColumns());
-                    applyAssignedGridFilters();
-                    if (typeof setInitialOrder === 'function') setInitialOrder('assignedTable');
-                    if (typeof clearInquiriesSort === 'function') clearInquiriesSort('assignedTable');
-                })
-                .catch(function() {});
-        }
-
-        function goToPage(deltaOrPage) {
-            var cur = getCurrent();
-            var last = getLastPage();
-            var page;
-            if (deltaOrPage === 'next') page = cur + 1;
-            else if (deltaOrPage === 'prev') page = cur - 1;
-            else if (typeof deltaOrPage === 'number' && deltaOrPage >= 1 && deltaOrPage <= last) page = deltaOrPage;
-            else return;
-            if (page >= 1 && page <= last) loadAssignedPage(page);
-        }
+        applyAssignedPage(1);
 
         var navEl = document.querySelector('#assignedPagination .inquiries-assigned-pagination-nav');
         if (navEl) {
@@ -1381,10 +1655,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 var btn = e.target && e.target.closest ? e.target.closest('button.inquiries-pagination-btn') : null;
                 if (!btn || btn.disabled) return;
                 var id = btn.id || '';
-                if (id === 'assignedPaginationFirst') loadAssignedPage(1);
-                else if (id === 'assignedPaginationPrev') goToPage('prev');
-                else if (id === 'assignedPaginationNext') goToPage('next');
-                else if (id === 'assignedPaginationLast') loadAssignedPage(getLastPage());
+                var cur = getCurrent();
+                var matchingRows = getMatchingRowsAssigned();
+                var last = matchingRows.length === 0 ? 1 : Math.ceil(matchingRows.length / getPerPage());
+                if (id === 'assignedPaginationFirst') applyAssignedPage(1);
+                else if (id === 'assignedPaginationPrev') applyAssignedPage(cur - 1);
+                else if (id === 'assignedPaginationNext') applyAssignedPage(cur + 1);
+                else if (id === 'assignedPaginationLast') applyAssignedPage(last);
             });
         }
 
@@ -1393,7 +1670,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 var btn = e.target && e.target.closest && e.target.closest('.inquiries-pagination-num');
                 if (btn && !btn.classList.contains('inquiries-pagination-num-active')) {
                     var p = parseInt(btn.getAttribute('data-page') || '1', 10);
-                    loadAssignedPage(p);
+                    applyAssignedPage(p);
                 }
             });
         }

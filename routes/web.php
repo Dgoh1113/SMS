@@ -27,7 +27,11 @@ Route::middleware(['auth.sms', 'admin'])->prefix('admin')->name('admin.')->group
     Route::get('/inquiries/sync', [AdminController::class, 'inquiriesSync'])->name('inquiries.sync');
     Route::get('/inquiries/assigned-page', [AdminController::class, 'inquiriesAssignedPage'])->name('inquiries.assigned-page');
     Route::get('/inquiries/create', [AdminController::class, 'createInquiry'])->name('inquiries.create');
+    Route::get('/inquiries/{leadId}/edit', [AdminController::class, 'editInquiry'])->name('inquiries.edit');
     Route::post('/inquiries', [AdminController::class, 'storeInquiry'])->name('inquiries.store');
+    Route::put('/inquiries/{leadId}', [AdminController::class, 'updateInquiry'])->name('inquiries.update');
+    Route::post('/inquiries/{leadId}/delete', [AdminController::class, 'deleteInquiry'])->name('inquiries.delete');
+    Route::post('/inquiries/delete/undo', [AdminController::class, 'undoDeleteInquiry'])->name('inquiries.delete-undo');
     Route::post('/inquiries/assign', [AdminController::class, 'assignInquiry'])->name('inquiries.assign');
     Route::post('/inquiries/assign/undo', [AdminController::class, 'undoAssignInquiry'])->name('inquiries.assign-undo');
     Route::post('/inquiries/mark-failed', [AdminController::class, 'markInquiryFailed'])->name('inquiries.mark-failed');
