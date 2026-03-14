@@ -44,13 +44,6 @@
                 </svg>
             </div>
 
-            <button type="button" class="rv2-export-btn">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 3v12m0 0 4-4m-4 4-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M4 17v3h16v-3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-                Export CSV
-            </button>
         </div>
     </header>
 
@@ -102,14 +95,14 @@
         <section class="rv2-panel rv2-panel-in-layer">
             <div class="rv2-panel-head">
                 <div>
-                    <div class="rv2-section-title">Top 10 Dealers — Failed vs Closed</div>
+                    <div class="rv2-section-title">Top 5 Dealers — Failed vs Closed</div>
                     <div class="rv2-section-subtitle">Primary vs comparison period. Left: % failed (red). Right: % closed (green).</div>
                 </div>
             </div>
             <div class="rv2-panel-body">
                 <div class="rv2-bar-chart-title-row">
-                    <div class="rv2-bar-chart-title rv2-bar-chart-title-failed">Top 10 Failed (left)</div>
-                    <div class="rv2-bar-chart-title rv2-bar-chart-title-closed">Top 10 Closed (right)</div>
+                    <div class="rv2-bar-chart-title rv2-bar-chart-title-failed">Top 5 Failed (left)</div>
+                    <div class="rv2-bar-chart-title rv2-bar-chart-title-closed">Top 5 Closed (right)</div>
                 </div>
                 <div class="rv2-chart-wrap rv2-bar-chart-wrap rv2-bar-chart-wrap-full">
                     <canvas id="top10FailedClosedChart"></canvas>
@@ -320,8 +313,8 @@
                         backgroundColor: Array.from({ length: rowCount }, () => BAR_RED),
                         borderColor: Array.from({ length: rowCount }, () => BAR_RED_BORDER),
                         borderWidth: 1,
-                        barThickness: 21,
-                        maxBarThickness: 24
+                        barThickness: 40,
+                        maxBarThickness: 40
                     },
                     {
                         label: 'Closed',
@@ -330,8 +323,8 @@
                         backgroundColor: Array.from({ length: rowCount }, () => BAR_CLOSED),
                         borderColor: Array.from({ length: rowCount }, () => BAR_CLOSED_BORDER),
                         borderWidth: 1,
-                        barThickness: 21,
-                        maxBarThickness: 24
+                        barThickness: 40,
+                        maxBarThickness:40
                     }
                 ]
             };
@@ -346,8 +339,10 @@
                     layout: { padding: { left: 0, right: 0, top: 4, bottom: 4 } },
                     datasets: {
                         bar: {
-                            categoryPercentage: 1.0,
-                            barPercentage: 1.0
+                            // Shrink each category band and bar so Failed / Closed rows
+                            // have more vertical space between them.
+                            categoryPercentage: 0.6,
+                            barPercentage: 0.6
                         }
                     },
                     plugins: {
@@ -424,10 +419,11 @@
 
             const divergeEl = document.getElementById('top10FailedClosedChart');
             if (divergeEl && window.Chart && rowCount > 0) {
-                // Keep row gap the same for up to 10 dealers, then grow taller only beyond that.
-                const perRow = 26;         // row height + small gap (px)
-                const referenceRows = 10;  // target rows before stretching
-                const rowsForHeight = Math.max(rowCount, referenceRows);
+                // Make chart height dynamic based on number of dealers and bar size.
+                // Approximate one "row" as barThickness (18) + gap (~8px).
+                const perRow = 92;         // row height + gap (px)
+                const minRows = 4;         // keep at least a reasonable height when few dealers
+                const rowsForHeight = Math.max(rowCount, minRows);
                 divergeEl.height = perRow * rowsForHeight;
                 new Chart(divergeEl.getContext('2d'), config);
             }

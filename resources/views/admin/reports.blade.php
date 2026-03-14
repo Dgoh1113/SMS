@@ -27,9 +27,6 @@
             <p class="dashboard-subtitle">Overview of system activities and performance</p>
         </div>
     </div>
-    <div class="dashboard-header-actions">
-        <button class="btn btn-outline">Download report</button>
-    </div>
 </header>
 
 @php
@@ -309,9 +306,10 @@
             }
 
             let areaChart = null;
+            // days > 0 => rolling window ending today; days === 0 => full month (all daysInMonth)
             function getFilteredData(days) {
                 let startDay = 1;
-                let endDay = currentDay;
+                let endDay = days > 0 ? currentDay : daysInMonth;
                 if (days > 0) {
                     startDay = Math.max(1, currentDay - days + 1);
                 }
@@ -339,7 +337,7 @@
                 elRange.textContent = days > 0 ? `Inquiries last ${days} days` : 'Inquiries this month';
 
                 if (elPercent && elBadge) {
-                    const daysInRange = days > 0 ? Math.min(days, currentDay) : currentDay;
+                    const daysInRange = days > 0 ? Math.min(days, currentDay) : daysInMonth;
                     const expectedPct = daysInMonth > 0 ? (daysInRange / daysInMonth) * 100 : 100;
                     const actualPct = monthTotal > 0 ? (total / monthTotal) * 100 : 0;
                     const diffPct = actualPct - expectedPct;

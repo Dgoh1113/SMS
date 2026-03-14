@@ -52,7 +52,7 @@
                 <span class="dashboard-nav-icon"><i class="bi {{ $current === 'fulldatabase' ? 'bi-database-fill' : 'bi-database' }}"></i></span>
                 <span>Full Database</span>
             </a>
-            <a href="{{ route('admin.dealers') }}" class="dashboard-nav-item {{ $current === 'maintain-users' ? 'dashboard-nav-item-active' : '' }}">
+            <a href="{{ route('admin.maintain-users') }}" class="dashboard-nav-item {{ $current === 'maintain-users' ? 'dashboard-nav-item-active' : '' }}">
                 <span class="dashboard-nav-icon"><i class="bi bi-person-gear"></i></span>
                 <span>Maintain Users</span>
             </a>

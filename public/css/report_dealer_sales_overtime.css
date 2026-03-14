@@ -1,7 +1,7 @@
 /* Copied from reports_v2.css (dedicated report CSS) */
 /* Reports v2 - matches provided reference layout */
 .rv2-page {
-  padding: 24px 26px;
+  padding: 0px 28px 24px 24px;
   background: #f6f8ff;
   text-align: left;
 }
@@ -460,7 +460,6 @@
 .rv2-page-btn {
   border: 1px solid #e5e7eb;
   background: #fff;
-  padding: 6px 10px;
   border-radius: 10px;
   font-size: 11px;
   font-weight: 800;

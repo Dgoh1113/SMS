@@ -54,12 +54,6 @@
                     @endforeach
                 </div>
             </div>
-            <button type="button" class="rrp-pill rrp-pill-green">
-                Export to Excel
-            </button>
-            <button type="button" class="rrp-pill rrp-pill-purple">
-                Print to PDF
-            </button>
         </div>
     </header>
 

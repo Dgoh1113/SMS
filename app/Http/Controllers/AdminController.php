@@ -1526,8 +1526,16 @@ class AdminController extends Controller
         // Unassigned leads: match LEAD status \"Open\"
         $unassignedCount = $leadStatus['Open'] ?? 0;
 
+        // Activity status: use LATEST LEAD_ACT per LEADID (by CREATIONDATE)
         $pendingActs = DB::select(
-            'SELECT "STATUS" AS status, COUNT(*) AS c FROM "LEAD_ACT" GROUP BY "STATUS"'
+            'SELECT a."STATUS" AS status, COUNT(*) AS c
+             FROM "LEAD_ACT" a
+             JOIN (
+                 SELECT "LEADID", MAX("CREATIONDATE") AS max_created
+                 FROM "LEAD_ACT"
+                 GROUP BY "LEADID"
+             ) m ON m."LEADID" = a."LEADID" AND m.max_created = a."CREATIONDATE"
+             GROUP BY a."STATUS"'
         );
         $activityStatus = [
             'Created' => 0,
@@ -1549,12 +1557,18 @@ class AdminController extends Controller
             }
         }
 
-        // Last month activity by status (LEAD_ACT has CREATIONDATE)
+        // Last month activity by status (latest LEAD_ACT per LEADID in that month)
         $lastMonthActs = DB::select(
-            'SELECT "STATUS" AS status, COUNT(*) AS c FROM "LEAD_ACT"
-             WHERE EXTRACT(YEAR FROM "CREATIONDATE") = EXTRACT(YEAR FROM DATEADD(MONTH, -1, CURRENT_DATE))
-               AND EXTRACT(MONTH FROM "CREATIONDATE") = EXTRACT(MONTH FROM DATEADD(MONTH, -1, CURRENT_DATE))
-             GROUP BY "STATUS"'
+            'SELECT a."STATUS" AS status, COUNT(*) AS c
+             FROM "LEAD_ACT" a
+             JOIN (
+                 SELECT "LEADID", MAX("CREATIONDATE") AS max_created
+                 FROM "LEAD_ACT"
+                 WHERE EXTRACT(YEAR FROM "CREATIONDATE") = EXTRACT(YEAR FROM DATEADD(MONTH, -1, CURRENT_DATE))
+                   AND EXTRACT(MONTH FROM "CREATIONDATE") = EXTRACT(MONTH FROM DATEADD(MONTH, -1, CURRENT_DATE))
+                 GROUP BY "LEADID"
+             ) m ON m."LEADID" = a."LEADID" AND m.max_created = a."CREATIONDATE"
+             GROUP BY a."STATUS"'
         );
         $lastMonthActivity = [
             'Created' => 0,
@@ -1911,7 +1925,7 @@ class AdminController extends Controller
             [-$days, 'Failed']
         );
         $top10Failed = [];
-        foreach (array_slice($failedRows, 0, 10) as $r) {
+        foreach (array_slice($failedRows, 0, 5) as $r) {
             $id = (string) ($r->DEALER_ID ?? $r->dealer_id ?? '');
             $failed = (int) ($r->FAILED_C ?? $r->failed_c ?? 0);
             $total = isset($totalsByDealer[$id]) ? (int) $totalsByDealer[$id]['total'] : $failed;
@@ -1939,7 +1953,7 @@ class AdminController extends Controller
             [-$days, 'Closed']
         );
         $top10Closed = [];
-        foreach (array_slice($closedRows, 0, 10) as $r) {
+        foreach (array_slice($closedRows, 0, 5) as $r) {
             $id = (string) ($r->DEALER_ID ?? $r->dealer_id ?? '');
             $closed = (int) ($r->CLOSED_C ?? $r->closed_c ?? 0);
             $total = isset($totalsByDealer[$id]) ? (int) $totalsByDealer[$id]['total'] : $closed;
@@ -2094,5 +2108,99 @@ class AdminController extends Controller
             'user_passkey' => DB::select('SELECT FIRST 200 * FROM "USER_PASSKEY" ORDER BY "USER_PASSKEYID" DESC'),
         ];
         return view('admin.fulldatabase', ['tables' => $tables, 'currentPage' => 'fulldatabase']);
+    }
+
+    public function maintainUsers(Request $request): View
+    {
+        $roleFilter = strtoupper(trim((string) $request->query('role', '')));
+        $search = trim((string) $request->query('q', ''));
+
+        $params = [];
+        $where = [];
+
+        if (in_array($roleFilter, ['ADMIN', 'MANAGER', 'DEALER'], true)) {
+            $where[] = 'UPPER(TRIM(u."SYSTEMROLE")) = ?';
+            $params[] = $roleFilter;
+        }
+        if ($search !== '') {
+            $like = '%' . $search . '%';
+            $where[] = '('
+                . 'UPPER(TRIM(COALESCE(u."EMAIL", \'\'))) LIKE UPPER(?)'
+                . ' OR UPPER(TRIM(COALESCE(u."ALIAS", \'\'))) LIKE UPPER(?)'
+                . ' OR UPPER(TRIM(COALESCE(u."COMPANY", \'\'))) LIKE UPPER(?)'
+                . ')';
+            $params[] = $like;
+            $params[] = $like;
+            $params[] = $like;
+        }
+
+        $sql = 'SELECT "USERID","EMAIL","SYSTEMROLE","ISACTIVE","ALIAS","COMPANY","LASTLOGIN" FROM "USERS" u';
+        if (!empty($where)) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
+        }
+        $sql .= ' ORDER BY "USERID"';
+
+        $rows = DB::select($sql, $params);
+
+        $users = array_map(function ($r) {
+            return [
+                'USERID' => (string) ($r->USERID ?? ''),
+                'EMAIL' => (string) ($r->EMAIL ?? ''),
+                'SYSTEMROLE' => (string) ($r->SYSTEMROLE ?? ''),
+                'ISACTIVE' => (bool) ($r->ISACTIVE ?? true),
+                'ALIAS' => (string) ($r->ALIAS ?? ''),
+                'COMPANY' => (string) ($r->COMPANY ?? ''),
+                'LASTLOGIN' => $r->LASTLOGIN ?? null,
+            ];
+        }, $rows);
+
+        return view('admin.maintain-users', [
+            'currentPage' => 'maintain-users',
+            'users' => $users,
+            'filterRole' => $roleFilter,
+            'search' => $search,
+        ]);
+    }
+
+    public function maintainUsersStore(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'EMAIL' => 'required|email|max:255',
+            'PASSWORD' => 'required|string|min:6|max:255',
+            'SYSTEMROLE' => 'required|string|in:ADMIN,MANAGER,DEALER',
+            'ALIAS' => 'nullable|string|max:255',
+            'COMPANY' => 'nullable|string|max:255',
+            'ISACTIVE' => 'nullable|boolean',
+        ]);
+
+        $email = trim((string) $validated['EMAIL']);
+        $password = (string) $validated['PASSWORD'];
+        $systemRole = strtoupper(trim((string) $validated['SYSTEMROLE']));
+        $alias = trim((string) ($validated['ALIAS'] ?? ''));
+        $company = trim((string) ($validated['COMPANY'] ?? ''));
+        $isActive = (bool) ($validated['ISACTIVE'] ?? true);
+
+        // Prevent duplicate email
+        $existing = DB::selectOne('SELECT "USERID" FROM "USERS" WHERE UPPER(TRIM("EMAIL")) = UPPER(TRIM(?))', [$email]);
+        if ($existing) {
+            return back()
+                ->withInput()
+                ->with('error', 'Email already exists for another user.');
+        }
+
+        DB::insert(
+            'INSERT INTO "USERS" ("EMAIL","PASSWORDHASH","SYSTEMROLE","ISACTIVE","ALIAS","COMPANY")
+             VALUES (?,?,?,?,?,?)',
+            [
+                $email,
+                \Illuminate\Support\Facades\Hash::make($password),
+                $systemRole,
+                $isActive ? 1 : 0,
+                $alias !== '' ? $alias : null,
+                $company !== '' ? $company : null,
+            ]
+        );
+
+        return redirect()->route('admin.maintain-users')->with('success', 'User created successfully.');
     }
 }
