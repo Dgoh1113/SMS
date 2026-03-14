@@ -44,6 +44,7 @@ Route::middleware(['auth.sms', 'admin'])->prefix('admin')->name('admin.')->group
     Route::get('/fulldatabase', [AdminController::class, 'fulldatabase'])->name('fulldatabase');
     Route::get('/maintain-users', [AdminController::class, 'maintainUsers'])->name('maintain-users');
     Route::post('/maintain-users', [AdminController::class, 'maintainUsersStore'])->name('maintain-users.store');
+    Route::put('/maintain-users/{userid}', [AdminController::class, 'maintainUsersUpdate'])->name('maintain-users.update');
 });
 
 Route::middleware(['auth.sms', 'dealer'])->prefix('dealer')->name('dealer.')->group(function () {

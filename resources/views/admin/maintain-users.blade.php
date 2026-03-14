@@ -9,9 +9,10 @@
         .maintain-users-header {
             display: flex;
             justify-content: space-between;
-            align-items: flex-end;
+            align-items: center;
             gap: 16px;
             margin-bottom: 16px;
+            flex-wrap: wrap;
         }
         .maintain-users-header-left {
             display: flex;
@@ -30,13 +31,14 @@
         }
         .maintain-users-header-right {
             display: flex;
-            flex-direction: column;
-            gap: 8px;
-            align-items: flex-end;
+            flex-direction: row;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
         }
         .maintain-users-actions {
             display: flex;
-            justify-content: flex-end;
+            align-items: center;
         }
         .maintain-users-add-btn {
             border-radius: 999px;
@@ -54,34 +56,6 @@
         }
         .maintain-users-add-btn:hover {
             filter: brightness(0.97);
-        }
-        .maintain-users-filters {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            align-items: center;
-        }
-        .maintain-users-search {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 10px;
-            border-radius: 999px;
-            border: 1px solid #e5e7eb;
-            background: #ffffff;
-        }
-        .maintain-users-search input {
-            border: none;
-            outline: none;
-            font-size: 0.8rem;
-            min-width: 160px;
-        }
-        .maintain-users-role-select {
-            border-radius: 999px;
-            border: 1px solid #e5e7eb;
-            padding: 6px 10px;
-            font-size: 0.8rem;
-            background: #ffffff;
         }
         .maintain-users-table-wrap {
             margin-top: 12px;
@@ -225,6 +199,76 @@
             font-size: 0.78rem;
             color: #16a34a;
         }
+        .maintain-users-confirm {
+            display: none;
+            margin-bottom: 12px;
+            padding: 10px 14px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #16a34a;
+            background: rgba(34, 197, 94, 0.12);
+            border-radius: 10px;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+        .maintain-users-confirm.is-visible {
+            display: block;
+        }
+        .maintain-users-col-action {
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+        .maintain-users-edit-btn {
+            border: 1px solid #c7d2fe;
+            background: #eef2ff;
+            color: #4f46e5;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .maintain-users-edit-btn:hover {
+            background: #e0e7ff;
+            border-color: #818cf8;
+        }
+        .maintain-users-table-search-wrap {
+            display: flex;
+            align-items: center;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 0 12px;
+            min-width: 200px;
+            max-width: 320px;
+        }
+        .maintain-users-table-search-icon {
+            color: #9ca3af;
+            font-size: 16px;
+            margin-right: 8px;
+        }
+        .maintain-users-table-search-input {
+            flex: 1;
+            border: none;
+            outline: none;
+            padding: 10px 0;
+            font-size: 14px;
+            min-width: 0;
+        }
+        .maintain-users-table-search-input::placeholder {
+            color: #9ca3af;
+        }
+        .maintain-users-thead-row th {
+            background: #ede9fe;
+            color: #4c1d95;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd6fe;
+        }
+        .maintain-users-th {
+            white-space: nowrap;
+        }
     </style>
 @endpush
 
@@ -236,23 +280,15 @@
             <div class="maintain-users-subtitle">Create and manage admin, manager, and dealer accounts.</div>
         </div>
         <div class="maintain-users-header-right">
+            <div class="maintain-users-table-search-wrap">
+                <span class="maintain-users-table-search-icon"><i class="bi bi-search"></i></span>
+                <input type="text" class="maintain-users-table-search-input" id="maintainUsersSearchInput" placeholder="Search table..." autocomplete="off">
+            </div>
             <div class="maintain-users-actions">
                 <button type="button" class="maintain-users-add-btn" id="maintainUsersAddBtn">
                     <span>+ Add User</span>
                 </button>
             </div>
-            <form method="GET" class="maintain-users-filters">
-                <select name="role" class="maintain-users-role-select">
-                    <option value="">All roles</option>
-                    <option value="ADMIN" {{ $filterRole === 'ADMIN' ? 'selected' : '' }}>Admin</option>
-                    <option value="MANAGER" {{ $filterRole === 'MANAGER' ? 'selected' : '' }}>Manager</option>
-                    <option value="DEALER" {{ $filterRole === 'DEALER' ? 'selected' : '' }}>Dealer</option>
-                </select>
-                <div class="maintain-users-search">
-                    <input type="text" id="maintainUsersSearchInput" name="q" value="{{ $search }}" placeholder="Search email, alias, or company...">
-                </div>
-                <button type="submit" class="maintain-users-btn-secondary" id="maintainUsersFilterBtn">Filter</button>
-            </form>
         </div>
     </div>
 
@@ -263,60 +299,63 @@
             <div class="maintain-users-success">{{ session('success') }}</div>
         @endif
         @if (count($users) === 0)
-            <div class="maintain-users-empty">No users found for the selected filters.</div>
+            <div class="maintain-users-empty">No users found.</div>
         @else
             <div class="dashboard-table-wrapper">
             <table class="dashboard-table maintain-users-table" id="maintainUsersTable">
                 <thead>
-                <tr>
+                <tr class="maintain-users-thead-row inquiries-header-row">
                     <th data-col="userid" class="inquiries-header-cell">
                         <span class="inquiries-header-label">USER ID</span>
                         <span class="inquiries-filter-wrap">
-                            <input type="text" class="maintain-users-grid-filter" data-col="userid">
+                            <input type="text" class="inquiries-grid-filter" data-col="userid" placeholder="Search">
                             <i class="bi bi-search inquiries-filter-icon"></i>
                         </span>
                     </th>
                     <th data-col="email" class="inquiries-header-cell">
                         <span class="inquiries-header-label">EMAIL</span>
                         <span class="inquiries-filter-wrap">
-                            <input type="text" class="maintain-users-grid-filter" data-col="email">
+                            <input type="text" class="inquiries-grid-filter" data-col="email" placeholder="Search">
                             <i class="bi bi-search inquiries-filter-icon"></i>
                         </span>
                     </th>
                     <th data-col="role" class="inquiries-header-cell">
                         <span class="inquiries-header-label">ROLE</span>
                         <span class="inquiries-filter-wrap">
-                            <input type="text" class="maintain-users-grid-filter" data-col="role">
+                            <input type="text" class="inquiries-grid-filter" data-col="role" placeholder="Search">
                             <i class="bi bi-search inquiries-filter-icon"></i>
                         </span>
                     </th>
                     <th data-col="alias" class="inquiries-header-cell">
                         <span class="inquiries-header-label">ALIAS</span>
                         <span class="inquiries-filter-wrap">
-                            <input type="text" class="maintain-users-grid-filter" data-col="alias">
+                            <input type="text" class="inquiries-grid-filter" data-col="alias" placeholder="Search">
                             <i class="bi bi-search inquiries-filter-icon"></i>
                         </span>
                     </th>
                     <th data-col="company" class="inquiries-header-cell">
                         <span class="inquiries-header-label">COMPANY</span>
                         <span class="inquiries-filter-wrap">
-                            <input type="text" class="maintain-users-grid-filter" data-col="company">
+                            <input type="text" class="inquiries-grid-filter" data-col="company" placeholder="Search">
                             <i class="bi bi-search inquiries-filter-icon"></i>
                         </span>
                     </th>
                     <th data-col="active" class="inquiries-header-cell">
                         <span class="inquiries-header-label">ACTIVE</span>
                         <span class="inquiries-filter-wrap">
-                            <input type="text" class="maintain-users-grid-filter" data-col="active">
+                            <input type="text" class="inquiries-grid-filter" data-col="active" placeholder="Search">
                             <i class="bi bi-search inquiries-filter-icon"></i>
                         </span>
                     </th>
                     <th data-col="lastlogin" class="inquiries-header-cell">
                         <span class="inquiries-header-label">LAST LOGIN</span>
                         <span class="inquiries-filter-wrap">
-                            <input type="text" class="maintain-users-grid-filter" data-col="lastlogin">
+                            <input type="text" class="inquiries-grid-filter" data-col="lastlogin" placeholder="Search">
                             <i class="bi bi-search inquiries-filter-icon"></i>
                         </span>
+                    </th>
+                    <th class="maintain-users-col-action">
+                        <span class="inquiries-header-label">ACTION</span>
                     </th>
                 </tr>
                 </thead>
@@ -327,15 +366,24 @@
                         $roleClass = $roleUpper === 'ADMIN'
                             ? 'maintain-users-pill-role-admin'
                             : ($roleUpper === 'MANAGER' ? 'maintain-users-pill-role-manager' : 'maintain-users-pill-role-dealer');
+                        $lastLoginStr = $u['LASTLOGIN'] ? \Carbon\Carbon::parse($u['LASTLOGIN'])->format('Y-m-d H:i') : '';
                         $searchHaystack = strtolower(
                             ($u['USERID'] ?? '') . ' ' .
                             ($u['EMAIL'] ?? '') . ' ' .
                             ($u['ALIAS'] ?? '') . ' ' .
                             ($u['COMPANY'] ?? '') . ' ' .
-                            $roleUpper
+                            $roleUpper . ' ' .
+                            ($u['ISACTIVE'] ? 'active' : 'inactive') . ' ' .
+                            $lastLoginStr
                         );
                     @endphp
-                    <tr class="maintain-users-row" data-search="{{ $searchHaystack }}">
+                    <tr class="maintain-users-row" data-search="{{ $searchHaystack }}"
+                        data-userid="{{ $u['USERID'] }}"
+                        data-email="{{ e($u['EMAIL']) }}"
+                        data-role="{{ $roleUpper }}"
+                        data-alias="{{ e($u['ALIAS'] ?? '') }}"
+                        data-company="{{ e($u['COMPANY'] ?? '') }}"
+                        data-active="{{ $u['ISACTIVE'] ? '1' : '0' }}">
                         <td data-col="userid">{{ $u['USERID'] }}</td>
                         <td data-col="email">{{ $u['EMAIL'] }}</td>
                         <td data-col="role">
@@ -355,6 +403,9 @@
                                 —
                             @endif
                         </td>
+                        <td class="maintain-users-col-action">
+                            <button type="button" class="maintain-users-edit-btn" data-userid="{{ $u['USERID'] }}" aria-label="Edit user">Edit</button>
+                        </td>
                     </tr>
                 @endforeach
                 </tbody>
@@ -373,7 +424,7 @@
             <div class="maintain-users-form-grid">
                 <div class="maintain-users-field full">
                     <label for="EMAIL">Email</label>
-                    <input type="email" id="EMAIL" name="EMAIL" required>
+                    <input type="email" id="EMAIL" name="EMAIL" maxlength="50" required>
                 </div>
                 <div class="maintain-users-field">
                     <label for="PASSWORD">Password</label>
@@ -389,11 +440,19 @@
                 </div>
                 <div class="maintain-users-field">
                     <label for="ALIAS">Alias</label>
-                    <input type="text" id="ALIAS" name="ALIAS">
+                    <input type="text" id="ALIAS" name="ALIAS" maxlength="50">
                 </div>
                 <div class="maintain-users-field">
                     <label for="COMPANY">Company</label>
-                    <input type="text" id="COMPANY" name="COMPANY">
+                    <input type="text" id="COMPANY" name="COMPANY" maxlength="40">
+                </div>
+                <div class="maintain-users-field">
+                    <label for="POSTCODE">Postcode</label>
+                    <input type="text" id="POSTCODE" name="POSTCODE" maxlength="10" required>
+                </div>
+                <div class="maintain-users-field">
+                    <label for="CITY">City</label>
+                    <input type="text" id="CITY" name="CITY" maxlength="100" required>
                 </div>
                 <div class="maintain-users-field">
                     <label for="ISACTIVE">Active</label>
@@ -406,6 +465,46 @@
             <div class="maintain-users-modal-actions">
                 <button type="button" class="maintain-users-btn-secondary" id="maintainUsersCancelBtn">Cancel</button>
                 <button type="submit" class="maintain-users-btn-primary">Create user</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="maintain-users-modal-backdrop" id="maintainUsersEditModal">
+    <div class="maintain-users-modal">
+        <h3 class="maintain-users-modal-title">Edit User</h3>
+        <div class="maintain-users-modal-sub">Update email, alias, company, active status, or password.</div>
+        <form method="POST" id="maintainUsersEditForm" action="">
+            @csrf
+            @method('PUT')
+            <div class="maintain-users-form-grid">
+                <div class="maintain-users-field full">
+                    <label for="edit_EMAIL">Email</label>
+                    <input type="email" id="edit_EMAIL" name="EMAIL" maxlength="50" required>
+                </div>
+                <div class="maintain-users-field">
+                    <label for="edit_ALIAS">Alias</label>
+                    <input type="text" id="edit_ALIAS" name="ALIAS" maxlength="50">
+                </div>
+                <div class="maintain-users-field">
+                    <label for="edit_COMPANY">Company</label>
+                    <input type="text" id="edit_COMPANY" name="COMPANY" maxlength="40">
+                </div>
+                <div class="maintain-users-field">
+                    <label for="edit_ISACTIVE">Active</label>
+                    <select id="edit_ISACTIVE" name="ISACTIVE">
+                        <option value="1">Yes</option>
+                        <option value="0">No</option>
+                    </select>
+                </div>
+                <div class="maintain-users-field full">
+                    <label for="edit_PASSWORD">New password (leave blank to keep current)</label>
+                    <input type="password" id="edit_PASSWORD" name="PASSWORD" placeholder="Optional">
+                </div>
+            </div>
+            <div class="maintain-users-modal-actions">
+                <button type="button" class="maintain-users-btn-secondary" id="maintainUsersEditCancelBtn">Cancel</button>
+                <button type="submit" class="maintain-users-btn-primary">Update user</button>
             </div>
         </form>
     </div>
@@ -442,15 +541,54 @@
                 });
             }
 
-            // Client-side search + column filters on table (like inquiries grid)
+            // Edit user modal
+            const editModal = document.getElementById('maintainUsersEditModal');
+            const editForm = document.getElementById('maintainUsersEditForm');
+            const editCancelBtn = document.getElementById('maintainUsersEditCancelBtn');
+            const updateUrlBase = '{{ url("admin/maintain-users") }}';
+            function openEditModal(row) {
+                if (!editModal || !editForm || !row) return;
+                var userid = row.getAttribute('data-userid');
+                var email = row.getAttribute('data-email') || '';
+                var alias = row.getAttribute('data-alias') || '';
+                var company = row.getAttribute('data-company') || '';
+                var active = row.getAttribute('data-active') || '1';
+                editForm.action = updateUrlBase + '/' + encodeURIComponent(userid);
+                document.getElementById('edit_EMAIL').value = email;
+                document.getElementById('edit_ALIAS').value = alias;
+                document.getElementById('edit_COMPANY').value = company;
+                document.getElementById('edit_ISACTIVE').value = active;
+                document.getElementById('edit_PASSWORD').value = '';
+                editModal.classList.add('is-open');
+            }
+            function closeEditModal() {
+                if (editModal) editModal.classList.remove('is-open');
+            }
+            document.querySelectorAll('.maintain-users-edit-btn').forEach(function (btn) {
+                btn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    var row = btn.closest('tr.maintain-users-row');
+                    if (row) openEditModal(row);
+                });
+            });
+            if (editCancelBtn) editCancelBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                closeEditModal();
+            });
+            if (editModal) {
+                editModal.addEventListener('click', function (e) {
+                    if (e.target === editModal) closeEditModal();
+                });
+            }
+
+            // Live search: top search box + per-column filters (all apply as you type)
             const searchInput = document.getElementById('maintainUsersSearchInput');
-            const filterBtn = document.getElementById('maintainUsersFilterBtn');
             const table = document.getElementById('maintainUsersTable');
-            function applyMaintainUsersFilter() {
-                if (!table || !searchInput) return;
-                const q = (searchInput.value || '').toLowerCase().trim();
+            function applyTableFilter() {
+                if (!table) return;
+                const q = (searchInput && searchInput.value) ? (searchInput.value || '').toLowerCase().trim() : '';
                 const filters = {};
-                table.querySelectorAll('.maintain-users-grid-filter').forEach(function (inp) {
+                table.querySelectorAll('thead .inquiries-grid-filter').forEach(function (inp) {
                     const col = inp.getAttribute('data-col');
                     const val = (inp.value || '').toLowerCase().trim();
                     if (col && val) filters[col] = val;
@@ -470,15 +608,11 @@
                     row.style.display = (searchMatch && colMatch) ? '' : 'none';
                 });
             }
-            if (searchInput) {
-                searchInput.addEventListener('input', applyMaintainUsersFilter);
-                if (filterBtn) {
-                    filterBtn.addEventListener('click', function (e) {
-                        // prevent full reload when clicking Filter, use client-side filter instead
-                        e.preventDefault();
-                        applyMaintainUsersFilter();
-                    });
-                }
+            if (searchInput) searchInput.addEventListener('input', applyTableFilter);
+            if (table) {
+                table.querySelectorAll('thead .inquiries-grid-filter').forEach(function (inp) {
+                    inp.addEventListener('input', applyTableFilter);
+                });
             }
         });
     </script>
