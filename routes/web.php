@@ -43,11 +43,13 @@ Route::middleware(['auth.sms', 'admin'])->prefix('admin')->name('admin.')->group
     Route::get('/rewards', [AdminController::class, 'rewards'])->name('rewards');
     Route::get('/reports', [AdminController::class, 'reports'])->name('reports');
     Route::get('/reports-v2', [AdminController::class, 'reportsV2'])->name('reports.v2');
+    Route::get('/reports/dealer-activity/{userid}', [AdminController::class, 'dealerActivity'])->name('reports.dealer-activity');
     Route::get('/reports-revenue', [AdminController::class, 'reportsRevenue'])->name('reports.revenue');
     Route::get('/history', [AdminController::class, 'history'])->name('history');
     Route::get('/fulldatabase', [AdminController::class, 'fulldatabase'])->name('fulldatabase');
     Route::get('/maintain-users', [AdminController::class, 'maintainUsers'])->name('maintain-users');
     Route::post('/maintain-users', [AdminController::class, 'maintainUsersStore'])->name('maintain-users.store');
+    Route::put('/maintain-users/{userid}', [AdminController::class, 'maintainUsersUpdate'])->name('maintain-users.update');
 });
 
 Route::middleware(['auth.sms', 'dealer'])->prefix('dealer')->name('dealer.')->group(function () {

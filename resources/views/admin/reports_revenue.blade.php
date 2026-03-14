@@ -70,7 +70,7 @@
         </div>
         <div class="rrp-metric-card">
             <div class="rrp-metric-label">Top Performing Dealer</div>
-            <div class="rrp-metric-value">{{ $topDealer['email'] ?? '—' }}</div>
+            <div class="rrp-metric-value">{{ $topDealer['name'] ?? $topDealer['email'] ?? '—' }}</div>
             <div class="rrp-metric-sub">Highest revenue (closed volume)</div>
         </div>
     </section>
@@ -110,7 +110,7 @@
                 <table class="dashboard-table rrp-table">
                     <thead>
                         <tr>
-                            <th>Dealer</th>
+                            <th>Name</th>
                             <th>Total Leads</th>
                             <th>Agreements Closed</th>
                             <th>Rejection Rate</th>
@@ -121,7 +121,7 @@
                         @forelse ($rankings as $row)
                             <tr>
                                 <td>
-                                    <div class="rrp-dealer-name">{{ $row['email'] }}</div>
+                                    <div class="rrp-dealer-name">{{ $row['name'] ?? $row['email'] }}</div>
                                     <div class="rrp-dealer-id">ID: {{ $row['dealer_id'] }}</div>
                                 </td>
                                 <td>{{ number_format($row['total']) }}</td>

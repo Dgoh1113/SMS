@@ -9,13 +9,20 @@
 </header>
 
 @foreach($tables as $name => $rows)
+@php
+    $tableId = 'fulldb-' . preg_replace('/[^a-z0-9]/i', '-', $name);
+@endphp
 <section class="dashboard-panel dashboard-table-panel" style="margin-bottom:24px;">
-    <div class="dashboard-panel-header">
+    <div class="dashboard-panel-header" style="flex-wrap:wrap; gap:12px;">
         <div class="dashboard-panel-title">{{ $name }}</div>
+        <div class="inquiries-search-wrap" style="margin-left:auto; max-width:280px;">
+            <span class="inquiries-search-icon"><i class="bi bi-search"></i></span>
+            <input type="text" class="inquiries-search-input" data-fulldb-table="{{ $tableId }}" placeholder="Search this table..." autocomplete="off">
+        </div>
     </div>
     <div class="dashboard-panel-body">
         <div class="table-responsive">
-            <table class="dashboard-table">
+            <table class="dashboard-table inquiries-table" id="{{ $tableId }}">
                 <thead>
                     <tr>
                         @if (count($rows) > 0)
@@ -27,8 +34,16 @@
                 </thead>
                 <tbody>
                     @forelse($rows as $r)
-                        <tr>
-                            @foreach((array) $r as $v)
+                        @php
+                            $cells = (array) $r;
+                            $searchHaystack = strtolower(implode(' ', array_map(function($v) {
+                                if (is_object($v) || is_array($v)) return json_encode($v);
+                                $s = (string) $v;
+                                return strlen($s) > 50 ? substr($s, 0, 50) : $s;
+                            }, $cells)));
+                        @endphp
+                        <tr class="fulldb-row inquiry-row" data-search="{{ $searchHaystack }}">
+                            @foreach($cells as $v)
                                 <td>{{ is_object($v) || is_array($v) ? json_encode($v) : (strlen((string)$v) > 50 ? substr($v, 0, 50) . '…' : $v) }}</td>
                             @endforeach
                         </tr>
@@ -42,3 +57,21 @@
 </section>
 @endforeach
 @endsection
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('input[data-fulldb-table]').forEach(function(inp) {
+        var tableId = inp.getAttribute('data-fulldb-table');
+        var table = document.getElementById(tableId);
+        if (!table) return;
+        inp.addEventListener('input', function() {
+            var q = (inp.value || '').toLowerCase().trim();
+            table.querySelectorAll('tbody tr.fulldb-row').forEach(function(row) {
+                var hay = (row.getAttribute('data-search') || '').toLowerCase();
+                row.style.display = !q || hay.indexOf(q) !== -1 ? '' : 'none';
+            });
+        });
+    });
+});
+</script>
+@endpush

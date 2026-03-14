@@ -2004,6 +2004,28 @@ class AdminController extends Controller
         ]);
     }
 
+    /** Dealer activity (LEAD_ACT) for a dealer — view-only for Reports V2 "Log Intervention" popout */
+    public function dealerActivity(string $userid): \Illuminate\Http\JsonResponse
+    {
+        $rows = DB::select(
+            'SELECT a."LEAD_ACTID", a."LEADID", a."USERID", a."CREATIONDATE", a."SUBJECT", a."DESCRIPTION", a."STATUS"
+             FROM "LEAD_ACT" a
+             INNER JOIN "LEAD" l ON l."LEADID" = a."LEADID" AND l."ASSIGNED_TO" = ?
+             ORDER BY a."CREATIONDATE" DESC, a."LEAD_ACTID" DESC',
+            [$userid]
+        );
+        $items = array_map(fn ($r) => [
+            'LEAD_ACTID' => $r->LEAD_ACTID,
+            'LEADID' => $r->LEADID,
+            'USERID' => $r->USERID,
+            'CREATIONDATE' => $r->CREATIONDATE,
+            'SUBJECT' => $r->SUBJECT,
+            'DESCRIPTION' => $r->DESCRIPTION,
+            'STATUS' => $r->STATUS,
+        ], $rows);
+        return response()->json(['items' => $items]);
+    }
+
     public function reportsRevenue(Request $request): View
     {
         $quarter = strtoupper((string) $request->query('quarter', ''));
@@ -2030,6 +2052,7 @@ class AdminController extends Controller
         $rows = DB::select(
             'SELECT u."USERID" AS dealer_id,
                     u."EMAIL" AS email,
+                    TRIM(COALESCE(u."ALIAS", \'\')) AS alias,
                     COUNT(*) AS total_leads,
                     SUM(CASE WHEN TRIM(COALESCE(l."CURRENTSTATUS", \'\')) = ? THEN 1 ELSE 0 END) AS closed_leads,
                     (SELECT COUNT(DISTINCT a."LEADID")
@@ -2042,7 +2065,7 @@ class AdminController extends Controller
              WHERE l."ASSIGNED_TO" IS NOT NULL
                AND l."CREATEDAT" >= ?
                AND l."CREATEDAT" <= ?
-             GROUP BY u."USERID", u."EMAIL"
+             GROUP BY u."USERID", u."EMAIL", u."ALIAS"
              ORDER BY total_leads DESC',
             ['Closed', $startStr, $endStr, 'REWARDED', $startStr, $endStr]
         );
@@ -2063,9 +2086,12 @@ class AdminController extends Controller
             // Simple revenue proxy: closed leads x 1,000
             $revenue = $closed * 1000;
 
+            $email = (string) ($r->EMAIL ?? $r->email ?? '');
+            $alias = trim((string) ($r->ALIAS ?? $r->alias ?? ''));
             $dealers[] = [
                 'dealer_id' => (int) ($r->DEALER_ID ?? $r->dealer_id ?? 0),
-                'email' => (string) ($r->EMAIL ?? $r->email ?? ''),
+                'email' => $email,
+                'name' => $alias !== '' ? $alias : $email,
                 'total' => $total,
                 'closed' => $closed,
                 'rewarded' => $rewarded,
@@ -2084,7 +2110,7 @@ class AdminController extends Controller
 
         // Chart: top 5 dealers by revenue
         $chartDealers = array_slice($dealers, 0, 5);
-        $chartLabels = array_column($chartDealers, 'email');
+        $chartLabels = array_column($chartDealers, 'name');
         $chartVolume = array_column($chartDealers, 'total');
         $chartClosed = array_column($chartDealers, 'closed');
         $chartRewarded = array_column($chartDealers, 'rewarded');
@@ -2131,8 +2157,12 @@ class AdminController extends Controller
         return view('admin.fulldatabase', ['tables' => $tables, 'currentPage' => 'fulldatabase']);
     }
 
-    public function maintainUsers(Request $request): View
+    public function maintainUsers(Request $request): View|RedirectResponse
     {
+        if (strtolower((string) $request->session()->get('user_role')) === 'manager') {
+            return redirect()->route('admin.dashboard')->with('error', 'You do not have permission to access Maintain Users.');
+        }
+
         $roleFilter = strtoupper(trim((string) $request->query('role', '')));
         $search = trim((string) $request->query('q', ''));
 
@@ -2185,20 +2215,35 @@ class AdminController extends Controller
 
     public function maintainUsersStore(Request $request): RedirectResponse
     {
+        if (strtolower((string) $request->session()->get('user_role')) === 'manager') {
+            return redirect()->route('admin.dashboard')->with('error', 'You do not have permission to access Maintain Users.');
+        }
+
         $validated = $request->validate([
-            'EMAIL' => 'required|email|max:255',
+            'EMAIL' => 'required|email|max:50',
             'PASSWORD' => 'required|string|min:6|max:255',
             'SYSTEMROLE' => 'required|string|in:ADMIN,MANAGER,DEALER',
-            'ALIAS' => 'nullable|string|max:255',
-            'COMPANY' => 'nullable|string|max:255',
+            'ALIAS' => 'nullable|string|max:50',
+            'COMPANY' => 'nullable|string|max:40',
+            'POSTCODE' => 'required|string|max:10',
+            'CITY' => 'required|string|max:100',
             'ISACTIVE' => 'nullable|boolean',
         ]);
 
         $email = trim((string) $validated['EMAIL']);
         $password = (string) $validated['PASSWORD'];
-        $systemRole = strtoupper(trim((string) $validated['SYSTEMROLE']));
+        $roleInput = strtoupper(trim((string) $validated['SYSTEMROLE']));
+        // INTEG_10: SystemRole IN ('Dealer', 'Manager', 'Admin') — exact casing
+        $systemRole = match ($roleInput) {
+            'ADMIN' => 'Admin',
+            'MANAGER' => 'Manager',
+            'DEALER' => 'Dealer',
+            default => 'Dealer',
+        };
         $alias = trim((string) ($validated['ALIAS'] ?? ''));
         $company = trim((string) ($validated['COMPANY'] ?? ''));
+        $postcode = trim((string) ($validated['POSTCODE'] ?? ''));
+        $city = trim((string) ($validated['CITY'] ?? ''));
         $isActive = (bool) ($validated['ISACTIVE'] ?? true);
 
         // Prevent duplicate email
@@ -2210,8 +2255,7 @@ class AdminController extends Controller
         }
 
         DB::insert(
-            'INSERT INTO "USERS" ("EMAIL","PASSWORDHASH","SYSTEMROLE","ISACTIVE","ALIAS","COMPANY")
-             VALUES (?,?,?,?,?,?)',
+            'INSERT INTO "USERS" ("EMAIL","PASSWORDHASH","SYSTEMROLE","ISACTIVE","ALIAS","COMPANY","POSTCODE","CITY") VALUES (?,?,?,?,?,?,?,?)',
             [
                 $email,
                 \Illuminate\Support\Facades\Hash::make($password),
@@ -2219,9 +2263,121 @@ class AdminController extends Controller
                 $isActive ? 1 : 0,
                 $alias !== '' ? $alias : null,
                 $company !== '' ? $company : null,
+                $postcode,
+                $city,
             ]
         );
 
         return redirect()->route('admin.maintain-users')->with('success', 'User created successfully.');
+    }
+
+    public function maintainUsersUpdate(Request $request, string $userid): RedirectResponse
+    {
+        if (strtolower((string) $request->session()->get('user_role')) === 'manager') {
+            return redirect()->route('admin.dashboard')->with('error', 'You do not have permission to access Maintain Users.');
+        }
+
+        $validated = $request->validate([
+            'EMAIL' => 'required|email|max:50',
+            'ALIAS' => 'nullable|string|max:50',
+            'COMPANY' => 'nullable|string|max:40',
+            'ISACTIVE' => 'nullable|boolean',
+            'PASSWORD' => 'nullable|string|min:6|max:255',
+        ]);
+
+        $email = trim((string) $validated['EMAIL']);
+        $alias = trim((string) ($validated['ALIAS'] ?? ''));
+        $company = trim((string) ($validated['COMPANY'] ?? ''));
+        $isActive = (bool) ($validated['ISACTIVE'] ?? true);
+        $newPassword = isset($validated['PASSWORD']) && trim((string) $validated['PASSWORD']) !== ''
+            ? trim((string) $validated['PASSWORD'])
+            : null;
+
+        $existing = DB::selectOne('SELECT "USERID" FROM "USERS" WHERE "USERID" = ?', [$userid]);
+        if (!$existing) {
+            return redirect()->route('admin.maintain-users')->with('error', 'User not found.');
+        }
+
+        // Email unique except current user
+        $emailConflict = DB::selectOne(
+            'SELECT "USERID" FROM "USERS" WHERE UPPER(TRIM("EMAIL")) = UPPER(TRIM(?)) AND "USERID" <> ?',
+            [$email, $userid]
+        );
+        if ($emailConflict) {
+            return back()->withInput()->with('error', 'Email already exists for another user.');
+        }
+
+        // Use actual USERS table column names (same as Full Database) for Firebird compatibility
+        $userRow = DB::selectOne('SELECT FIRST 1 * FROM "USERS" WHERE "USERID" = ?', [$userid]);
+        $userCols = $userRow ? array_keys((array) $userRow) : [];
+        $col = static function (string $logical) use ($userCols): ?string {
+            foreach ($userCols as $c) {
+                if (strcasecmp($c, $logical) === 0) {
+                    return $c;
+                }
+            }
+            return null;
+        };
+        $q = function (string $name): string {
+            return '"' . str_replace('"', '""', $name) . '"';
+        };
+        $emailCol = $col('EMAIL');
+        $aliasCol = $col('ALIAS');
+        $companyCol = $col('COMPANY');
+        $activeCol = $col('ISACTIVE');
+        $pwdCol = $col('PASSWORDHASH');
+        $idCol = $col('USERID');
+        if (!$emailCol || !$activeCol || !$idCol) {
+            return back()->withInput()->with('error', 'USERS table structure could not be read. Required columns: EMAIL, ISACTIVE, USERID.');
+        }
+
+        $isActiveValue = $isActive ? 1 : 0;
+        try {
+            if ($newPassword !== null && $pwdCol) {
+                $parts = [$q($emailCol) . ' = ?'];
+                $bind = [$email];
+                if ($aliasCol) {
+                    $parts[] = $q($aliasCol) . ' = ?';
+                    $bind[] = $alias !== '' ? $alias : null;
+                }
+                if ($companyCol) {
+                    $parts[] = $q($companyCol) . ' = ?';
+                    $bind[] = $company !== '' ? $company : null;
+                }
+                $parts[] = $q($activeCol) . ' = ?';
+                $parts[] = $q($pwdCol) . ' = ?';
+                $bind = array_merge($bind, [$isActiveValue, Hash::make($newPassword), $userid]);
+                DB::update(
+                    'UPDATE "USERS" SET ' . implode(', ', $parts) . ' WHERE ' . $q($idCol) . ' = ?',
+                    $bind
+                );
+            } else {
+                $parts = [$q($emailCol) . ' = ?'];
+                $bind = [$email];
+                if ($aliasCol) {
+                    $parts[] = $q($aliasCol) . ' = ?';
+                    $bind[] = $alias !== '' ? $alias : null;
+                }
+                if ($companyCol) {
+                    $parts[] = $q($companyCol) . ' = ?';
+                    $bind[] = $company !== '' ? $company : null;
+                }
+                $parts[] = $q($activeCol) . ' = ?';
+                $bind[] = $isActiveValue;
+                $bind[] = $userid;
+                DB::update(
+                    'UPDATE "USERS" SET ' . implode(', ', $parts) . ' WHERE ' . $q($idCol) . ' = ?',
+                    $bind
+                );
+            }
+        } catch (\Throwable $e) {
+            $msg = $e->getMessage();
+            if (str_contains($msg, '23000') || str_contains($msg, 'Integrity constraint') || str_contains($msg, 'INTEG_') || str_contains($msg, 'CHECK')) {
+                return back()->withInput()->with('error', 'Update could not be saved due to database rules. Please try again.');
+            }
+            throw $e;
+        }
+
+        return redirect()->route('admin.maintain-users')->with('success', 'User updated successfully.');
     }
 }

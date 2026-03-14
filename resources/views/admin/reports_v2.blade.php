@@ -2,6 +2,10 @@
 @section('title', 'Report - Dealer Sales Overtime')
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/report_dealer_sales_overtime.css') }}">
+    <style>
+        .rv2-intervention-view-only { font-size: 12px; color: #64748b; margin-bottom: 10px; }
+        .rv2-intervention-modal .inquiries-assign-window { max-width: 720px; max-height: 85vh; overflow: auto; }
+    </style>
 @endpush
 @section('content')
 <div class="rv2-page">
@@ -159,7 +163,7 @@
                                         <span class="rv2-pill-warn">—</span>
                                     @endif
                                 </td>
-                                <td><button class="rv2-action-btn" type="button">Log Intervention</button></td>
+                                <td><button class="rv2-action-btn rv2-intervention-btn" type="button" data-dealer-id="{{ $r['id'] ?? '' }}" data-dealer-name="{{ e($r['name'] ?? '') }}">Log Intervention</button></td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -228,6 +232,28 @@
         </div>
     </section>
 </div>
+
+{{-- View-only intervention / activity popout (like dealer status process) --}}
+<div class="inquiries-assign-modal rv2-intervention-modal" id="rv2InterventionModal" hidden>
+    <div class="inquiries-assign-backdrop" data-rv2-intervention-close="1"></div>
+    <div class="inquiries-assign-window" role="dialog" aria-modal="true" aria-labelledby="rv2InterventionModalTitle">
+        <div class="inquiries-assign-header">
+            <div class="inquiries-assign-title" id="rv2InterventionModalTitle">Activity — Dealer <span id="rv2InterventionDealerName"></span> (ID: <span id="rv2InterventionDealerId"></span>)</div>
+            <button type="button" class="inquiries-assign-close" aria-label="Close" data-rv2-intervention-close="1">&times;</button>
+        </div>
+        <div class="inquiries-assign-body">
+            <p class="rv2-intervention-view-only">View only. Status process for this dealer.</p>
+            <div class="inquiries-status-table-wrap">
+                <table class="inquiries-table">
+                    <thead><tr><th>Date</th><th>Lead</th><th>Subject</th><th>Status</th><th>Description</th><th>User</th></tr></thead>
+                    <tbody id="rv2InterventionModalBody"></tbody>
+                </table>
+            </div>
+            <p id="rv2InterventionModalEmpty" class="inquiries-empty" style="display:none;">No activity for this dealer.</p>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
@@ -271,6 +297,53 @@
                     if (e.key === 'Escape') closeDropdown();
                 });
             }
+
+            // Log Intervention popout — view-only dealer activity (like status process in inquiries)
+            (function initInterventionModal() {
+                var modal = document.getElementById('rv2InterventionModal');
+                var titleName = document.getElementById('rv2InterventionDealerName');
+                var titleId = document.getElementById('rv2InterventionDealerId');
+                var body = document.getElementById('rv2InterventionModalBody');
+                var emptyEl = document.getElementById('rv2InterventionModalEmpty');
+                if (!modal || !body) return;
+                function closeModal() { modal.hidden = true; }
+                function openModal(dealerId, dealerName, items) {
+                    if (titleId) titleId.textContent = dealerId || '—';
+                    if (titleName) titleName.textContent = dealerName || '—';
+                    body.innerHTML = '';
+                    if (!items || items.length === 0) {
+                        if (emptyEl) emptyEl.style.display = 'block';
+                    } else {
+                        if (emptyEl) emptyEl.style.display = 'none';
+                        items.forEach(function(it) {
+                            var tr = document.createElement('tr');
+                            var date = it.CREATIONDATE ? String(it.CREATIONDATE).substring(0, 19) : '—';
+                            var leadId = it.LEADID != null ? '#SQL-' + it.LEADID : '—';
+                            tr.innerHTML = '<td>' + date + '</td><td>' + leadId + '</td><td>' + (it.SUBJECT || '—') + '</td><td>' + (it.STATUS || '—') + '</td><td>' + (it.DESCRIPTION || '—') + '</td><td>' + (it.USERID || '—') + '</td>';
+                            body.appendChild(tr);
+                        });
+                    }
+                    modal.hidden = false;
+                }
+                document.addEventListener('click', function(e) {
+                    var btn = e.target && e.target.closest ? e.target.closest('.rv2-intervention-btn') : null;
+                    if (btn) {
+                        var dealerId = btn.getAttribute('data-dealer-id');
+                        var dealerName = btn.getAttribute('data-dealer-name') || '';
+                        if (dealerId) {
+                            fetch('{{ url("/admin/reports/dealer-activity") }}/' + encodeURIComponent(dealerId), { headers: { 'Accept': 'application/json' } })
+                                .then(function(r) { return r.json(); })
+                                .then(function(data) { openModal(dealerId, dealerName, data.items || []); })
+                                .catch(function() { openModal(dealerId, dealerName, []); });
+                        }
+                        return;
+                    }
+                    if (e.target && (e.target.getAttribute('data-rv2-intervention-close') === '1')) closeModal();
+                });
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape' && modal && !modal.hidden) closeModal();
+                });
+            })();
 
             // Toggle custom date ranges when "Custom range..." is selected
             document.querySelectorAll('.rv2-filter-select').forEach(function (sel) {

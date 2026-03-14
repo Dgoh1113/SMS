@@ -2,6 +2,14 @@
 @section('title', 'Dealers – Admin')
 @section('content')
 <section class="dashboard-panel dashboard-table-panel">
+    <div class="inquiries-search-section" style="margin-bottom:12px;">
+        <div class="inquiries-search-row">
+            <div class="inquiries-search-wrap">
+                <span class="inquiries-search-icon"><i class="bi bi-search"></i></span>
+                <input type="text" class="inquiries-search-input" id="dealersSearchInput" placeholder="Search table..." autocomplete="off">
+            </div>
+        </div>
+    </div>
     <div class="dashboard-panel-body">
         <div class="dealers-panel-actions dealers-panel-actions-right" style="margin-bottom: 12px;">
             <div class="dealers-panel-buttons">
@@ -51,7 +59,10 @@
                 </thead>
                 <tbody>
                     @forelse($items as $r)
-                        <tr class="dealer-row">
+                        @php
+                            $searchHaystack = strtolower(trim(($r->USERID ?? '').' '.($r->EMAIL ?? '').' '.($r->POSTCODE ?? '').' '.($r->CITY ?? '').' '.($r->COMPANY ?? '').' '.($r->ALIAS ?? '')));
+                        @endphp
+                        <tr class="dealer-row inquiry-row" data-search="{{ $searchHaystack }}">
                             <td data-col="userid">{{ $r->USERID }}</td>
                             <td data-col="alias">{{ $r->ALIAS ?? '—' }}</td>
                             <td data-col="company">{{ $r->COMPANY ?? '—' }}</td>
@@ -309,21 +320,18 @@ document.addEventListener('DOMContentLoaded', function() {
     applySort();
 });
 </script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var openBtn = document.getElementById('openAddUserModal');
+    var closeBtn = document.getElementById('closeAddUserModal');
+    var modal = document.getElementById('addUserModal');
+    if (!modal || !openBtn || !closeBtn) return;
+    openBtn.addEventListener('click', function() { modal.style.display = 'flex'; });
+    closeBtn.addEventListener('click', function() { modal.style.display = 'none'; });
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) modal.style.display = 'none';
+    });
+});
+</script>
 @endpush
 @endsection
-
-@push('scripts')
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const openBtn = document.getElementById('openAddUserModal');
-            const closeBtn = document.getElementById('closeAddUserModal');
-            const modal = document.getElementById('addUserModal');
-            if (!modal || !openBtn || !closeBtn) return;
-            openBtn.addEventListener('click', () => { modal.style.display = 'flex'; });
-            closeBtn.addEventListener('click', () => { modal.style.display = 'none'; });
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) modal.style.display = 'none';
-            });
-        });
-    </script>
-@endpush

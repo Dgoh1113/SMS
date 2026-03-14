@@ -48,7 +48,7 @@ class AuthController extends Controller
             return back()->withInput($request->only('email'))->with('error', 'Invalid email or password.');
         }
         if (!$row->ISACTIVE) {
-            return back()->withInput($request->only('email'))->with('error', 'Account is deactivated.');
+            return back()->withInput($request->only('email'))->with('error', 'Your account has been frozen, please contact the administrator.');
         }
 
         $stored = (string) ($row->PASSWORDHASH ?? '');
