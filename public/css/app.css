@@ -2027,7 +2027,13 @@ textarea.inquiry-form-input { resize: vertical; min-height: 140px; }
 .dealers-table-with-filters thead th.inquiries-sortable {
   cursor: pointer;
 }
+.dealers-table-with-filters thead th.inquiries-header-cell {
+  text-align: left;
+}
 .dealers-table-with-filters thead th .inquiries-header-label {
+  display: block;
+  text-align: left;
+  margin-bottom: 6px;
   white-space: nowrap;
 }
 .dealers-table-with-filters thead th.inquiries-sort-asc .inquiries-header-label::after {
