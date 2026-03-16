@@ -304,7 +304,10 @@ class DealerController extends Controller
                     l."ASSIGNED_TO", l."LASTMODIFIED",
                     u."EMAIL" AS "ASSIGNED_BY_EMAIL",
                     COALESCE(
-                        (SELECT FIRST 1 la."STATUS" FROM "LEAD_ACT" la WHERE la."LEADID" = l."LEADID" ORDER BY la."CREATIONDATE" DESC),
+                        (SELECT FIRST 1 la."STATUS"
+                           FROM "LEAD_ACT" la
+                          WHERE la."LEADID" = l."LEADID"
+                          ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC),
                         l."CURRENTSTATUS",
                         \'Pending\'
                     ) AS "ACT_STATUS"
@@ -382,12 +385,14 @@ class DealerController extends Controller
         }
 
         $activities = [];
+        $lastProductIds = [];
         $rows = DB::select(
-            'SELECT la."LEAD_ACTID", la."CREATIONDATE", la."SUBJECT", la."DESCRIPTION", la."STATUS", la."ATTACHMENT", u."EMAIL" AS "USER_EMAIL"
+            'SELECT la."LEAD_ACTID", la."CREATIONDATE", la."SUBJECT", la."DESCRIPTION", la."STATUS",
+                    la."ATTACHMENT", la."DEALTPRODUCT", u."EMAIL" AS "USER_EMAIL"
              FROM "LEAD_ACT" la
              LEFT JOIN "USERS" u ON u."USERID" = la."USERID"
              WHERE la."LEADID" = ?
-             ORDER BY la."CREATIONDATE" ASC',
+             ORDER BY la."CREATIONDATE" ASC, la."LEAD_ACTID" ASC',
             [$leadId]
         );
 
@@ -408,6 +413,7 @@ class DealerController extends Controller
             }
 
             $attachmentUrls = [];
+            $productIds = [];
             $attachmentRaw = $r->ATTACHMENT ?? $r->attachment ?? null;
             if ($attachmentRaw !== null && trim((string) $attachmentRaw) !== '') {
                 $attachmentStr = trim((string) $attachmentRaw);
@@ -428,6 +434,32 @@ class DealerController extends Controller
                 }
             }
 
+            // Parse DEALTPRODUCT (e.g. "1, 2, 3") into numeric product IDs for the UI
+            $dealtRaw = $r->DEALTPRODUCT ?? $r->DEALTPRODUCT ?? null;
+            if ($dealtRaw !== null && trim((string) $dealtRaw) !== '') {
+                $tokens = preg_split('/[,\s\(\)]+/', (string) $dealtRaw);
+                foreach ($tokens as $tok) {
+                    if ($tok === '') {
+                        continue;
+                    }
+                    $pid = (int) $tok;
+                    if ($pid >= 1 && $pid <= 11) {
+                        $productIds[] = $pid;
+                    }
+                }
+                $productIds = array_values(array_unique($productIds));
+            }
+
+            // Carry forward last non-empty product selection so Rewarded steps
+            // inherit the same products as the preceding Completed step.
+            if (!empty($productIds)) {
+                $lastProductIds = $productIds;
+            } elseif (empty($productIds) && !empty($lastProductIds) &&
+                in_array(strtoupper($status), ['COMPLETED', 'REWARDED', 'REWARD DISTRIBUTED'], true)
+            ) {
+                $productIds = $lastProductIds;
+            }
+
             $activities[] = [
                 'type' => 'activity',
                 'lead_act_id' => (int) ($r->LEAD_ACTID ?? 0),
@@ -437,6 +469,7 @@ class DealerController extends Controller
                 'status' => $status,
                 'created_at' => $createdAtIso,
                 'attachment_urls' => $attachmentUrls,
+                'product_ids' => $productIds,
             ];
         }
 
@@ -573,6 +606,18 @@ class DealerController extends Controller
         $leadId = (int) $request->input('lead_id');
         $status = trim((string) $request->input('status'));
         $remark = trim((string) ($request->input('remark') ?? ''));
+        $activityDate = trim((string) ($request->input('activity_date') ?? ''));
+        $activityTime = trim((string) ($request->input('activity_time') ?? ''));
+
+        $creationDate = now()->format('Y-m-d H:i:s');
+        if ($activityDate !== '' && $activityTime !== '') {
+            try {
+                $parsed = Carbon::parse($activityDate . ' ' . $activityTime);
+                $creationDate = $parsed->format('Y-m-d H:i:s');
+            } catch (\Throwable $e) {
+                // keep default
+            }
+        }
 
         $dealerId = $request->session()->get('user_id');
         if (!$dealerId) {
@@ -653,14 +698,14 @@ class DealerController extends Controller
             $dealtProduct = ! empty($productIds) ? implode(', ', $productIds) : null;
             DB::insert(
                 'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS","DEALTPRODUCT")
-                 VALUES (GEN_ID("GEN_LEAD_ACTID", 1),?,?,CURRENT_TIMESTAMP,?,?,?,?,?)',
-                [$leadId, $dealerId, 'Updated Status', $description, $attachmentValue, $statusDb, $dealtProduct]
+                 VALUES (GEN_ID("GEN_LEAD_ACTID", 1),?,?,?,?,?,?,?,?)',
+                [$leadId, $dealerId, $creationDate, 'Updated Status', $description, $attachmentValue, $statusDb, $dealtProduct]
             );
         } else {
             DB::insert(
                 'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS")
-                 VALUES (GEN_ID("GEN_LEAD_ACTID", 1),?,?,CURRENT_TIMESTAMP,?,?,?,?)',
-                [$leadId, $dealerId, 'Updated Status', $description, $attachmentValue, $statusDb]
+                 VALUES (GEN_ID("GEN_LEAD_ACTID", 1),?,?,?,?,?,?,?)',
+                [$leadId, $dealerId, $creationDate, 'Updated Status', $description, $attachmentValue, $statusDb]
             );
         }
 
@@ -836,7 +881,10 @@ class DealerController extends Controller
             $rows = DB::select(
                 'SELECT l."LEADID",
                     COALESCE(
-                        (SELECT FIRST 1 la."STATUS" FROM "LEAD_ACT" la WHERE la."LEADID" = l."LEADID" ORDER BY la."CREATIONDATE" DESC),
+                        (SELECT FIRST 1 la."STATUS"
+                           FROM "LEAD_ACT" la
+                          WHERE la."LEADID" = l."LEADID"
+                          ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC),
                         l."CURRENTSTATUS",
                         \'Pending\'
                     ) AS "LATEST_STATUS"

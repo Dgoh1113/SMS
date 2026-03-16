@@ -422,10 +422,11 @@ document.addEventListener('DOMContentLoaded', function() {
             var showDone = function(i) { return i <= idx; };
             steps.forEach(function(step, i) {
                 step.classList.remove('inquiry-step--done', 'inquiry-step--active', 'inquiry-step--selected', 'inquiry-step--clickable', 'inquiry-step--no-click', 'inquiry-step--viewable');
-                step.innerHTML = '<span>' + step.dataset.step + '</span>';
+                var label = getStepDisplayLabel(i);
+                step.innerHTML = '<span>' + (label || step.dataset.step) + '</span>';
                 if (showDone(i)) {
                     step.classList.add('inquiry-step--done', 'inquiry-step--viewable');
-                    step.innerHTML = '<i class="bi bi-check"></i><span>' + step.dataset.step + '</span>';
+                    step.innerHTML = '<i class="bi bi-check"></i><span>' + (label || step.dataset.step) + '</span>';
                 } else if (i === selectedStatusIdx) {
                     step.classList.add('inquiry-step--active', 'inquiry-step--selected');
                 } else if (i === 0) {
@@ -496,20 +497,48 @@ document.addEventListener('DOMContentLoaded', function() {
         return null;
     }
 
+    /** Display label for a step: DB status when activity exists, "Current" when it's the current step but no record yet, else canonical name. */
+    function getStepDisplayLabel(stepIdx) {
+        var stepName = statusOrder[stepIdx];
+        if (stepIdx > currentStatusIdx) return stepName;
+        var act = findActivityForStatus(stepName);
+        if (act && act.status) return (act.status || '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') || stepName;
+        if (stepIdx === currentStatusIdx) return 'Current';
+        return stepName;
+    }
+
     function populateFormFromActivity(activity) {
         var dateEl = document.getElementById('inquiryFollowupDate');
         var timeEl = document.getElementById('inquiryFollowupTime');
         var remarkEl = document.getElementById('inquiryRemark');
+        var productBoxes = document.querySelectorAll('.inquiry-product-checkbox');
         if (!activity || !activity.created_at) {
             if (dateEl) dateEl.value = '';
             if (timeEl) timeEl.value = '';
             if (remarkEl) remarkEl.value = '';
+            if (productBoxes.length) {
+                productBoxes.forEach(function(cb) { cb.checked = false; });
+            }
             return;
         }
         var d = new Date(activity.created_at);
         if (dateEl) dateEl.value = isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
         if (timeEl) timeEl.value = isNaN(d.getTime()) ? '' : String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
         if (remarkEl) remarkEl.value = activity.description || '';
+
+        // Restore product selection (e.g. SQL Account) for completed/rewarded activities
+        if (productBoxes.length) {
+            productBoxes.forEach(function(cb) { cb.checked = false; });
+            if (activity && Array.isArray(activity.product_ids)) {
+                var ids = activity.product_ids.map(function(v) { return parseInt(v, 10); }).filter(function(v) { return !isNaN(v); });
+                productBoxes.forEach(function(cb) {
+                    var pid = parseInt(cb.value, 10);
+                    if (!isNaN(pid) && ids.indexOf(pid) !== -1) {
+                        cb.checked = true;
+                    }
+                });
+            }
+        }
     }
 
     function setFieldsReadOnly(readOnly) {
@@ -608,6 +637,19 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    function refreshStepLabels() {
+        if (!progressionSteps) return;
+        progressionSteps.querySelectorAll('.inquiry-step').forEach(function(step, i) {
+            var label = getStepDisplayLabel(i);
+            var text = label || step.dataset.step;
+            if (step.classList.contains('inquiry-step--done')) {
+                step.innerHTML = '<i class="bi bi-check"></i><span>' + text + '</span>';
+            } else {
+                step.innerHTML = '<span>' + text + '</span>';
+            }
+        });
+    }
+
     function loadActivity(leadId) {
         var url = '{{ route("dealer.inquiries.activity", ["leadId" => "__ID__"]) }}'.replace('__ID__', leadId);
         fetch(url, { headers: { 'Accept': 'application/json' } })
@@ -615,6 +657,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(function(data) {
                 cachedActivities = data.activities || [];
                 renderActivity(cachedActivities);
+                refreshStepLabels();
                 var details = data.last_reward_details;
                 if (details && currentStatusIdx === statusOrder.length - 1) {
                     var dateEl = document.getElementById('inquiryFollowupDate');
@@ -629,6 +672,68 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(function() {
                 renderActivity([]);
             });
+    }
+
+    function applyRowStatusUpdate(buttonEl, toStatus) {
+        if (!buttonEl) return;
+        var row = buttonEl.closest('.inquiry-row');
+        if (!row) return;
+        var statusCell = row.querySelector('td[data-col="status"] .inquiries-status');
+        if (!statusCell) return;
+
+        // Normalized status names used in the UI
+        var label, rawUpper, cls;
+        var s = (toStatus || '').toUpperCase();
+        switch (s) {
+            case 'PENDING':
+                rawUpper = 'PENDING';
+                label = 'PENDING';
+                cls = 'inquiries-status-pending';
+                break;
+            case 'FOLLOW UP':
+                rawUpper = 'FOLLOWUP';
+                label = 'Follow Up';
+                cls = 'inquiries-status-followup';
+                break;
+            case 'DEMO':
+                rawUpper = 'DEMO';
+                label = 'DEMO';
+                cls = 'inquiries-status-demo';
+                break;
+            case 'CONFIRMED':
+                rawUpper = 'CONFIRMED';
+                label = 'CONFIRMED';
+                cls = 'inquiries-status-confirmed';
+                break;
+            case 'COMPLETED':
+                rawUpper = 'COMPLETED';
+                label = 'COMPLETED';
+                cls = 'inquiries-status-completed';
+                break;
+            case 'REWARDED':
+            case 'REWARD DISTRIBUTED':
+                rawUpper = 'REWARDED';
+                label = 'REWARDED';
+                cls = 'inquiries-status-rewarded';
+                break;
+            case 'FAILED':
+                rawUpper = 'FAILED';
+                label = 'FAILED';
+                cls = 'inquiries-status-failed';
+                break;
+            default:
+                rawUpper = s || 'PENDING';
+                label = rawUpper;
+                cls = 'inquiries-status-new';
+                break;
+        }
+
+        // Update the button's data-status so next modal open uses the new status
+        buttonEl.dataset.status = rawUpper;
+
+        // Update the badge text + class
+        statusCell.textContent = label;
+        statusCell.className = 'inquiries-status ' + cls;
     }
 
     var attachmentFiles = [];
@@ -689,6 +794,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    function getDefaultDate() {
+        var d = new Date();
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+    function getDefaultTime() {
+        var d = new Date();
+        return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    }
+
     function openModal(leadId, customer, status) {
         currentLeadId = leadId;
         currentCustomer = customer || '—';
@@ -700,8 +814,8 @@ document.addEventListener('DOMContentLoaded', function() {
         var dateEl = document.getElementById('inquiryFollowupDate');
         var timeEl = document.getElementById('inquiryFollowupTime');
         if (remarkEl) remarkEl.value = '';
-        if (dateEl) dateEl.value = '';
-        if (timeEl) timeEl.value = '';
+        if (dateEl) dateEl.value = getDefaultDate();
+        if (timeEl) timeEl.value = getDefaultTime();
         var productBoxes = document.querySelectorAll('.inquiry-product-checkbox');
         if (productBoxes.length) productBoxes.forEach(function(b) { b.checked = false; });
         clearAttachmentPreviews();
@@ -742,8 +856,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 var dateEl = document.getElementById('inquiryFollowupDate');
                 var timeEl = document.getElementById('inquiryFollowupTime');
                 if (remarkEl) remarkEl.value = '';
-                if (dateEl) dateEl.value = '';
-                if (timeEl) timeEl.value = '';
+                if (dateEl) dateEl.value = getDefaultDate();
+                if (timeEl) timeEl.value = getDefaultTime();
                 setFieldsReadOnly(false);
                 setRemarkPlaceholder(statusOrder[stepIdx]);
                 setDateTimeLabels(statusOrder[stepIdx]);
@@ -751,20 +865,22 @@ document.addEventListener('DOMContentLoaded', function() {
             progressionSteps.querySelectorAll('.inquiry-step').forEach(function(s, i) {
                 s.classList.remove('inquiry-step--active', 'inquiry-step--selected', 'inquiry-step--clickable', 'inquiry-step--no-click', 'inquiry-step--viewable');
                 var stepName = s.dataset.step;
+                var label = getStepDisplayLabel(i);
+                var displayText = label || stepName;
                 var sIsDone = i <= currentStatusIdx;
                 if (sIsDone) {
                     s.classList.add('inquiry-step--done', 'inquiry-step--viewable');
                     if (i === selectedStatusIdx && viewMode) s.classList.add('inquiry-step--selected');
-                    s.innerHTML = '<i class="bi bi-check"></i><span>' + stepName + '</span>';
+                    s.innerHTML = '<i class="bi bi-check"></i><span>' + displayText + '</span>';
                 } else if (i === selectedStatusIdx) {
                     s.classList.add('inquiry-step--active', 'inquiry-step--selected');
-                    s.innerHTML = '<span>' + stepName + '</span>';
+                    s.innerHTML = '<span>' + displayText + '</span>';
                 } else if (i === 0) {
                     s.classList.add('inquiry-step--no-click');
-                    s.innerHTML = '<span>' + stepName + '</span>';
+                    s.innerHTML = '<span>' + displayText + '</span>';
                 } else {
                     s.classList.add('inquiry-step--clickable');
-                    s.innerHTML = '<span>' + stepName + '</span>';
+                    s.innerHTML = '<span>' + displayText + '</span>';
                 }
             });
             toggleAddCalendarButton();
@@ -778,6 +894,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var viewContent = document.getElementById('inquiryViewMessageContent');
     var viewCloseBtn = document.getElementById('inquiryViewModalClose');
     var viewCloseBtnFooter = document.getElementById('inquiryViewModalCloseBtn');
+    var currentUpdateButtonEl = null;
 
     // If URL has ?lead=ID, open that inquiry modal (e.g. from email link)
     (function() {
@@ -797,6 +914,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var updateBtnEl = e.target.closest('.inquiries-update-btn');
         if (updateBtnEl) {
             e.preventDefault();
+            currentUpdateButtonEl = updateBtnEl;
             openModal(updateBtnEl.dataset.leadId, updateBtnEl.dataset.customer, updateBtnEl.dataset.status);
             return;
         }
@@ -900,7 +1018,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         var leadId = currentLeadId;
         var remarkEl = document.getElementById('inquiryRemark');
+        var dateEl = document.getElementById('inquiryFollowupDate');
+        var timeEl = document.getElementById('inquiryFollowupTime');
         var remark = remarkEl ? remarkEl.value.trim() : '';
+        var activityDate = dateEl ? dateEl.value.trim() : '';
+        var activityTime = timeEl ? timeEl.value.trim() : '';
         var products = [];
         if (toStatus === 'COMPLETED') {
             document.querySelectorAll('.inquiry-product-checkbox:checked').forEach(function(cb) {
@@ -921,6 +1043,8 @@ document.addEventListener('DOMContentLoaded', function() {
             formData.append('lead_id', leadId);
             formData.append('status', toStatus);
             formData.append('remark', remark);
+            formData.append('activity_date', activityDate);
+            formData.append('activity_time', activityTime);
             formData.append('products', JSON.stringify(products));
             attachmentFiles.forEach(function(file) {
                 formData.append('attachments[]', file);
@@ -928,7 +1052,7 @@ document.addEventListener('DOMContentLoaded', function() {
             body = formData;
         } else {
             headers['Content-Type'] = 'application/json';
-            body = JSON.stringify({ lead_id: leadId, status: toStatus, remark: remark, products: products });
+            body = JSON.stringify({ lead_id: leadId, status: toStatus, remark: remark, activity_date: activityDate, activity_time: activityTime, products: products });
         }
         fetch(updateUrl, {
             method: 'POST',
@@ -939,8 +1063,40 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(function(res) {
             updateBtn.disabled = false;
             if (res.ok && res.data.success) {
-                closeModal();
-                window.location.reload();
+                // Refresh only the Update Inquiry Status form/modal state instead of reloading the whole page
+                var leadIdNow = currentLeadId;
+                var newStatus = toStatus;
+
+                // Move progression to the new status
+                setProgression(newStatus);
+
+                // Reset inputs to the default for the new (next) step
+                var remarkEl2 = document.getElementById('inquiryRemark');
+                var dateEl2 = document.getElementById('inquiryFollowupDate');
+                var timeEl2 = document.getElementById('inquiryFollowupTime');
+                if (remarkEl2) remarkEl2.value = '';
+                if (dateEl2) dateEl2.value = getDefaultDate();
+                if (timeEl2) timeEl2.value = getDefaultTime();
+
+                // Clear attachments UI and files
+                clearAttachmentPreviews();
+
+                // Reload activity/timeline and step labels from the database
+                if (leadIdNow) {
+                    loadActivity(leadIdNow);
+                }
+
+                // Update the row in the table (badge + button data-status) so it reflects the new status
+                if (currentUpdateButtonEl) {
+                    applyRowStatusUpdate(currentUpdateButtonEl, newStatus);
+                }
+
+                // Re‑evaluate controls for the new status
+                toggleAddCalendarButton();
+                toggleProductChecklist();
+                toggleUpdateButton();
+
+                alert(res.data.message || 'Status updated successfully');
             } else {
                 alert(res.data.message || 'Update failed');
             }
