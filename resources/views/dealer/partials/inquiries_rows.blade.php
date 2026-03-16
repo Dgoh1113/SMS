@@ -32,7 +32,8 @@
         $addr2 = trim((string)($r->ADDRESS2 ?? ''));
         $addressDisplay = trim($addr1 . ' ' . $addr2) ?: '—';
     @endphp
-    <tr class="inquiry-row" data-search="{{ strtolower(trim(($r->COMPANYNAME ?? '').' '.($r->CONTACTNAME ?? '').' '.($r->LEADID ?? ''))) }}">
+    @php $rowPage = (int) floor(($loop->index ?? 0) / 10) + 1; @endphp
+    <tr class="inquiry-row" data-search="{{ strtolower(trim(($r->COMPANYNAME ?? '').' '.($r->CONTACTNAME ?? '').' '.($r->LEADID ?? ''))) }}" data-page="{{ $rowPage }}">
         <td data-col="inquiryid">#SQL-{{ $r->LEADID }}</td>
         <td data-col="date">{{ $r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '—' }}</td>
         <td data-col="customer">{{ $customerName }}</td>

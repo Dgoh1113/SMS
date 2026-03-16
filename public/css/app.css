@@ -6639,6 +6639,14 @@ button.dealer-pagination-btn:disabled {
   gap: 6px;
   white-space: nowrap;
 }
+.inquiries-table th[data-col="status"],
+.inquiries-table td[data-col="status"] {
+  white-space: nowrap; /* keep badge on one line, let column grow as needed */
+}
+.inquiries-table .inquiries-col-action {
+  white-space: nowrap;
+  text-align: center;
+}
 .inquiries-action-cell .inquiries-btn-small {
   flex: 1 1 0;
   min-width: 52px;

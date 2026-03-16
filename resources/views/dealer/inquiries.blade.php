@@ -82,22 +82,24 @@
             </div>
             @php
                 $dealerTotal = isset($leads) ? count($leads) : 0;
-                $dealerPerPage = $dealerTotal > 0 ? $dealerTotal : 0;
+                $dealerPerPage = 10;
+                $dealerLastPage = $dealerTotal > 0 ? (int) ceil($dealerTotal / $dealerPerPage) : 1;
                 $dealerTo = $dealerTotal === 0 ? 0 : min($dealerPerPage, $dealerTotal);
             @endphp
             <div class="inquiries-assigned-pagination" id="dealerInquiriesPagination"
                  data-total="{{ $dealerTotal }}"
                  data-per-page="{{ $dealerPerPage }}"
-                 data-current-page="1">
+                 data-current-page="1"
+                 data-last-page="{{ $dealerLastPage }}">
                 <span class="inquiries-assigned-pagination-info">
                     Showing {{ $dealerTotal === 0 ? 0 : 1 }} to {{ $dealerTo }} of {{ $dealerTotal }} entries (Page 1)
                 </span>
                 <div class="inquiries-assigned-pagination-nav">
-                    <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" disabled>First</button>
-                    <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" disabled>Previous</button>
-                    <span class="inquiries-assigned-page-numbers"></span>
-                    <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" disabled>Next</button>
-                    <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" disabled>Last</button>
+                    <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" data-page="first">First</button>
+                    <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" data-page="prev">Previous</button>
+                    <span class="inquiries-assigned-page-numbers" id="dealerInquiriesPageNumbers"></span>
+                    <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" data-page="next">Next</button>
+                    <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" data-page="last">Last</button>
                 </div>
             </div>
         </div>
@@ -286,6 +288,78 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     applyDealerGridFilters();
+
+    // Simple client-side pagination: 10 inquiries per page
+    (function() {
+        var pagination = document.getElementById('dealerInquiriesPagination');
+        var rows = table.querySelectorAll('.inquiry-row');
+        if (!pagination || !rows.length) return;
+
+        var infoEl = pagination.querySelector('.inquiries-assigned-pagination-info');
+        var pageNumbersEl = document.getElementById('dealerInquiriesPageNumbers');
+        var controls = pagination.querySelectorAll('.inquiries-pagination-btn');
+
+        var total = parseInt(pagination.getAttribute('data-total') || '0', 10);
+        var perPage = parseInt(pagination.getAttribute('data-per-page') || '10', 10);
+        var lastPage = parseInt(pagination.getAttribute('data-last-page') || '1', 10);
+        var currentPage = 1;
+
+        function goToPage(page) {
+            currentPage = Math.max(1, Math.min(page, lastPage));
+            rows.forEach(function(row) {
+                var p = parseInt(row.getAttribute('data-page') || '1', 10);
+                row.style.display = p === currentPage ? '' : 'none';
+            });
+            var from = total > 0 ? ((currentPage - 1) * perPage) + 1 : 0;
+            var to = Math.min(currentPage * perPage, total);
+            if (infoEl) {
+                infoEl.textContent = 'Showing ' + (total > 0 ? from : 0) + ' to ' + (total > 0 ? to : 0) + ' of ' + total + ' entries (Page ' + currentPage + ')';
+            }
+            controls.forEach(function(btn) {
+                var type = btn.getAttribute('data-page');
+                if (type === 'first' || type === 'prev') {
+                    btn.disabled = currentPage <= 1;
+                } else if (type === 'next' || type === 'last') {
+                    btn.disabled = currentPage >= lastPage;
+                }
+            });
+            if (pageNumbersEl) {
+                Array.prototype.forEach.call(pageNumbersEl.querySelectorAll('.inquiries-pagination-num'), function(n) {
+                    n.classList.toggle('inquiries-pagination-num-active', parseInt(n.getAttribute('data-page') || '1', 10) === currentPage);
+                });
+            }
+        }
+
+        function buildPageNumbers() {
+            if (!pageNumbersEl) return;
+            pageNumbersEl.innerHTML = '';
+            for (var p = 1; p <= lastPage; p++) {
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'inquiries-pagination-num' + (p === 1 ? ' inquiries-pagination-num-active' : '');
+                btn.setAttribute('data-page', String(p));
+                btn.textContent = String(p);
+                btn.addEventListener('click', function() {
+                    var page = parseInt(this.getAttribute('data-page') || '1', 10);
+                    goToPage(page);
+                });
+                pageNumbersEl.appendChild(btn);
+            }
+        }
+
+        controls.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var type = btn.getAttribute('data-page');
+                if (type === 'first') goToPage(1);
+                if (type === 'prev') goToPage(currentPage - 1);
+                if (type === 'next') goToPage(currentPage + 1);
+                if (type === 'last') goToPage(lastPage);
+            });
+        });
+
+        buildPageNumbers();
+        goToPage(1);
+    })();
 
     // Sync button (same behaviour pattern as admin inquiries sync)
     document.querySelectorAll('.inquiries-sync-btn').forEach(function(btn) {
