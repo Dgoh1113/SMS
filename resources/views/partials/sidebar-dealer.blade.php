@@ -24,9 +24,9 @@
                 <span class="dashboard-nav-icon"><i class="bi {{ $current === 'inquiries' ? 'bi-envelope-open' : 'bi-envelope' }}"></i></span>
                 <span>Inquiries</span>
             </a>
-            <a href="{{ route('dealer.rewards') }}" class="dashboard-nav-item {{ $current === 'rewards' ? 'dashboard-nav-item-active' : '' }}">
-                <span class="dashboard-nav-icon"><i class="bi {{ $current === 'rewards' ? 'bi-gift-fill' : 'bi-gift' }}"></i></span>
-                <span>Rewards</span>
+            <a href="{{ route('dealer.payouts') }}" class="dashboard-nav-item {{ $current === 'payouts' ? 'dashboard-nav-item-active' : '' }}">
+                <span class="dashboard-nav-icon"><i class="bi {{ $current === 'payouts' ? 'bi-cash-coin' : 'bi-cash' }}"></i></span>
+                <span>Payouts</span>
             </a>
             <a href="{{ route('dealer.reports') }}" class="dashboard-nav-item {{ $current === 'reports' ? 'dashboard-nav-item-active' : '' }}">
                 <span class="dashboard-nav-icon"><i class="bi {{ $current === 'reports' ? 'bi-file-earmark-bar-graph-fill' : 'bi-file-earmark-bar-graph' }}"></i></span>
