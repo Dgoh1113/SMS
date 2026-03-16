@@ -54,11 +54,17 @@ class DealerController extends Controller
                     l."ASSIGNED_TO", l."LASTMODIFIED",
                     u."EMAIL" AS "ASSIGNED_BY_EMAIL",
                     COALESCE(
-                        (SELECT FIRST 1 la."STATUS" FROM "LEAD_ACT" la WHERE la."LEADID" = l."LEADID" ORDER BY la."CREATIONDATE" DESC),
+                        (SELECT FIRST 1 la."STATUS"
+                           FROM "LEAD_ACT" la
+                          WHERE la."LEADID" = l."LEADID"
+                          ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC),
                         l."CURRENTSTATUS",
                         \'Pending\'
                     ) AS "ACT_STATUS",
-                    (SELECT FIRST 1 la."CREATIONDATE" FROM "LEAD_ACT" la WHERE la."LEADID" = l."LEADID" ORDER BY la."CREATIONDATE" DESC) AS "ACT_LAST_UPDATE"
+                    (SELECT FIRST 1 la."CREATIONDATE"
+                       FROM "LEAD_ACT" la
+                      WHERE la."LEADID" = l."LEADID"
+                      ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC) AS "ACT_LAST_UPDATE"
                 FROM "LEAD" l
                 LEFT JOIN "USERS" u ON u."USERID" = l."CREATEDBY"
                 WHERE l."ASSIGNED_TO" = ?
@@ -89,7 +95,7 @@ class DealerController extends Controller
                              FROM "LEAD_ACT" la2
                              WHERE la2."LEADID" = la."LEADID"
                                AND la2."USERID" = la."USERID"
-                             ORDER BY la2."CREATIONDATE" DESC
+                             ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC
                          ) AS "LATEST_STATUS"
                      FROM "LEAD_ACT" la
                      WHERE la."USERID" = ?
@@ -480,7 +486,7 @@ class DealerController extends Controller
         $activities = [];
         $lastProductIds = [];
         $rows = DB::select(
-            'SELECT la."LEAD_ACTID", la."CREATIONDATE", la."SUBJECT", la."DESCRIPTION", la."STATUS", la."ATTACHMENT", u."EMAIL" AS "USER_EMAIL"
+            'SELECT la."LEAD_ACTID", la."USERID", la."CREATIONDATE", la."SUBJECT", la."DESCRIPTION", la."STATUS", la."ATTACHMENT", la."DEALTPRODUCT", u."EMAIL" AS "USER_EMAIL"
              FROM "LEAD_ACT" la
              LEFT JOIN "USERS" u ON u."USERID" = la."USERID"
              WHERE la."LEADID" = ?
@@ -592,8 +598,9 @@ class DealerController extends Controller
                 }
             }
 
+            $productIds = [];
             // Parse DEALTPRODUCT (e.g. "1, 2, 3") into numeric product IDs for the UI
-            $dealtRaw = $r->DEALTPRODUCT ?? $r->DEALTPRODUCT ?? null;
+            $dealtRaw = $r->DEALTPRODUCT ?? null;
             if ($dealtRaw !== null && trim((string) $dealtRaw) !== '') {
                 $tokens = preg_split('/[,\s\(\)]+/', (string) $dealtRaw);
                 foreach ($tokens as $tok) {
@@ -618,6 +625,9 @@ class DealerController extends Controller
                 $productIds = $lastProductIds;
             }
 
+            $userDisplay = $r->USERID ? ($userNameMap[trim($r->USERID)] ?? $r->USERID) : 'System';
+            $description = trim($r->DESCRIPTION ?? '');
+
             $activities[] = [
                 'type' => 'activity',
                 'user' => $userDisplay,
@@ -633,6 +643,25 @@ class DealerController extends Controller
         usort($activities, function ($a, $b) {
             return strtotime($b['created_at']) <=> strtotime($a['created_at']);
         });
+
+        // Latest status by latest CREATIONDATE (and LEAD_ACTID tie-breaker)
+        $latestRow = DB::selectOne(
+            'SELECT FIRST 1 la."STATUS", la."CREATIONDATE"
+               FROM "LEAD_ACT" la
+              WHERE la."LEADID" = ?
+                AND UPPER(TRIM(COALESCE(la."STATUS", \'\'))) <> \'CREATED\'
+              ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC',
+            [$leadId]
+        );
+        $latestStatus = $latestRow ? trim((string) ($latestRow->STATUS ?? '')) : '';
+        $latestCreatedAt = null;
+        if ($latestRow && !empty($latestRow->CREATIONDATE)) {
+            try {
+                $latestCreatedAt = Carbon::parse($latestRow->CREATIONDATE)->toIso8601String();
+            } catch (\Throwable $e) {
+                $latestCreatedAt = (string) $latestRow->CREATIONDATE;
+            }
+        }
 
         $lastReward = null;
         $lastRow = DB::selectOne(
@@ -659,6 +688,8 @@ class DealerController extends Controller
         return response()->json([
             'activities' => $activities,
             'last_reward_details' => $lastReward,
+            'latest_status' => $latestStatus,
+            'latest_created_at' => $latestCreatedAt,
         ]);
     }
 
@@ -794,13 +825,38 @@ class DealerController extends Controller
         $statusDb = $this->mapStatusToDb($status);
 
         $lastAct = DB::selectOne(
-            'SELECT FIRST 1 la."STATUS" FROM "LEAD_ACT" la WHERE la."LEADID" = ? ORDER BY la."CREATIONDATE" DESC',
+            'SELECT FIRST 1 la."STATUS", la."CREATIONDATE"
+               FROM "LEAD_ACT" la
+              WHERE la."LEADID" = ?
+              ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC',
             [$leadId]
         );
         $fromStatus = $lastAct ? trim($lastAct->STATUS ?? '') : 'Pending';
+        $lastCreationDate = $lastAct ? ($lastAct->CREATIONDATE ?? null) : null;
+
+        // Enforce chronological order: user cannot set a status datetime earlier than the latest saved status.
+        if ($lastCreationDate) {
+            try {
+                $lastDt = Carbon::parse($lastCreationDate);
+                $newDt = Carbon::parse($creationDate);
+                if ($newDt->lt($lastDt)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid date/time. It must be on/after the previous status time (' . $lastDt->format('Y-m-d H:i') . ').',
+                    ], 422);
+                }
+            } catch (\Throwable $e) {
+                // If parsing fails, skip this validation.
+            }
+        }
 
         $fromUpper = strtoupper($fromStatus);
-        if (in_array(strtoupper($statusDb), ['DEMO'], true)) {
+        $toUpper = strtoupper($statusDb);
+
+        // If dealer is "editing" the current status (same status again), allow it.
+        $isSameStatusEdit = $toUpper === $fromUpper;
+
+        if (!$isSameStatusEdit && in_array($toUpper, ['DEMO'], true)) {
             $allowedFrom = ['FOLLOW UP', 'FOLLOWUP'];
             if (!in_array($fromUpper, $allowedFrom, true)) {
                 return response()->json([
@@ -809,7 +865,7 @@ class DealerController extends Controller
                 ], 422);
             }
         }
-        if (in_array(strtoupper($statusDb), ['REWARDED', 'REWARD DISTRIBUTED'], true)) {
+        if (!$isSameStatusEdit && in_array($toUpper, ['REWARDED', 'REWARD DISTRIBUTED'], true)) {
             $allowedFrom = ['COMPLETED', 'REWARDED', 'REWARD DISTRIBUTED'];
             if (!in_array($fromUpper, $allowedFrom, true)) {
                 return response()->json([

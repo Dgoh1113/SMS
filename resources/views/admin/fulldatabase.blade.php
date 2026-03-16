@@ -10,11 +10,20 @@
 
 @foreach($tables as $name => $rows)
 @php
-    $tableId = 'fulldb-' . preg_replace('/[^a-z0-9]/i', '-', $name);
+    // Normalize display names so they match the actual Firebird table names
+    $displayNames = [
+        'lead' => 'LEAD',
+        'lead_act' => 'LEAD_ACT',
+        'referrer_payout' => 'REFERRER_PAYOUT',
+        'users' => 'USERS',
+        'user_passkey' => 'USER_PASSKEY',
+    ];
+    $displayName = $displayNames[$name] ?? strtoupper($name);
+    $tableId = 'fulldb-' . preg_replace('/[^a-z0-9]/i', '-', $displayName);
 @endphp
 <section class="dashboard-panel dashboard-table-panel" style="margin-bottom:24px;">
     <div class="dashboard-panel-header" style="flex-wrap:wrap; gap:12px;">
-        <div class="dashboard-panel-title">{{ $name }}</div>
+        <div class="dashboard-panel-title">{{ $displayName }}</div>
         <div class="inquiries-search-wrap" style="margin-left:auto; max-width:280px;">
             <span class="inquiries-search-icon"><i class="bi bi-search"></i></span>
             <input type="text" class="inquiries-search-input" data-fulldb-table="{{ $tableId }}" placeholder="Search this table..." autocomplete="off">
