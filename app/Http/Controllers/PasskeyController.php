@@ -382,6 +382,13 @@ class PasskeyController extends Controller
         $request->session()->put('user_role', $user->SYSTEMROLE === 'Admin' ? 'admin' : 'dealer');
 
         $redirect = $user->SYSTEMROLE === 'Admin' ? '/admin/dashboard' : '/dealer/dashboard';
+        if ($user->SYSTEMROLE !== 'Admin') {
+            $intended = $request->session()->get('url.intended');
+            if ($intended && str_starts_with(parse_url($intended, PHP_URL_PATH) ?: '', '/dealer/')) {
+                $redirect = $intended;
+                $request->session()->forget('url.intended');
+            }
+        }
 
         return response()->json(['success' => true, 'redirect' => $redirect]);
     }

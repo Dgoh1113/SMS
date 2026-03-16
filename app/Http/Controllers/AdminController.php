@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\InquiryAssignedToDealer;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 use Carbon\Carbon;
 
@@ -829,6 +831,32 @@ class AdminController extends Controller
             ->with('assign_undo', $undoPayload);
     }
 
+    /**
+     * Send dealer assignment email. Called by frontend 6 seconds after assign (after undo window).
+     * Only sends if the lead is still assigned to the given dealer (undo was not clicked).
+     */
+    public function sendAssignmentEmail(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'lead_id' => 'required|integer|min:1',
+            'assigned_to' => 'required|string|max:50',
+        ]);
+        $leadId = (int) $validated['lead_id'];
+        $assignedTo = trim((string) $validated['assigned_to']);
+
+        $row = DB::selectOne('SELECT "ASSIGNED_TO" FROM "LEAD" WHERE "LEADID" = ?', [$leadId]);
+        if (!$row) {
+            return response()->json(['success' => false, 'message' => 'Lead not found.'], 404);
+        }
+        $currentAssigned = trim((string) ($row->ASSIGNED_TO ?? ''));
+        if ($currentAssigned !== $assignedTo) {
+            return response()->json(['success' => true, 'message' => 'Assignment was undone, email not sent.']);
+        }
+
+        $this->sendInquiryAssignedEmail($assignedTo, $leadId);
+        return response()->json(['success' => true]);
+    }
+
     public function undoAssignInquiry(Request $request): RedirectResponse
     {
         $validated = $request->validate([
@@ -1209,7 +1237,21 @@ class AdminController extends Controller
             return back()->withInput($request->only(array_keys($validated)))->with('error', 'Could not save inquiry: ' . $e->getMessage());
         }
 
-        return redirect()->route('admin.inquiries')->with('success', 'Inquiry created.');
+        $assignedTo = trim((string) ($validated['ASSIGNED_TO'] ?? ''));
+        $assignEmailPending = null;
+        if ($assignedTo !== '') {
+            $newLeadIdRow = DB::selectOne('SELECT GEN_ID(GEN_LEADID, 0) AS "ID" FROM RDB$DATABASE');
+            $newLeadId = (int) ($newLeadIdRow->ID ?? $newLeadIdRow->id ?? 0);
+            if ($newLeadId > 0) {
+                $assignEmailPending = ['lead_id' => $newLeadId, 'assigned_to' => $assignedTo];
+            }
+        }
+
+        $redirect = redirect()->route('admin.inquiries')->with('success', 'Inquiry created.');
+        if ($assignEmailPending !== null) {
+            $redirect->with('assign_email_pending', $assignEmailPending);
+        }
+        return $redirect;
     }
 
     public function updateInquiry(Request $request, int $leadId): RedirectResponse
@@ -2498,5 +2540,57 @@ class AdminController extends Controller
         }
 
         return redirect()->route('admin.maintain-users')->with('success', 'User updated successfully.');
+    }
+
+    /**
+     * Send email to dealer when an inquiry is assigned to them (create or assign).
+     *
+     * @param string $dealerUserId USERS.USERID of the assigned dealer
+     * @param int $leadId LEAD.LEADID
+     * @param string|null $companyName Optional; if null, fetched from LEAD
+     * @param string|null $contactName Optional; if null, fetched from LEAD
+     */
+    private function sendInquiryAssignedEmail(string $dealerUserId, int $leadId, ?string $companyName = null, ?string $contactName = null): void
+    {
+        try {
+            $dealer = DB::selectOne(
+                'SELECT "EMAIL", "ALIAS", "COMPANY" FROM "USERS" WHERE CAST("USERID" AS VARCHAR(50)) = ?',
+                [$dealerUserId]
+            );
+            if (!$dealer || empty(trim((string) ($dealer->EMAIL ?? '')))) {
+                return;
+            }
+            $dealerEmail = trim((string) $dealer->EMAIL);
+            $dealerName = trim((string) ($dealer->ALIAS ?? ''));
+            if ($dealerName === '') {
+                $dealerName = trim((string) ($dealer->COMPANY ?? ''));
+            }
+            if ($dealerName === '') {
+                $dealerName = $dealerEmail;
+            }
+
+            if ($companyName === null || $contactName === null) {
+                $lead = DB::selectOne('SELECT "COMPANYNAME", "CONTACTNAME" FROM "LEAD" WHERE "LEADID" = ?', [$leadId]);
+                $companyName = $lead ? trim((string) ($lead->COMPANYNAME ?? '')) : '';
+                $contactName = $lead ? trim((string) ($lead->CONTACTNAME ?? '')) : '';
+            }
+            $companyName = $companyName !== '' ? $companyName : '—';
+            $contactName = $contactName !== '' ? $contactName : '—';
+
+            $viewInquiryUrl = url(route('dealer.inquiries', [], false) . '?lead=' . $leadId);
+
+            Mail::to($dealerEmail)->send(new InquiryAssignedToDealer(
+                dealerEmail: $dealerEmail,
+                dealerName: $dealerName,
+                leadId: $leadId,
+                inquiryId: 'SQL-' . $leadId,
+                companyName: $companyName,
+                contactName: $contactName,
+                viewInquiryUrl: $viewInquiryUrl
+            ));
+        } catch (\Throwable $e) {
+            // Log but do not fail the request (assignment already succeeded)
+            report($e);
+        }
     }
 }

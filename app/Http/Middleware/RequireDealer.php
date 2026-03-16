@@ -8,11 +8,19 @@ use Symfony\Component\HttpFoundation\Response;
 
 class RequireDealer
 {
+    /**
+     * Only dealers may access dealer routes (e.g. direct inquiry link).
+     * Admin, manager, or unauthenticated users are sent to the login page.
+     */
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->session()->get('user_role') !== 'dealer') {
-            return redirect('/login');
+        $role = $request->session()->get('user_role');
+
+        if ($role !== 'dealer') {
+            $request->session()->put('url.intended', $request->fullUrl());
+            return redirect()->route('login');
         }
+
         return $next($request);
     }
 }

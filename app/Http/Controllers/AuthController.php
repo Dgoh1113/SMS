@@ -16,6 +16,12 @@ class AuthController extends Controller
         if ($request->session()->has('user_id') && $request->session()->has('show_register_passkey')) {
             $role = $request->session()->get('user_role');
             $dashboardUrl = ($role === 'admin' || $role === 'manager') ? '/admin/dashboard' : '/dealer/dashboard';
+            if ($role === 'dealer') {
+                $intended = $request->session()->get('url.intended');
+                if ($intended && str_starts_with(parse_url($intended, PHP_URL_PATH) ?: '', '/dealer/')) {
+                    $dashboardUrl = $intended;
+                }
+            }
             return view('auth.login', ['show_register_passkey' => true, 'dashboard_url' => $dashboardUrl]);
         }
         if ($request->session()->has('user_role')) {
@@ -23,7 +29,14 @@ class AuthController extends Controller
             if ($role === 'admin' || $role === 'manager') {
                 return redirect('/admin/dashboard');
             }
-            return redirect('/dealer/dashboard');
+            if ($role === 'dealer') {
+                $intended = $request->session()->get('url.intended');
+                if ($intended && str_starts_with(parse_url($intended, PHP_URL_PATH) ?: '', '/dealer/')) {
+                    $request->session()->forget('url.intended');
+                    return redirect($intended);
+                }
+                return redirect('/dealer/dashboard');
+            }
         }
         return view('auth.login');
     }
