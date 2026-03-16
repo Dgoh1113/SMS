@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class DealerController extends Controller
@@ -382,7 +383,7 @@ class DealerController extends Controller
 
         $activities = [];
         $rows = DB::select(
-            'SELECT la."CREATIONDATE", la."SUBJECT", la."DESCRIPTION", la."STATUS", u."EMAIL" AS "USER_EMAIL"
+            'SELECT la."LEAD_ACTID", la."CREATIONDATE", la."SUBJECT", la."DESCRIPTION", la."STATUS", la."ATTACHMENT", u."EMAIL" AS "USER_EMAIL"
              FROM "LEAD_ACT" la
              LEFT JOIN "USERS" u ON u."USERID" = la."USERID"
              WHERE la."LEADID" = ?
@@ -397,7 +398,6 @@ class DealerController extends Controller
             }
 
             // Normalize activity timestamp to an ISO‑8601 string in the app's timezone
-            // so the frontend can reliably compute \"X min ago\" from the user's \"now\".
             $createdAtIso = null;
             if (!empty($r->CREATIONDATE)) {
                 try {
@@ -407,13 +407,36 @@ class DealerController extends Controller
                 }
             }
 
+            $attachmentUrls = [];
+            $attachmentRaw = $r->ATTACHMENT ?? $r->attachment ?? null;
+            if ($attachmentRaw !== null && trim((string) $attachmentRaw) !== '') {
+                $attachmentStr = trim((string) $attachmentRaw);
+                $attachmentStr = str_replace('\\', '/', $attachmentStr);
+                if (str_contains($attachmentStr, ',') || str_starts_with($attachmentStr, 'inquiry-attachments')) {
+                    foreach (explode(',', $attachmentStr) as $path) {
+                        $path = trim(str_replace('\\', '/', $path));
+                        if ($path !== '' && str_starts_with($path, 'inquiry-attachments/')) {
+                            $attachmentUrls[] = route('dealer.inquiries.serve-attachment', ['path' => $path]);
+                        }
+                    }
+                } else {
+                    if (str_starts_with($attachmentStr, 'inquiry-attachments/')) {
+                        $attachmentUrls[] = route('dealer.inquiries.serve-attachment', ['path' => $attachmentStr]);
+                    } elseif (preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', $attachmentStr)) {
+                        $attachmentUrls[] = route('dealer.inquiries.activity-attachment', ['leadId' => $leadId, 'leadActId' => (int) ($r->LEAD_ACTID ?? 0)]);
+                    }
+                }
+            }
+
             $activities[] = [
                 'type' => 'activity',
+                'lead_act_id' => (int) ($r->LEAD_ACTID ?? 0),
                 'user' => trim($r->USER_EMAIL ?? 'System'),
                 'subject' => trim($r->SUBJECT ?? ''),
                 'description' => trim($r->DESCRIPTION ?? ''),
                 'status' => $status,
                 'created_at' => $createdAtIso,
+                'attachment_urls' => $attachmentUrls,
             ];
         }
 
@@ -449,31 +472,117 @@ class DealerController extends Controller
         ]);
     }
 
+    /**
+     * Serve an attachment image by path (from storage). Used so images display without requiring storage:link.
+     */
+    public function serveInquiryAttachment(Request $request): \Symfony\Component\HttpFoundation\Response
+    {
+        $dealerId = $request->session()->get('user_id');
+        if (!$dealerId) {
+            return response('', 404);
+        }
+        $path = $request->query('path');
+        if (! is_string($path) || $path === '') {
+            return response('', 404);
+        }
+        $path = trim(str_replace('\\', '/', $path));
+        if (str_contains($path, '..') || ! str_starts_with($path, 'inquiry-attachments/')) {
+            return response('', 404);
+        }
+        if (! Storage::disk('public')->exists($path)) {
+            return response('', 404);
+        }
+        $fullPath = Storage::disk('public')->path($path);
+        $mime = mime_content_type($fullPath) ?: 'image/jpeg';
+        return response()->file($fullPath, ['Content-Type' => $mime]);
+    }
+
+    /**
+     * Serve a single activity attachment (image). Supports path-based storage or binary BLOB in DB.
+     */
+    public function inquiryActivityAttachment(Request $request, int $leadId, int $leadActId): \Symfony\Component\HttpFoundation\Response
+    {
+        $dealerId = $request->session()->get('user_id');
+        if (!$dealerId) {
+            return response('', 404);
+        }
+        $lead = DB::selectOne('SELECT "LEADID" FROM "LEAD" WHERE "LEADID" = ? AND "ASSIGNED_TO" = ?', [$leadId, $dealerId]);
+        if (!$lead) {
+            return response('', 404);
+        }
+        $row = DB::selectOne('SELECT "ATTACHMENT" FROM "LEAD_ACT" WHERE "LEAD_ACTID" = ? AND "LEADID" = ?', [$leadActId, $leadId]);
+        $attachment = $row->ATTACHMENT ?? $row->attachment ?? null;
+        if (!$row || $attachment === null || trim((string) $attachment) === '') {
+            return response('', 404);
+        }
+        $str = trim(str_replace('\\', '/', (string) $attachment));
+        if (str_starts_with($str, 'inquiry-attachments') && ! preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', $str)) {
+            $path = str_contains($str, ',') ? trim(str_replace('\\', '/', explode(',', $str)[0])) : $str;
+            $fullPath = Storage::disk('public')->path($path);
+            if (! is_file($fullPath)) {
+                return response('', 404);
+            }
+            $mime = mime_content_type($fullPath) ?: 'image/jpeg';
+            return response()->file($fullPath, ['Content-Type' => $mime]);
+        }
+        if (is_string($attachment) && strlen($attachment) > 0) {
+            $mime = 'image/jpeg';
+            if (preg_match('/^\x89PNG/', $attachment)) {
+                $mime = 'image/png';
+            } elseif (str_starts_with($attachment, "\xFF\xD8")) {
+                $mime = 'image/jpeg';
+            } elseif (str_starts_with($attachment, 'GIF8')) {
+                $mime = 'image/gif';
+            } elseif (str_starts_with($attachment, 'RIFF') && substr($attachment, 8, 4) === 'WEBP') {
+                $mime = 'image/webp';
+            }
+            return response($attachment, 200, ['Content-Type' => $mime]);
+        }
+        return response('', 404);
+    }
+
     public function updateInquiryStatus(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'lead_id' => 'required|integer',
-            'status' => 'required|string|max:50',
-            'remark' => 'nullable|string|max:4000',
-            'products' => 'nullable|array',
-            'products.*.id' => 'nullable',
-            'products.*.name' => 'nullable|string|max:100',
-        ]);
+        $isMultipart = $request->hasFile('attachments');
+        if ($isMultipart) {
+            $request->validate([
+                'lead_id' => 'required|integer',
+                'status' => 'required|string|max:50',
+                'remark' => 'nullable|string|max:4000',
+                'attachments' => 'nullable|array',
+                'attachments.*' => 'image|max:5120',
+            ]);
+            $products = [];
+            $productsJson = $request->input('products');
+            if (is_string($productsJson)) {
+                $decoded = json_decode($productsJson, true);
+                $products = is_array($decoded) ? $decoded : [];
+            }
+        } else {
+            $validated = $request->validate([
+                'lead_id' => 'required|integer',
+                'status' => 'required|string|max:50',
+                'remark' => 'nullable|string|max:4000',
+                'products' => 'nullable|array',
+                'products.*.id' => 'nullable',
+                'products.*.name' => 'nullable|string|max:100',
+            ]);
+            $products = $validated['products'] ?? [];
+        }
+
+        $leadId = (int) $request->input('lead_id');
+        $status = trim((string) $request->input('status'));
+        $remark = trim((string) ($request->input('remark') ?? ''));
 
         $dealerId = $request->session()->get('user_id');
         if (!$dealerId) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
-        $leadId = (int) $validated['lead_id'];
         $lead = DB::selectOne('SELECT "LEADID" FROM "LEAD" WHERE "LEADID" = ? AND "ASSIGNED_TO" = ?', [$leadId, $dealerId]);
         if (!$lead) {
             return response()->json(['success' => false, 'message' => 'Lead not found or not assigned to you'], 404);
         }
-
-        $status = trim($validated['status']);
-        $remark = trim($validated['remark'] ?? '');
-        $products = $validated['products'] ?? [];
         if (strtoupper($this->mapStatusToDb($status)) === 'COMPLETED' && empty($products)) {
             return response()->json([
                 'success' => false,
@@ -515,6 +624,23 @@ class DealerController extends Controller
             $description = 'Products: ' . implode(', ', $productNames) . "\n\n" . $description;
         }
 
+        $attachmentValue = null;
+        if ($request->hasFile('attachments')) {
+            $paths = [];
+            $dir = 'inquiry-attachments/lead_' . $leadId;
+            foreach ($request->file('attachments') as $file) {
+                if ($file->isValid() && str_starts_with($file->getMimeType(), 'image/')) {
+                    $path = $file->store($dir, 'public');
+                    if ($path) {
+                        $paths[] = $path;
+                    }
+                }
+            }
+            if (! empty($paths)) {
+                $attachmentValue = implode(',', $paths);
+            }
+        }
+
         $isCompleted = strtoupper($statusDb) === 'COMPLETED' && ! empty($products);
         if ($isCompleted) {
             $productIds = [];
@@ -528,13 +654,13 @@ class DealerController extends Controller
             DB::insert(
                 'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS","DEALTPRODUCT")
                  VALUES (GEN_ID("GEN_LEAD_ACTID", 1),?,?,CURRENT_TIMESTAMP,?,?,?,?,?)',
-                [$leadId, $dealerId, 'Updated Status', $description, null, $statusDb, $dealtProduct]
+                [$leadId, $dealerId, 'Updated Status', $description, $attachmentValue, $statusDb, $dealtProduct]
             );
         } else {
             DB::insert(
                 'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS")
                  VALUES (GEN_ID("GEN_LEAD_ACTID", 1),?,?,CURRENT_TIMESTAMP,?,?,?,?)',
-                [$leadId, $dealerId, 'Updated Status', $description, null, $statusDb]
+                [$leadId, $dealerId, 'Updated Status', $description, $attachmentValue, $statusDb]
             );
         }
 

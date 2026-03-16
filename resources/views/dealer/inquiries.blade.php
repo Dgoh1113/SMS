@@ -332,11 +332,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </label>
                     <label class="inquiry-field">
-                        <span class="inquiry-field-label">ATTACHMENT</span>
+                        <span class="inquiry-field-label">ATTACHMENT (images)</span>
                         <div class="inquiry-field-input-wrap">
-                            <i class="bi bi-paperclip"></i>
-                            <input type="file" class="inquiry-field-input inquiry-field-file" id="inquiryAttachment" multiple>
+                            <i class="bi bi-image"></i>
+                            <input type="file" class="inquiry-field-input inquiry-field-file" id="inquiryAttachment" accept="image/*" multiple>
                         </div>
+                        <div class="inquiry-attachment-preview-wrap" id="inquiryAttachmentPreview" aria-live="polite"></div>
                     </label>
                     <label class="inquiry-field">
                         <span class="inquiry-field-label">REMARK</span>
@@ -592,7 +593,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (status) html += 'changed status to <span class="inquiry-activity-status">' + status + '</span> ';
                 if (desc) html += '<span class="inquiry-activity-desc">' + desc + '</span> ';
             }
-            html += '<span class="inquiry-activity-time">' + timeStr + '</span></div>';
+            html += '<span class="inquiry-activity-time">' + timeStr + '</span>';
+            if (a.attachment_urls && a.attachment_urls.length > 0) {
+                html += '<div class="inquiry-activity-attachments">';
+                a.attachment_urls.forEach(function(url) {
+                    var safe = (url || '').replace(/"/g, '&quot;');
+                    html += '<a href="' + safe + '" target="_blank" rel="noopener" class="inquiry-activity-attachment-link"><img src="' + safe + '" alt="Attachment" class="inquiry-activity-attachment-img"></a>';
+                });
+                html += '</div>';
+            }
+            html += '</div>';
             item.innerHTML = html;
             activityTimeline.appendChild(item);
         });
@@ -621,6 +631,64 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
+    var attachmentFiles = [];
+    var attachmentPreviewUrls = [];
+
+    function clearAttachmentPreviews() {
+        attachmentPreviewUrls.forEach(function(url) { try { URL.revokeObjectURL(url); } catch (e) {} });
+        attachmentPreviewUrls = [];
+        attachmentFiles = [];
+        var previewEl = document.getElementById('inquiryAttachmentPreview');
+        if (previewEl) previewEl.innerHTML = '';
+        var inputEl = document.getElementById('inquiryAttachment');
+        if (inputEl) inputEl.value = '';
+    }
+
+    function renderAttachmentPreviews() {
+        var previewEl = document.getElementById('inquiryAttachmentPreview');
+        if (!previewEl) return;
+        attachmentPreviewUrls.forEach(function(url) { try { URL.revokeObjectURL(url); } catch (e) {} });
+        attachmentPreviewUrls = [];
+        previewEl.innerHTML = '';
+        attachmentFiles.forEach(function(file, index) {
+            if (!file.type || file.type.indexOf('image/') !== 0) return;
+            var url = URL.createObjectURL(file);
+            attachmentPreviewUrls.push(url);
+            var item = document.createElement('div');
+            item.className = 'inquiry-attachment-preview-item';
+            var img = document.createElement('img');
+            img.src = url;
+            img.alt = file.name || 'Image';
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'inquiry-attachment-preview-remove';
+            btn.setAttribute('aria-label', 'Remove image');
+            btn.innerHTML = '&times;';
+            btn.addEventListener('click', function() {
+                attachmentFiles.splice(index, 1);
+                renderAttachmentPreviews();
+            });
+            item.appendChild(img);
+            item.appendChild(btn);
+            previewEl.appendChild(item);
+        });
+    }
+
+    var attachmentInput = document.getElementById('inquiryAttachment');
+    if (attachmentInput) {
+        attachmentInput.addEventListener('change', function() {
+            var files = this.files;
+            if (!files || !files.length) return;
+            for (var i = 0; i < files.length; i++) {
+                if (files[i].type && files[i].type.indexOf('image/') === 0) {
+                    attachmentFiles.push(files[i]);
+                }
+            }
+            renderAttachmentPreviews();
+            this.value = '';
+        });
+    }
+
     function openModal(leadId, customer, status) {
         currentLeadId = leadId;
         currentCustomer = customer || '—';
@@ -636,6 +704,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (timeEl) timeEl.value = '';
         var productBoxes = document.querySelectorAll('.inquiry-product-checkbox');
         if (productBoxes.length) productBoxes.forEach(function(b) { b.checked = false; });
+        clearAttachmentPreviews();
         setFieldsReadOnly(false);
         loadActivity(leadId);
         modal.setAttribute('aria-hidden', 'false');
@@ -644,6 +713,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function closeModal() {
+        clearAttachmentPreviews();
         modal.setAttribute('aria-hidden', 'true');
         modal.classList.remove('inquiry-modal-open');
         document.body.style.overflow = '';
@@ -840,15 +910,30 @@ document.addEventListener('DOMContentLoaded', function() {
         var updateUrl = '{{ route("dealer.inquiries.update-status") }}';
         var csrfToken = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').getAttribute('content') : '';
         updateBtn.disabled = true;
+        var body;
+        var headers = {
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+        };
+        if (attachmentFiles.length > 0) {
+            var formData = new FormData();
+            formData.append('lead_id', leadId);
+            formData.append('status', toStatus);
+            formData.append('remark', remark);
+            formData.append('products', JSON.stringify(products));
+            attachmentFiles.forEach(function(file) {
+                formData.append('attachments[]', file);
+            });
+            body = formData;
+        } else {
+            headers['Content-Type'] = 'application/json';
+            body = JSON.stringify({ lead_id: leadId, status: toStatus, remark: remark, products: products });
+        }
         fetch(updateUrl, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({ lead_id: leadId, status: toStatus, remark: remark, products: products })
+            headers: headers,
+            body: body
         })
         .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
         .then(function(res) {
