@@ -1,7 +1,10 @@
 @extends('layouts.app')
 @section('title', 'Inquiries Management – Admin')
 @section('content')
-@php $assignUndo = session('assign_undo'); @endphp
+@php
+    $assignUndo = session('assign_undo');
+    $assignEmailPending = session('assign_email_pending');
+@endphp
 <div class="inquiries-page-wrap">
 <div class="inquiries-mgmt-top-row">
 <section class="inquiries-mgmt-summary">
@@ -742,14 +745,49 @@ document.addEventListener('DOMContentLoaded', function() {
             toast.classList.add('assign-undo-toast-hidden');
         }, 5000);
 
+        var emailTimer = null;
+        var newAssignedTo = toast.getAttribute('data-new-assigned-to') || '';
+        if (leadId && newAssignedTo) {
+            emailTimer = setTimeout(function () {
+                var tok = (document.querySelector('meta[name="csrf-token"]') || {}).content;
+                if (tok) {
+                    fetch('{{ route('admin.inquiries.send-assignment-email') }}', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': tok },
+                        body: JSON.stringify({ lead_id: parseInt(leadId, 10), assigned_to: newAssignedTo, _token: tok })
+                    });
+                }
+            }, 6000);
+        }
+
         var btn = toast.querySelector('.assign-undo-btn');
         if (btn) {
             btn.addEventListener('click', function () {
                 clearTimeout(timer);
+                if (emailTimer !== null) clearTimeout(emailTimer);
                 form.submit();
             });
         }
     })();
+
+    @if($assignEmailPending)
+    (function () {
+        var leadId = {{ (int) ($assignEmailPending['lead_id'] ?? 0) }};
+        var assignedTo = {!! json_encode($assignEmailPending['assigned_to'] ?? '') !!};
+        if (leadId && assignedTo) {
+            setTimeout(function () {
+                var tok = (document.querySelector('meta[name="csrf-token"]') || {}).content;
+                if (tok) {
+                    fetch('{{ route('admin.inquiries.send-assignment-email') }}', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': tok },
+                        body: JSON.stringify({ lead_id: leadId, assigned_to: assignedTo, _token: tok })
+                    });
+                }
+            }, 6000);
+        }
+    })();
+    @endif
 
     var STORAGE_KEY = 'inquiryVisibleColumns';
     var DEFAULT_COLUMNS = ['inquiryid', 'date', 'customername', 'postcode', 'city', 'businessnature', 'products', 'message'];

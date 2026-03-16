@@ -709,6 +709,18 @@ document.addEventListener('DOMContentLoaded', function() {
     var viewCloseBtn = document.getElementById('inquiryViewModalClose');
     var viewCloseBtnFooter = document.getElementById('inquiryViewModalCloseBtn');
 
+    // If URL has ?lead=ID, open that inquiry modal (e.g. from email link)
+    (function() {
+        var params = new URLSearchParams(window.location.search);
+        var lead = params.get('lead');
+        if (lead && table) {
+            setTimeout(function() {
+                var btn = table.querySelector('.inquiries-update-btn[data-lead-id="' + lead + '"], .inquiries-view-btn[data-lead-id="' + lead + '"]');
+                if (btn) btn.click();
+            }, 100);
+        }
+    })();
+
     // Delegate click handling for Update / View buttons so it continues to work
     // after the table body is replaced by Sync.
     document.addEventListener('click', function(e) {

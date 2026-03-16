@@ -54,8 +54,8 @@
         ['key' => 'Demo', 'label' => 'DEMO', 'value' => $activityStatus['Demo'] ?? 0, 'dealer' => true],
         ['key' => 'Confirmed', 'label' => 'CONFIRMED', 'value' => $activityStatus['Confirmed'] ?? 0, 'dealer' => true],
         ['key' => 'Completed', 'label' => 'COMPLETED', 'value' => $activityStatus['Completed'] ?? 0, 'dealer' => true],
-        ['key' => 'Pending Reward', 'label' => 'PENDING REWARD', 'value' => $payoutStatus['Pending'] ?? 0, 'btn' => 'Assign'],
-        ['key' => 'Rewarded', 'label' => 'REWARDED', 'value' => $payoutStatus['Paid'] ?? 0, 'btn' => 'View'],
+        ['key' => 'Pending Reward', 'label' => 'PENDING REWARD', 'value' => $payoutStatus['Pending'] ?? 0],
+        ['key' => 'Rewarded', 'label' => 'REWARDED', 'value' => $payoutStatus['Paid'] ?? 0],
     ];
 @endphp
 <section class="dashboard-metrics-grid">
@@ -89,8 +89,8 @@
             @endif
         </div>
         <div class="dashboard-metric-btn-wrap">
-            @if (!empty($card['btn']))
-            <button type="button" class="dashboard-metric-btn">{{ $card['btn'] }}</button>
+            @if (!empty($card['btn']) && ($card['key'] ?? '') === 'unassigned')
+            <a href="{{ route('admin.inquiries') }}" class="dashboard-metric-btn">{{ $card['btn'] }}</a>
             @endif
         </div>
     </div>
