@@ -24,6 +24,32 @@
         </nav>
     </div>
 </header>
+<div class="reports-period-row">
+    <form method="get" class="reports-period-form reports-period-form-compact">
+        @php
+            $months = [
+                1 => 'January', 2 => 'February', 3 => 'March', 4 => 'April',
+                5 => 'May', 6 => 'June', 7 => 'July', 8 => 'August',
+                9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December',
+            ];
+        @endphp
+        <select name="month" class="reports-period-select">
+            @foreach ($months as $m => $label)
+                <option value="{{ $m }}" {{ (int) ($selectedMonth ?? now()->format('n')) === (int) $m ? 'selected' : '' }}>
+                    {{ $label }}
+                </option>
+            @endforeach
+        </select>
+        <select name="year" class="reports-period-select">
+            @foreach (($yearOptions ?? []) as $y)
+                <option value="{{ $y }}" {{ (int) ($selectedYear ?? now()->format('Y')) === (int) $y ? 'selected' : '' }}>
+                    {{ $y }}
+                </option>
+            @endforeach
+        </select>
+        <button type="submit" class="reports-period-apply">Apply</button>
+    </form>
+</div>
 
 @php
     $totalLeads = array_sum($leadStatus);
@@ -256,9 +282,10 @@
             // Inquiry Trends area chart
             const inquiryTrendData = @json($inquiryTrend);
             const inquiryTrendPercentChange = @json($inquiryTrendPercentChange ?? 0);
-            const monthName = @json(now()->format('F'));
-            const daysInMonth = @json(now()->daysInMonth);
-            const currentDay = @json((int) now()->format('d'));
+            const monthName = @json($selectedMonthName ?? now()->format('F'));
+            const selectedYear = @json($selectedYear ?? now()->format('Y'));
+            const daysInMonth = @json($selectedDaysInMonth ?? now()->daysInMonth);
+            const currentDay = @json($selectedDaysInMonth ?? (int) now()->daysInMonth);
 
             const trendByDay = {};
             inquiryTrendData.forEach(function(p) { trendByDay[p.day] = p.count; });
@@ -377,7 +404,7 @@
 
                 const filtered = getFilteredData(days);
                 const total = filtered.data.reduce((acc, v) => acc + (v || 0), 0);
-                elRange.textContent = days > 0 ? `Inquiries last ${days} days` : 'Inquiries this month';
+                elRange.textContent = days > 0 ? `Inquiries last ${days} days` : `Inquiries in ${monthName} ${selectedYear}`;
 
                 if (elPercent && elBadge) {
                     const diffPct = Number(inquiryTrendPercentChange) || 0;

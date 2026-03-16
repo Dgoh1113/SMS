@@ -4071,6 +4071,12 @@ textarea.inquiry-form-input { resize: vertical; min-height: 140px; }
   letter-spacing: 0.06em;
 }
 
+/* Global: hide trend icon when status is "no change" */
+.dashboard-metric-trend-same .dashboard-metric-trend-icon,
+.dashboard-metric-trend-same .dashboard-metric-trend-icon-same {
+  display: none !important;
+}
+
 .dealer-logo-sq {
   width: 36px;
   height: 36px;
@@ -7283,4 +7289,3 @@ button.dealer-pagination-btn:disabled {
     flex-direction: column;
   }
 }
-

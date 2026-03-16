@@ -1828,6 +1828,24 @@ class AdminController extends Controller
 
     public function reports(): View
     {
+        $now = now();
+        $year = (int) request()->query('year', (int) $now->format('Y'));
+        $month = (int) request()->query('month', (int) $now->format('n'));
+        if ($year < 2000 || $year > 2100) {
+            $year = (int) $now->format('Y');
+        }
+        if ($month < 1 || $month > 12) {
+            $month = (int) $now->format('n');
+        }
+        $selectedDate = Carbon::create($year, $month, 1, 0, 0, 0);
+        $prevDate = (clone $selectedDate)->subMonth();
+        $selectedMonth = (int) $selectedDate->format('n');
+        $selectedYear = (int) $selectedDate->format('Y');
+        $selectedMonthName = $selectedDate->format('F');
+        $selectedDaysInMonth = (int) $selectedDate->daysInMonth;
+        $prevMonth = (int) $prevDate->format('n');
+        $prevYear = (int) $prevDate->format('Y');
+
         $get = function ($row, string $name) {
             if (is_array($row)) {
                 foreach ([$name, strtoupper($name), strtolower($name)] as $key) {
@@ -1847,7 +1865,11 @@ class AdminController extends Controller
 
         // Lead status summary
         $leadStatusRows = DB::select(
-            'SELECT "CURRENTSTATUS" AS status, COUNT(*) AS c FROM "LEAD" GROUP BY "CURRENTSTATUS"'
+            'SELECT "CURRENTSTATUS" AS status, COUNT(*) AS c
+             FROM "LEAD"
+             WHERE EXTRACT(YEAR FROM "CREATEDAT") = ? AND EXTRACT(MONTH FROM "CREATEDAT") = ?
+             GROUP BY "CURRENTSTATUS"',
+            [$selectedYear, $selectedMonth]
         );
         $leadStatus = [
             'Open' => 0,
@@ -1872,9 +1894,11 @@ class AdminController extends Controller
              JOIN (
                  SELECT "LEADID", MAX("CREATIONDATE") AS max_created
                  FROM "LEAD_ACT"
+                 WHERE EXTRACT(YEAR FROM "CREATIONDATE") = ? AND EXTRACT(MONTH FROM "CREATIONDATE") = ?
                  GROUP BY "LEADID"
              ) m ON m."LEADID" = a."LEADID" AND m.max_created = a."CREATIONDATE"
-             GROUP BY a."STATUS"'
+             GROUP BY a."STATUS"',
+            [$selectedYear, $selectedMonth]
         );
         $activityStatus = [
             'Created' => 0,
@@ -1903,11 +1927,11 @@ class AdminController extends Controller
              JOIN (
                  SELECT "LEADID", MAX("CREATIONDATE") AS max_created
                  FROM "LEAD_ACT"
-                 WHERE EXTRACT(YEAR FROM "CREATIONDATE") = EXTRACT(YEAR FROM DATEADD(MONTH, -1, CURRENT_DATE))
-                   AND EXTRACT(MONTH FROM "CREATIONDATE") = EXTRACT(MONTH FROM DATEADD(MONTH, -1, CURRENT_DATE))
+                 WHERE EXTRACT(YEAR FROM "CREATIONDATE") = ? AND EXTRACT(MONTH FROM "CREATIONDATE") = ?
                  GROUP BY "LEADID"
              ) m ON m."LEADID" = a."LEADID" AND m.max_created = a."CREATIONDATE"
-             GROUP BY a."STATUS"'
+             GROUP BY a."STATUS"',
+            [$prevYear, $prevMonth]
         );
         $lastMonthActivity = [
             'Created' => 0,
@@ -1931,7 +1955,11 @@ class AdminController extends Controller
 
         // Payout summary
         $payoutRows = DB::select(
-            'SELECT "STATUS" AS status, COUNT(*) AS c FROM "REFERRER_PAYOUT" GROUP BY "STATUS"'
+            'SELECT "STATUS" AS status, COUNT(*) AS c
+             FROM "REFERRER_PAYOUT"
+             WHERE EXTRACT(YEAR FROM "DATEGENERATED") = ? AND EXTRACT(MONTH FROM "DATEGENERATED") = ?
+             GROUP BY "STATUS"',
+            [$selectedYear, $selectedMonth]
         );
         $payoutStatus = [
             'Awaiting Deal Completion' => 0,
@@ -1947,10 +1975,11 @@ class AdminController extends Controller
 
         // Last month payout by status
         $lastMonthPayoutRows = DB::select(
-            'SELECT "STATUS" AS status, COUNT(*) AS c FROM "REFERRER_PAYOUT"
-             WHERE EXTRACT(YEAR FROM "DATEGENERATED") = EXTRACT(YEAR FROM DATEADD(MONTH, -1, CURRENT_DATE))
-               AND EXTRACT(MONTH FROM "DATEGENERATED") = EXTRACT(MONTH FROM DATEADD(MONTH, -1, CURRENT_DATE))
-             GROUP BY "STATUS"'
+            'SELECT "STATUS" AS status, COUNT(*) AS c
+             FROM "REFERRER_PAYOUT"
+             WHERE EXTRACT(YEAR FROM "DATEGENERATED") = ? AND EXTRACT(MONTH FROM "DATEGENERATED") = ?
+             GROUP BY "STATUS"',
+            [$prevYear, $prevMonth]
         );
         $lastMonthPayout = [
             'Awaiting Deal Completion' => 0,
@@ -1968,10 +1997,10 @@ class AdminController extends Controller
         $trendRows = DB::select(
             'SELECT EXTRACT(DAY FROM "CREATEDAT") AS d, COUNT(*) AS c
              FROM "LEAD"
-             WHERE EXTRACT(MONTH FROM "CREATEDAT") = EXTRACT(MONTH FROM CURRENT_TIMESTAMP)
-               AND EXTRACT(YEAR FROM "CREATEDAT") = EXTRACT(YEAR FROM CURRENT_TIMESTAMP)
+             WHERE EXTRACT(MONTH FROM "CREATEDAT") = ? AND EXTRACT(YEAR FROM "CREATEDAT") = ?
              GROUP BY EXTRACT(DAY FROM "CREATEDAT")
-             ORDER BY d'
+             ORDER BY d',
+            [$selectedMonth, $selectedYear]
         );
         $inquiryTrend = [];
         $trendByDay = [];
@@ -1985,8 +2014,8 @@ class AdminController extends Controller
         $currentMonthTotal = array_sum($trendByDay);
         $lastMonthRows = DB::select(
             'SELECT COUNT(*) AS c FROM "LEAD"
-             WHERE EXTRACT(YEAR FROM "CREATEDAT") = EXTRACT(YEAR FROM DATEADD(MONTH, -1, CURRENT_DATE))
-               AND EXTRACT(MONTH FROM "CREATEDAT") = EXTRACT(MONTH FROM DATEADD(MONTH, -1, CURRENT_DATE))'
+             WHERE EXTRACT(YEAR FROM "CREATEDAT") = ? AND EXTRACT(MONTH FROM "CREATEDAT") = ?',
+            [$prevYear, $prevMonth]
         );
         $lastMonthTotal = (int) ($lastMonthRows[0]->c ?? 0);
         $inquiryTrendPercentChange = $lastMonthTotal > 0
@@ -2035,8 +2064,9 @@ class AdminController extends Controller
              FROM "LEAD_ACT" a
              WHERE a."DEALTPRODUCT" IS NOT NULL
                AND TRIM(a."DEALTPRODUCT") <> \'\'
-               AND EXTRACT(MONTH FROM a."CREATIONDATE") = EXTRACT(MONTH FROM CURRENT_TIMESTAMP)
-               AND EXTRACT(YEAR FROM a."CREATIONDATE") = EXTRACT(YEAR FROM CURRENT_TIMESTAMP)'
+               AND EXTRACT(MONTH FROM a."CREATIONDATE") = ?
+               AND EXTRACT(YEAR FROM a."CREATIONDATE") = ?',
+            [$selectedMonth, $selectedYear]
         );
         foreach ($dealRows as $row) {
             $val = trim((string) ($get($row, 'dealt') ?? ''));
@@ -2068,6 +2098,12 @@ class AdminController extends Controller
             'inquiryTrend' => $inquiryTrend,
             'inquiryTrendPercentChange' => $inquiryTrendPercentChange,
             'productConversion' => $productConversion,
+            'selectedMonth' => $selectedMonth,
+            'selectedYear' => $selectedYear,
+            'selectedMonthName' => $selectedMonthName,
+            'selectedDaysInMonth' => $selectedDaysInMonth,
+            'monthOptions' => range(1, 12),
+            'yearOptions' => range(((int) $now->format('Y')) - 4, ((int) $now->format('Y'))),
         ]);
     }
 
