@@ -27,12 +27,19 @@
         $statusDisplay = $rawStatus === '' ? '—' : (in_array($rawStatus, ['FOLLOWUP', 'FOLLOW UP'], true) ? 'Follow Up' : $rawStatus);
         $customerName = trim(($r->COMPANYNAME ?? '') . ' ' . ($r->CONTACTNAME ?? '')) ?: '—';
     @endphp
+    @php
+        $addr1 = trim((string)($r->ADDRESS1 ?? ''));
+        $addr2 = trim((string)($r->ADDRESS2 ?? ''));
+        $addressDisplay = trim($addr1 . ' ' . $addr2) ?: '—';
+    @endphp
     <tr class="inquiry-row" data-search="{{ strtolower(trim(($r->COMPANYNAME ?? '').' '.($r->CONTACTNAME ?? '').' '.($r->LEADID ?? ''))) }}">
-        <td data-col="inquiryid"><strong>#SQL-{{ $r->LEADID }}</strong></td>
+        <td data-col="inquiryid">#SQL-{{ $r->LEADID }}</td>
         <td data-col="date">{{ $r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '—' }}</td>
         <td data-col="customer">{{ $customerName }}</td>
         <td data-col="source">{{ $r->ASSIGNED_BY_EMAIL ?? '—' }}</td>
         <td data-col="postcode">{{ $r->POSTCODE ?? '—' }}</td>
+        <td data-col="city">{{ $r->CITY ?? '—' }}</td>
+        <td data-col="address">{{ $addressDisplay }}</td>
         <td data-col="contactno">{{ $r->CONTACTNO ?? '—' }}</td>
         <td data-col="businessnature">{{ $r->BUSINESSNATURE ?? '—' }}</td>
         <td data-col="users">{{ $r->USERCOUNT ?? '—' }}</td>
@@ -51,23 +58,23 @@
         </td>
         <td data-col="message">{{ Str::limit($r->DESCRIPTION ?? '—', 20) }}</td>
         <td data-col="referralcode">{{ $r->REFERRALCODE ?? '—' }}</td>
-        <td data-col="assignby">{{ $r->ASSIGNED_BY_EMAIL ?? '—' }}</td>
+        <td data-col="assignby">{{ $r->CREATEDBY_NAME ?? $r->ASSIGNED_BY_EMAIL ?? '—' }}</td>
         <td data-col="status"><span class="inquiries-status {{ $statusClass }}">{{ $statusDisplay }}</span></td>
-        <td class="inquiries-col-action">
+        <td class="inquiries-col-action inquiries-action-cell">
             @php
                 $actStatus = strtoupper($r->ACT_STATUS ?? 'PENDING');
                 $isFailed = $actStatus === 'FAILED';
             @endphp
             @if ($isFailed)
-                <button type="button" class="inquiries-view-btn" data-lead-id="{{ $r->LEADID }}" data-customer="{{ $customerName }}">View</button>
+                <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-view-status-btn inquiries-view-btn" data-lead-id="{{ $r->LEADID }}" data-customer="{{ $customerName }}" title="View" aria-label="View"><i class="bi bi-eye" aria-hidden="true"></i></button>
             @else
-                <button type="button" class="inquiries-update-btn" data-lead-id="{{ $r->LEADID }}" data-customer="{{ $customerName }}" data-status="{{ $actStatus }}">Update</button>
+                <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-edit-inquiry-btn inquiries-update-btn" data-lead-id="{{ $r->LEADID }}" data-customer="{{ $customerName }}" data-status="{{ $actStatus }}" title="Update" aria-label="Update"><i class="bi bi-pencil-square" aria-hidden="true"></i></button>
             @endif
         </td>
     </tr>
 @empty
     <tr class="inquiries-empty-row">
-        <td colspan="16" class="inquiries-empty-cell">
+        <td colspan="18" class="inquiries-empty-cell">
             <div class="dealer-table-empty">No inquiries assigned yet.</div>
         </td>
     </tr>

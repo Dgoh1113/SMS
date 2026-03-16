@@ -38,10 +38,6 @@
                     </div>
                 </div>
             </form>
-            <button type="button" class="reports-download-btn" style="margin-left:8px">
-                <i class="bi bi-download"></i>
-                Download Report
-            </button>
         </div>
     </header>
 

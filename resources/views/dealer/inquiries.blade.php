@@ -9,7 +9,7 @@
     ];
 @endphp
 <div class="dashboard-content inquiries-page-wrap">
-    <section class="inquiries-mgmt-panel">
+    <section class="inquiries-mgmt-panel dealer-inquiries-panel">
         <div class="inquiries-panel-header">
             <div class="inquiries-panel-title-wrap">
                 <i class="bi bi-folder2-open inquiries-panel-icon"></i>
@@ -25,10 +25,12 @@
                     <div class="inquiries-columns-menu" id="dealerInquiryColumnsMenu" hidden>
                         <div class="inquiries-columns-menu-title">Show columns</div>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="inquiryid"> INQUIRY ID</label>
-                        <label class="inquiries-columns-check"><input type="checkbox" data-col="date"> DATE</label>
-                        <label class="inquiries-columns-check"><input type="checkbox" data-col="customer"> CUSTOMER</label>
+                        <label class="inquiries-columns-check"><input type="checkbox" data-col="date"> INQUIRY DATE</label>
+                        <label class="inquiries-columns-check"><input type="checkbox" data-col="customer"> CUSTOMER NAME</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="source"> SOURCE</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="postcode"> POSTCODE</label>
+                        <label class="inquiries-columns-check"><input type="checkbox" data-col="city"> CITY</label>
+                        <label class="inquiries-columns-check"><input type="checkbox" data-col="address"> ADDRESS</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="contactno"> CONTACT NO</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="businessnature"> BUSINESS NATURE</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="users"> USERS</label>
@@ -49,14 +51,17 @@
             </div>
         </div>
         <div class="inquiries-table-wrap">
+            <div class="inquiries-table-scroll">
             <table class="inquiries-table" id="dealerInquiriesTable">
                 <thead>
                     <tr class="inquiries-header-row">
                         <th data-col="inquiryid" class="inquiries-header-cell"><span class="inquiries-header-label">INQUIRY ID</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="inquiryid"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="date" class="inquiries-header-cell"><span class="inquiries-header-label">DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="date"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="customer" class="inquiries-header-cell"><span class="inquiries-header-label">CUSTOMER</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="customer"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="customer" class="inquiries-header-cell"><span class="inquiries-header-label">CUSTOMER NAME</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="customer"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="source" class="inquiries-header-cell"><span class="inquiries-header-label">SOURCE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="source"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="postcode" class="inquiries-header-cell"><span class="inquiries-header-label">POSTCODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="postcode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="city" class="inquiries-header-cell"><span class="inquiries-header-label">CITY</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="city"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="address" class="inquiries-header-cell"><span class="inquiries-header-label">ADDRESS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="address"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="contactno" class="inquiries-header-cell"><span class="inquiries-header-label">CONTACT NO</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="contactno"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="businessnature" class="inquiries-header-cell"><span class="inquiries-header-label">BUSINESS NATURE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="businessnature"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="users" class="inquiries-header-cell"><span class="inquiries-header-label">USERS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="users"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
@@ -74,6 +79,27 @@
                     @include('dealer.partials.inquiries_rows', ['leads' => $leads, 'productNames' => $productNames])
                 </tbody>
             </table>
+            </div>
+            @php
+                $dealerTotal = isset($leads) ? count($leads) : 0;
+                $dealerPerPage = $dealerTotal > 0 ? $dealerTotal : 0;
+                $dealerTo = $dealerTotal === 0 ? 0 : min($dealerPerPage, $dealerTotal);
+            @endphp
+            <div class="inquiries-assigned-pagination" id="dealerInquiriesPagination"
+                 data-total="{{ $dealerTotal }}"
+                 data-per-page="{{ $dealerPerPage }}"
+                 data-current-page="1">
+                <span class="inquiries-assigned-pagination-info">
+                    Showing {{ $dealerTotal === 0 ? 0 : 1 }} to {{ $dealerTo }} of {{ $dealerTotal }} entries (Page 1)
+                </span>
+                <div class="inquiries-assigned-pagination-nav">
+                    <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" disabled>First</button>
+                    <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" disabled>Previous</button>
+                    <span class="inquiries-assigned-page-numbers"></span>
+                    <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" disabled>Next</button>
+                    <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" disabled>Last</button>
+                </div>
+            </div>
         </div>
     </section>
 </div>
@@ -110,8 +136,16 @@ document.addEventListener('DOMContentLoaded', function() {
     var colsAll = document.getElementById('dealerInquiryColumnsAll');
     var colsNone = document.getElementById('dealerInquiryColumnsNone');
     var colsReset = document.getElementById('dealerInquiryColumnsReset');
-    var storageKey = 'dealer_inquiries_visible_cols_v1';
-    var defaultCols = ['inquiryid','date','customer','source','postcode','contactno','businessnature','users','existingsw','demomode','products','message','referralcode','assignby','status'];
+    var storageKey = 'dealer_inquiries_visible_cols_v2';
+    // Default columns follow admin incoming inquiries table, but message → assignby + status
+    var defaultCols = ['inquiryid','date','customer','postcode','city','businessnature','products','assignby','status'];
+    var allCols = ['inquiryid','date','customer','source','postcode','city','address','contactno','businessnature','users','existingsw','demomode','products','message','referralcode','assignby','status'];
+
+    var statusCheckbox = colsMenu ? colsMenu.querySelector('input[type="checkbox"][data-col="status"]') : null;
+    if (statusCheckbox) {
+        statusCheckbox.checked = true;
+        statusCheckbox.disabled = true; // status is a fixed/default column, cannot be turned off
+    }
 
     function setMenuOpen(open) {
         if (!colsMenu || !colsBtn) return;
@@ -131,17 +165,28 @@ document.addEventListener('DOMContentLoaded', function() {
         colsMenu.querySelectorAll('input[type="checkbox"][data-col]').forEach(function(cb) {
             if (cb.checked) cols.push(cb.getAttribute('data-col'));
         });
+        // Ensure status is always included as a fixed column
+        if (cols.indexOf('status') === -1) {
+            cols.push('status');
+        }
         return cols;
     }
 
     function applyVisibleCols(cols) {
+        // Always keep STATUS column visible, even if user unchecks it
+        if (cols.indexOf('status') === -1) {
+            cols = cols.concat(['status']);
+        }
         // hide/show based on cols; keep ACTION column always visible
-        var allCols = defaultCols.slice();
         allCols.forEach(function(c) { setColVisible(c, cols.indexOf(c) !== -1); });
         // sync checkboxes
         if (colsMenu) {
             colsMenu.querySelectorAll('input[type="checkbox"][data-col]').forEach(function(cb) {
                 var c = cb.getAttribute('data-col');
+                if (c === 'status') {
+                    cb.checked = true;
+                    return;
+                }
                 cb.checked = cols.indexOf(c) !== -1;
             });
         }
@@ -209,6 +254,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         colsMenu.querySelectorAll('input[type="checkbox"][data-col]').forEach(function(cb) {
             cb.addEventListener('change', function() {
+                var col = cb.getAttribute('data-col');
+                // Ignore attempts to toggle STATUS; it is fixed on.
+                if (col === 'status') {
+                    cb.checked = true;
+                    return;
+                }
                 var cols = getSelectedColsFromMenu();
                 applyVisibleCols(cols);
                 saveCols(cols);
@@ -217,8 +268,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     if (colsAll) {
         colsAll.addEventListener('click', function() {
-            applyVisibleCols(defaultCols.slice());
-            saveCols(defaultCols.slice());
+            applyVisibleCols(allCols.slice());
+            saveCols(allCols.slice());
         });
     }
     if (colsNone) {
@@ -590,7 +641,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 var desc = (a.description || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                 var status = (a.status || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                 html += '<strong>' + user + '</strong> ' + (subj ? subj + ' ' : '');
-                if (status) html += 'changed status to <span class="inquiry-activity-status">' + status + '</span> ';
+                if (status) html += 'changed status to <strong class="inquiry-activity-status">' + status + '</strong> ';
                 if (desc) html += '<span class="inquiry-activity-desc">' + desc + '</span> ';
             }
             html += '<span class="inquiry-activity-time">' + timeStr + '</span>';

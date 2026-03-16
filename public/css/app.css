@@ -3069,9 +3069,9 @@ textarea.inquiry-form-input { resize: vertical; min-height: 140px; }
   color: #1f2937;
 }
 
+/* Update window activity: status is bold only, no colored pill */
 .inquiry-activity-status {
-  color: #0969da;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .inquiry-activity-timeline {
@@ -5885,6 +5885,25 @@ button.dealer-pagination-btn:disabled {
 #rewardedPanel .inquiries-table-scroll {
   min-height: 460px;
 }
+
+/* Dealer inquiries: scrollbar at the very bottom of the table area */
+.dealer-inquiries-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.dealer-inquiries-panel .inquiries-table-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.dealer-inquiries-panel .inquiries-table-scroll {
+  flex: 1;
+  min-height: 460px;
+  overflow: auto;
+}
+
 .inquiries-table-wrap::-webkit-scrollbar-track {
   background: transparent;
 }
@@ -6901,24 +6920,6 @@ button.dealer-pagination-btn:disabled {
 }
 
 .reports-range-apply:hover {
-  background: #6d3df5;
-}
-
-.reports-download-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 10px;
-  background: #7f5af0;
-  font-size: 14px;
-  font-weight: 600;
-  color: #ffffff;
-  cursor: pointer;
-}
-
-.reports-download-btn:hover {
   background: #6d3df5;
 }
 
