@@ -1076,6 +1076,78 @@ class DealerController extends Controller
                 }
             }
 
+            // Attach latest REWARDED/PAID attachment per lead for rewarded list
+            try {
+                $rewardedIds = array_values(array_unique(array_filter(array_map(
+                    fn ($r) => (int) ($r->LEADID ?? 0),
+                    $rewarded
+                ))));
+                if (!empty($rewardedIds)) {
+                    $placeholders = implode(',', array_fill(0, count($rewardedIds), '?'));
+                    $attachRows = DB::select(
+                        'SELECT a."LEADID", a."LEAD_ACTID", a."ATTACHMENT"
+                         FROM "LEAD_ACT" a
+                         JOIN (
+                             SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
+                             FROM "LEAD_ACT"
+                             WHERE UPPER(TRIM("STATUS")) IN (\'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\')
+                               AND "LEADID" IN (' . $placeholders . ')
+                             GROUP BY "LEADID"
+                         ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
+                         WHERE UPPER(TRIM(a."STATUS")) IN (\'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\')
+                           AND a."LEADID" IN (' . $placeholders . ')',
+                        array_merge($rewardedIds, $rewardedIds)
+                    );
+                    $attachmentMap = [];
+                    $attachmentActMap = [];
+                    foreach ($attachRows as $ar) {
+                        $lid = (int) ($ar->LEADID ?? 0);
+                        if ($lid > 0) {
+                            $attachmentMap[$lid] = $ar->ATTACHMENT ?? $ar->attachment ?? null;
+                            $attachmentActMap[$lid] = (int) ($ar->LEAD_ACTID ?? 0);
+                        }
+                    }
+                    if (!empty($attachmentMap)) {
+                        foreach ($rewarded as $r) {
+                            $lid = (int) ($r->LEADID ?? 0);
+                            if ($lid > 0 && array_key_exists($lid, $attachmentMap)) {
+                                $r->REWARD_ATTACHMENT = $attachmentMap[$lid];
+                                $r->REWARD_LEAD_ACT_ID = $attachmentActMap[$lid] ?? 0;
+                            }
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                // ignore attachment mapping failures
+            }
+
+            // Build attachment URLs for Rewarded list (dealer)
+            foreach ($rewarded as $r) {
+                $urls = [];
+                $attachmentRaw = $r->REWARD_ATTACHMENT ?? null;
+                $leadId = (int) ($r->LEADID ?? 0);
+                $leadActId = (int) ($r->REWARD_LEAD_ACT_ID ?? 0);
+                if ($attachmentRaw !== null && trim((string) $attachmentRaw) !== '') {
+                    $attachmentStr = trim((string) $attachmentRaw);
+                    $attachmentStr = str_replace('\\', '/', $attachmentStr);
+                    if (str_contains($attachmentStr, ',') || str_starts_with($attachmentStr, 'inquiry-attachments')) {
+                        foreach (explode(',', $attachmentStr) as $path) {
+                            $path = trim(str_replace('\\', '/', $path));
+                            if ($path !== '' && str_starts_with($path, 'inquiry-attachments/')) {
+                                $urls[] = route('dealer.inquiries.serve-attachment', ['path' => $path]);
+                            }
+                        }
+                    } else {
+                        if (str_starts_with($attachmentStr, 'inquiry-attachments/')) {
+                            $urls[] = route('dealer.inquiries.serve-attachment', ['path' => $attachmentStr]);
+                        } elseif ($leadId > 0 && $leadActId > 0 && preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', $attachmentStr)) {
+                            $urls[] = route('dealer.inquiries.activity-attachment', ['leadId' => $leadId, 'leadActId' => $leadActId]);
+                        }
+                    }
+                }
+                $r->REWARD_ATTACHMENT_URLS = $urls;
+            }
+
             // Resolve CREATEDBY_NAME and ASSIGNED_TO_NAME for display (same as admin rewards)
             try {
                 $ids = [];

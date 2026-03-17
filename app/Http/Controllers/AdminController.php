@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Carbon\Carbon;
 
@@ -1686,6 +1687,78 @@ class AdminController extends Controller
             }
         }
 
+        // Attach latest REWARDED/PAID attachment per lead for rewarded list
+        try {
+            $rewardedIds = array_values(array_unique(array_filter(array_map(
+                fn ($r) => (int) ($r->LEADID ?? 0),
+                $rewarded
+            ))));
+            if (!empty($rewardedIds)) {
+                $placeholders = implode(',', array_fill(0, count($rewardedIds), '?'));
+                $attachRows = DB::select(
+                    'SELECT a."LEADID", a."LEAD_ACTID", a."ATTACHMENT"
+                     FROM "LEAD_ACT" a
+                     JOIN (
+                         SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
+                         FROM "LEAD_ACT"
+                         WHERE UPPER(TRIM("STATUS")) IN (\'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\')
+                           AND "LEADID" IN (' . $placeholders . ')
+                         GROUP BY "LEADID"
+                     ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
+                     WHERE UPPER(TRIM(a."STATUS")) IN (\'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\')
+                       AND a."LEADID" IN (' . $placeholders . ')',
+                    array_merge($rewardedIds, $rewardedIds)
+                );
+                $attachmentMap = [];
+                $attachmentActMap = [];
+                foreach ($attachRows as $ar) {
+                    $lid = (int) ($ar->LEADID ?? 0);
+                    if ($lid > 0) {
+                        $attachmentMap[$lid] = $ar->ATTACHMENT ?? $ar->attachment ?? null;
+                        $attachmentActMap[$lid] = (int) ($ar->LEAD_ACTID ?? 0);
+                    }
+                }
+                if (!empty($attachmentMap)) {
+                    foreach ($rewarded as $r) {
+                        $lid = (int) ($r->LEADID ?? 0);
+                        if ($lid > 0 && array_key_exists($lid, $attachmentMap)) {
+                            $r->REWARD_ATTACHMENT = $attachmentMap[$lid];
+                            $r->REWARD_LEAD_ACT_ID = $attachmentActMap[$lid] ?? 0;
+                        }
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            // ignore attachment mapping failures
+        }
+
+        // Build attachment URLs for Rewarded list (admin)
+        foreach ($rewarded as $r) {
+            $urls = [];
+            $attachmentRaw = $r->REWARD_ATTACHMENT ?? null;
+            $leadId = (int) ($r->LEADID ?? 0);
+            $leadActId = (int) ($r->REWARD_LEAD_ACT_ID ?? 0);
+            if ($attachmentRaw !== null && trim((string) $attachmentRaw) !== '') {
+                $attachmentStr = trim((string) $attachmentRaw);
+                $attachmentStr = str_replace('\\', '/', $attachmentStr);
+                if (str_contains($attachmentStr, ',') || str_starts_with($attachmentStr, 'inquiry-attachments')) {
+                    foreach (explode(',', $attachmentStr) as $path) {
+                        $path = trim(str_replace('\\', '/', $path));
+                        if ($path !== '' && str_starts_with($path, 'inquiry-attachments/')) {
+                            $urls[] = route('admin.rewards.serve-attachment', ['path' => $path]);
+                        }
+                    }
+                } else {
+                    if (str_starts_with($attachmentStr, 'inquiry-attachments/')) {
+                        $urls[] = route('admin.rewards.serve-attachment', ['path' => $attachmentStr]);
+                    } elseif ($leadId > 0 && $leadActId > 0 && preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', $attachmentStr)) {
+                        $urls[] = route('admin.rewards.activity-attachment', ['leadId' => $leadId, 'leadActId' => $leadActId]);
+                    }
+                }
+            }
+            $r->REWARD_ATTACHMENT_URLS = $urls;
+        }
+
         // Resolve CREATEDBY_NAME and ASSIGNED_TO_NAME for display (same as inquiries)
         try {
             $ids = [];
@@ -1794,6 +1867,67 @@ class AdminController extends Controller
             'productLabels' => $productLabels,
             'currentPage' => 'rewards',
         ]);
+    }
+
+    /**
+     * Serve a reward attachment by storage path (admin).
+     */
+    public function serveRewardAttachment(Request $request): \Symfony\Component\HttpFoundation\Response
+    {
+        $path = $request->query('path');
+        if (!is_string($path) || $path === '') {
+            return response('', 404);
+        }
+        $path = trim(str_replace('\\', '/', $path));
+        if (str_contains($path, '..') || ! str_starts_with($path, 'inquiry-attachments/')) {
+            return response('', 404);
+        }
+        if (! Storage::disk('public')->exists($path)) {
+            return response('', 404);
+        }
+        $fullPath = Storage::disk('public')->path($path);
+        $mime = mime_content_type($fullPath) ?: 'image/jpeg';
+        return response()->file($fullPath, ['Content-Type' => $mime]);
+    }
+
+    /**
+     * Serve a single activity attachment (image) for reward rows (admin).
+     * Supports path-based storage or binary BLOB in DB.
+     */
+    public function rewardActivityAttachment(Request $request, int $leadId, int $leadActId): \Symfony\Component\HttpFoundation\Response
+    {
+        $row = DB::selectOne('SELECT "ATTACHMENT" FROM "LEAD_ACT" WHERE "LEAD_ACTID" = ? AND "LEADID" = ?', [$leadActId, $leadId]);
+        if (!$row) {
+            return response('', 404);
+        }
+        $attachment = $row->ATTACHMENT ?? $row->attachment ?? null;
+        if ($attachment === null || trim((string) $attachment) === '') {
+            return response('', 404);
+        }
+        $str = trim(str_replace('\\', '/', (string) $attachment));
+        if (str_starts_with($str, 'inquiry-attachments') && ! preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', $str)) {
+            $path = str_contains($str, ',') ? trim(str_replace('\\', '/', explode(',', $str)[0])) : $str;
+            $fullPath = Storage::disk('public')->path($path);
+            if (! is_file($fullPath)) {
+                return response('', 404);
+            }
+            $mime = mime_content_type($fullPath) ?: 'image/jpeg';
+            return response()->file($fullPath, ['Content-Type' => $mime]);
+        }
+        if (is_string($attachment) && strlen($attachment) > 0) {
+            $mime = 'image/jpeg';
+            if (preg_match('/^\x89PNG/', $attachment)) {
+                $mime = 'image/png';
+            } elseif (str_starts_with($attachment, "\xFF\xD8")) {
+                $mime = 'image/jpeg';
+            } elseif (str_starts_with($attachment, 'GIF8')) {
+                $mime = 'image/gif';
+            } elseif (str_starts_with($attachment, 'RIFF') && substr($attachment, 8, 4) === 'WEBP') {
+                $mime = 'image/webp';
+            }
+            return response($attachment, 200, ['Content-Type' => $mime]);
+        }
+        return response('', 404);
     }
 
     /**
