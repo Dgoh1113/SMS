@@ -40,7 +40,7 @@
             <h2 class="inquiries-panel-title">Completed</h2>
         </div>
         <div class="inquiries-panel-actions">
-            <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-sync-btn" data-sync-type="assigned" data-sync-url="{{ route('admin.inquiries.sync') }}">
+            <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-sync-btn" data-sync-type="completed" data-sync-url="{{ route('admin.rewards') }}">
                 <i class="bi bi-arrow-repeat inquiries-sync-icon"></i>
                 <span class="inquiries-sync-label">Sync</span>
             </button>
@@ -214,7 +214,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="21" class="inquiries-empty">No completed payouts.</td></tr>
+                    <tr><td colspan="21" class="inquiries-empty">No completed inquiries.</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -241,7 +241,7 @@
             <h2 class="inquiries-panel-title">Rewarded</h2>
         </div>
         <div class="inquiries-panel-actions">
-            <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-sync-btn" data-sync-type="rewarded" data-sync-url="{{ route('admin.inquiries.sync') }}">
+            <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-sync-btn" data-sync-type="rewarded" data-sync-url="{{ route('admin.rewards') }}">
                 <i class="bi bi-arrow-repeat inquiries-sync-icon"></i>
                 <span class="inquiries-sync-label">Sync</span>
             </button>
@@ -666,6 +666,22 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    function replaceRewardsTableBody(nextDoc, tableId) {
+        var currentBody = document.querySelector('#' + tableId + ' tbody');
+        var nextBody = nextDoc.querySelector('#' + tableId + ' tbody');
+        if (!currentBody || !nextBody) return false;
+        currentBody.innerHTML = nextBody.innerHTML;
+        return true;
+    }
+
+    function refreshSummaryCardFromDoc(nextDoc) {
+        var card = document.getElementById('payoutSummaryCard');
+        var nextCard = nextDoc.querySelector('#payoutSummaryCard');
+        if (!card || !nextCard) return;
+        card.setAttribute('data-pending-count', nextCard.getAttribute('data-pending-count') || '0');
+        card.setAttribute('data-rewarded-count', nextCard.getAttribute('data-rewarded-count') || '0');
+    }
+
     document.querySelectorAll('.inquiries-sync-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
             if (btn.classList.contains('is-syncing')) return;
@@ -673,14 +689,33 @@ document.addEventListener('DOMContentLoaded', function() {
             var icon = btn.querySelector('.inquiries-sync-icon');
             if (icon) icon.classList.add('spinning');
             var url = btn.getAttribute('data-sync-url');
-            if (!url) url = '{{ route('admin.inquiries.sync') }}';
-            fetch(url, {
+            if (!url) url = '{{ route('admin.rewards') }}';
+            var syncType = (btn.getAttribute('data-sync-type') || '').toLowerCase();
+            var req = new URL(url, window.location.origin);
+            req.searchParams.set('tab', syncType === 'rewarded' ? 'rewarded' : 'completed');
+            req.searchParams.set('_sync', Date.now().toString());
+            fetch(req.toString(), {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 cache: 'no-store'
             }).then(function(res) {
-                return res.ok ? res.json() : Promise.reject();
-            }).then(function(data) {
-                // Silent success &mdash; no popup needed.
+                return res.ok ? res.text() : Promise.reject();
+            }).then(function(html) {
+                var parser = new DOMParser();
+                var nextDoc = parser.parseFromString(html, 'text/html');
+                var completedUpdated = replaceRewardsTableBody(nextDoc, 'completedTable');
+                var rewardedUpdated = replaceRewardsTableBody(nextDoc, 'rewardedTable');
+                if (!completedUpdated && !rewardedUpdated) {
+                    return Promise.reject();
+                }
+                refreshSummaryCardFromDoc(nextDoc);
+                bindRewardEmailButtons();
+                applyCompletedColumns(getCompletedVisibleColumns());
+                applyRewardedColumns(getRewardedVisibleColumns());
+                applyAllTables();
+                var activeTab = document.querySelector('.inquiries-tab.active');
+                if (activeTab && typeof activeTab.click === 'function') {
+                    activeTab.click();
+                }
             }).catch(function() {
                 alert('Failed to sync data.');
             }).finally(function() {
@@ -709,62 +744,62 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     var emailCounts = loadEmailCounts();
 
-    document.querySelectorAll('.rewards-email-btn').forEach(function(btn) {
-        var leadId = btn.getAttribute('data-lead-id');
-        if (!leadId) return;
+    function applyRewardEmailIcon(btn, leadId) {
         var icon = btn.querySelector('i.bi');
         var count = emailCounts[leadId] || 0;
-        if (icon) {
-            if (count > 0) {
-                icon.classList.remove('bi-envelope');
-                icon.classList.add('bi-envelope-fill');
-            } else {
-                icon.classList.remove('bi-envelope-fill');
-                icon.classList.add('bi-envelope');
-            }
+        if (!icon) return;
+        if (count > 0) {
+            icon.classList.remove('bi-envelope');
+            icon.classList.add('bi-envelope-fill');
+        } else {
+            icon.classList.remove('bi-envelope-fill');
+            icon.classList.add('bi-envelope');
         }
-    });
+    }
 
-    document.querySelectorAll('.rewards-email-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
+    function bindRewardEmailButtons() {
+        document.querySelectorAll('.rewards-email-btn').forEach(function(btn) {
             var leadId = btn.getAttribute('data-lead-id');
             if (!leadId) return;
-            if (!confirm('Remind the assigned dealer to pay out the referral fee?')) return;
-            var token = (document.querySelector('meta[name="csrf-token"]') || {}).content;
-            if (!token) { alert('Session expired. Please refresh the page.'); return; }
-            btn.disabled = true;
-            fetch('{{ route('admin.rewards.send-email') }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': token,
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify({ lead_id: parseInt(leadId, 10) })
-            }).then(function(res) { return res.json().then(function(data) { return { ok: res.ok, data: data }; }); })
-            .then(function(result) {
-                if (result.ok && result.data.success) {
-                    alert(result.data.message || 'Email sent.');
-                    var current = emailCounts[leadId] || 0;
-                    var next = current + 1;
-                    emailCounts[leadId] = next;
-                    saveEmailCounts(emailCounts);
-                    var icon = btn.querySelector('i.bi');
-                    if (icon) {
-                        icon.classList.remove('bi-envelope');
-                        icon.classList.add('bi-envelope-fill');
+            applyRewardEmailIcon(btn, leadId);
+            if (btn.getAttribute('data-email-bound') === '1') return;
+            btn.setAttribute('data-email-bound', '1');
+            btn.addEventListener('click', function() {
+                if (!confirm('Remind the assigned dealer to pay out the referral fee?')) return;
+                var token = (document.querySelector('meta[name="csrf-token"]') || {}).content;
+                if (!token) { alert('Session expired. Please refresh the page.'); return; }
+                btn.disabled = true;
+                fetch('{{ route('admin.rewards.send-email') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': token,
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ lead_id: parseInt(leadId, 10) })
+                }).then(function(res) { return res.json().then(function(data) { return { ok: res.ok, data: data }; }); })
+                .then(function(result) {
+                    if (result.ok && result.data.success) {
+                        alert(result.data.message || 'Email sent.');
+                        var current = emailCounts[leadId] || 0;
+                        var next = current + 1;
+                        emailCounts[leadId] = next;
+                        saveEmailCounts(emailCounts);
+                        applyRewardEmailIcon(btn, leadId);
+                    } else {
+                        alert(result.data.message || 'Failed to send email.');
                     }
-                } else {
-                    alert(result.data.message || 'Failed to send email.');
-                }
-            }).catch(function() {
-                alert('Failed to send email.');
-            }).finally(function() {
-                btn.disabled = false;
+                }).catch(function() {
+                    alert('Failed to send email.');
+                }).finally(function() {
+                    btn.disabled = false;
+                });
             });
         });
-    });
+    }
+
+    bindRewardEmailButtons();
 
     var completedClearFilters = document.getElementById('completedClearFilters');
     if (completedClearFilters) {

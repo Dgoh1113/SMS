@@ -1878,14 +1878,14 @@ class AdminController extends Controller
         if (!is_string($path) || $path === '') {
             return response('', 404);
         }
-        $path = trim(str_replace('\\', '/', $path));
+        $path = trim(str_replace('\\', '/', rawurldecode($path)));
         if (str_contains($path, '..') || ! str_starts_with($path, 'inquiry-attachments/')) {
             return response('', 404);
         }
-        if (! Storage::disk('public')->exists($path)) {
+        $fullPath = $this->resolveInquiryAttachmentPath($path);
+        if ($fullPath === null) {
             return response('', 404);
         }
-        $fullPath = Storage::disk('public')->path($path);
         $mime = mime_content_type($fullPath) ?: 'image/jpeg';
         return response()->file($fullPath, ['Content-Type' => $mime]);
     }
@@ -1907,8 +1907,8 @@ class AdminController extends Controller
         $str = trim(str_replace('\\', '/', (string) $attachment));
         if (str_starts_with($str, 'inquiry-attachments') && ! preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', $str)) {
             $path = str_contains($str, ',') ? trim(str_replace('\\', '/', explode(',', $str)[0])) : $str;
-            $fullPath = Storage::disk('public')->path($path);
-            if (! is_file($fullPath)) {
+            $fullPath = $this->resolveInquiryAttachmentPath($path);
+            if ($fullPath === null) {
                 return response('', 404);
             }
             $mime = mime_content_type($fullPath) ?: 'image/jpeg';
@@ -1928,6 +1928,25 @@ class AdminController extends Controller
             return response($attachment, 200, ['Content-Type' => $mime]);
         }
         return response('', 404);
+    }
+
+    private function resolveInquiryAttachmentPath(string $path): ?string
+    {
+        $path = ltrim($path, '/');
+        $candidates = [
+            Storage::disk('public')->path($path),
+            storage_path('app/public/' . $path),
+            storage_path('app/private/' . $path),
+            storage_path('app/' . $path),
+            public_path($path),
+            public_path('storage/' . $path),
+        ];
+        foreach ($candidates as $candidate) {
+            if (is_file($candidate)) {
+                return $candidate;
+            }
+        }
+        return null;
     }
 
     /**
@@ -1995,6 +2014,9 @@ class AdminController extends Controller
         $now = now();
         $year = (int) request()->query('year', (int) $now->format('Y'));
         $month = (int) request()->query('month', (int) $now->format('n'));
+        $includeDealer = (string) request()->query('include_dealer', '1') === '1';
+        $includeEstream = (string) request()->query('include_estream', '') === '1';
+        $estreamCompany = 'E STREAM SDN BHD';
         if ($year < 2000 || $year > 2100) {
             $year = (int) $now->format('Y');
         }
@@ -2009,6 +2031,28 @@ class AdminController extends Controller
         $selectedDaysInMonth = (int) $selectedDate->daysInMonth;
         $prevMonth = (int) $prevDate->format('n');
         $prevYear = (int) $prevDate->format('Y');
+
+        $leadScopeSql = '';
+        $leadScopeBindings = [];
+        $payoutScopeSql = '';
+        $payoutScopeBindings = [];
+        if ($includeDealer && !$includeEstream) {
+            // Dealer only: exclude E Stream rows.
+            $leadScopeSql = ' AND (l."ASSIGNED_TO" IS NULL OR UPPER(TRIM(COALESCE(u."COMPANY", \'\'))) <> ?)';
+            $leadScopeBindings[] = $estreamCompany;
+            $payoutScopeSql = ' AND UPPER(TRIM(COALESCE(u."COMPANY", \'\'))) <> ?';
+            $payoutScopeBindings[] = $estreamCompany;
+        } elseif (!$includeDealer && $includeEstream) {
+            // E Stream only.
+            $leadScopeSql = ' AND UPPER(TRIM(COALESCE(u."COMPANY", \'\'))) = ?';
+            $leadScopeBindings[] = $estreamCompany;
+            $payoutScopeSql = ' AND UPPER(TRIM(COALESCE(u."COMPANY", \'\'))) = ?';
+            $payoutScopeBindings[] = $estreamCompany;
+        } elseif (!$includeDealer && !$includeEstream) {
+            // Nothing selected.
+            $leadScopeSql = ' AND 1 = 0';
+            $payoutScopeSql = ' AND 1 = 0';
+        }
 
         $get = function ($row, string $name) {
             if (is_array($row)) {
@@ -2029,11 +2073,13 @@ class AdminController extends Controller
 
         // Lead status summary
         $leadStatusRows = DB::select(
-            'SELECT "CURRENTSTATUS" AS status, COUNT(*) AS c
-             FROM "LEAD"
-             WHERE EXTRACT(YEAR FROM "CREATEDAT") = ? AND EXTRACT(MONTH FROM "CREATEDAT") = ?
-             GROUP BY "CURRENTSTATUS"',
-            [$selectedYear, $selectedMonth]
+            'SELECT l."CURRENTSTATUS" AS status, COUNT(*) AS c
+             FROM "LEAD" l
+             LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
+             WHERE EXTRACT(YEAR FROM l."CREATEDAT") = ? AND EXTRACT(MONTH FROM l."CREATEDAT") = ?
+             ' . $leadScopeSql . '
+             GROUP BY l."CURRENTSTATUS"',
+            array_merge([$selectedYear, $selectedMonth], $leadScopeBindings)
         );
         $leadStatus = [
             'Open' => 0,
@@ -2061,8 +2107,12 @@ class AdminController extends Controller
                  WHERE EXTRACT(YEAR FROM "CREATIONDATE") = ? AND EXTRACT(MONTH FROM "CREATIONDATE") = ?
                  GROUP BY "LEADID"
              ) m ON m."LEADID" = a."LEADID" AND m.max_created = a."CREATIONDATE"
+             JOIN "LEAD" l ON l."LEADID" = a."LEADID"
+             LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
+             WHERE 1 = 1
+             ' . $leadScopeSql . '
              GROUP BY a."STATUS"',
-            [$selectedYear, $selectedMonth]
+            array_merge([$selectedYear, $selectedMonth], $leadScopeBindings)
         );
         $activityStatus = [
             'Created' => 0,
@@ -2094,8 +2144,12 @@ class AdminController extends Controller
                  WHERE EXTRACT(YEAR FROM "CREATIONDATE") = ? AND EXTRACT(MONTH FROM "CREATIONDATE") = ?
                  GROUP BY "LEADID"
              ) m ON m."LEADID" = a."LEADID" AND m.max_created = a."CREATIONDATE"
+             JOIN "LEAD" l ON l."LEADID" = a."LEADID"
+             LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
+             WHERE 1 = 1
+             ' . $leadScopeSql . '
              GROUP BY a."STATUS"',
-            [$prevYear, $prevMonth]
+            array_merge([$prevYear, $prevMonth], $leadScopeBindings)
         );
         $lastMonthActivity = [
             'Created' => 0,
@@ -2119,11 +2173,13 @@ class AdminController extends Controller
 
         // Payout summary
         $payoutRows = DB::select(
-            'SELECT "STATUS" AS status, COUNT(*) AS c
-             FROM "REFERRER_PAYOUT"
-             WHERE EXTRACT(YEAR FROM "DATEGENERATED") = ? AND EXTRACT(MONTH FROM "DATEGENERATED") = ?
-             GROUP BY "STATUS"',
-            [$selectedYear, $selectedMonth]
+            'SELECT p."STATUS" AS status, COUNT(*) AS c
+             FROM "REFERRER_PAYOUT" p
+             LEFT JOIN "USERS" u ON u."USERID" = p."USERID"
+             WHERE EXTRACT(YEAR FROM p."DATEGENERATED") = ? AND EXTRACT(MONTH FROM p."DATEGENERATED") = ?
+             ' . $payoutScopeSql . '
+             GROUP BY p."STATUS"',
+            array_merge([$selectedYear, $selectedMonth], $payoutScopeBindings)
         );
         $payoutStatus = [
             'Awaiting Deal Completion' => 0,
@@ -2139,11 +2195,13 @@ class AdminController extends Controller
 
         // Last month payout by status
         $lastMonthPayoutRows = DB::select(
-            'SELECT "STATUS" AS status, COUNT(*) AS c
-             FROM "REFERRER_PAYOUT"
-             WHERE EXTRACT(YEAR FROM "DATEGENERATED") = ? AND EXTRACT(MONTH FROM "DATEGENERATED") = ?
-             GROUP BY "STATUS"',
-            [$prevYear, $prevMonth]
+            'SELECT p."STATUS" AS status, COUNT(*) AS c
+             FROM "REFERRER_PAYOUT" p
+             LEFT JOIN "USERS" u ON u."USERID" = p."USERID"
+             WHERE EXTRACT(YEAR FROM p."DATEGENERATED") = ? AND EXTRACT(MONTH FROM p."DATEGENERATED") = ?
+             ' . $payoutScopeSql . '
+             GROUP BY p."STATUS"',
+            array_merge([$prevYear, $prevMonth], $payoutScopeBindings)
         );
         $lastMonthPayout = [
             'Awaiting Deal Completion' => 0,
@@ -2159,12 +2217,14 @@ class AdminController extends Controller
 
         // Inquiry trend for current month (leads created)
         $trendRows = DB::select(
-            'SELECT EXTRACT(DAY FROM "CREATEDAT") AS d, COUNT(*) AS c
-             FROM "LEAD"
-             WHERE EXTRACT(MONTH FROM "CREATEDAT") = ? AND EXTRACT(YEAR FROM "CREATEDAT") = ?
-             GROUP BY EXTRACT(DAY FROM "CREATEDAT")
+            'SELECT EXTRACT(DAY FROM l."CREATEDAT") AS d, COUNT(*) AS c
+             FROM "LEAD" l
+             LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
+             WHERE EXTRACT(MONTH FROM l."CREATEDAT") = ? AND EXTRACT(YEAR FROM l."CREATEDAT") = ?
+             ' . $leadScopeSql . '
+             GROUP BY EXTRACT(DAY FROM l."CREATEDAT")
              ORDER BY d',
-            [$selectedMonth, $selectedYear]
+            array_merge([$selectedMonth, $selectedYear], $leadScopeBindings)
         );
         $inquiryTrend = [];
         $trendByDay = [];
@@ -2177,9 +2237,12 @@ class AdminController extends Controller
 
         $currentMonthTotal = array_sum($trendByDay);
         $lastMonthRows = DB::select(
-            'SELECT COUNT(*) AS c FROM "LEAD"
-             WHERE EXTRACT(YEAR FROM "CREATEDAT") = ? AND EXTRACT(MONTH FROM "CREATEDAT") = ?',
-            [$prevYear, $prevMonth]
+            'SELECT COUNT(*) AS c
+             FROM "LEAD" l
+             LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
+             WHERE EXTRACT(YEAR FROM l."CREATEDAT") = ? AND EXTRACT(MONTH FROM l."CREATEDAT") = ?
+             ' . $leadScopeSql,
+            array_merge([$prevYear, $prevMonth], $leadScopeBindings)
         );
         $lastMonthTotal = (int) ($lastMonthRows[0]->c ?? 0);
         $inquiryTrendPercentChange = $lastMonthTotal > 0
@@ -2226,11 +2289,14 @@ class AdminController extends Controller
         $dealRows = DB::select(
             'SELECT a."DEALTPRODUCT" AS dealt
              FROM "LEAD_ACT" a
+             JOIN "LEAD" l ON l."LEADID" = a."LEADID"
+             LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
              WHERE a."DEALTPRODUCT" IS NOT NULL
                AND TRIM(a."DEALTPRODUCT") <> \'\'
                AND EXTRACT(MONTH FROM a."CREATIONDATE") = ?
-               AND EXTRACT(YEAR FROM a."CREATIONDATE") = ?',
-            [$selectedMonth, $selectedYear]
+               AND EXTRACT(YEAR FROM a."CREATIONDATE") = ?
+               ' . $leadScopeSql,
+            array_merge([$selectedMonth, $selectedYear], $leadScopeBindings)
         );
         foreach ($dealRows as $row) {
             $val = trim((string) ($get($row, 'dealt') ?? ''));
@@ -2266,6 +2332,8 @@ class AdminController extends Controller
             'selectedYear' => $selectedYear,
             'selectedMonthName' => $selectedMonthName,
             'selectedDaysInMonth' => $selectedDaysInMonth,
+            'includeDealer' => $includeDealer,
+            'includeEstream' => $includeEstream,
             'monthOptions' => range(1, 12),
             'yearOptions' => range(((int) $now->format('Y')) - 4, ((int) $now->format('Y'))),
         ]);
@@ -2274,6 +2342,7 @@ class AdminController extends Controller
     public function reportsV2(\Illuminate\Http\Request $request): View
     {
         $daysParam = $request->query('days', '90');
+        $compareDaysParam = $request->query('compare_days', '30');
         $primaryFrom = trim((string) $request->query('primary_from', ''));
         $primaryTo = trim((string) $request->query('primary_to', ''));
         $compareFrom = trim((string) $request->query('compare_from', ''));
@@ -2304,6 +2373,11 @@ class AdminController extends Controller
             if (!in_array($days, [30, 60, 90], true)) {
                 $days = 90;
             }
+        }
+
+        $compareDays = (int) $compareDaysParam;
+        if (!in_array($compareDays, [30, 60, 90], true)) {
+            $compareDays = 30;
         }
 
         if ($useCustomCompare) {
@@ -2459,9 +2533,10 @@ class AdminController extends Controller
                         SUM(CASE WHEN TRIM(COALESCE(l."CURRENTSTATUS", \'\')) = ? THEN 1 ELSE 0 END) AS failed_c
                  FROM "LEAD" l
                  WHERE l."ASSIGNED_TO" IS NOT NULL
-                   AND l."CREATEDAT" >= DATEADD(YEAR, -1, DATEADD(DAY, ?, CURRENT_DATE))
+                   AND l."CREATEDAT" >= DATEADD(DAY, ?, CURRENT_DATE)
+                   AND l."CREATEDAT" <= CURRENT_DATE
                  GROUP BY l."ASSIGNED_TO"',
-                ['Failed', -$days]
+                ['Failed', -$compareDays]
             );
         }
         $compareByDealer = [];
@@ -2574,12 +2649,12 @@ class AdminController extends Controller
         $atRiskFiltered = array_values(array_filter($atRiskRows, fn ($r) => ($r['increase_fail_rate'] ?? 0) >= 30));
         $criticalDropsCount = count($atRiskFiltered);
 
-        $atRiskPerPage = 10;
+        // No pagination: show full list and let page scroll naturally.
         $atRiskTotal = $criticalDropsCount;
-        $atRiskPage = max(1, min((int) $request->query('page', 1), (int) ceil($atRiskTotal / $atRiskPerPage) ?: 1));
-        $atRiskOffset = ($atRiskPage - 1) * $atRiskPerPage;
-        $atRisk = array_slice($atRiskFiltered, $atRiskOffset, $atRiskPerPage);
-        $atRiskTotalPages = $atRiskTotal > 0 ? (int) ceil($atRiskTotal / $atRiskPerPage) : 1;
+        $atRiskPerPage = $atRiskTotal > 0 ? $atRiskTotal : 10;
+        $atRiskPage = 1;
+        $atRisk = $atRiskFiltered;
+        $atRiskTotalPages = 1;
 
         // Top 10 dealers by Failed count (CurrentStatus = Failed), primary period
         if ($useCustomPrimary) {
@@ -2712,6 +2787,24 @@ class AdminController extends Controller
     {
         $quarter = strtoupper((string) $request->query('quarter', ''));
         $year = (int) $request->query('year', (int) now()->format('Y'));
+        $includeDealer = (string) $request->query('include_dealer', '1') === '1';
+        $includeEstream = (string) $request->query('include_estream', '') === '1';
+        $estreamCompany = 'E STREAM SDN BHD';
+
+        $companyScopeSql = '';
+        $companyScopeBindings = [];
+        if ($includeDealer && !$includeEstream) {
+            // Dealer only: exclude E Stream company rows.
+            $companyScopeSql = ' AND UPPER(TRIM(COALESCE(u."COMPANY", \'\'))) <> ?';
+            $companyScopeBindings[] = $estreamCompany;
+        } elseif (!$includeDealer && $includeEstream) {
+            // E Stream only.
+            $companyScopeSql = ' AND UPPER(TRIM(COALESCE(u."COMPANY", \'\'))) = ?';
+            $companyScopeBindings[] = $estreamCompany;
+        } elseif (!$includeDealer && !$includeEstream) {
+            // Nothing selected -> intentionally show no rows.
+            $companyScopeSql = ' AND 1 = 0';
+        }
 
         if (!in_array($quarter, ['Q1', 'Q2', 'Q3', 'Q4'], true)) {
             $m = (int) now()->format('n');
@@ -2729,28 +2822,50 @@ class AdminController extends Controller
 
         $startStr = $start->format('Y-m-d H:i:s');
         $endStr = $end->format('Y-m-d H:i:s');
+        $formatDealerName = static function (?string $company, ?string $alias, ?string $email, ?string $fallbackId = null): string {
+            $company = trim((string) $company);
+            $alias = trim((string) $alias);
+            $email = trim((string) $email);
+            $fallbackId = trim((string) $fallbackId);
+            if ($company !== '' && $alias !== '') {
+                return $company . ' - ' . $alias;
+            }
+            if ($company !== '') {
+                return $company;
+            }
+            if ($alias !== '') {
+                return $alias;
+            }
+            if ($email !== '') {
+                return $email;
+            }
+            return $fallbackId !== '' ? $fallbackId : '-';
+        };
 
-        // Dealer performance: total/closed from LEAD; rewarded from LEAD_ACT (STATUS = Rewarded)
-        $rows = DB::select(
-            'SELECT u."USERID" AS dealer_id,
+        // Dealer performance: total/closed/failed from LEAD; rewarded from LEAD_ACT (STATUS = Rewarded)
+        $rowsSql = 'SELECT u."USERID" AS dealer_id,
                     u."EMAIL" AS email,
+                    TRIM(COALESCE(u."COMPANY", \'\')) AS company,
                     TRIM(COALESCE(u."ALIAS", \'\')) AS alias,
                     COUNT(*) AS total_leads,
                     SUM(CASE WHEN TRIM(COALESCE(l."CURRENTSTATUS", \'\')) = ? THEN 1 ELSE 0 END) AS closed_leads,
+                    SUM(CASE WHEN TRIM(COALESCE(l."CURRENTSTATUS", \'\')) = ? THEN 1 ELSE 0 END) AS failed_leads,
                     (SELECT COUNT(DISTINCT a."LEADID")
                      FROM "LEAD_ACT" a
                      INNER JOIN "LEAD" l2 ON l2."LEADID" = a."LEADID" AND l2."ASSIGNED_TO" = u."USERID"
                        AND l2."CREATEDAT" >= ? AND l2."CREATEDAT" <= ?
                      WHERE UPPER(TRIM(COALESCE(a."STATUS", \'\'))) = ?) AS rewarded_leads
              FROM "LEAD" l
-             JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
-             WHERE l."ASSIGNED_TO" IS NOT NULL
-               AND l."CREATEDAT" >= ?
-               AND l."CREATEDAT" <= ?
-             GROUP BY u."USERID", u."EMAIL", u."ALIAS"
-             ORDER BY total_leads DESC',
-            ['Closed', $startStr, $endStr, 'REWARDED', $startStr, $endStr]
-        );
+              JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
+               WHERE l."ASSIGNED_TO" IS NOT NULL
+                AND l."CREATEDAT" >= ?
+                AND l."CREATEDAT" <= ?
+                ' . $companyScopeSql . '
+              GROUP BY u."USERID", u."EMAIL", u."COMPANY", u."ALIAS"
+              ORDER BY total_leads DESC';
+        $rowsBindings = ['Closed', 'Failed', $startStr, $endStr, 'REWARDED', $startStr, $endStr];
+        $rowsBindings = array_merge($rowsBindings, $companyScopeBindings);
+        $rows = DB::select($rowsSql, $rowsBindings);
 
         $dealers = [];
         $totalVolume = 0;
@@ -2758,27 +2873,28 @@ class AdminController extends Controller
         $weightedRejection = 0;
 
         foreach ($rows as $r) {
+            $dealerId = trim((string) ($r->DEALER_ID ?? $r->dealer_id ?? ''));
             $total = (int) ($r->TOTAL_LEADS ?? $r->total_leads ?? 0);
             $closed = (int) ($r->CLOSED_LEADS ?? $r->closed_leads ?? 0);
+            $failed = (int) ($r->FAILED_LEADS ?? $r->failed_leads ?? 0);
             $rewarded = (int) ($r->REWARDED_LEADS ?? $r->rewarded_leads ?? 0);
             if ($total <= 0) {
                 continue;
             }
-            $rejectionRate = $total > 0 ? (1 - ($closed / $total)) * 100 : 0;
-            // Simple revenue proxy: closed leads x 1,000
-            $revenue = $closed * 1000;
+            $rejectionRate = $total > 0 ? ($failed / $total) * 100 : 0;
 
             $email = (string) ($r->EMAIL ?? $r->email ?? '');
+            $company = (string) ($r->COMPANY ?? $r->company ?? '');
             $alias = trim((string) ($r->ALIAS ?? $r->alias ?? ''));
             $dealers[] = [
-                'dealer_id' => (int) ($r->DEALER_ID ?? $r->dealer_id ?? 0),
+                'dealer_id' => $dealerId,
                 'email' => $email,
-                'name' => $alias !== '' ? $alias : $email,
+                'name' => $formatDealerName($company, $alias, $email, $dealerId),
                 'total' => $total,
                 'closed' => $closed,
                 'rewarded' => $rewarded,
                 'rejection_rate' => $rejectionRate,
-                'revenue' => $revenue,
+                'converted_products' => 0,
             ];
 
             $totalVolume += $total;
@@ -2786,11 +2902,87 @@ class AdminController extends Controller
             $weightedRejection += $rejectionRate * $total;
         }
 
-        usort($dealers, fn ($a, $b) => $b['revenue'] <=> $a['revenue']);
-        $topDealer = $dealers[0] ?? null;
+        // Top dealer by product conversion in selected quarter:
+        // count number of product ids in DEALTPRODUCT (e.g. "1,9" counts as 2).
+        $topProductSql = 'SELECT a."USERID" AS dealer_id,
+                    u."EMAIL" AS dealer_email,
+                    TRIM(COALESCE(u."COMPANY", \'\')) AS dealer_company,
+                    TRIM(COALESCE(u."ALIAS", \'\')) AS dealer_alias,
+                    a."DEALTPRODUCT" AS dealt
+             FROM "LEAD_ACT" a
+             JOIN "LEAD" l ON l."LEADID" = a."LEADID"
+             LEFT JOIN "USERS" u ON u."USERID" = a."USERID"
+             WHERE a."USERID" IS NOT NULL
+               AND UPPER(TRIM(COALESCE(a."USERID", \'\'))) = UPPER(TRIM(COALESCE(l."ASSIGNED_TO", \'\')))
+               AND a."DEALTPRODUCT" IS NOT NULL
+               AND TRIM(a."DEALTPRODUCT") <> \'\'
+               AND UPPER(TRIM(COALESCE(a."STATUS", \'\'))) = ?
+               AND a."CREATIONDATE" >= ?
+               AND a."CREATIONDATE" <= ?
+               ' . $companyScopeSql;
+        $topProductBindings = ['COMPLETED', $startStr, $endStr];
+        $topProductBindings = array_merge($topProductBindings, $companyScopeBindings);
+        $topProductRows = DB::select($topProductSql, $topProductBindings);
+        $topProductByDealer = [];
+        foreach ($topProductRows as $r) {
+            $id = trim((string) ($r->DEALER_ID ?? $r->dealer_id ?? ''));
+            if ($id === '') {
+                continue;
+            }
+            $company = (string) ($r->DEALER_COMPANY ?? $r->dealer_company ?? '');
+            $alias = (string) ($r->DEALER_ALIAS ?? $r->dealer_alias ?? '');
+            $email = (string) ($r->DEALER_EMAIL ?? $r->dealer_email ?? '');
+            $name = $formatDealerName($company, $alias, $email, $id);
+            $dealt = trim((string) ($r->DEALT ?? $r->dealt ?? ''));
+            if ($dealt === '') {
+                continue;
+            }
+            $productIds = array_map('intval', array_filter(preg_split('/[\s,\(\)]+/', $dealt)));
+            $count = 0;
+            foreach ($productIds as $pid) {
+                if ($pid > 0) {
+                    $count++;
+                }
+            }
+            if ($count <= 0) {
+                continue;
+            }
+            if (!isset($topProductByDealer[$id])) {
+                $topProductByDealer[$id] = [
+                    'dealer_id' => $id,
+                    'name' => $name,
+                    'converted_products' => 0,
+                ];
+            }
+            $topProductByDealer[$id]['converted_products'] += $count;
+        }
+        $topProductDealer = null;
+        foreach ($topProductByDealer as $row) {
+            if ($topProductDealer === null || (int) $row['converted_products'] > (int) $topProductDealer['converted_products']) {
+                $topProductDealer = $row;
+            }
+        }
+
+        foreach ($dealers as &$dealerRow) {
+            $did = trim((string) ($dealerRow['dealer_id'] ?? ''));
+            $dealerRow['converted_products'] = (int) (($topProductByDealer[$did]['converted_products'] ?? 0));
+        }
+        unset($dealerRow);
+
+        usort($dealers, function ($a, $b) {
+            $cmp = ((int) ($b['converted_products'] ?? 0)) <=> ((int) ($a['converted_products'] ?? 0));
+            if ($cmp !== 0) {
+                return $cmp;
+            }
+            $cmp = ((int) ($b['closed'] ?? 0)) <=> ((int) ($a['closed'] ?? 0));
+            if ($cmp !== 0) {
+                return $cmp;
+            }
+            return ((int) ($b['total'] ?? 0)) <=> ((int) ($a['total'] ?? 0));
+        });
         $avgRejection = $totalLeads > 0 ? $weightedRejection / $totalLeads : 0.0;
 
-        // Chart: top 5 dealers by revenue
+        // Chart: top 5 dealers by product conversion ranking.
         $chartDealers = array_slice($dealers, 0, 5);
         $chartLabels = array_column($chartDealers, 'name');
         $chartVolume = array_column($chartDealers, 'total');
@@ -2804,10 +2996,12 @@ class AdminController extends Controller
             'currentPage' => 'reports',
             'selectedQuarter' => $quarter,
             'selectedYear' => $year,
+            'includeDealer' => $includeDealer,
+            'includeEstream' => $includeEstream,
             'yearOptions' => range(((int) now()->format('Y')) - 4, ((int) now()->format('Y'))),
             'totalVolume' => $totalVolume,
             'avgRejectionRate' => $avgRejection,
-            'topDealer' => $topDealer,
+            'topProductDealer' => $topProductDealer,
             'chartLabels' => $chartLabels,
             'chartVolume' => $chartVolume,
             'chartClosed' => $chartClosed,

@@ -185,7 +185,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="18" class="inquiries-empty">No completed payouts.</td></tr>
+                    <tr><td colspan="18" class="inquiries-empty">No completed inquiries.</td></tr>
                     @endforelse
                 </tbody>
             </table>

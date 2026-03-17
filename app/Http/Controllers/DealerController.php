@@ -706,14 +706,14 @@ class DealerController extends Controller
         if (! is_string($path) || $path === '') {
             return response('', 404);
         }
-        $path = trim(str_replace('\\', '/', $path));
+        $path = trim(str_replace('\\', '/', rawurldecode($path)));
         if (str_contains($path, '..') || ! str_starts_with($path, 'inquiry-attachments/')) {
             return response('', 404);
         }
-        if (! Storage::disk('public')->exists($path)) {
+        $fullPath = $this->resolveInquiryAttachmentPath($path);
+        if ($fullPath === null) {
             return response('', 404);
         }
-        $fullPath = Storage::disk('public')->path($path);
         $mime = mime_content_type($fullPath) ?: 'image/jpeg';
         return response()->file($fullPath, ['Content-Type' => $mime]);
     }
@@ -739,8 +739,8 @@ class DealerController extends Controller
         $str = trim(str_replace('\\', '/', (string) $attachment));
         if (str_starts_with($str, 'inquiry-attachments') && ! preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', $str)) {
             $path = str_contains($str, ',') ? trim(str_replace('\\', '/', explode(',', $str)[0])) : $str;
-            $fullPath = Storage::disk('public')->path($path);
-            if (! is_file($fullPath)) {
+            $fullPath = $this->resolveInquiryAttachmentPath($path);
+            if ($fullPath === null) {
                 return response('', 404);
             }
             $mime = mime_content_type($fullPath) ?: 'image/jpeg';
@@ -760,6 +760,25 @@ class DealerController extends Controller
             return response($attachment, 200, ['Content-Type' => $mime]);
         }
         return response('', 404);
+    }
+
+    private function resolveInquiryAttachmentPath(string $path): ?string
+    {
+        $path = ltrim($path, '/');
+        $candidates = [
+            Storage::disk('public')->path($path),
+            storage_path('app/public/' . $path),
+            storage_path('app/private/' . $path),
+            storage_path('app/' . $path),
+            public_path($path),
+            public_path('storage/' . $path),
+        ];
+        foreach ($candidates as $candidate) {
+            if (is_file($candidate)) {
+                return $candidate;
+            }
+        }
+        return null;
     }
 
     public function updateInquiryStatus(Request $request): JsonResponse
