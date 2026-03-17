@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Payouts – SQL LMS Dealer Console')
+@section('title', 'Payouts â€“ SQL LMS Dealer Console')
 @section('content')
 @php
     $productNames = [
@@ -60,8 +60,7 @@
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="businessnature"> BUSINESS NATURE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="users"> USERS</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="existingsw"> EXISTING SW</label>
-                    <label class="inquiries-columns-check"><input type="checkbox" data-col="demomode"> DEMO MODE</label>
-                    <label class="inquiries-columns-check"><input type="checkbox" data-col="products"> PRODUCTS</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="demomode"> DEMO MODE</label><label class="inquiries-columns-check"><input type="checkbox" data-col="dealtproducts"> DEALT PRODUCTS</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="message"> MESSAGE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="referralcode"> REFERRAL CODE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="assignby"> ASSIGN BY</label>
@@ -91,8 +90,7 @@
                         <th data-col="businessnature" class="inquiries-header-cell"><span class="inquiries-header-label">BUSINESS NATURE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="businessnature"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="users" class="inquiries-header-cell"><span class="inquiries-header-label">USERS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="users"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="existingsw" class="inquiries-header-cell"><span class="inquiries-header-label">EXISTING SW</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="existingsw"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="demomode" class="inquiries-header-cell"><span class="inquiries-header-label">DEMO MODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="demomode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="products" class="inquiries-header-cell"><span class="inquiries-header-label">PRODUCTS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="products"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="demomode" class="inquiries-header-cell"><span class="inquiries-header-label">DEMO MODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="demomode"><i class="bi bi-search inquiries-filter-icon"></i></span></th><th data-col="dealtproducts" class="inquiries-header-cell"><span class="inquiries-header-label">DEALT PRODUCTS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="dealtproducts"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="message" class="inquiries-header-cell"><span class="inquiries-header-label">MESSAGE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="message"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="referralcode" class="inquiries-header-cell"><span class="inquiries-header-label">REFERRAL CODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="referralcode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="assignby" class="inquiries-header-cell"><span class="inquiries-header-label">ASSIGN BY</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="assignby"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
@@ -107,13 +105,13 @@
                             $ccontact = trim((string)($r->CONTACTNAME ?? ''));
                             $custDisp = $ccompany !== '' && $ccontact !== ''
                                 ? ($ccompany . ' - ' . $ccontact)
-                                : ($ccompany !== '' ? $ccompany : ($ccontact !== '' ? $ccontact : '—'));
+                                : ($ccompany !== '' ? $ccompany : ($ccontact !== '' ? $ccontact : 'â€”'));
                             $addr1 = trim((string)($r->ADDRESS1 ?? ''));
                             $addr2 = trim((string)($r->ADDRESS2 ?? ''));
                             $addr = trim($addr1 . ' ' . $addr2);
                             $afullMsg = (string)($r->DESCRIPTION ?? '');
                             $afullMsgTrim = trim($afullMsg);
-                            $amsgPreview = $afullMsgTrim === '' ? '—' : (mb_strlen($afullMsgTrim) > 30 ? (mb_substr($afullMsgTrim, 0, 30) . '…') : $afullMsgTrim);
+                            $amsgPreview = $afullMsgTrim === '' ? 'â€”' : (mb_strlen($afullMsgTrim) > 30 ? (mb_substr($afullMsgTrim, 0, 30) . 'â€¦') : $afullMsgTrim);
                             $rawStatus = strtoupper(trim((string)($r->CURRENTSTATUS ?? '')));
                             $statusClass = 'inquiries-status-new';
                             switch ($rawStatus) {
@@ -127,42 +125,52 @@
                                 default:          $statusClass = 'inquiries-status-new'; break;
                             }
                             $statusDisp = $rawStatus !== '' ? $rawStatus : 'PENDING';
-                            $assignDate = $r->LASTMODIFIED ? date('d/m/Y', strtotime($r->LASTMODIFIED)) : ($r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '—');
+                            $assignDate = $r->LASTMODIFIED ? date('d/m/Y', strtotime($r->LASTMODIFIED)) : ($r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : 'â€”');
                             $searchHaystack = strtolower(($r->COMPANYNAME ?? '').' '.($r->CONTACTNAME ?? '').' '.($r->LEADID ?? ''));
-                            $productIds = $r->PRODUCTID ? array_map('trim', explode(',', (string)$r->PRODUCTID)) : [];
                             $pillOrder = [1=>10,3=>11,4=>12,2=>20,10=>21,8=>30,5=>31,6=>40,9=>50,7=>60,11=>70];
-                            $productIds = array_values(array_filter(array_unique(array_map('intval', $productIds)), fn($v) => $v > 0));
-                            usort($productIds, function($a,$b) use ($pillOrder) { return ($pillOrder[$a] ?? 1000+$a) <=> ($pillOrder[$b] ?? 1000+$b); });
+                            $dealtRaw = $r->DEALTPRODUCT ?? null;
+                            $dealtProductIds = [];
+                            if ($dealtRaw !== null && trim((string) $dealtRaw) !== '') {
+                                $tokens = preg_split('/[,\s\(\)]+/', (string) $dealtRaw);
+                                foreach ($tokens as $tok) {
+                                    if ($tok === '') continue;
+                                    $pid = (int) $tok;
+                                    if ($pid >= 1 && $pid <= 11) {
+                                        $dealtProductIds[] = $pid;
+                                    }
+                                }
+                                $dealtProductIds = array_values(array_unique($dealtProductIds));
+                                usort($dealtProductIds, function($a,$b) use ($pillOrder) { return ($pillOrder[$a] ?? 1000+$a) <=> ($pillOrder[$b] ?? 1000+$b); });
+                            }
                         @endphp
                         <tr class="payouts-row inquiry-row" data-search="{{ $searchHaystack }}">
                             <td data-col="inquiryid">#SQL-{{ $r->LEADID }}</td>
-                            <td data-col="date">{{ $r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '—' }}</td>
+                            <td data-col="date">{{ $r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : 'â€”' }}</td>
                             <td data-col="customer">{{ $custDisp }}</td>
-                            <td data-col="source">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '—') }}</td>
-                            <td data-col="postcode">{{ $r->POSTCODE ?? '—' }}</td>
-                            <td data-col="city">{{ $r->CITY ?? '—' }}</td>
-                            <td data-col="address">{{ $addr !== '' ? $addr : '—' }}</td>
-                            <td data-col="contactno">{{ $r->CONTACTNO ?? '—' }}</td>
-                            <td data-col="businessnature">{{ $r->BUSINESSNATURE ?? '—' }}</td>
-                            <td data-col="users">{{ $r->USERCOUNT ?? '—' }}</td>
-                            <td data-col="existingsw">{{ $r->EXISTINGSOFTWARE ?? '—' }}</td>
-                            <td data-col="demomode">{{ $r->DEMOMODE ?? '—' }}</td>
-                            <td data-col="products">
-                                @if(!empty($productIds))
+                            <td data-col="source">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? 'â€”') }}</td>
+                            <td data-col="postcode">{{ $r->POSTCODE ?? 'â€”' }}</td>
+                            <td data-col="city">{{ $r->CITY ?? 'â€”' }}</td>
+                            <td data-col="address">{{ $addr !== '' ? $addr : 'â€”' }}</td>
+                            <td data-col="contactno">{{ $r->CONTACTNO ?? 'â€”' }}</td>
+                            <td data-col="businessnature">{{ $r->BUSINESSNATURE ?? 'â€”' }}</td>
+                            <td data-col="users">{{ $r->USERCOUNT ?? 'â€”' }}</td>
+                            <td data-col="existingsw">{{ $r->EXISTINGSOFTWARE ?? 'â€”' }}</td>
+                            <td data-col="demomode">{{ $r->DEMOMODE ?? 'â€”' }}</td><td data-col="dealtproducts">
+                                @if(!empty($dealtProductIds))
                                     <div class="inquiries-pill-group">
-                                        @foreach($productIds as $id)
+                                        @foreach($dealtProductIds as $id)
                                             @if(isset($productLabels[(int)$id]))
                                                 <span class="inquiries-pill inquiries-pill-p{{ (int)$id }}">{{ $productLabels[(int)$id] }}</span>
                                             @endif
                                         @endforeach
                                     </div>
                                 @else
-                                    —
+                                    Ã¢â‚¬â€
                                 @endif
                             </td>
                             <td data-col="message">{{ $amsgPreview }}</td>
-                            <td data-col="referralcode">{{ $r->REFERRALCODE ?? '—' }}</td>
-                            <td data-col="assignby">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '—') }}</td>
+                            <td data-col="referralcode">{{ $r->REFERRALCODE ?? 'â€”' }}</td>
+                            <td data-col="assignby">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? 'â€”') }}</td>
                             <td data-col="status"><span class="inquiries-status {{ $statusClass }}">{{ $statusDisp }}</span></td>
                             <td class="inquiries-col-action inquiries-action-cell">
                                 <button type="button"
@@ -235,13 +243,13 @@
                             $ccontact = trim((string)($r->CONTACTNAME ?? ''));
                             $custDisp = $ccompany !== '' && $ccontact !== ''
                                 ? ($ccompany . ' - ' . $ccontact)
-                                : ($ccompany !== '' ? $ccompany : ($ccontact !== '' ? $ccontact : '—'));
+                                : ($ccompany !== '' ? $ccompany : ($ccontact !== '' ? $ccontact : 'â€”'));
                             $addr1 = trim((string)($r->ADDRESS1 ?? ''));
                             $addr2 = trim((string)($r->ADDRESS2 ?? ''));
                             $addr = trim($addr1 . ' ' . $addr2);
                             $afullMsg = (string)($r->DESCRIPTION ?? '');
                             $afullMsgTrim = trim($afullMsg);
-                            $amsgPreview = $afullMsgTrim === '' ? '—' : (mb_strlen($afullMsgTrim) > 30 ? (mb_substr($afullMsgTrim, 0, 30) . '…') : $afullMsgTrim);
+                            $amsgPreview = $afullMsgTrim === '' ? 'â€”' : (mb_strlen($afullMsgTrim) > 30 ? (mb_substr($afullMsgTrim, 0, 30) . 'â€¦') : $afullMsgTrim);
                             $rawStatus = strtoupper(trim((string)($r->CURRENTSTATUS ?? '')));
                             $statusClass = 'inquiries-status-new';
                             switch ($rawStatus) {
@@ -255,7 +263,7 @@
                                 default:          $statusClass = 'inquiries-status-new'; break;
                             }
                             $statusDisp = $rawStatus !== '' ? $rawStatus : 'PENDING';
-                            $assignDate = $r->LASTMODIFIED ? date('d/m/Y', strtotime($r->LASTMODIFIED)) : ($r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '—');
+                            $assignDate = $r->LASTMODIFIED ? date('d/m/Y', strtotime($r->LASTMODIFIED)) : ($r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : 'â€”');
                             $searchHaystack = strtolower(($r->COMPANYNAME ?? '').' '.($r->CONTACTNAME ?? '').' '.($r->LEADID ?? ''));
                             $productIds = $r->PRODUCTID ? array_map('trim', explode(',', (string)$r->PRODUCTID)) : [];
                             $pillOrder = [1=>10,3=>11,4=>12,2=>20,10=>21,8=>30,5=>31,6=>40,9=>50,7=>60,11=>70];
@@ -264,17 +272,17 @@
                         @endphp
                         <tr class="payouts-row inquiry-row" data-search="{{ $searchHaystack }}">
                             <td data-col="inquiryid">#SQL-{{ $r->LEADID }}</td>
-                            <td data-col="date">{{ $r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '—' }}</td>
+                            <td data-col="date">{{ $r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : 'â€”' }}</td>
                             <td data-col="customer">{{ $custDisp }}</td>
-                            <td data-col="source">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '—') }}</td>
-                            <td data-col="postcode">{{ $r->POSTCODE ?? '—' }}</td>
-                            <td data-col="city">{{ $r->CITY ?? '—' }}</td>
-                            <td data-col="address">{{ $addr !== '' ? $addr : '—' }}</td>
-                            <td data-col="contactno">{{ $r->CONTACTNO ?? '—' }}</td>
-                            <td data-col="businessnature">{{ $r->BUSINESSNATURE ?? '—' }}</td>
-                            <td data-col="users">{{ $r->USERCOUNT ?? '—' }}</td>
-                            <td data-col="existingsw">{{ $r->EXISTINGSOFTWARE ?? '—' }}</td>
-                            <td data-col="demomode">{{ $r->DEMOMODE ?? '—' }}</td>
+                            <td data-col="source">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? 'â€”') }}</td>
+                            <td data-col="postcode">{{ $r->POSTCODE ?? 'â€”' }}</td>
+                            <td data-col="city">{{ $r->CITY ?? 'â€”' }}</td>
+                            <td data-col="address">{{ $addr !== '' ? $addr : 'â€”' }}</td>
+                            <td data-col="contactno">{{ $r->CONTACTNO ?? 'â€”' }}</td>
+                            <td data-col="businessnature">{{ $r->BUSINESSNATURE ?? 'â€”' }}</td>
+                            <td data-col="users">{{ $r->USERCOUNT ?? 'â€”' }}</td>
+                            <td data-col="existingsw">{{ $r->EXISTINGSOFTWARE ?? 'â€”' }}</td>
+                            <td data-col="demomode">{{ $r->DEMOMODE ?? 'â€”' }}</td>
                             <td data-col="products">
                                 @if(!empty($productIds))
                                     <div class="inquiries-pill-group">
@@ -285,12 +293,12 @@
                                         @endforeach
                                     </div>
                                 @else
-                                    —
+                                    â€”
                                 @endif
                             </td>
                             <td data-col="message">{{ $amsgPreview }}</td>
-                            <td data-col="referralcode">{{ $r->REFERRALCODE ?? '—' }}</td>
-                            <td data-col="assignby">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '—') }}</td>
+                            <td data-col="referralcode">{{ $r->REFERRALCODE ?? 'â€”' }}</td>
+                            <td data-col="assignby">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? 'â€”') }}</td>
                             <td data-col="status"><span class="inquiries-status {{ $statusClass }}">{{ $statusDisp }}</span></td>
                         </tr>
                     @empty
@@ -319,7 +327,7 @@
     <div class="inquiry-modal" role="dialog" aria-labelledby="inquiryModalTitle">
         <div class="inquiry-modal-header">
             <h2 id="inquiryModalTitle" class="inquiry-modal-title">Update Inquiry Status</h2>
-            <p class="inquiry-modal-subtitle" id="inquiryModalSubtitle">Inquiry ID: #SQL-0 • —</p>
+            <p class="inquiry-modal-subtitle" id="inquiryModalSubtitle">Inquiry ID: #SQL-0 â€¢ â€”</p>
             <button type="button" class="inquiry-modal-close" id="inquiryModalClose" aria-label="Close"><i class="bi bi-x-lg"></i></button>
         </div>
         <div class="inquiry-modal-body">
@@ -392,7 +400,7 @@
                     <div class="inquiry-activity-item">
                         <span class="inquiry-activity-bullet"></span>
                         <div class="inquiry-activity-content">
-                            <strong>System</strong> created inquiry <span class="inquiry-activity-link" id="inquiryActivityLink">#SQL-0</span> <span class="inquiry-activity-time">—</span>
+                            <strong>System</strong> created inquiry <span class="inquiry-activity-link" id="inquiryActivityLink">#SQL-0</span> <span class="inquiry-activity-time">â€”</span>
                         </div>
                     </div>
                 </div>
@@ -411,8 +419,8 @@
 document.addEventListener('DOMContentLoaded', function() {
     var COMPLETED_STORAGE_KEY = 'dealerPayoutCompletedVisibleColumns';
     // Default + all columns: match dealer inquiries table column IDs
-    var COMPLETED_DEFAULT_COLUMNS = ['inquiryid','date','customer','postcode','city','businessnature','products','assignby','status'];
-    var COMPLETED_ALL_COLUMNS = ['inquiryid','date','customer','source','postcode','city','address','contactno','businessnature','users','existingsw','demomode','products','message','referralcode','assignby','status'];
+    var COMPLETED_DEFAULT_COLUMNS = ['inquiryid','date','customer','postcode','city','businessnature','dealtproducts','assignby','status'];
+    var COMPLETED_ALL_COLUMNS = ['inquiryid','date','customer','source','postcode','city','address','contactno','businessnature','users','existingsw','demomode','dealtproducts','message','referralcode','assignby','status'];
 
     function getCompletedVisibleColumns() {
         try {
@@ -903,7 +911,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function formatActivityTime(isoStr, now) {
-        if (!isoStr) return '—';
+        if (!isoStr) return 'â€”';
 
         var d = null;
 
@@ -1066,9 +1074,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function openModal(leadId, customer, status) {
         currentLeadId = leadId;
-        currentCustomer = customer || '—';
+        currentCustomer = customer || 'â€”';
         viewMode = false;
-        subtitle.textContent = 'Inquiry ID: #SQL-' + leadId + ' • ' + currentCustomer;
+        subtitle.textContent = 'Inquiry ID: #SQL-' + leadId + ' â€¢ ' + currentCustomer;
         if (activityLink) activityLink.textContent = '#SQL-' + leadId;
         setProgression(status || 'PENDING');
         var remarkEl = document.getElementById('inquiryRemark');

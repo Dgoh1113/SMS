@@ -1028,10 +1028,49 @@ class DealerController extends Controller
                 // keep CURRENTSTATUS from LEAD if override fails
             }
 
+            // Attach latest COMPLETED dealt products per lead (for "Dealt Products" column)
+            try {
+                if (!empty($leadIds)) {
+                    $placeholders = implode(',', array_fill(0, count($leadIds), '?'));
+                    $dealRows = DB::select(
+                        'SELECT a."LEADID", a."DEALTPRODUCT"
+                         FROM "LEAD_ACT" a
+                         JOIN (
+                             SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
+                             FROM "LEAD_ACT"
+                             WHERE UPPER(TRIM("STATUS")) = \'COMPLETED\' AND "LEADID" IN (' . $placeholders . ')
+                             GROUP BY "LEADID"
+                         ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
+                         WHERE UPPER(TRIM(a."STATUS")) = \'COMPLETED\' AND a."LEADID" IN (' . $placeholders . ')',
+                        array_merge($leadIds, $leadIds)
+                    );
+                    $dealtMap = [];
+                    foreach ($dealRows as $dr) {
+                        $lid = (int) ($dr->LEADID ?? 0);
+                        if ($lid > 0) {
+                            $dealtMap[$lid] = $dr->DEALTPRODUCT ?? $dr->dealtproduct ?? null;
+                        }
+                    }
+                    if (!empty($dealtMap)) {
+                        foreach ($rows as $r) {
+                            $lid = (int) ($r->LEADID ?? 0);
+                            if ($lid > 0 && isset($dealtMap[$lid])) {
+                                $r->DEALTPRODUCT = $dealtMap[$lid];
+                            }
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                // ignore dealt product mapping failures
+            }
+
             foreach ($rows as $r) {
                 $status = strtoupper(trim((string) ($r->CURRENTSTATUS ?? '')));
+                $referral = trim((string) ($r->REFERRALCODE ?? ''));
                 if ($status === 'COMPLETED') {
-                    $completed[] = $r;
+                    if ($referral !== '') {
+                        $completed[] = $r;
+                    }
                 } elseif (in_array($status, ['REWARDED', 'PAID'], true)) {
                     $rewarded[] = $r;
                 }
@@ -1123,7 +1162,8 @@ class DealerController extends Controller
                      ) latest
                      JOIN "LEAD" l ON l."LEADID" = latest."LEADID"
                      WHERE l."ASSIGNED_TO" = ?
-                       AND UPPER(TRIM(latest."STATUS")) = \'COMPLETED\'',
+                       AND UPPER(TRIM(latest."STATUS")) = \'COMPLETED\'
+                       AND TRIM(COALESCE(l."REFERRALCODE", \'\')) <> \'\'',
                     [$dealerId]
                 );
                 $totalCompletedLeads = (int) ($closedRow->cnt ?? $closedRow->CNT ?? current((array) $closedRow) ?? 0);

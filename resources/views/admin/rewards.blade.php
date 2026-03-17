@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Rewards – Admin')
+@section('title', 'Rewards â€“ Admin')
 @section('content')
 <div class="inquiries-page-wrap">
 <div class="inquiries-mgmt-top-row" style="margin-bottom: 16px;">
@@ -61,7 +61,7 @@
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="users"> USERS</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="existingsw"> EXISTING SW</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="demomode"> DEMO MODE</label>
-                    <label class="inquiries-columns-check"><input type="checkbox" data-col="products"> PRODUCTS</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="dealtproducts"> DEALT PRODUCTS</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="message"> MESSAGE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="referralcode"> REFERRAL CODE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="assignedby"> ASSIGNED BY</label>
@@ -99,7 +99,7 @@
                         <th data-col="users" class="inquiries-header-cell"><span class="inquiries-header-label">USERS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="completed" data-col="users"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="existingsw" class="inquiries-header-cell"><span class="inquiries-header-label">EXISTING SW</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="completed" data-col="existingsw"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="demomode" class="inquiries-header-cell"><span class="inquiries-header-label">DEMO MODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="completed" data-col="demomode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="products" class="inquiries-header-cell"><span class="inquiries-header-label">PRODUCTS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="completed" data-col="products"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="dealtproducts" class="inquiries-header-cell"><span class="inquiries-header-label">DEALT PRODUCTS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="completed" data-col="dealtproducts"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="message" class="inquiries-header-cell"><span class="inquiries-header-label">MESSAGE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="completed" data-col="message"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="assignedby" class="inquiries-header-cell"><span class="inquiries-header-label">ASSIGNED BY</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="completed" data-col="assignedby"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="assigndate" class="inquiries-header-cell"><span class="inquiries-header-label">ASSIGN DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="completed" data-col="assigndate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
@@ -113,13 +113,13 @@
                             $ccontact = trim((string)($r->CONTACTNAME ?? ''));
                             $custDisp = $ccompany !== '' && $ccontact !== ''
                                 ? ($ccompany . ' - ' . $ccontact)
-                                : ($ccompany !== '' ? $ccompany : ($ccontact !== '' ? $ccontact : '—'));
+                                : ($ccompany !== '' ? $ccompany : ($ccontact !== '' ? $ccontact : 'â€”'));
                             $addr1 = trim((string)($r->ADDRESS1 ?? ''));
                             $addr2 = trim((string)($r->ADDRESS2 ?? ''));
                             $addr = trim($addr1 . ' ' . $addr2);
                             $afullMsg = (string)($r->DESCRIPTION ?? '');
                             $afullMsgTrim = trim($afullMsg);
-                            $amsgPreview = $afullMsgTrim === '' ? '—' : (mb_strlen($afullMsgTrim) > 30 ? (mb_substr($afullMsgTrim, 0, 30) . '…') : $afullMsgTrim);
+                            $amsgPreview = $afullMsgTrim === '' ? 'â€”' : (mb_strlen($afullMsgTrim) > 30 ? (mb_substr($afullMsgTrim, 0, 30) . 'â€¦') : $afullMsgTrim);
                             $aisLongMsg = $afullMsgTrim !== '' && mb_strlen($afullMsgTrim) > 30;
                             $rawStatus = strtoupper(trim((string)($r->CURRENTSTATUS ?? '')));
                             $statusClass = 'inquiries-status-new';
@@ -140,51 +140,61 @@
                                 default:          $statusClass = 'inquiries-status-new'; break;
                             }
                             $statusDisp = $rawStatus !== '' ? $rawStatus : 'PENDING';
-                            $assignDate = $r->LASTMODIFIED ? date('d/m/Y', strtotime($r->LASTMODIFIED)) : ($r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '—');
+                            $assignDate = $r->LASTMODIFIED ? date('d/m/Y', strtotime($r->LASTMODIFIED)) : ($r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : 'â€”');
                             $searchHaystack = strtolower(($r->COMPANYNAME ?? '').' '.($r->CONTACTNAME ?? '').' '.($r->LEADID ?? ''));
-                            $productIds = $r->PRODUCTID ? array_map('trim', explode(',', (string)$r->PRODUCTID)) : [];
                             $pillOrder = [1=>10,3=>11,4=>12,2=>20,10=>21,8=>30,5=>31,6=>40,9=>50,7=>60,11=>70];
-                            $productIds = array_values(array_filter(array_unique(array_map('intval', $productIds)), fn($v) => $v > 0));
-                            usort($productIds, function($a,$b) use ($pillOrder) { return ($pillOrder[$a] ?? 1000+$a) <=> ($pillOrder[$b] ?? 1000+$b); });
+                            $dealtRaw = $r->DEALTPRODUCT ?? null;
+                            $dealtProductIds = [];
+                            if ($dealtRaw !== null && trim((string) $dealtRaw) !== '') {
+                                $tokens = preg_split('/[,\s\(\)]+/', (string) $dealtRaw);
+                                foreach ($tokens as $tok) {
+                                    if ($tok === '') continue;
+                                    $pid = (int) $tok;
+                                    if ($pid >= 1 && $pid <= 11) {
+                                        $dealtProductIds[] = $pid;
+                                    }
+                                }
+                                $dealtProductIds = array_values(array_unique($dealtProductIds));
+                                usort($dealtProductIds, function($a,$b) use ($pillOrder) { return ($pillOrder[$a] ?? 1000+$a) <=> ($pillOrder[$b] ?? 1000+$b); });
+                            }
                         @endphp
                         <tr class="rewards-row inquiry-row" data-search="{{ $searchHaystack }}">
                             <td data-col="inquiryid">#SQL-{{ $r->LEADID }}</td>
                             <td data-col="customername">{{ $custDisp }}</td>
-                            <td data-col="assignedto">{{ $r->ASSIGNED_TO_NAME ?? ($r->ASSIGNED_TO ?? '—') }}</td>
-                            <td data-col="referralcode">{{ $r->REFERRALCODE ?? '—' }}</td>
+                            <td data-col="assignedto">{{ $r->ASSIGNED_TO_NAME ?? ($r->ASSIGNED_TO ?? 'â€”') }}</td>
+                            <td data-col="referralcode">{{ $r->REFERRALCODE ?? 'â€”' }}</td>
                             <td data-col="completiondate">
                                 @php
                                     $completedAt = $r->COMPLETED_AT ?? null;
                                 @endphp
-                                {{ $completedAt ? date('d/m/Y', strtotime($completedAt)) : '—' }}
+                                {{ $completedAt ? date('d/m/Y', strtotime($completedAt)) : 'â€”' }}
                             </td>
                             <td data-col="status"><span class="inquiries-status {{ $statusClass }}">{{ $statusDisp }}</span></td>
 
-                            <td data-col="date">{{ $r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '—' }}</td>
-                            <td data-col="source">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '—') }}</td>
-                            <td data-col="postcode">{{ $r->POSTCODE ?? '—' }}</td>
-                            <td data-col="city">{{ $r->CITY ?? '—' }}</td>
-                            <td data-col="address">{{ $addr !== '' ? $addr : '—' }}</td>
-                            <td data-col="contactno">{{ $r->CONTACTNO ?? '—' }}</td>
-                            <td data-col="businessnature">{{ $r->BUSINESSNATURE ?? '—' }}</td>
-                            <td data-col="users">{{ $r->USERCOUNT ?? '—' }}</td>
-                            <td data-col="existingsw">{{ $r->EXISTINGSOFTWARE ?? '—' }}</td>
-                            <td data-col="demomode">{{ $r->DEMOMODE ?? '—' }}</td>
-                            <td data-col="products">
-                                @if(!empty($productIds))
+                            <td data-col="date">{{ $r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : 'â€”' }}</td>
+                            <td data-col="source">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? 'â€”') }}</td>
+                            <td data-col="postcode">{{ $r->POSTCODE ?? 'â€”' }}</td>
+                            <td data-col="city">{{ $r->CITY ?? 'â€”' }}</td>
+                            <td data-col="address">{{ $addr !== '' ? $addr : 'â€”' }}</td>
+                            <td data-col="contactno">{{ $r->CONTACTNO ?? 'â€”' }}</td>
+                            <td data-col="businessnature">{{ $r->BUSINESSNATURE ?? 'â€”' }}</td>
+                            <td data-col="users">{{ $r->USERCOUNT ?? 'â€”' }}</td>
+                            <td data-col="existingsw">{{ $r->EXISTINGSOFTWARE ?? 'â€”' }}</td>
+                            <td data-col="demomode">{{ $r->DEMOMODE ?? 'â€”' }}</td><td data-col="dealtproducts">
+                                @if(!empty($dealtProductIds))
                                     <div class="inquiries-pill-group">
-                                        @foreach($productIds as $id)
+                                        @foreach($dealtProductIds as $id)
                                             @if(isset($productLabels[(int)$id]))
                                                 <span class="inquiries-pill inquiries-pill-p{{ (int)$id }}">{{ $productLabels[(int)$id] }}</span>
                                             @endif
                                         @endforeach
                                     </div>
                                 @else
-                                    —
+                                    Ã¢â‚¬â€
                                 @endif
                             </td>
                             <td data-col="message" class="inquiries-msg-cell {{ $aisLongMsg ? 'inquiries-msg-clickable' : '' }}" @if($aisLongMsg) data-full-message="{{ e($afullMsgTrim) }}" @endif>{{ $amsgPreview }}</td>
-                            <td data-col="assignedby">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '—') }}</td>
+                            <td data-col="assignedby">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? 'â€”') }}</td>
                             <td data-col="assigndate">{{ $assignDate }}</td>
                             <td class="inquiries-col-action inquiries-action-cell">
                                 <button type="button"
@@ -303,13 +313,13 @@
                             $ccontact = trim((string)($r->CONTACTNAME ?? ''));
                             $custDisp = $ccompany !== '' && $ccontact !== ''
                                 ? ($ccompany . ' - ' . $ccontact)
-                                : ($ccompany !== '' ? $ccompany : ($ccontact !== '' ? $ccontact : '—'));
+                                : ($ccompany !== '' ? $ccompany : ($ccontact !== '' ? $ccontact : 'â€”'));
                             $addr1 = trim((string)($r->ADDRESS1 ?? ''));
                             $addr2 = trim((string)($r->ADDRESS2 ?? ''));
                             $addr = trim($addr1 . ' ' . $addr2);
                             $afullMsg = (string)($r->DESCRIPTION ?? '');
                             $afullMsgTrim = trim($afullMsg);
-                            $amsgPreview = $afullMsgTrim === '' ? '—' : (mb_strlen($afullMsgTrim) > 30 ? (mb_substr($afullMsgTrim, 0, 30) . '…') : $afullMsgTrim);
+                            $amsgPreview = $afullMsgTrim === '' ? 'â€”' : (mb_strlen($afullMsgTrim) > 30 ? (mb_substr($afullMsgTrim, 0, 30) . 'â€¦') : $afullMsgTrim);
                             $aisLongMsg = $afullMsgTrim !== '' && mb_strlen($afullMsgTrim) > 30;
                             $rawStatus = strtoupper(trim((string)($r->CURRENTSTATUS ?? '')));
                             $statusClass = 'inquiries-status-new';
@@ -332,7 +342,7 @@
                             $statusDisp = $rawStatus !== '' ? $rawStatus : 'REWARDED';
                             $completedAt = $r->COMPLETED_AT ?? null;
                             $searchHaystack = strtolower(($r->COMPANYNAME ?? '').' '.($r->CONTACTNAME ?? '').' '.($r->LEADID ?? ''));
-                            $assignDate = $r->LASTMODIFIED ? date('d/m/Y', strtotime($r->LASTMODIFIED)) : ($r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '—');
+                            $assignDate = $r->LASTMODIFIED ? date('d/m/Y', strtotime($r->LASTMODIFIED)) : ($r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : 'â€”');
                             $productIds = $r->PRODUCTID ? array_map('trim', explode(',', (string)$r->PRODUCTID)) : [];
                             $pillOrder = [1=>10,3=>11,4=>12,2=>20,10=>21,8=>30,5=>31,6=>40,9=>50,7=>60,11=>70];
                             $productIds = array_values(array_filter(array_unique(array_map('intval', $productIds)), fn($v) => $v > 0));
@@ -340,18 +350,18 @@
                         @endphp
                         <tr class="rewards-row inquiry-row" data-search="{{ $searchHaystack }}">
                             <td data-col="inquiryid">#SQL-{{ $r->LEADID }}</td>
-                            <td data-col="date">{{ $r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '—' }}</td>
+                            <td data-col="date">{{ $r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : 'â€”' }}</td>
                             <td data-col="customername">{{ $custDisp }}</td>
-                            <td data-col="source">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '—') }}</td>
-                            <td data-col="postcode">{{ $r->POSTCODE ?? '—' }}</td>
-                            <td data-col="city">{{ $r->CITY ?? '—' }}</td>
-                            <td data-col="completiondate">{{ $completedAt ? date('d/m/Y', strtotime($completedAt)) : '—' }}</td>
-                            <td data-col="address">{{ $addr !== '' ? $addr : '—' }}</td>
-                            <td data-col="contactno">{{ $r->CONTACTNO ?? '—' }}</td>
-                            <td data-col="businessnature">{{ $r->BUSINESSNATURE ?? '—' }}</td>
-                            <td data-col="users">{{ $r->USERCOUNT ?? '—' }}</td>
-                            <td data-col="existingsw">{{ $r->EXISTINGSOFTWARE ?? '—' }}</td>
-                            <td data-col="demomode">{{ $r->DEMOMODE ?? '—' }}</td>
+                            <td data-col="source">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? 'â€”') }}</td>
+                            <td data-col="postcode">{{ $r->POSTCODE ?? 'â€”' }}</td>
+                            <td data-col="city">{{ $r->CITY ?? 'â€”' }}</td>
+                            <td data-col="completiondate">{{ $completedAt ? date('d/m/Y', strtotime($completedAt)) : 'â€”' }}</td>
+                            <td data-col="address">{{ $addr !== '' ? $addr : 'â€”' }}</td>
+                            <td data-col="contactno">{{ $r->CONTACTNO ?? 'â€”' }}</td>
+                            <td data-col="businessnature">{{ $r->BUSINESSNATURE ?? 'â€”' }}</td>
+                            <td data-col="users">{{ $r->USERCOUNT ?? 'â€”' }}</td>
+                            <td data-col="existingsw">{{ $r->EXISTINGSOFTWARE ?? 'â€”' }}</td>
+                            <td data-col="demomode">{{ $r->DEMOMODE ?? 'â€”' }}</td>
                             <td data-col="products">
                                 @if(!empty($productIds))
                                     <div class="inquiries-pill-group">
@@ -362,13 +372,13 @@
                                         @endforeach
                                     </div>
                                 @else
-                                    —
+                                    â€”
                                 @endif
                             </td>
                             <td data-col="message" class="inquiries-msg-cell {{ $aisLongMsg ? 'inquiries-msg-clickable' : '' }}" @if($aisLongMsg) data-full-message="{{ e($afullMsgTrim) }}" @endif>{{ $amsgPreview }}</td>
-                            <td data-col="referralcode">{{ $r->REFERRALCODE ?? '—' }}</td>
-                            <td data-col="assignedby">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '—') }}</td>
-                            <td data-col="assignedto">{{ $r->ASSIGNED_TO_NAME ?? ($r->ASSIGNED_TO ?? '—') }}</td>
+                            <td data-col="referralcode">{{ $r->REFERRALCODE ?? 'â€”' }}</td>
+                            <td data-col="assignedby">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? 'â€”') }}</td>
+                            <td data-col="assignedto">{{ $r->ASSIGNED_TO_NAME ?? ($r->ASSIGNED_TO ?? 'â€”') }}</td>
                             <td data-col="assigndate">{{ $assignDate }}</td>
                             <td data-col="status"><span class="inquiries-status {{ $statusClass }}">{{ $statusDisp }}</span></td>
                             <td class="inquiries-col-action inquiries-action-cell">
@@ -404,7 +414,7 @@
         <div class="inquiries-assign-backdrop" data-status-close="1"></div>
         <div class="inquiries-assign-window" role="dialog" aria-modal="true" aria-labelledby="statusModalTitle">
             <div class="inquiries-assign-header">
-                <div class="inquiries-assign-title" id="statusModalTitle">Status — Lead #SQL-<span id="statusModalLeadId"></span></div>
+                <div class="inquiries-assign-title" id="statusModalTitle">Status â€” Lead #SQL-<span id="statusModalLeadId"></span></div>
                 <button type="button" class="inquiries-assign-close" aria-label="Close" data-status-close="1">&times;</button>
             </div>
             <div class="inquiries-assign-body">
@@ -432,8 +442,8 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     var COMPLETED_STORAGE_KEY = 'payoutCompletedVisibleColumns';
-    var COMPLETED_DEFAULT_COLUMNS = ['inquiryid','customername','assignedto','referralcode','completiondate','status'];
-    var COMPLETED_ALL_COLUMNS = ['inquiryid','date','customername','source','postcode','city','address','contactno','businessnature','users','existingsw','demomode','products','message','referralcode','assignedby','assignedto','completiondate','assigndate','status'];
+    var COMPLETED_DEFAULT_COLUMNS = ['inquiryid','customername','assignedto','referralcode','completiondate','dealtproducts','status'];
+    var COMPLETED_ALL_COLUMNS = ['inquiryid','date','customername','source','postcode','city','address','contactno','businessnature','users','existingsw','demomode','dealtproducts','message','referralcode','assignedby','assignedto','completiondate','assigndate','status'];
     var REWARDED_STORAGE_KEY = 'payoutRewardedVisibleColumns';
     var REWARDED_DEFAULT_COLUMNS = ['inquiryid','customername','assignedto','referralcode','completiondate','status'];
     var REWARDED_ALL_COLUMNS = ['inquiryid','date','customername','source','postcode','city','completiondate','address','contactno','businessnature','users','existingsw','demomode','products','message','referralcode','assignedby','assignedto','assigndate','status'];
@@ -647,7 +657,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }).then(function(res) {
                 return res.ok ? res.json() : Promise.reject();
             }).then(function(data) {
-                // Silent success – no popup needed.
+                // Silent success â€“ no popup needed.
             }).catch(function() {
                 alert('Failed to sync data.');
             }).finally(function() {
@@ -1028,13 +1038,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (emptyEl) emptyEl.style.display = 'none';
                 items.forEach(function(it) {
                     var tr = document.createElement('tr');
-                    var date = it.CREATIONDATE ? String(it.CREATIONDATE).substring(0, 19) : '—';
+                    var date = it.CREATIONDATE ? String(it.CREATIONDATE).substring(0, 19) : 'â€”';
                     tr.innerHTML =
                         '<td>' + date + '</td>' +
-                        '<td>' + (it.SUBJECT || '—') + '</td>' +
-                        '<td>' + (it.STATUS || '—') + '</td>' +
-                        '<td>' + (it.DESCRIPTION || '—') + '</td>' +
-                        '<td>' + (it.USERID || '—') + '</td>';
+                        '<td>' + (it.SUBJECT || 'â€”') + '</td>' +
+                        '<td>' + (it.STATUS || 'â€”') + '</td>' +
+                        '<td>' + (it.DESCRIPTION || 'â€”') + '</td>' +
+                        '<td>' + (it.USERID || 'â€”') + '</td>';
                     body.appendChild(tr);
                 });
             }

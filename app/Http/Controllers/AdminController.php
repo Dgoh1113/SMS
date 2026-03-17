@@ -1611,6 +1611,7 @@ class AdminController extends Controller
 
         // Fetch latest COMPLETED date from LEAD_ACT per LEADID for completion date column
         $completedDateMap = [];
+        $dealtProductMap = [];
         try {
             $leadIdsForActs = array_values(array_unique(array_filter(array_map(
                 fn ($r) => (int) ($r->LEADID ?? 0),
@@ -1631,17 +1632,41 @@ class AdminController extends Controller
                         $completedDateMap[$lid] = $ar->COMPLETED_AT ?? $ar->completed_at ?? null;
                     }
                 }
+
+                $dealRows = DB::select(
+                    'SELECT a."LEADID", a."DEALTPRODUCT"
+                     FROM "LEAD_ACT" a
+                     JOIN (
+                         SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
+                         FROM "LEAD_ACT"
+                         WHERE UPPER(TRIM("STATUS")) = \'COMPLETED\' AND "LEADID" IN (' . $placeholders . ')
+                         GROUP BY "LEADID"
+                     ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
+                     WHERE UPPER(TRIM(a."STATUS")) = \'COMPLETED\' AND a."LEADID" IN (' . $placeholders . ')',
+                    array_merge($leadIdsForActs, $leadIdsForActs)
+                );
+                foreach ($dealRows as $dr) {
+                    $lid = (int) ($dr->LEADID ?? 0);
+                    if ($lid > 0) {
+                        $dealtProductMap[$lid] = $dr->DEALTPRODUCT ?? $dr->dealtproduct ?? null;
+                    }
+                }
             }
         } catch (\Throwable $e) {
             $completedDateMap = [];
+            $dealtProductMap = [];
         }
 
-        // Attach completion date to all assigned rows where available
-        if (!empty($completedDateMap)) {
+        // Attach completion date + dealt products to all assigned rows where available
+        if (!empty($completedDateMap) || !empty($dealtProductMap)) {
             foreach ($assigned as $r) {
                 $lid = (int) ($r->LEADID ?? 0);
-                if ($lid > 0 && isset($completedDateMap[$lid])) {
+                if ($lid <= 0) continue;
+                if (isset($completedDateMap[$lid])) {
                     $r->COMPLETED_AT = $completedDateMap[$lid];
+                }
+                if (isset($dealtProductMap[$lid])) {
+                    $r->DEALTPRODUCT = $dealtProductMap[$lid];
                 }
             }
         }
@@ -1651,8 +1676,11 @@ class AdminController extends Controller
         $rewarded = [];
         foreach ($assigned as $r) {
             $status = strtoupper(trim((string) ($r->CURRENTSTATUS ?? '')));
+            $referral = trim((string) ($r->REFERRALCODE ?? ''));
             if ($status === 'COMPLETED') {
-                $completed[] = $r;
+                if ($referral !== '') {
+                    $completed[] = $r;
+                }
             } elseif (in_array($status, ['REWARDED', 'PAID'], true)) {
                 $rewarded[] = $r;
             }
@@ -1722,7 +1750,9 @@ class AdminController extends Controller
                      GROUP BY "LEADID"
                  ) m ON m."LEADID" = a."LEADID" AND m.max_created = a."CREATIONDATE"
              ) latest
-             WHERE UPPER(TRIM(latest."STATUS")) = \'COMPLETED\''
+             JOIN "LEAD" l ON l."LEADID" = latest."LEADID"
+             WHERE UPPER(TRIM(latest."STATUS")) = \'COMPLETED\'
+               AND TRIM(COALESCE(l."REFERRALCODE", \'\')) <> \'\''
         );
         $totalCompletedLeads = (int) ($closedRow->cnt ?? $closedRow->CNT ?? current((array) $closedRow) ?? 0);
 
