@@ -22,6 +22,46 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Unread notification visual styling */
+        .dashboard-notification-item--new {
+            background-color: #f4f8ff; /* Soft blue background for unread */
+            position: relative;
+        }
+        .dashboard-notification-item--new::after {
+            content: '';
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 8px;
+            height: 8px;
+            background-color: #0d6efd; /* Blue dot indicator */
+            border-radius: 50%;
+        }
+        
+        /* Header layout for the Mark as Read button */
+        .dashboard-notifications-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid #e5e7eb;
+            font-weight: 600;
+        }
+        .dashboard-notifications-mark-read {
+            font-size: 0.8rem;
+            color: #0d6efd;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+            font-weight: 400;
+        }
+        .dashboard-notifications-mark-read:hover {
+            text-decoration: underline;
+        }
+    </style>
     @stack('styles')
 </head>
 <body>
@@ -40,7 +80,25 @@
             </button>
             <div class="dashboard-topbar-actions">
                 <a href="#" class="dashboard-icon-btn top-right-btn" type="button" title="Bookmark"><img src="{{ asset('Guide.ico') }}" alt="Bookmark" class="dashboard-icon-img"></a>
-                <a href="#" class="dashboard-icon-btn top-right-btn" type="button" title="Notifications"><img src="{{ asset('Notification.ico') }}" alt="Notifications" class="dashboard-icon-img"></a>
+                @if (session('user_role') === 'dealer')
+                    <div class="dashboard-notifications">
+                        <button type="button" class="dashboard-icon-btn top-right-btn" id="dealerNotificationsTrigger" aria-expanded="false" aria-haspopup="true" title="Notifications">
+                            <img src="{{ asset('Notification.ico') }}" alt="Notifications" class="dashboard-icon-img">
+                            <span class="dashboard-notifications-dot" id="dealerNotificationsDot" hidden></span>
+                        </button>
+                        <div class="dashboard-notifications-menu" id="dealerNotificationsMenu" hidden>
+                            <div class="dashboard-notifications-header">
+                                <span>Notifications</span>
+                                <button type="button" class="dashboard-notifications-mark-read" id="dealerMarkAllReadBtn">Mark all as read</button>
+                            </div>
+                            <div class="dashboard-notifications-list" id="dealerNotificationsList">
+                                <div class="dashboard-notifications-empty">Loading…</div>
+                            </div>
+                        </div>
+                    </div>
+                @else
+                    <a href="#" class="dashboard-icon-btn top-right-btn" type="button" title="Notifications"><img src="{{ asset('Notification.ico') }}" alt="Notifications" class="dashboard-icon-img"></a>
+                @endif
                 @php
                     $avatarInitial = strtoupper(substr(session('user_email', 'U'), 0, 1));
                     $avatarLetter = (ctype_alpha($avatarInitial) ? $avatarInitial : 'U');
@@ -131,6 +189,133 @@
         overlay.addEventListener('click', function(e) {
             if (e.target === overlay) overlay.remove();
         });
+    }
+
+    // Dealer notifications dropdown (bell) - LocalStorage Version
+    var nTrigger = document.getElementById('dealerNotificationsTrigger');
+    var nMenu = document.getElementById('dealerNotificationsMenu');
+    var nList = document.getElementById('dealerNotificationsList');
+    var nDot = document.getElementById('dealerNotificationsDot');
+    var markAllBtn = document.getElementById('dealerMarkAllReadBtn');
+    var currentNotifIds = []; // Stores IDs of currently loaded notifications
+    var nLoaded = false;
+    
+    // Key used to save data in the browser
+    var SEEN_KEY = 'dealer.notifications.seen.v1';
+    
+    function getSeen() {
+        try { return JSON.parse(localStorage.getItem(SEEN_KEY) || '{}') || {}; } catch (e) { return {}; }
+    }
+    function setSeen(obj) {
+        try { localStorage.setItem(SEEN_KEY, JSON.stringify(obj || {})); } catch (e) {}
+    }
+    
+    function renderNotifications(items) {
+        if (!nList) return;
+        currentNotifIds = []; // Clear the array on new render
+
+        if (!items || !items.length) {
+            nList.innerHTML = '<div class="dashboard-notifications-empty">No notifications</div>';
+            if (nDot) nDot.hidden = true;
+            return;
+        }
+        
+        var seen = getSeen();
+        var hasUnseen = false;
+        nList.innerHTML = '';
+        
+        // NEW: Limit to exactly 20 items
+        var displayItems = items.slice(0, 20);
+        
+        displayItems.forEach(function(it) {
+            // It is critical that your server provides a unique 'id' for each notification
+            var id = String(it.id || it.lead_id || ''); 
+            var leadId = String(it.lead_id || '');
+            var title = (it.title || ('Inquiry #SQL-' + leadId)).toString();
+            var desc = (it.description || '').toString();
+            var time = (it.time || '').toString();
+            
+            // Check if this ID exists in our local browser storage
+            var isSeen = !!seen[id];
+            
+            if (!isSeen) {
+                hasUnseen = true;
+                currentNotifIds.push(id); // Save ID so 'Mark all' knows what to update
+            }
+
+            var a = document.createElement('a');
+            a.href = '/dealer/inquiries?lead=' + encodeURIComponent(leadId) + '&fromNotif=' + encodeURIComponent(id);
+            a.className = 'dashboard-notification-item' + (isSeen ? '' : ' dashboard-notification-item--new');
+            a.setAttribute('data-notif-id', id);
+            a.innerHTML =
+                '<div class="dashboard-notification-title">' + title.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>' +
+                (desc ? '<div class="dashboard-notification-desc">' + desc.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>' : '') +
+                (time ? '<div class="dashboard-notification-time">' + time.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>' : '');
+            
+            // Mark individual item as read when clicked
+            a.addEventListener('click', function() {
+                var s = getSeen();
+                s[id] = Date.now();
+                setSeen(s);
+                // The browser will follow the href and navigate away
+            });
+            nList.appendChild(a);
+        });
+        
+        if (nDot) nDot.hidden = !hasUnseen;
+    }
+
+    function loadNotifications() {
+        if (!nList) return;
+        fetch('/dealer/notifications', { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function(r) { return r.json(); })
+            .then(function(data) { renderNotifications((data && data.items) ? data.items : []); })
+            .catch(function() { nList.innerHTML = '<div class="dashboard-notifications-empty">Failed to load</div>'; });
+    }
+
+    // Mark all as read functionality
+    if (markAllBtn) {
+        markAllBtn.addEventListener('click', function(e) {
+            e.stopPropagation(); // Prevent dropdown from closing
+            var s = getSeen();
+            
+            // Add all unread IDs to the local storage 'seen' object
+            currentNotifIds.forEach(function(id) {
+                s[id] = Date.now();
+            });
+            setSeen(s);
+            currentNotifIds = []; // Clear array
+            
+            // Update UI instantly to remove the blue background and dot
+            document.querySelectorAll('.dashboard-notification-item--new').forEach(function(el) {
+                el.classList.remove('dashboard-notification-item--new');
+            });
+            if (nDot) nDot.hidden = true;
+        });
+    }
+
+    if (nTrigger && nMenu) {
+        nTrigger.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var open = !nMenu.hidden;
+            nMenu.hidden = open;
+            nTrigger.setAttribute('aria-expanded', String(!open));
+            if (!open && !nLoaded) {
+                nLoaded = true;
+                loadNotifications();
+            } else if (!open) {
+                loadNotifications();
+            }
+        });
+        document.addEventListener('click', function() {
+            if (!nMenu.hidden) { nMenu.hidden = true; nTrigger.setAttribute('aria-expanded', 'false'); }
+        });
+        nMenu.addEventListener('click', function(e) { e.stopPropagation(); });
+        
+        // Initial load just to show dot
+        loadNotifications();
+        nLoaded = true;
     }
 
     // Sidebar: apply preload state immediately (avoids flicker) on desktop only
