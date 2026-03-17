@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 @section('title', 'Payouts - SQL LMS Dealer Console')
 @section('content')
 @php
@@ -45,12 +45,16 @@
             <h2 class="inquiries-panel-title">Completed</h2>
         </div>
         <div class="inquiries-panel-actions">
+            <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-sync-btn" id="completedSyncBtn" data-sync-url="{{ route('dealer.payouts.sync') }}">
+                <i class="bi bi-arrow-repeat inquiries-sync-icon"></i>
+                <span class="inquiries-sync-label">Sync</span>
+            </button>
             <div class="inquiries-columns-dropdown">
                 <button type="button" class="inquiries-btn inquiries-btn-secondary" id="completedColumnsBtn" aria-haspopup="true" aria-expanded="false">Columns</button>
                 <div class="inquiries-columns-menu" id="completedColumnsMenu" hidden>
                     <div class="inquiries-columns-menu-title">Show columns</div>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="inquiryid"> INQUIRY ID</label>
-                    <label class="inquiries-columns-check"><input type="checkbox" data-col="date"> INQUIRY DATE</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="completeddate"> COMPLETED DATE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="customer"> CUSTOMER NAME</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="source"> SOURCE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="postcode"> POSTCODE</label>
@@ -80,7 +84,7 @@
                 <thead>
                     <tr class="inquiries-header-row">
                         <th data-col="inquiryid" class="inquiries-header-cell"><span class="inquiries-header-label">INQUIRY ID</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="inquiryid"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="date" class="inquiries-header-cell"><span class="inquiries-header-label">INQUIRY DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="date"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="completeddate" class="inquiries-header-cell"><span class="inquiries-header-label">COMPLETED DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="completeddate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="customer" class="inquiries-header-cell"><span class="inquiries-header-label">CUSTOMER NAME</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="customer"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="source" class="inquiries-header-cell"><span class="inquiries-header-label">SOURCE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="source"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="postcode" class="inquiries-header-cell"><span class="inquiries-header-label">POSTCODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="postcode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
@@ -99,94 +103,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($completed as $r)
-                        @php
-                            $ccompany = trim((string)($r->COMPANYNAME ?? ''));
-                            $ccontact = trim((string)($r->CONTACTNAME ?? ''));
-                            $custDisp = $ccompany !== '' && $ccontact !== ''
-                                ? ($ccompany . ' - ' . $ccontact)
-                                : ($ccompany !== '' ? $ccompany : ($ccontact !== '' ? $ccontact : '&mdash;'));
-                            $addr1 = trim((string)($r->ADDRESS1 ?? ''));
-                            $addr2 = trim((string)($r->ADDRESS2 ?? ''));
-                            $addr = trim($addr1 . ' ' . $addr2);
-                            $afullMsg = (string)($r->DESCRIPTION ?? '');
-                            $afullMsgTrim = trim($afullMsg);
-                            $amsgPreview = $afullMsgTrim === '' ? '&mdash;' : (mb_strlen($afullMsgTrim) > 30 ? (mb_substr($afullMsgTrim, 0, 30) . '&hellip;') : $afullMsgTrim);
-                            $rawStatus = strtoupper(trim((string)($r->CURRENTSTATUS ?? '')));
-                            $statusClass = 'inquiries-status-new';
-                            switch ($rawStatus) {
-                                case 'PENDING':   $statusClass = 'inquiries-status-pending'; break;
-                                case 'FOLLOWUP':  $statusClass = 'inquiries-status-followup'; break;
-                                case 'DEMO':      $statusClass = 'inquiries-status-demo'; break;
-                                case 'CONFIRMED': $statusClass = 'inquiries-status-confirmed'; break;
-                                case 'COMPLETED': $statusClass = 'inquiries-status-completed'; break;
-                                case 'REWARDED':  $statusClass = 'inquiries-status-rewarded'; break;
-                                case 'FAILED':    $statusClass = 'inquiries-status-failed'; break;
-                                default:          $statusClass = 'inquiries-status-new'; break;
-                            }
-                            $statusDisp = $rawStatus !== '' ? $rawStatus : 'PENDING';
-                            $assignDate = $r->LASTMODIFIED ? date('d/m/Y', strtotime($r->LASTMODIFIED)) : ($r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '&mdash;');
-                            $searchHaystack = strtolower(($r->COMPANYNAME ?? '').' '.($r->CONTACTNAME ?? '').' '.($r->LEADID ?? ''));
-                            $pillOrder = [1=>10,3=>11,4=>12,2=>20,10=>21,8=>30,5=>31,6=>40,9=>50,7=>60,11=>70];
-                            $dealtRaw = $r->DEALTPRODUCT ?? null;
-                            $dealtProductIds = [];
-                            if ($dealtRaw !== null && trim((string) $dealtRaw) !== '') {
-                                $tokens = preg_split('/[,\s\(\)]+/', (string) $dealtRaw);
-                                foreach ($tokens as $tok) {
-                                    if ($tok === '') continue;
-                                    $pid = (int) $tok;
-                                    if ($pid >= 1 && $pid <= 11) {
-                                        $dealtProductIds[] = $pid;
-                                    }
-                                }
-                                $dealtProductIds = array_values(array_unique($dealtProductIds));
-                                usort($dealtProductIds, function($a,$b) use ($pillOrder) { return ($pillOrder[$a] ?? 1000+$a) <=> ($pillOrder[$b] ?? 1000+$b); });
-                            }
-                        @endphp
-                        <tr class="payouts-row inquiry-row" data-search="{{ $searchHaystack }}">
-                            <td data-col="inquiryid">#SQL-{{ $r->LEADID }}</td>
-                            <td data-col="date">{{ $r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '&mdash;' }}</td>
-                            <td data-col="customer">{{ $custDisp }}</td>
-                            <td data-col="source">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '&mdash;') }}</td>
-                            <td data-col="postcode">{{ $r->POSTCODE ?? '&mdash;' }}</td>
-                            <td data-col="city">{{ $r->CITY ?? '&mdash;' }}</td>
-                            <td data-col="address">{{ $addr !== '' ? $addr : '&mdash;' }}</td>
-                            <td data-col="contactno">{{ $r->CONTACTNO ?? '&mdash;' }}</td>
-                            <td data-col="businessnature">{{ $r->BUSINESSNATURE ?? '&mdash;' }}</td>
-                            <td data-col="users">{{ $r->USERCOUNT ?? '&mdash;' }}</td>
-                            <td data-col="existingsw">{{ $r->EXISTINGSOFTWARE ?? '&mdash;' }}</td>
-                            <td data-col="demomode">{{ $r->DEMOMODE ?? '&mdash;' }}</td><td data-col="dealtproducts">
-                                @if(!empty($dealtProductIds))
-                                    <div class="inquiries-pill-group">
-                                        @foreach($dealtProductIds as $id)
-                                            @if(isset($productLabels[(int)$id]))
-                                                <span class="inquiries-pill inquiries-pill-p{{ (int)$id }}">{{ $productLabels[(int)$id] }}</span>
-                                            @endif
-                                        @endforeach
-                                    </div>
-                                @else
-                                    &mdash;
-                                @endif
-                            </td>
-                            <td data-col="message">{{ $amsgPreview }}</td>
-                            <td data-col="referralcode">{{ $r->REFERRALCODE ?? '&mdash;' }}</td>
-                            <td data-col="assignby">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '&mdash;') }}</td>
-                            <td data-col="status"><span class="inquiries-status {{ $statusClass }}">{{ $statusDisp }}</span></td>
-                            <td class="inquiries-col-action inquiries-action-cell">
-                                <button type="button"
-                                        class="inquiries-btn inquiries-btn-assign inquiries-edit-inquiry-btn inquiries-update-btn"
-                                        data-lead-id="{{ $r->LEADID }}"
-                                        data-customer="{{ $custDisp }}"
-                                        data-status="{{ $statusDisp }}"
-                                        title="Update"
-                                        aria-label="Update">
-                                    <i class="bi bi-pencil-square" aria-hidden="true"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    @empty
-                    <tr><td colspan="18" class="inquiries-empty">No completed inquiries.</td></tr>
-                    @endforelse
+                    @include('dealer.partials.payouts_completed_rows', ['completed' => $completed, 'productLabels' => $productLabels, 'productNames' => $productNames])
                 </tbody>
             </table>
         </div>
@@ -211,6 +128,40 @@
             <i class="bi bi-cash-coin inquiries-panel-icon"></i>
             <h2 class="inquiries-panel-title">Rewarded</h2>
         </div>
+        <div class="inquiries-panel-actions">
+            <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-sync-btn" id="rewardedSyncBtn" data-sync-url="{{ route('dealer.payouts.sync') }}">
+                <i class="bi bi-arrow-repeat inquiries-sync-icon"></i>
+                <span class="inquiries-sync-label">Sync</span>
+            </button>
+            <div class="inquiries-columns-dropdown">
+                <button type="button" class="inquiries-btn inquiries-btn-secondary" id="rewardedColumnsBtn" aria-haspopup="true" aria-expanded="false">Columns</button>
+                <div class="inquiries-columns-menu" id="rewardedColumnsMenu" hidden>
+                    <div class="inquiries-columns-menu-title">Show columns</div>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="inquiryid"> INQUIRY ID</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="payoutdate"> PAYOUTS DATE</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="customer"> CUSTOMER NAME</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="source"> SOURCE</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="postcode"> POSTCODE</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="city"> CITY</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="address"> ADDRESS</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="contactno"> CONTACT NO</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="businessnature"> BUSINESS NATURE</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="users"> USERS</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="existingsw"> EXISTING SW</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="demomode"> DEMO MODE</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="dealtproducts"> DEALT PRODUCTS</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="message"> MESSAGE</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="referralcode"> REFERRAL CODE</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="assignby"> ASSIGN BY</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="status"> STATUS</label>
+                    <div class="inquiries-columns-actions">
+                        <button type="button" class="inquiries-columns-action-btn" id="rewardedColumnsAll">All</button>
+                        <button type="button" class="inquiries-columns-action-btn" id="rewardedColumnsNone">None</button>
+                    </div>
+                    <button type="button" class="inquiries-columns-reset" id="rewardedColumnsReset">Reset to default</button>
+                </div>
+            </div>
+        </div>
     </div>
     <div class="inquiries-table-wrap">
         <div class="inquiries-table-scroll">
@@ -218,7 +169,7 @@
                 <thead>
                     <tr class="inquiries-header-row">
                         <th data-col="inquiryid" class="inquiries-header-cell"><span class="inquiries-header-label">INQUIRY ID</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="inquiryid"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="date" class="inquiries-header-cell"><span class="inquiries-header-label">INQUIRY DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="date"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="payoutdate" class="inquiries-header-cell"><span class="inquiries-header-label">PAYOUTS DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="payoutdate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="customer" class="inquiries-header-cell"><span class="inquiries-header-label">CUSTOMER NAME</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="customer"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="source" class="inquiries-header-cell"><span class="inquiries-header-label">SOURCE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="source"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="postcode" class="inquiries-header-cell"><span class="inquiries-header-label">POSTCODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="postcode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
@@ -229,103 +180,16 @@
                         <th data-col="users" class="inquiries-header-cell"><span class="inquiries-header-label">USERS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="users"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="existingsw" class="inquiries-header-cell"><span class="inquiries-header-label">EXISTING SW</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="existingsw"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="demomode" class="inquiries-header-cell"><span class="inquiries-header-label">DEMO MODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="demomode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="products" class="inquiries-header-cell"><span class="inquiries-header-label">PRODUCTS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="products"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="attachment" class="inquiries-header-cell"><span class="inquiries-header-label">ATTACHMENT</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="attachment"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="dealtproducts" class="inquiries-header-cell"><span class="inquiries-header-label">DEALT PRODUCTS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="dealtproducts"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="message" class="inquiries-header-cell"><span class="inquiries-header-label">MESSAGE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="message"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="referralcode" class="inquiries-header-cell"><span class="inquiries-header-label">REFERRAL CODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="referralcode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="assignby" class="inquiries-header-cell"><span class="inquiries-header-label">ASSIGN BY</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="assignby"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="status" class="inquiries-header-cell"><span class="inquiries-header-label">STATUS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="status"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th class="inquiries-col-action inquiries-header-cell"><span class="inquiries-header-label">ACTION</span><button type="button" class="inquiries-filter-clear" id="rewardedClearFilters">Clear filters</button></th>
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($rewarded as $r)
-                        @php
-                            $ccompany = trim((string)($r->COMPANYNAME ?? ''));
-                            $ccontact = trim((string)($r->CONTACTNAME ?? ''));
-                            $custDisp = $ccompany !== '' && $ccontact !== ''
-                                ? ($ccompany . ' - ' . $ccontact)
-                                : ($ccompany !== '' ? $ccompany : ($ccontact !== '' ? $ccontact : '&mdash;'));
-                            $addr1 = trim((string)($r->ADDRESS1 ?? ''));
-                            $addr2 = trim((string)($r->ADDRESS2 ?? ''));
-                            $addr = trim($addr1 . ' ' . $addr2);
-                            $afullMsg = (string)($r->DESCRIPTION ?? '');
-                            $afullMsgTrim = trim($afullMsg);
-                            $amsgPreview = $afullMsgTrim === '' ? '&mdash;' : (mb_strlen($afullMsgTrim) > 30 ? (mb_substr($afullMsgTrim, 0, 30) . '&hellip;') : $afullMsgTrim);
-                            $rawStatus = strtoupper(trim((string)($r->CURRENTSTATUS ?? '')));
-                            $statusClass = 'inquiries-status-new';
-                            switch ($rawStatus) {
-                                case 'PENDING':   $statusClass = 'inquiries-status-pending'; break;
-                                case 'FOLLOWUP':  $statusClass = 'inquiries-status-followup'; break;
-                                case 'DEMO':      $statusClass = 'inquiries-status-demo'; break;
-                                case 'CONFIRMED': $statusClass = 'inquiries-status-confirmed'; break;
-                                case 'COMPLETED': $statusClass = 'inquiries-status-completed'; break;
-                                case 'REWARDED':  $statusClass = 'inquiries-status-rewarded'; break;
-                                case 'FAILED':    $statusClass = 'inquiries-status-failed'; break;
-                                default:          $statusClass = 'inquiries-status-new'; break;
-                            }
-                            $statusDisp = $rawStatus !== '' ? $rawStatus : 'PENDING';
-                            $assignDate = $r->LASTMODIFIED ? date('d/m/Y', strtotime($r->LASTMODIFIED)) : ($r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '&mdash;');
-                            $searchHaystack = strtolower(($r->COMPANYNAME ?? '').' '.($r->CONTACTNAME ?? '').' '.($r->LEADID ?? ''));
-                            $productIds = $r->PRODUCTID ? array_map('trim', explode(',', (string)$r->PRODUCTID)) : [];
-                            $pillOrder = [1=>10,3=>11,4=>12,2=>20,10=>21,8=>30,5=>31,6=>40,9=>50,7=>60,11=>70];
-                            $productIds = array_values(array_filter(array_unique(array_map('intval', $productIds)), fn($v) => $v > 0));
-                            usort($productIds, function($a,$b) use ($pillOrder) { return ($pillOrder[$a] ?? 1000+$a) <=> ($pillOrder[$b] ?? 1000+$b); });
-                            $attachUrls = [];
-                            if (!empty($r->REWARD_ATTACHMENT_URLS) && is_array($r->REWARD_ATTACHMENT_URLS)) {
-                                $attachUrls = $r->REWARD_ATTACHMENT_URLS;
-                            }
-                            $referralCode = trim((string) ($r->REFERRALCODE ?? ''));
-                        @endphp
-                        <tr class="payouts-row inquiry-row" data-search="{{ $searchHaystack }}">
-                            <td data-col="inquiryid">#SQL-{{ $r->LEADID }}</td>
-                            <td data-col="date">{{ $r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '&mdash;' }}</td>
-                            <td data-col="customer">{{ $custDisp }}</td>
-                            <td data-col="source">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '&mdash;') }}</td>
-                            <td data-col="postcode">{{ $r->POSTCODE ?? '&mdash;' }}</td>
-                            <td data-col="city">{{ $r->CITY ?? '&mdash;' }}</td>
-                            <td data-col="address">{{ $addr !== '' ? $addr : '&mdash;' }}</td>
-                            <td data-col="contactno">{{ $r->CONTACTNO ?? '&mdash;' }}</td>
-                            <td data-col="businessnature">{{ $r->BUSINESSNATURE ?? '&mdash;' }}</td>
-                            <td data-col="users">{{ $r->USERCOUNT ?? '&mdash;' }}</td>
-                            <td data-col="existingsw">{{ $r->EXISTINGSOFTWARE ?? '&mdash;' }}</td>
-                            <td data-col="demomode">{{ $r->DEMOMODE ?? '&mdash;' }}</td>
-                            <td data-col="products">
-                                @if(!empty($productIds))
-                                    <div class="inquiries-pill-group">
-                                        @foreach($productIds as $id)
-                                            @if(isset($productLabels[(int)$id]))
-                                                <span class="inquiries-pill inquiries-pill-p{{ (int)$id }}">{{ $productLabels[(int)$id] }}</span>
-                                            @endif
-                                        @endforeach
-                                    </div>
-                                @else
-                                    &mdash;
-                                @endif
-                            </td>
-                            <td data-col="attachment">
-                                @if(!empty($attachUrls))
-                                    <div class="payouts-attachment-list">
-                                        @foreach(array_slice($attachUrls, 0, 3) as $u)
-                                            <a href="{{ $u }}" target="_blank" rel="noopener" class="payouts-attachment-link">
-                                                <img src="{{ $u }}" alt="Attachment" class="payouts-attachment-thumb">
-                                            </a>
-                                        @endforeach
-                                        @if(count($attachUrls) > 3)
-                                            <span class="payouts-attachment-more">+{{ count($attachUrls) - 3 }}</span>
-                                        @endif
-                                    </div>
-                                @else
-                                    &mdash;
-                                @endif
-                            </td>
-                            <td data-col="message">{{ $amsgPreview }}</td>
-                            <td data-col="referralcode">{!! $referralCode !== '' ? e($referralCode) : '&mdash;' !!}</td>
-                            <td data-col="assignby">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '&mdash;') }}</td>
-                            <td data-col="status"><span class="inquiries-status {{ $statusClass }}">{{ $statusDisp }}</span></td>
-                        </tr>
-                    @empty
-                        <tr><td colspan="18" class="inquiries-empty">No rewarded payouts.</td></tr>
-                    @endforelse
+                    @include('dealer.partials.payouts_rewarded_rows', ['rewarded' => $rewarded, 'productLabels' => $productLabels, 'productNames' => $productNames])
                 </tbody>
             </table>
         </div>
@@ -439,10 +303,14 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    var COMPLETED_STORAGE_KEY = 'dealerPayoutCompletedVisibleColumns';
+    var COMPLETED_STORAGE_KEY = 'dealerPayoutCompletedVisibleColumns_v2';
     // Default + all columns: match dealer inquiries table column IDs
-    var COMPLETED_DEFAULT_COLUMNS = ['inquiryid','date','customer','postcode','city','businessnature','dealtproducts','assignby','status'];
-    var COMPLETED_ALL_COLUMNS = ['inquiryid','date','customer','source','postcode','city','address','contactno','businessnature','users','existingsw','demomode','dealtproducts','message','referralcode','assignby','status'];
+    var COMPLETED_DEFAULT_COLUMNS = ['inquiryid','completeddate','customer','dealtproducts','referralcode','assignby','status'];
+    var COMPLETED_ALL_COLUMNS = ['inquiryid','completeddate','customer','source','postcode','city','address','contactno','businessnature','users','existingsw','demomode','dealtproducts','message','referralcode','assignby','status'];
+
+    var REWARDED_STORAGE_KEY = 'dealerPayoutRewardedVisibleColumns_v2';
+    var REWARDED_DEFAULT_COLUMNS = ['inquiryid','payoutdate','customer','dealtproducts','referralcode','assignby','status'];
+    var REWARDED_ALL_COLUMNS = ['inquiryid','payoutdate','customer','source','postcode','city','address','contactno','businessnature','users','existingsw','demomode','dealtproducts','message','referralcode','assignby','status'];
 
     function getCompletedVisibleColumns() {
         try {
@@ -536,6 +404,43 @@ document.addEventListener('DOMContentLoaded', function() {
             setCompletedVisibleColumns([]);
             refreshCompletedColumnState();
         });
+    }
+
+    function getRewardedVisibleColumns() {
+        try {
+            var raw = localStorage.getItem(REWARDED_STORAGE_KEY);
+            if (raw !== null) {
+                var arr = JSON.parse(raw);
+                if (Array.isArray(arr)) return arr;
+            }
+        } catch (e) {}
+        return REWARDED_DEFAULT_COLUMNS.slice();
+    }
+    function setRewardedVisibleColumns(cols) {
+        try { localStorage.setItem(REWARDED_STORAGE_KEY, JSON.stringify(cols)); } catch (e) {}
+    }
+    function applyRewardedColumns(visible) {
+        var table = document.getElementById('rewardedTable');
+        if (!table) return;
+        REWARDED_ALL_COLUMNS.forEach(function(col) {
+            var show = visible.indexOf(col) !== -1;
+            table.querySelectorAll('th[data-col="' + col + '"], td[data-col="' + col + '"]').forEach(function(el) {
+                el.style.display = show ? '' : 'none';
+            });
+        });
+    }
+    function syncRewardedCheckboxes(visible) {
+        var menu = document.getElementById('rewardedColumnsMenu');
+        if (!menu) return;
+        menu.querySelectorAll('input[data-col]').forEach(function(cb) {
+            var col = cb.getAttribute('data-col');
+            cb.checked = visible.indexOf(col) !== -1;
+        });
+    }
+    function refreshRewardedColumnState() {
+        var visible = getRewardedVisibleColumns();
+        syncRewardedCheckboxes(visible);
+        applyRewardedColumns(visible);
     }
 
     var COMPLETED_PER_PAGE = 10;
@@ -688,6 +593,130 @@ document.addEventListener('DOMContentLoaded', function() {
     applyCompletedPagination();
     applyRewardedPagination();
 
+    refreshRewardedColumnState();
+
+    var rewardedColBtn = document.getElementById('rewardedColumnsBtn');
+    var rewardedColMenu = document.getElementById('rewardedColumnsMenu');
+    if (rewardedColBtn && rewardedColMenu) {
+        rewardedColBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var isOpen = !rewardedColMenu.hidden;
+            rewardedColMenu.hidden = isOpen;
+            rewardedColBtn.setAttribute('aria-expanded', !isOpen);
+            if (!isOpen) {
+                rewardedColMenu.scrollTop = 0;
+                refreshRewardedColumnState();
+            }
+        });
+        document.addEventListener('click', function() {
+            rewardedColMenu.hidden = true;
+            rewardedColBtn.setAttribute('aria-expanded', 'false');
+        });
+        rewardedColMenu.addEventListener('click', function(e) { e.stopPropagation(); });
+    }
+    if (rewardedColMenu) {
+        rewardedColMenu.querySelectorAll('input[data-col]').forEach(function(cb) {
+            cb.addEventListener('change', function() {
+                var visible = [];
+                rewardedColMenu.querySelectorAll('input[data-col]:checked').forEach(function(c) {
+                    visible.push(c.getAttribute('data-col'));
+                });
+                setRewardedVisibleColumns(visible);
+                applyRewardedColumns(visible);
+            });
+        });
+    }
+    var rewardedReset = document.getElementById('rewardedColumnsReset');
+    if (rewardedReset) {
+        rewardedReset.addEventListener('click', function() {
+            setRewardedVisibleColumns(REWARDED_DEFAULT_COLUMNS.slice());
+            refreshRewardedColumnState();
+            var wrap = document.querySelector('#rewardedPanel .inquiries-table-scroll');
+            if (wrap) wrap.scrollLeft = 0;
+        });
+    }
+    var rewardedAll = document.getElementById('rewardedColumnsAll');
+    if (rewardedAll) {
+        rewardedAll.addEventListener('click', function() {
+            setRewardedVisibleColumns(REWARDED_ALL_COLUMNS.slice());
+            refreshRewardedColumnState();
+        });
+    }
+    var rewardedNone = document.getElementById('rewardedColumnsNone');
+    if (rewardedNone) {
+        rewardedNone.addEventListener('click', function() {
+            setRewardedVisibleColumns([]);
+            refreshRewardedColumnState();
+        });
+    }
+
+    // Sync button: refresh Completed rows (same behaviour pattern as dealer inquiries sync)
+    var completedSyncBtn = document.getElementById('completedSyncBtn');
+    if (completedSyncBtn) {
+        completedSyncBtn.addEventListener('click', function() {
+            if (completedSyncBtn.classList.contains('is-syncing')) return;
+            completedSyncBtn.classList.add('is-syncing');
+            var icon = completedSyncBtn.querySelector('.inquiries-sync-icon');
+            if (icon) icon.classList.add('spinning');
+
+            var url = completedSyncBtn.getAttribute('data-sync-url') || window.location.href;
+            fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' })
+                .then(function(res) { return res.ok ? res.json() : Promise.reject(); })
+                .then(function(data) {
+                    var table = document.getElementById('completedTable');
+                    var tbody = table ? table.querySelector('tbody') : null;
+                    if (tbody && data && data.completed_rows !== undefined) {
+                        tbody.innerHTML = data.completed_rows;
+                    }
+
+                    // Keep the existing table behavior after swapping rows
+                    refreshCompletedColumnState();
+                    applyTableFilter('completedTable');
+                    applyCompletedPagination();
+                })
+                .catch(function() {
+                    // swallow errors; button state resets below
+                })
+                .finally(function() {
+                    completedSyncBtn.classList.remove('is-syncing');
+                    if (icon) icon.classList.remove('spinning');
+                });
+        });
+    }
+
+    // Sync button: refresh Rewarded rows (same endpoint)
+    var rewardedSyncBtn = document.getElementById('rewardedSyncBtn');
+    if (rewardedSyncBtn) {
+        rewardedSyncBtn.addEventListener('click', function() {
+            if (rewardedSyncBtn.classList.contains('is-syncing')) return;
+            rewardedSyncBtn.classList.add('is-syncing');
+            var icon = rewardedSyncBtn.querySelector('.inquiries-sync-icon');
+            if (icon) icon.classList.add('spinning');
+
+            var url = rewardedSyncBtn.getAttribute('data-sync-url') || window.location.href;
+            fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' })
+                .then(function(res) { return res.ok ? res.json() : Promise.reject(); })
+                .then(function(data) {
+                    var table = document.getElementById('rewardedTable');
+                    var tbody = table ? table.querySelector('tbody') : null;
+                    if (tbody && data && data.rewarded_rows !== undefined) {
+                        tbody.innerHTML = data.rewarded_rows;
+                    }
+
+                    refreshRewardedColumnState();
+                    applyTableFilter('rewardedTable');
+                    applyRewardedPagination();
+                })
+                .catch(function() {
+                    // swallow errors; button state resets below
+                })
+                .finally(function() {
+                    rewardedSyncBtn.classList.remove('is-syncing');
+                    if (icon) icon.classList.remove('spinning');
+                });
+        });
+    }
+
     var completedPagNav = document.querySelector('#completedPagination .inquiries-assigned-pagination-nav');
     if (completedPagNav) {
         completedPagNav.addEventListener('click', function(e) {
@@ -755,6 +784,15 @@ document.addEventListener('DOMContentLoaded', function() {
             var table = document.getElementById('completedTable');
             if (table) table.querySelectorAll('thead .payouts-grid-filter').forEach(function(inp) { inp.value = ''; });
             applyTableFilter('completedTable');
+        });
+    }
+
+    var rewardedClearFilters = document.getElementById('rewardedClearFilters');
+    if (rewardedClearFilters) {
+        rewardedClearFilters.addEventListener('click', function() {
+            var table = document.getElementById('rewardedTable');
+            if (table) table.querySelectorAll('thead .payouts-grid-filter').forEach(function(inp) { inp.value = ''; });
+            applyTableFilter('rewardedTable');
         });
     }
 

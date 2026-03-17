@@ -6069,6 +6069,16 @@ button.dealer-pagination-btn:disabled {
   margin-top: auto;
 }
 
+/* Dealer inquiries page: remove side padding that creates white gaps */
+.inquiries-page-wrap .dealer-inquiries-panel {
+  padding: 0;
+}
+
+/* Dealer inquiries page: keep "Showing..." bar flush to table */
+.inquiries-page-wrap .inquiries-assigned-pagination {
+  margin-top: 0;
+}
+
 /* Dealer inquiries: scrollbar at the very bottom of the table area */
 .dealer-inquiries-panel {
   display: flex;
