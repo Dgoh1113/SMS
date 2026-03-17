@@ -261,6 +261,7 @@ class DealerController extends Controller
                         'inquiryId' => 'SQL-' . $l->LEADID,
                         'contact' => $contact,
                         'product' => $l->COMPANYNAME ?: 'SQL Account + Stock',
+                        'email' => trim((string) ($l->EMAIL ?? '')),
                         '_sortOrder' => $diffSec,
                     ];
                 })
@@ -276,6 +277,7 @@ class DealerController extends Controller
                     'inquiryId' => $item->inquiryId,
                     'contact' => $item->contact,
                     'product' => $item->product,
+                    'email' => trim((string) ($item->email ?? '')),
                 ])
                 ->values()
                 ->all();
@@ -1174,5 +1176,61 @@ class DealerController extends Controller
             );
         }
         return view('dealer.history', ['activities' => $activities, 'currentPage' => 'history']);
+    }
+
+    public function notifications(Request $request): JsonResponse
+    {
+        $dealerId = $request->session()->get('user_id');
+        if (!$dealerId) {
+            return response()->json(['items' => []], 200);
+        }
+
+        // Assignment notifications: LEAD_ACT rows for leads currently assigned to this dealer
+        // where the subject/description indicates an assignment event.
+        $rows = DB::select(
+            'SELECT FIRST 20
+                la."LEAD_ACTID", la."LEADID", la."CREATIONDATE", la."SUBJECT", la."DESCRIPTION", u."EMAIL" AS "FROM_EMAIL",
+                l."COMPANYNAME", l."CONTACTNAME"
+             FROM "LEAD_ACT" la
+             JOIN "LEAD" l ON l."LEADID" = la."LEADID"
+             LEFT JOIN "USERS" u ON u."USERID" = la."USERID"
+             WHERE l."ASSIGNED_TO" = ?
+               AND (
+                    UPPER(TRIM(COALESCE(la."SUBJECT", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
+                    OR UPPER(TRIM(COALESCE(la."DESCRIPTION", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
+               )
+             ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC',
+            [$dealerId]
+        );
+
+        $items = array_map(function ($r) {
+            $leadId = (int) ($r->LEADID ?? 0);
+            $createdAt = null;
+            if (!empty($r->CREATIONDATE)) {
+                try {
+                    $createdAt = Carbon::parse($r->CREATIONDATE);
+                } catch (\Throwable $e) {
+                    $createdAt = Carbon::createFromTimestamp(strtotime((string) $r->CREATIONDATE));
+                }
+            }
+            $title = 'Inquiry #SQL-' . $leadId . ' assigned';
+            $who = trim((string) ($r->FROM_EMAIL ?? ''));
+            $desc = trim((string) ($r->DESCRIPTION ?? ''));
+            if ($desc === '' && $who !== '') {
+                $desc = 'Assigned by ' . $who;
+            }
+            if ($desc === '') {
+                $desc = 'Assigned';
+            }
+            return [
+                'id' => (string) ($r->LEAD_ACTID ?? ''),
+                'lead_id' => $leadId,
+                'title' => $title,
+                'description' => $desc,
+                'time' => $createdAt ? $createdAt->format('Y-m-d H:i') : '',
+            ];
+        }, $rows);
+
+        return response()->json(['items' => $items]);
     }
 }

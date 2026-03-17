@@ -1,5 +1,11 @@
 @extends('layouts.app')
 @section('title', 'Dashboard – SQL LMS Dealer Console')
+
+{{-- Link to your external CSS file --}}
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+@endpush
+
 @section('content')
 <div class="dashboard-content dealer-dashboard-content">
     {{-- Summary Cards --}}
@@ -47,7 +53,8 @@
     </section>
 
     {{-- Main Row: Active Inquiries + Upcoming Demos --}}
-    <div class="dealer-dashboard-main">
+    <div class="dealer-dashboard-main" id="dealerMainDashboard">
+        
         <div class="dealer-dashboard-main-left">
             <div class="dealer-panel dealer-inquiries-panel">
                 <div class="dealer-panel-header">
@@ -91,11 +98,11 @@
                             <div class="dealer-progress-cell">
                                 <span class="dealer-progress-text">{{ $displayStatus }}</span>
                                 <div class="dealer-status-bar">
-                                    @for($i = 0; $i < 6; $i++)
+                                    @for($j = 0; $j < 6; $j++)
                                         @php
-                                            $isFilled = $i < $filledCount;
+                                            $isFilled = $j < $filledCount;
                                         @endphp
-                                        <div class="dealer-status-segment dealer-status-segment--{{ $i }} {{ $isFilled ? 'dealer-status-segment--filled' : '' }}"></div>
+                                        <div class="dealer-status-segment dealer-status-segment--{{ $j }} {{ $isFilled ? 'dealer-status-segment--filled' : '' }}"></div>
                                     @endfor
                                 </div>
                             </div>
@@ -123,7 +130,14 @@
                 </div>
             </div>
         </div>
-        <div class="dealer-dashboard-main-right">
+
+        <div class="dealer-dashboard-sidebar-divider">
+            <button type="button" class="dealer-right-panel-toggle" id="toggleRightPanelBtn" title="Toggle Sidebar">
+                <i class="bi bi-chevron-right" style="transition: transform 0.3s;"></i>
+            </button>
+        </div>
+
+        <div class="dealer-dashboard-main-right" id="dealerRightPanel">
             <div class="dealer-panel dealer-closed-case-panel dashboard-chart-panel">
                 <div class="dealer-panel-header dealer-panel-header--no-action">
                     <div class="dealer-panel-title-row">
@@ -144,6 +158,7 @@
                     </div>
                 </div>
             </div>
+            
             <div class="dealer-panel dealer-alert-panel">
                 <div class="dealer-panel-header dealer-panel-header--simple">
                     <div class="dealer-panel-title-row">
@@ -163,8 +178,19 @@
                                 <span class="dealer-alert-subtitle">{{ $h->product }}</span>
                             </div>
                             <div class="dealer-alert-actions">
-                                <button type="button" class="dealer-primary-pill">Email Now</button>
-                                <button type="button" class="dealer-secondary-pill">Skip</button>
+                                <button type="button"
+                                        class="dealer-primary-pill dealer-followup-email-btn"
+                                        data-lead-id="{{ $h->leadId }}"
+                                        data-email="{{ $h->email ?? '' }}"
+                                        data-subject="Follow-up: {{ $h->inquiryId }}"
+                                        data-body="Hi,\n\nFollowing up on inquiry {{ $h->inquiryId }}.\n\nThanks">
+                                    Email Now
+                                </button>
+                                <button type="button"
+                                        class="dealer-secondary-pill dealer-followup-skip-btn"
+                                        data-lead-id="{{ $h->leadId }}">
+                                    Skip
+                                </button>
                             </div>
                         </div>
                     @endforeach
@@ -177,9 +203,37 @@
     </div>
 
 </div>
+
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script>
+// Toggle Right Panel Logic
+(function() {
+    var toggleBtn = document.getElementById('toggleRightPanelBtn');
+    var mainContainer = document.getElementById('dealerMainDashboard');
+    
+    if (!toggleBtn || !mainContainer) return;
+
+    // Apply saved state on load
+    if (localStorage.getItem('dealer.rightPanel.hidden') === 'true') {
+        mainContainer.classList.add('is-right-panel-hidden');
+    }
+
+    toggleBtn.addEventListener('click', function() {
+        mainContainer.classList.toggle('is-right-panel-hidden');
+        var isHidden = mainContainer.classList.contains('is-right-panel-hidden');
+        localStorage.setItem('dealer.rightPanel.hidden', isHidden);
+        
+        // Trigger chart resize after CSS transition finishes
+        setTimeout(function() {
+            if (typeof closedChart !== 'undefined' && closedChart !== null) {
+                closedChart.resize();
+            }
+        }, 300);
+    });
+})();
+
+// Chart Logic
 (function() {
     @php
         $closedLabels = $closedCaseChartData['chartLabels'] ?? ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
@@ -203,9 +257,9 @@
         year: { labels: yearLabels, data: yearData }
     };
 
-    var closedChart = null;
+    window.closedChart = null; // Made global so toggle function can resize it
     if (ctx && weekData) {
-        closedChart = new Chart(ctx, {
+        window.closedChart = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: weekLabels,
@@ -236,15 +290,16 @@
             document.querySelectorAll('#dealerClosedCaseRangeTabs .dashboard-chart-tab[data-range]').forEach(function(b) { b.classList.remove('active'); });
             btn.classList.add('active');
 
-            if (closedChart) {
-                closedChart.data.labels = ranges[range].labels;
-                closedChart.data.datasets[0].data = ranges[range].data;
-                closedChart.update();
+            if (window.closedChart) {
+                window.closedChart.data.labels = ranges[range].labels;
+                window.closedChart.data.datasets[0].data = ranges[range].data;
+                window.closedChart.update();
             }
         });
     });
 })();
 
+// Pagination Logic
 (function() {
     var pagination = document.getElementById('inquiriesPagination');
     var rows = document.querySelectorAll('.dealer-inquiry-row');
@@ -292,6 +347,58 @@
     nextBtn.addEventListener('click', function() { if (!this.disabled) goToPage(currentPage + 1); });
     buildPageNumbers();
     goToPage(1);
+})();
+
+// Follow-up Skip & Email Logic
+(function() {
+    var SKIP_KEY = 'dealer.followups.skip.v1';
+    function loadSkipped() {
+        try { return JSON.parse(localStorage.getItem(SKIP_KEY) || '{}') || {}; } catch (e) { return {}; }
+    }
+    function saveSkipped(obj) {
+        try { localStorage.setItem(SKIP_KEY, JSON.stringify(obj || {})); } catch (e) {}
+    }
+
+    var skipped = loadSkipped();
+    document.querySelectorAll('.dealer-followup-skip-btn[data-lead-id]').forEach(function(btn) {
+        var id = btn.getAttribute('data-lead-id');
+        if (id && skipped[id]) {
+            var item = btn.closest('.dealer-alert-item');
+            if (item) item.remove();
+        }
+    });
+
+    document.addEventListener('click', function(e) {
+        var emailBtn = e.target.closest('.dealer-followup-email-btn');
+        if (emailBtn) {
+            e.preventDefault();
+            var to = (emailBtn.getAttribute('data-email') || '').trim();
+            if (!to) {
+                alert('No email address found for this inquiry.');
+                return;
+            }
+            var subject = emailBtn.getAttribute('data-subject') || '';
+            var body = emailBtn.getAttribute('data-body') || '';
+            var href = 'mailto:' + encodeURIComponent(to)
+                + '?subject=' + encodeURIComponent(subject)
+                + '&body=' + encodeURIComponent(body);
+            window.location.href = href;
+            return;
+        }
+
+        var skipBtn = e.target.closest('.dealer-followup-skip-btn');
+        if (skipBtn) {
+            e.preventDefault();
+            var leadId = skipBtn.getAttribute('data-lead-id');
+            if (leadId) {
+                var s = loadSkipped();
+                s[leadId] = Date.now();
+                saveSkipped(s);
+            }
+            var item = skipBtn.closest('.dealer-alert-item');
+            if (item) item.remove();
+        }
+    });
 })();
 </script>
 @endpush
