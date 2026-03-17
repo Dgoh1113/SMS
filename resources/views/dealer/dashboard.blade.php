@@ -4,6 +4,44 @@
 {{-- Link to your external CSS file --}}
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <style>
+        /* Force progress cell to stay on one line and align all progress bars */
+        .dealer-progress-cell {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            align-items: center !important;
+            gap: 10px !important;
+            width: 100%;
+            min-width: 0 !important; /* Prevents column blowout */
+        }
+        
+        .dealer-progress-text {
+            flex: 0 0 85px !important; /* Fixed width stops the progress bars from shifting left/right */
+            width: 85px !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            text-align: left !important;
+            line-height: 1 !important;
+            margin: 0 !important;
+        }
+
+        .dealer-status-bar {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            align-items: center !important;
+            gap: 4px !important;
+            flex: 1 1 auto !important;
+            min-width: 0 !important;
+        }
+
+        .dealer-status-segment {
+            flex: 1 1 0 !important;
+            min-width: 8px !important;
+        }
+    </style>
 @endpush
 
 @section('content')
@@ -90,10 +128,14 @@
                             $filledCount = $idx + 1;
                             $displayStatus = $status;
                             $rowPage = (int) floor($i / ($inquiriesPerPage ?? 6)) + 1;
+                            
+                            // Customer name truncation limit to 24 characters
+                            $customerFull = trim(($r->COMPANYNAME ?? '') . ' ' . ($r->CONTACTNAME ?? '')) ?: '—';
+                            $customerShort = \Illuminate\Support\Str::limit($customerFull, 24, '...');
                         @endphp
                         <div class="dealer-table-row dealer-inquiry-row" data-page="{{ $rowPage }}">
                             <span class="dealer-inquiry-id">#SQL-{{ $r->LEADID }}</span>
-                            <span>{{ trim(($r->COMPANYNAME ?? '') . ' ' . ($r->CONTACTNAME ?? '')) ?: '—' }}</span>
+                            <span title="{{ $customerFull !== '—' ? $customerFull : '' }}">{{ $customerShort }}</span>
                             <span>{{ ($r->ACT_LAST_UPDATE ?? $r->LASTMODIFIED) ? date('M j, Y', strtotime($r->ACT_LAST_UPDATE ?? $r->LASTMODIFIED)) : '—' }}</span>
                             <div class="dealer-progress-cell">
                                 <span class="dealer-progress-text">{{ $displayStatus }}</span>

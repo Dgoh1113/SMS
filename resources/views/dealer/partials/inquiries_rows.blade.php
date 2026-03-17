@@ -26,7 +26,11 @@
             default:                    $statusClass = 'inquiries-status-new'; break;
         }
         $statusDisplay = $rawStatus === '' ? '—' : (in_array($rawStatus, ['FOLLOWUP', 'FOLLOW UP'], true) ? 'Follow Up' : $rawStatus);
+        
+        // Full customer name
         $customerName = trim(($r->COMPANYNAME ?? '') . ' ' . ($r->CONTACTNAME ?? '')) ?: '—';
+        // Shortened version (max 33 chars)
+        $customerShort = \Illuminate\Support\Str::limit($customerName, 33, '...');
     @endphp
     @php
         $addr1 = trim((string)($r->ADDRESS1 ?? ''));
@@ -37,7 +41,12 @@
     <tr class="inquiry-row" data-lead-id="{{ $r->LEADID }}" data-search="{{ strtolower(trim(($r->COMPANYNAME ?? '').' '.($r->CONTACTNAME ?? '').' '.($r->LEADID ?? ''))) }}" data-page="{{ $rowPage }}">
         <td data-col="inquiryid">#SQL-{{ $r->LEADID }}</td>
         <td data-col="date">{{ $r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '—' }}</td>
-        <td data-col="customer">{{ $customerName }}</td>
+        
+        {{-- Updated Customer Column --}}
+        <td data-col="customer">
+            <span title="{{ $customerName !== '—' ? $customerName : '' }}">{{ $customerShort }}</span>
+        </td>
+        
         <td data-col="source">{{ $r->ASSIGNED_BY_EMAIL ?? '—' }}</td>
         <td data-col="postcode">{{ $r->POSTCODE ?? '—' }}</td>
         <td data-col="city">{{ $r->CITY ?? '—' }}</td>
