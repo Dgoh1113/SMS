@@ -22,64 +22,93 @@
         </nav>
     </div>
 
+    <div class="rrp-filter-row">
+        <form method="GET" class="rrp-filter-form">
+            <select name="quarter" class="rrp-filter-select">
+                @foreach (['Q1', 'Q2', 'Q3', 'Q4'] as $q)
+                    <option value="{{ $q }}" {{ ($selectedQuarter ?? 'Q1') === $q ? 'selected' : '' }}>{{ $q }}</option>
+                @endforeach
+            </select>
+            <select name="year" class="rrp-filter-select">
+                @foreach (($yearOptions ?? []) as $y)
+                    <option value="{{ $y }}" {{ (int) ($selectedYear ?? now()->format('Y')) === (int) $y ? 'selected' : '' }}>{{ $y }}</option>
+                @endforeach
+            </select>
+            <label class="rrp-filter-check">
+                <input type="hidden" name="include_dealer" value="0">
+                <input type="checkbox" name="include_dealer" value="1" {{ !empty($includeDealer) ? 'checked' : '' }}>
+                Dealer
+            </label>
+            <label class="rrp-filter-check">
+                <input type="hidden" name="include_estream" value="0">
+                <input type="checkbox" name="include_estream" value="1" {{ !empty($includeEstream) ? 'checked' : '' }}>
+                E Stream
+            </label>
+            <button type="submit" class="rrp-filter-apply">Apply</button>
+        </form>
+    </div>
+
     <section class="rrp-top-grid">
         <div class="rrp-metric-card">
-            <div class="rrp-metric-label">Total Volume Accepted</div>
+            <div class="rrp-metric-label">Total Inquiries</div>
             <div class="rrp-metric-value">{{ number_format($totalVolume) }}</div>
             <div class="rrp-metric-sub">Total leads assigned to dealers in {{ $selectedQuarter ?? 'Q3' }}, {{ $selectedYear ?? now()->format('Y') }}</div>
         </div>
         <div class="rrp-metric-card">
-            <div class="rrp-metric-label">Avg Rejection Rate</div>
+            <div class="rrp-metric-label">Average Fail Rate</div>
             <div class="rrp-metric-value">{{ number_format($avgRejectionRate, 1) }}%</div>
             <div class="rrp-metric-sub">Across active dealers in {{ $selectedQuarter ?? 'Q3' }}, {{ $selectedYear ?? now()->format('Y') }}</div>
         </div>
         <div class="rrp-metric-card">
-            <div class="rrp-metric-label">Top Performing Dealer</div>
-            <div class="rrp-metric-value">{{ $topDealer['name'] ?? $topDealer['email'] ?? '—' }}</div>
-            <div class="rrp-metric-sub">Highest revenue (closed volume)</div>
+            <div class="rrp-metric-label">Top Dealer by Product Conversion</div>
+            <div class="rrp-metric-value">{{ $topProductDealer['name'] ?? '-' }}</div>
+            <div class="rrp-metric-sub">
+                {{ isset($topProductDealer['converted_products']) ? number_format((int) $topProductDealer['converted_products']) : 0 }} converted products in {{ $selectedQuarter ?? 'Q1' }}, {{ $selectedYear ?? now()->format('Y') }}
+            </div>
         </div>
     </section>
 
     <section class="rrp-panel">
         <div class="rrp-panel-header">
             <div>
-                <div class="rrp-panel-title">Volume vs. Revenue Analysis</div>
-                <div class="rrp-panel-subtitle">Performance by leading dealer branches</div>
+                <div class="rrp-panel-title">Dealer Volume vs Outcomes</div>
+                <div class="rrp-panel-subtitle">Top dealers for {{ $selectedQuarter ?? 'Q1' }}, {{ $selectedYear ?? now()->format('Y') }}</div>
             </div>
             <div class="rrp-legend">
-                <span class="rrp-legend-item"><span class="rrp-dot rrp-dot-purple"></span> Total Volume</span>
-                <span class="rrp-legend-item"><span class="rrp-dot rrp-dot-gold"></span> Closed Volume</span>
-                <span class="rrp-legend-item"><span class="rrp-dot rrp-dot-green"></span> Rewarded Only</span>
+                <span class="rrp-legend-item"><span class="rrp-dot rrp-dot-purple"></span> Total Leads</span>
+                <span class="rrp-legend-item"><span class="rrp-dot rrp-dot-gold"></span> Closed Leads</span>
+                <span class="rrp-legend-item"><span class="rrp-dot rrp-dot-green"></span> Rewarded Leads</span>
             </div>
         </div>
         <div class="rrp-panel-body">
-            <canvas id="rrpVolumeChart"></canvas>
+            @if (empty($chartLabels))
+                <p class="rrp-empty">No dealer performance data for selected period.</p>
+            @else
+                <div class="rrp-chart-wrap">
+                    <canvas id="rrpVolumeChart"></canvas>
+                </div>
+            @endif
         </div>
     </section>
 
     <section class="rrp-panel">
         <div class="rrp-panel-header">
             <div>
-                <div class="rrp-panel-title">Dealer Rankings</div>
-                <div class="rrp-panel-subtitle">Sorted by total revenue (closed volume × 1,000)</div>
+                <div class="rrp-panel-title">Dealer Product Conversion Ranking</div>
+                <div class="rrp-panel-subtitle">Sorted by closed products in selected quarter</div>
             </div>
-            <div class="rrp-pill rrp-pill-filter">
-                All Territories
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-                    <path d="m19 9-7 7-7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-            </div>
+            <div class="rrp-pill rrp-pill-purple">{{ $selectedQuarter ?? 'Q1' }} {{ $selectedYear ?? now()->format('Y') }}</div>
         </div>
         <div class="rrp-panel-body">
             <div class="table-responsive">
                 <table class="dashboard-table rrp-table">
                     <thead>
                         <tr>
-                            <th>Name</th>
-                            <th>Total Leads</th>
-                            <th>Agreements Closed</th>
-                            <th>Rejection Rate</th>
-                            <th>Total Revenue</th>
+                            <th>Dealer Name</th>
+                            <th>Total Inquiries</th>
+                            <th>Closed Inquiries</th>
+                            <th>Fail Rate</th>
+                            <th>Closed Products</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -92,10 +121,10 @@
                                 <td>{{ number_format($row['total']) }}</td>
                                 <td>{{ number_format($row['closed']) }}</td>
                                 <td>{{ number_format($row['rejection_rate'], 1) }}%</td>
-                                <td>${{ number_format($row['revenue']) }}</td>
+                                <td>{{ number_format((int) ($row['converted_products'] ?? 0)) }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="5">No dealer data for the selected period.</td></tr>
+                            <tr><td colspan="5" class="inquiries-empty">No dealer data for selected quarter and year.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -150,28 +179,37 @@
             const closed = @json($chartClosed);
             const rewarded = @json($chartRewarded);
 
-            // Total bar first (main), then Closed and Rewarded; same categoryPercentage so each dealer's bars stick together
+            // Keep grouped bars consistent and readable.
             const data = {
                 labels: labels,
                 datasets: [
                     {
-                        label: 'Total Volume',
+                        label: 'Total Leads',
                         data: volume,
-                        backgroundColor: 'rgba(124, 58, 237, 0.9)',
+                        backgroundColor: 'rgba(79, 70, 229, 0.88)',
+                        borderColor: 'rgba(67, 56, 202, 1)',
+                        borderWidth: 1.2,
+                        borderRadius: 8,
                         barPercentage: 0.85,
                         categoryPercentage: 0.9,
                     },
                     {
-                        label: 'Closed Volume',
+                        label: 'Closed Leads',
                         data: closed,
-                        backgroundColor: 'rgba(234, 179, 8, 0.9)',
+                        backgroundColor: 'rgba(234, 179, 8, 0.88)',
+                        borderColor: 'rgba(202, 138, 4, 1)',
+                        borderWidth: 1.2,
+                        borderRadius: 8,
                         barPercentage: 0.85,
                         categoryPercentage: 0.9,
                     },
                     {
-                        label: 'Rewarded Only',
+                        label: 'Rewarded Leads',
                         data: rewarded,
-                        backgroundColor: 'rgba(34, 197, 94, 0.9)',
+                        backgroundColor: 'rgba(22, 163, 74, 0.88)',
+                        borderColor: 'rgba(21, 128, 61, 1)',
+                        borderWidth: 1.2,
+                        borderRadius: 8,
                         barPercentage: 0.85,
                         categoryPercentage: 0.9,
                     }
@@ -183,21 +221,47 @@
                 data: data,
                 options: {
                     responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
                     plugins: {
                         legend: {
                             position: 'top',
+                            labels: {
+                                color: '#475569',
+                                usePointStyle: true,
+                                boxWidth: 8,
+                            }
                         },
                         title: {
                             display: false,
                         },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    const value = Number(ctx.parsed?.y ?? 0);
+                                    return `${ctx.dataset.label}: ${value.toLocaleString()}`;
+                                }
+                            }
+                        }
                     },
                     scales: {
                         x: {
                             grid: { display: false },
+                            ticks: { color: '#475569' },
                         },
                         y: {
                             beginAtZero: true,
-                            grid: { color: '#e5e7eb' },
+                            grid: { color: 'rgba(148, 163, 184, 0.25)' },
+                            ticks: {
+                                precision: 0,
+                                color: '#64748b',
+                            },
+                            title: {
+                                display: true,
+                                text: 'Number of inquiries',
+                                color: '#64748b',
+                                font: { size: 11, weight: '700' }
+                            }
                         },
                     },
                 },
@@ -210,3 +274,4 @@
         });
     </script>
 @endpush
+

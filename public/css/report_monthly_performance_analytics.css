@@ -29,34 +29,73 @@
 .reports-period-row {
   display: flex;
   justify-content: flex-end;
-  margin: 6px 0 12px;
+  margin: 0 0 18px;
 }
 .reports-period-form-compact {
-  display: flex;
+  display: inline-flex;
   gap: 8px;
   align-items: center;
   flex-wrap: wrap;
 }
 .reports-period-select {
+  height: 34px;
+  min-width: 100px;
   padding: 6px 10px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border: 1px solid #d6d9e8;
+  border-radius: 9px;
   background: #ffffff;
   font-size: 12px;
-  font-weight: 600;
-  color: #1f2933;
+  font-weight: 700;
+  color: #1f2937;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+.reports-period-select:focus,
+.reports-period-select:focus-visible {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.14);
+}
+.reports-period-form-compact .reports-period-select[name="month"] {
+  min-width: 100px;
+}
+.reports-period-form-compact .reports-period-select[name="year"] {
+  min-width: 100px;
+}
+.reports-period-check {
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  border: 1px solid #d6d9e8;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.reports-period-check input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: #6d4ad9;
 }
 .reports-period-apply {
-  padding: 6px 12px;
-  border: none;
-  border-radius: 8px;
-  background: #7f5af0;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid #6d4ad9;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #7c5bff 0%, #6d4ad9 100%);
   color: #ffffff;
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
+  transition: filter 0.16s ease;
 }
-.reports-period-apply:hover { background: #6d4ad9; }
+.reports-period-apply:hover {
+  filter: brightness(1.03);
+}
 
 /* Title dropdown (light purple) */
 .reports-title-dropdown { position: relative; display: inline-flex; }
@@ -180,6 +219,11 @@
   .dashboard-metrics-grid { grid-template-columns: minmax(0, 1fr); }
   .dashboard-metrics-grid > * { grid-column: span 1; }
   .reports-period-row { justify-content: flex-start; }
+  .reports-period-form-compact {
+    gap: 8px;
+    justify-content: flex-start;
+  }
+  .reports-period-select { min-width: 100px; }
 }
 
 @media (min-width: 1600px) {

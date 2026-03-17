@@ -100,8 +100,67 @@
   justify-content: flex-end;
 }
 .rrp-tabs-row {
-  margin: -24px 0 18px;
+  margin: 0 0 18px;
 }
+
+.rrp-filter-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 18px;
+}
+.rrp-filter-form {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.rrp-filter-select {
+  height: 34px;
+  min-width: 100px;
+  padding: 6px 10px;
+  border-radius: 9px;
+  border: 1px solid #d6d9e8;
+  background: #ffffff;
+  color: #1f2937;
+  font-size: 12px;
+  font-weight: 700;
+}
+.rrp-filter-select:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.14);
+}
+.rrp-filter-check {
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  border-radius: 9px;
+  border: 1px solid #d6d9e8;
+  background: #ffffff;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.rrp-filter-check input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: #6d4ad9;
+}
+.rrp-filter-apply {
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 9px;
+  border: 1px solid #6d4ad9;
+  background: linear-gradient(135deg, #7c5bff 0%, #6d4ad9 100%);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.rrp-filter-apply:hover { filter: brightness(1.03); }
 
 .rrp-header {
   margin-bottom: 18px;
@@ -171,10 +230,10 @@
 }
 .rrp-metric-card {
   background: #ffffff;
-  border-radius: 14px;
+  border-radius: 12px;
   padding: 14px 16px;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
-  border: 1px solid #eef2ff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+  border: 1px solid #e5e7eb;
 }
 .rrp-metric-label {
   font-size: 11px;
@@ -187,19 +246,19 @@
   margin-top: 8px;
   font-size: 22px;
   font-weight: 900;
-  color: #0f172a;
+  color: #1e293b;
 }
 .rrp-metric-sub {
   margin-top: 6px;
-  font-size: 11px;
-  color: #94a3b8;
+  font-size: 12px;
+  color: #64748b;
 }
 
 .rrp-panel {
   background: #ffffff;
-  border-radius: 14px;
-  border: 1px solid #eef2ff;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
   overflow: hidden;
   margin-top: 14px;
 }
@@ -209,16 +268,16 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  border-bottom: 1px solid #eef2ff;
+  border-bottom: 1px solid #e5e7eb;
 }
 .rrp-panel-title {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
-  color: #0f172a;
+  color: #1e293b;
 }
 .rrp-panel-subtitle {
-  font-size: 11px;
-  color: #94a3b8;
+  font-size: 12px;
+  color: #64748b;
   margin-top: 2px;
 }
 .rrp-panel-body {
@@ -229,7 +288,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 11px;
+  font-size: 12px;
   color: #64748b;
 }
 .rrp-legend-item { display: inline-flex; align-items: center; }
@@ -244,34 +303,44 @@
 .rrp-dot-gold { background: #eab308; }
 .rrp-dot-green { background: #22c55e; }
 
-.rrp-panel-body canvas {
-  max-height: 260px;
-}
+.rrp-chart-wrap { height: 300px; }
+.rrp-chart-wrap canvas { width: 100% !important; height: 100% !important; }
+.rrp-empty { margin: 4px 0; font-size: 13px; color: #64748b; }
 
 .rrp-table thead th {
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.06em;
-  color: #94a3b8;
+  color: #4c1d95;
+  background: #ede9fe;
   text-transform: uppercase;
+  border-bottom: 1px solid #ddd6fe;
 }
 .rrp-table tbody td {
-  font-size: 12px;
+  font-size: 13px;
+  color: #1f2937;
 }
 .rrp-dealer-name {
   font-weight: 800;
-  color: #0f172a;
+  color: #1e293b;
 }
 .rrp-dealer-id {
-  font-size: 10px;
-  color: #94a3b8;
+  font-size: 11px;
+  color: #9ca3af;
 }
 .rrp-page {
-  padding: 24px 24px;
-    background: #f6f8ff;
-    text-align: left;
+  padding: 0 24px 24px;
+  background: #f7f7ff;
+  color: #1e293b;
+  min-width: 0;
+  overflow-x: hidden;
+  text-align: left;
 }
 
 @media (max-width: 1100px) {
   .rrp-header { flex-direction: column; align-items: flex-start; }
   .rrp-top-grid { grid-template-columns: 1fr; }
+  .rrp-filter-row { justify-content: flex-start; }
+  .rrp-filter-form { flex-wrap: wrap; }
+  .rrp-panel-header { flex-direction: column; align-items: flex-start; }
+  .rrp-chart-wrap { height: 260px; }
 }

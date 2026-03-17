@@ -47,6 +47,16 @@
                 </option>
             @endforeach
         </select>
+        <label class="reports-period-check">
+            <input type="hidden" name="include_dealer" value="0">
+            <input type="checkbox" name="include_dealer" value="1" {{ !empty($includeDealer) ? 'checked' : '' }}>
+            Dealer
+        </label>
+        <label class="reports-period-check">
+            <input type="hidden" name="include_estream" value="0">
+            <input type="checkbox" name="include_estream" value="1" {{ !empty($includeEstream) ? 'checked' : '' }}>
+            E Stream
+        </label>
         <button type="submit" class="reports-period-apply">Apply</button>
     </form>
 </div>
@@ -83,7 +93,7 @@
         ['key' => 'Confirmed', 'label' => 'CONFIRMED', 'value' => $activityStatus['Confirmed'] ?? 0, 'dealer' => true],
         [
             'key' => 'CompletedPendingReward',
-            'label' => 'COMPLETED AND PENDING REWARD',
+            'label' => 'COMPLETED',
             'value' => ($activityStatus['Completed'] ?? 0) + ($payoutStatus['Pending'] ?? 0),
             'link' => route('admin.rewards', ['tab' => 'completed']),
             'link_aria' => 'View payouts pending reward'

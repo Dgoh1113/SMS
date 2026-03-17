@@ -708,14 +708,14 @@ class DealerController extends Controller
         if (! is_string($path) || $path === '') {
             return response('', 404);
         }
-        $path = trim(str_replace('\\', '/', $path));
+        $path = trim(str_replace('\\', '/', rawurldecode($path)));
         if (str_contains($path, '..') || ! str_starts_with($path, 'inquiry-attachments/')) {
             return response('', 404);
         }
-        if (! Storage::disk('public')->exists($path)) {
+        $fullPath = $this->resolveInquiryAttachmentPath($path);
+        if ($fullPath === null) {
             return response('', 404);
         }
-        $fullPath = Storage::disk('public')->path($path);
         $mime = mime_content_type($fullPath) ?: 'image/jpeg';
         return response()->file($fullPath, ['Content-Type' => $mime]);
     }
@@ -741,8 +741,8 @@ class DealerController extends Controller
         $str = trim(str_replace('\\', '/', (string) $attachment));
         if (str_starts_with($str, 'inquiry-attachments') && ! preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', $str)) {
             $path = str_contains($str, ',') ? trim(str_replace('\\', '/', explode(',', $str)[0])) : $str;
-            $fullPath = Storage::disk('public')->path($path);
-            if (! is_file($fullPath)) {
+            $fullPath = $this->resolveInquiryAttachmentPath($path);
+            if ($fullPath === null) {
                 return response('', 404);
             }
             $mime = mime_content_type($fullPath) ?: 'image/jpeg';
@@ -762,6 +762,25 @@ class DealerController extends Controller
             return response($attachment, 200, ['Content-Type' => $mime]);
         }
         return response('', 404);
+    }
+
+    private function resolveInquiryAttachmentPath(string $path): ?string
+    {
+        $path = ltrim($path, '/');
+        $candidates = [
+            Storage::disk('public')->path($path),
+            storage_path('app/public/' . $path),
+            storage_path('app/private/' . $path),
+            storage_path('app/' . $path),
+            public_path($path),
+            public_path('storage/' . $path),
+        ];
+        foreach ($candidates as $candidate) {
+            if (is_file($candidate)) {
+                return $candidate;
+            }
+        }
+        return null;
     }
 
     public function updateInquiryStatus(Request $request): JsonResponse
@@ -966,12 +985,315 @@ class DealerController extends Controller
     {
         return view('dealer.rewards', ['currentPage' => 'rewards']);
     }
-public function reports(Request $request): View
-{
-    $dealerId = $request->session()->get('user_id');
-    $period = $request->get('period', 'month');
-    $fromInput = $request->get('from');
-    $toInput = $request->get('to');
+
+    public function payouts(Request $request): View
+    {
+        $dealerId = $request->session()->get('user_id');
+        $rows = [];
+        $completed = [];
+        $rewarded = [];
+        $totalCompletedLeads = 0;
+
+        if ($dealerId) {
+            // Base LEAD data (dealer-only)
+            $rows = DB::select(
+                'SELECT FIRST 200
+                    "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL",
+                    "ADDRESS1","ADDRESS2","CITY","POSTCODE","BUSINESSNATURE","USERCOUNT",
+                    "EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION","REFERRALCODE",
+                    "CURRENTSTATUS","CREATEDAT","CREATEDBY","ASSIGNED_TO","LASTMODIFIED"
+                 FROM "LEAD"
+                 WHERE "ASSIGNED_TO" = ?
+                 ORDER BY "LEADID" DESC',
+                [$dealerId]
+            );
+
+            // Override CURRENTSTATUS from latest LEAD_ACT per LEADID (same approach as admin rewards)
+            try {
+                $leadIds = array_values(array_unique(array_filter(array_map(
+                    fn ($r) => (int) ($r->LEADID ?? 0),
+                    $rows
+                ))));
+                if (!empty($leadIds)) {
+                    $placeholders = implode(',', array_fill(0, count($leadIds), '?'));
+                    $acts = DB::select(
+                        'SELECT a."LEADID", a."STATUS"
+                         FROM "LEAD_ACT" a
+                         JOIN (
+                             SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
+                             FROM "LEAD_ACT"
+                             WHERE "LEADID" IN (' . $placeholders . ')
+                             GROUP BY "LEADID"
+                         ) x
+                           ON x."LEADID" = a."LEADID" AND x.MAXCD = a."CREATIONDATE"
+                         WHERE a."LEADID" IN (' . $placeholders . ')',
+                        array_merge($leadIds, $leadIds)
+                    );
+                    $statusMap = [];
+                    foreach ($acts as $a) {
+                        $lid = (int) ($a->LEADID ?? 0);
+                        if ($lid > 0) {
+                            $statusMap[$lid] = trim((string) ($a->STATUS ?? ''));
+                        }
+                    }
+                    if (!empty($statusMap)) {
+                        foreach ($rows as $r) {
+                            $lid = (int) ($r->LEADID ?? 0);
+                            if ($lid > 0 && isset($statusMap[$lid])) {
+                                $r->CURRENTSTATUS = $statusMap[$lid];
+                            }
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                // keep CURRENTSTATUS from LEAD if override fails
+            }
+
+            // Attach latest COMPLETED dealt products per lead (for "Dealt Products" column)
+            try {
+                if (!empty($leadIds)) {
+                    $placeholders = implode(',', array_fill(0, count($leadIds), '?'));
+                    $dealRows = DB::select(
+                        'SELECT a."LEADID", a."DEALTPRODUCT"
+                         FROM "LEAD_ACT" a
+                         JOIN (
+                             SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
+                             FROM "LEAD_ACT"
+                             WHERE UPPER(TRIM("STATUS")) = \'COMPLETED\' AND "LEADID" IN (' . $placeholders . ')
+                             GROUP BY "LEADID"
+                         ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
+                         WHERE UPPER(TRIM(a."STATUS")) = \'COMPLETED\' AND a."LEADID" IN (' . $placeholders . ')',
+                        array_merge($leadIds, $leadIds)
+                    );
+                    $dealtMap = [];
+                    foreach ($dealRows as $dr) {
+                        $lid = (int) ($dr->LEADID ?? 0);
+                        if ($lid > 0) {
+                            $dealtMap[$lid] = $dr->DEALTPRODUCT ?? $dr->dealtproduct ?? null;
+                        }
+                    }
+                    if (!empty($dealtMap)) {
+                        foreach ($rows as $r) {
+                            $lid = (int) ($r->LEADID ?? 0);
+                            if ($lid > 0 && isset($dealtMap[$lid])) {
+                                $r->DEALTPRODUCT = $dealtMap[$lid];
+                            }
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                // ignore dealt product mapping failures
+            }
+
+            foreach ($rows as $r) {
+                $status = strtoupper(trim((string) ($r->CURRENTSTATUS ?? '')));
+                $referral = trim((string) ($r->REFERRALCODE ?? ''));
+                if ($status === 'COMPLETED') {
+                    if ($referral !== '') {
+                        $completed[] = $r;
+                    }
+                } elseif (in_array($status, ['REWARDED', 'PAID'], true)) {
+                    $rewarded[] = $r;
+                }
+            }
+
+            // Attach latest REWARDED/PAID attachment per lead for rewarded list
+            try {
+                $rewardedIds = array_values(array_unique(array_filter(array_map(
+                    fn ($r) => (int) ($r->LEADID ?? 0),
+                    $rewarded
+                ))));
+                if (!empty($rewardedIds)) {
+                    $placeholders = implode(',', array_fill(0, count($rewardedIds), '?'));
+                    $attachRows = DB::select(
+                        'SELECT a."LEADID", a."LEAD_ACTID", a."ATTACHMENT"
+                         FROM "LEAD_ACT" a
+                         JOIN (
+                             SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
+                             FROM "LEAD_ACT"
+                             WHERE UPPER(TRIM("STATUS")) IN (\'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\')
+                               AND "LEADID" IN (' . $placeholders . ')
+                             GROUP BY "LEADID"
+                         ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
+                         WHERE UPPER(TRIM(a."STATUS")) IN (\'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\')
+                           AND a."LEADID" IN (' . $placeholders . ')',
+                        array_merge($rewardedIds, $rewardedIds)
+                    );
+                    $attachmentMap = [];
+                    $attachmentActMap = [];
+                    foreach ($attachRows as $ar) {
+                        $lid = (int) ($ar->LEADID ?? 0);
+                        if ($lid > 0) {
+                            $attachmentMap[$lid] = $ar->ATTACHMENT ?? $ar->attachment ?? null;
+                            $attachmentActMap[$lid] = (int) ($ar->LEAD_ACTID ?? 0);
+                        }
+                    }
+                    if (!empty($attachmentMap)) {
+                        foreach ($rewarded as $r) {
+                            $lid = (int) ($r->LEADID ?? 0);
+                            if ($lid > 0 && array_key_exists($lid, $attachmentMap)) {
+                                $r->REWARD_ATTACHMENT = $attachmentMap[$lid];
+                                $r->REWARD_LEAD_ACT_ID = $attachmentActMap[$lid] ?? 0;
+                            }
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                // ignore attachment mapping failures
+            }
+
+            // Build attachment URLs for Rewarded list (dealer)
+            foreach ($rewarded as $r) {
+                $urls = [];
+                $attachmentRaw = $r->REWARD_ATTACHMENT ?? null;
+                $leadId = (int) ($r->LEADID ?? 0);
+                $leadActId = (int) ($r->REWARD_LEAD_ACT_ID ?? 0);
+                if ($attachmentRaw !== null && trim((string) $attachmentRaw) !== '') {
+                    $attachmentStr = trim((string) $attachmentRaw);
+                    $attachmentStr = str_replace('\\', '/', $attachmentStr);
+                    if (str_contains($attachmentStr, ',') || str_starts_with($attachmentStr, 'inquiry-attachments')) {
+                        foreach (explode(',', $attachmentStr) as $path) {
+                            $path = trim(str_replace('\\', '/', $path));
+                            if ($path !== '' && str_starts_with($path, 'inquiry-attachments/')) {
+                                $urls[] = route('dealer.inquiries.serve-attachment', ['path' => $path]);
+                            }
+                        }
+                    } else {
+                        if (str_starts_with($attachmentStr, 'inquiry-attachments/')) {
+                            $urls[] = route('dealer.inquiries.serve-attachment', ['path' => $attachmentStr]);
+                        } elseif ($leadId > 0 && $leadActId > 0 && preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', $attachmentStr)) {
+                            $urls[] = route('dealer.inquiries.activity-attachment', ['leadId' => $leadId, 'leadActId' => $leadActId]);
+                        }
+                    }
+                }
+                $r->REWARD_ATTACHMENT_URLS = $urls;
+            }
+
+            // Resolve CREATEDBY_NAME and ASSIGNED_TO_NAME for display (same as admin rewards)
+            try {
+                $ids = [];
+                foreach (array_merge($completed, $rewarded) as $r) {
+                    $to = trim((string) ($r->ASSIGNED_TO ?? ''));
+                    $by = trim((string) ($r->CREATEDBY ?? ''));
+                    if ($to !== '') {
+                        $ids[$to] = true;
+                    }
+                    if ($by !== '') {
+                        $ids[$by] = true;
+                    }
+                }
+                $ids = array_keys($ids);
+                if (!empty($ids)) {
+                    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+                    $users = DB::select(
+                        'SELECT "USERID","SYSTEMROLE","ALIAS","COMPANY","EMAIL"
+                         FROM "USERS"
+                         WHERE CAST("USERID" AS VARCHAR(50)) IN (' . $placeholders . ')',
+                        $ids
+                    );
+                    $assignedToMap = [];
+                    $createdByMap = [];
+                    foreach ($users as $u) {
+                        $uid = trim((string) ($u->USERID ?? ''));
+                        if ($uid === '') {
+                            continue;
+                        }
+                        $role = trim((string) ($u->SYSTEMROLE ?? ''));
+                        $company = trim((string) ($u->COMPANY ?? ''));
+                        $alias = trim((string) ($u->ALIAS ?? ''));
+                        $email = trim((string) ($u->EMAIL ?? ''));
+                        $fallback = $email !== '' ? $email : $uid;
+
+                        if ($company !== '' && $alias !== '') {
+                            $assignedToMap[$uid] = $company . '- ' . $alias;
+                        } elseif ($company !== '') {
+                            $assignedToMap[$uid] = $company;
+                        } elseif ($alias !== '') {
+                            $assignedToMap[$uid] = $alias;
+                        } else {
+                            $assignedToMap[$uid] = $fallback;
+                        }
+
+                        if ($role !== '' && $alias !== '') {
+                            $createdByMap[$uid] = $role . '- ' . $alias;
+                        } elseif ($role !== '') {
+                            $createdByMap[$uid] = $role . '-' . ($company !== '' ? $company : ($email !== '' ? $email : $uid));
+                        } elseif ($alias !== '') {
+                            $createdByMap[$uid] = $alias;
+                        } else {
+                            $createdByMap[$uid] = $fallback;
+                        }
+                    }
+
+                    foreach (array_merge($completed, $rewarded) as $r) {
+                        $to = trim((string) ($r->ASSIGNED_TO ?? ''));
+                        $by = trim((string) ($r->CREATEDBY ?? ''));
+                        if ($to !== '' && isset($assignedToMap[$to])) {
+                            $r->ASSIGNED_TO_NAME = $assignedToMap[$to];
+                        }
+                        if ($by !== '' && isset($createdByMap[$by])) {
+                            $r->CREATEDBY_NAME = $createdByMap[$by];
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                // ignore mapping failures
+            }
+
+            // Total pending reward for this dealer: latest status Completed (not Rewarded/Paid)
+            try {
+                $closedRow = DB::selectOne(
+                    'SELECT COUNT(*) as cnt
+                     FROM (
+                         SELECT a."LEADID", a."STATUS"
+                         FROM "LEAD_ACT" a
+                         JOIN (
+                             SELECT "LEADID", MAX("CREATIONDATE") AS max_created
+                             FROM "LEAD_ACT"
+                             GROUP BY "LEADID"
+                         ) m ON m."LEADID" = a."LEADID" AND m.max_created = a."CREATIONDATE"
+                     ) latest
+                     JOIN "LEAD" l ON l."LEADID" = latest."LEADID"
+                     WHERE l."ASSIGNED_TO" = ?
+                       AND UPPER(TRIM(latest."STATUS")) = \'COMPLETED\'
+                       AND TRIM(COALESCE(l."REFERRALCODE", \'\')) <> \'\'',
+                    [$dealerId]
+                );
+                $totalCompletedLeads = (int) ($closedRow->cnt ?? $closedRow->CNT ?? current((array) $closedRow) ?? 0);
+            } catch (\Throwable $e) {
+                $totalCompletedLeads = 0;
+            }
+        }
+
+        $productLabels = [
+            1 => 'Account',
+            2 => 'Payroll',
+            3 => 'Production',
+            4 => 'Mobile Sales',
+            5 => 'Ecommerce',
+            6 => 'EBI POS',
+            7 => 'Sudu AI',
+            8 => 'X-Store',
+            9 => 'Vision',
+            10 => 'HRMS',
+            11 => 'Others',
+        ];
+
+        return view('dealer.payouts', [
+            'completed' => $completed,
+            'rewarded' => $rewarded,
+            'totalCompletedLeads' => $totalCompletedLeads,
+            'productLabels' => $productLabels,
+            'currentPage' => 'payouts',
+        ]);
+    }
+
+    public function reports(Request $request): View
+    {
+        $dealerId = $request->session()->get('user_id');
+        $period = $request->get('period', 'month');
+        $fromInput = $request->get('from');
+        $toInput = $request->get('to');
 
     $dateFrom = null;
     $dateTo = null;

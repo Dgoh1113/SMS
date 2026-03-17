@@ -3176,6 +3176,29 @@ textarea.inquiry-form-input { resize: vertical; min-height: 140px; }
   vertical-align: middle;
 }
 
+/* Rewarded table attachments */
+.payouts-attachment-list {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.payouts-attachment-link {
+  display: inline-block;
+}
+.payouts-attachment-thumb {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+.payouts-attachment-more {
+  font-size: 11px;
+  font-weight: 600;
+  color: #4b5563;
+}
+
 .inquiry-activity-attachment-link:hover {
   border-color: #7f5af0;
 }

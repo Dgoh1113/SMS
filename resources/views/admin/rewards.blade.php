@@ -1,5 +1,5 @@
-@extends('layouts.app')
-@section('title', 'Rewards â€“ Admin')
+﻿@extends('layouts.app')
+@section('title', 'Rewards - Admin')
 @section('content')
 <div class="inquiries-page-wrap">
 <div class="inquiries-mgmt-top-row" style="margin-bottom: 16px;">
@@ -40,7 +40,7 @@
             <h2 class="inquiries-panel-title">Completed</h2>
         </div>
         <div class="inquiries-panel-actions">
-            <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-sync-btn" data-sync-type="assigned" data-sync-url="{{ route('admin.inquiries.sync') }}">
+            <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-sync-btn" data-sync-type="completed" data-sync-url="{{ route('admin.rewards') }}">
                 <i class="bi bi-arrow-repeat inquiries-sync-icon"></i>
                 <span class="inquiries-sync-label">Sync</span>
             </button>
@@ -113,13 +113,13 @@
                             $ccontact = trim((string)($r->CONTACTNAME ?? ''));
                             $custDisp = $ccompany !== '' && $ccontact !== ''
                                 ? ($ccompany . ' - ' . $ccontact)
-                                : ($ccompany !== '' ? $ccompany : ($ccontact !== '' ? $ccontact : 'â€”'));
+                                : ($ccompany !== '' ? $ccompany : ($ccontact !== '' ? $ccontact : '&mdash;'));
                             $addr1 = trim((string)($r->ADDRESS1 ?? ''));
                             $addr2 = trim((string)($r->ADDRESS2 ?? ''));
                             $addr = trim($addr1 . ' ' . $addr2);
                             $afullMsg = (string)($r->DESCRIPTION ?? '');
                             $afullMsgTrim = trim($afullMsg);
-                            $amsgPreview = $afullMsgTrim === '' ? 'â€”' : (mb_strlen($afullMsgTrim) > 30 ? (mb_substr($afullMsgTrim, 0, 30) . 'â€¦') : $afullMsgTrim);
+                            $amsgPreview = $afullMsgTrim === '' ? '&mdash;' : (mb_strlen($afullMsgTrim) > 30 ? (mb_substr($afullMsgTrim, 0, 30) . '&hellip;') : $afullMsgTrim);
                             $aisLongMsg = $afullMsgTrim !== '' && mb_strlen($afullMsgTrim) > 30;
                             $rawStatus = strtoupper(trim((string)($r->CURRENTSTATUS ?? '')));
                             $statusClass = 'inquiries-status-new';
@@ -140,7 +140,7 @@
                                 default:          $statusClass = 'inquiries-status-new'; break;
                             }
                             $statusDisp = $rawStatus !== '' ? $rawStatus : 'PENDING';
-                            $assignDate = $r->LASTMODIFIED ? date('d/m/Y', strtotime($r->LASTMODIFIED)) : ($r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : 'â€”');
+                            $assignDate = $r->LASTMODIFIED ? date('d/m/Y', strtotime($r->LASTMODIFIED)) : ($r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '&mdash;');
                             $searchHaystack = strtolower(($r->COMPANYNAME ?? '').' '.($r->CONTACTNAME ?? '').' '.($r->LEADID ?? ''));
                             $pillOrder = [1=>10,3=>11,4=>12,2=>20,10=>21,8=>30,5=>31,6=>40,9=>50,7=>60,11=>70];
                             $dealtRaw = $r->DEALTPRODUCT ?? null;
@@ -161,26 +161,26 @@
                         <tr class="rewards-row inquiry-row" data-search="{{ $searchHaystack }}">
                             <td data-col="inquiryid">#SQL-{{ $r->LEADID }}</td>
                             <td data-col="customername">{{ $custDisp }}</td>
-                            <td data-col="assignedto">{{ $r->ASSIGNED_TO_NAME ?? ($r->ASSIGNED_TO ?? 'â€”') }}</td>
-                            <td data-col="referralcode">{{ $r->REFERRALCODE ?? 'â€”' }}</td>
+                            <td data-col="assignedto">{{ $r->ASSIGNED_TO_NAME ?? ($r->ASSIGNED_TO ?? '&mdash;') }}</td>
+                            <td data-col="referralcode">{{ $r->REFERRALCODE ?? '&mdash;' }}</td>
                             <td data-col="completiondate">
                                 @php
                                     $completedAt = $r->COMPLETED_AT ?? null;
                                 @endphp
-                                {{ $completedAt ? date('d/m/Y', strtotime($completedAt)) : 'â€”' }}
+                                {{ $completedAt ? date('d/m/Y', strtotime($completedAt)) : '&mdash;' }}
                             </td>
                             <td data-col="status"><span class="inquiries-status {{ $statusClass }}">{{ $statusDisp }}</span></td>
 
-                            <td data-col="date">{{ $r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : 'â€”' }}</td>
-                            <td data-col="source">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? 'â€”') }}</td>
-                            <td data-col="postcode">{{ $r->POSTCODE ?? 'â€”' }}</td>
-                            <td data-col="city">{{ $r->CITY ?? 'â€”' }}</td>
-                            <td data-col="address">{{ $addr !== '' ? $addr : 'â€”' }}</td>
-                            <td data-col="contactno">{{ $r->CONTACTNO ?? 'â€”' }}</td>
-                            <td data-col="businessnature">{{ $r->BUSINESSNATURE ?? 'â€”' }}</td>
-                            <td data-col="users">{{ $r->USERCOUNT ?? 'â€”' }}</td>
-                            <td data-col="existingsw">{{ $r->EXISTINGSOFTWARE ?? 'â€”' }}</td>
-                            <td data-col="demomode">{{ $r->DEMOMODE ?? 'â€”' }}</td><td data-col="dealtproducts">
+                            <td data-col="date">{{ $r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '&mdash;' }}</td>
+                            <td data-col="source">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '&mdash;') }}</td>
+                            <td data-col="postcode">{{ $r->POSTCODE ?? '&mdash;' }}</td>
+                            <td data-col="city">{{ $r->CITY ?? '&mdash;' }}</td>
+                            <td data-col="address">{{ $addr !== '' ? $addr : '&mdash;' }}</td>
+                            <td data-col="contactno">{{ $r->CONTACTNO ?? '&mdash;' }}</td>
+                            <td data-col="businessnature">{{ $r->BUSINESSNATURE ?? '&mdash;' }}</td>
+                            <td data-col="users">{{ $r->USERCOUNT ?? '&mdash;' }}</td>
+                            <td data-col="existingsw">{{ $r->EXISTINGSOFTWARE ?? '&mdash;' }}</td>
+                            <td data-col="demomode">{{ $r->DEMOMODE ?? '&mdash;' }}</td><td data-col="dealtproducts">
                                 @if(!empty($dealtProductIds))
                                     <div class="inquiries-pill-group">
                                         @foreach($dealtProductIds as $id)
@@ -190,11 +190,11 @@
                                         @endforeach
                                     </div>
                                 @else
-                                    Ã¢â‚¬â€
+                                    &mdash;
                                 @endif
                             </td>
                             <td data-col="message" class="inquiries-msg-cell {{ $aisLongMsg ? 'inquiries-msg-clickable' : '' }}" @if($aisLongMsg) data-full-message="{{ e($afullMsgTrim) }}" @endif>{{ $amsgPreview }}</td>
-                            <td data-col="assignedby">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? 'â€”') }}</td>
+                            <td data-col="assignedby">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '&mdash;') }}</td>
                             <td data-col="assigndate">{{ $assignDate }}</td>
                             <td class="inquiries-col-action inquiries-action-cell">
                                 <button type="button"
@@ -214,7 +214,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="20" class="inquiries-empty">No completed payouts.</td></tr>
+                    <tr><td colspan="21" class="inquiries-empty">No completed inquiries.</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -241,7 +241,7 @@
             <h2 class="inquiries-panel-title">Rewarded</h2>
         </div>
         <div class="inquiries-panel-actions">
-            <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-sync-btn" data-sync-type="rewarded" data-sync-url="{{ route('admin.inquiries.sync') }}">
+            <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-sync-btn" data-sync-type="rewarded" data-sync-url="{{ route('admin.rewards') }}">
                 <i class="bi bi-arrow-repeat inquiries-sync-icon"></i>
                 <span class="inquiries-sync-label">Sync</span>
             </button>
@@ -263,6 +263,7 @@
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="existingsw"> EXISTING SW</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="demomode"> DEMO MODE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="products"> PRODUCTS</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="attachment"> ATTACHMENT</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="message"> MESSAGE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="referralcode"> REFERRAL CODE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="assignedby"> ASSIGNED BY</label>
@@ -297,6 +298,7 @@
                         <th data-col="existingsw" class="inquiries-header-cell"><span class="inquiries-header-label">EXISTING SW</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="existingsw"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="demomode" class="inquiries-header-cell"><span class="inquiries-header-label">DEMO MODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="demomode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="products" class="inquiries-header-cell"><span class="inquiries-header-label">PRODUCTS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="products"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="attachment" class="inquiries-header-cell"><span class="inquiries-header-label">ATTACHMENT</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="attachment"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="message" class="inquiries-header-cell"><span class="inquiries-header-label">MESSAGE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="message"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="referralcode" class="inquiries-header-cell"><span class="inquiries-header-label">REFERRAL CODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="referralcode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="assignedby" class="inquiries-header-cell"><span class="inquiries-header-label">ASSIGNED BY</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="assignedby"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
@@ -313,13 +315,13 @@
                             $ccontact = trim((string)($r->CONTACTNAME ?? ''));
                             $custDisp = $ccompany !== '' && $ccontact !== ''
                                 ? ($ccompany . ' - ' . $ccontact)
-                                : ($ccompany !== '' ? $ccompany : ($ccontact !== '' ? $ccontact : 'â€”'));
+                                : ($ccompany !== '' ? $ccompany : ($ccontact !== '' ? $ccontact : '&mdash;'));
                             $addr1 = trim((string)($r->ADDRESS1 ?? ''));
                             $addr2 = trim((string)($r->ADDRESS2 ?? ''));
                             $addr = trim($addr1 . ' ' . $addr2);
                             $afullMsg = (string)($r->DESCRIPTION ?? '');
                             $afullMsgTrim = trim($afullMsg);
-                            $amsgPreview = $afullMsgTrim === '' ? 'â€”' : (mb_strlen($afullMsgTrim) > 30 ? (mb_substr($afullMsgTrim, 0, 30) . 'â€¦') : $afullMsgTrim);
+                            $amsgPreview = $afullMsgTrim === '' ? '&mdash;' : (mb_strlen($afullMsgTrim) > 30 ? (mb_substr($afullMsgTrim, 0, 30) . '&hellip;') : $afullMsgTrim);
                             $aisLongMsg = $afullMsgTrim !== '' && mb_strlen($afullMsgTrim) > 30;
                             $rawStatus = strtoupper(trim((string)($r->CURRENTSTATUS ?? '')));
                             $statusClass = 'inquiries-status-new';
@@ -342,26 +344,31 @@
                             $statusDisp = $rawStatus !== '' ? $rawStatus : 'REWARDED';
                             $completedAt = $r->COMPLETED_AT ?? null;
                             $searchHaystack = strtolower(($r->COMPANYNAME ?? '').' '.($r->CONTACTNAME ?? '').' '.($r->LEADID ?? ''));
-                            $assignDate = $r->LASTMODIFIED ? date('d/m/Y', strtotime($r->LASTMODIFIED)) : ($r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : 'â€”');
+                            $assignDate = $r->LASTMODIFIED ? date('d/m/Y', strtotime($r->LASTMODIFIED)) : ($r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '&mdash;');
                             $productIds = $r->PRODUCTID ? array_map('trim', explode(',', (string)$r->PRODUCTID)) : [];
                             $pillOrder = [1=>10,3=>11,4=>12,2=>20,10=>21,8=>30,5=>31,6=>40,9=>50,7=>60,11=>70];
                             $productIds = array_values(array_filter(array_unique(array_map('intval', $productIds)), fn($v) => $v > 0));
                             usort($productIds, function($a,$b) use ($pillOrder) { return ($pillOrder[$a] ?? 1000+$a) <=> ($pillOrder[$b] ?? 1000+$b); });
+                            $attachUrls = [];
+                            if (!empty($r->REWARD_ATTACHMENT_URLS) && is_array($r->REWARD_ATTACHMENT_URLS)) {
+                                $attachUrls = $r->REWARD_ATTACHMENT_URLS;
+                            }
+                            $referralCode = trim((string) ($r->REFERRALCODE ?? ''));
                         @endphp
                         <tr class="rewards-row inquiry-row" data-search="{{ $searchHaystack }}">
                             <td data-col="inquiryid">#SQL-{{ $r->LEADID }}</td>
-                            <td data-col="date">{{ $r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : 'â€”' }}</td>
+                            <td data-col="date">{{ $r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '&mdash;' }}</td>
                             <td data-col="customername">{{ $custDisp }}</td>
-                            <td data-col="source">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? 'â€”') }}</td>
-                            <td data-col="postcode">{{ $r->POSTCODE ?? 'â€”' }}</td>
-                            <td data-col="city">{{ $r->CITY ?? 'â€”' }}</td>
-                            <td data-col="completiondate">{{ $completedAt ? date('d/m/Y', strtotime($completedAt)) : 'â€”' }}</td>
-                            <td data-col="address">{{ $addr !== '' ? $addr : 'â€”' }}</td>
-                            <td data-col="contactno">{{ $r->CONTACTNO ?? 'â€”' }}</td>
-                            <td data-col="businessnature">{{ $r->BUSINESSNATURE ?? 'â€”' }}</td>
-                            <td data-col="users">{{ $r->USERCOUNT ?? 'â€”' }}</td>
-                            <td data-col="existingsw">{{ $r->EXISTINGSOFTWARE ?? 'â€”' }}</td>
-                            <td data-col="demomode">{{ $r->DEMOMODE ?? 'â€”' }}</td>
+                            <td data-col="source">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '&mdash;') }}</td>
+                            <td data-col="postcode">{{ $r->POSTCODE ?? '&mdash;' }}</td>
+                            <td data-col="city">{{ $r->CITY ?? '&mdash;' }}</td>
+                            <td data-col="completiondate">{{ $completedAt ? date('d/m/Y', strtotime($completedAt)) : '&mdash;' }}</td>
+                            <td data-col="address">{{ $addr !== '' ? $addr : '&mdash;' }}</td>
+                            <td data-col="contactno">{{ $r->CONTACTNO ?? '&mdash;' }}</td>
+                            <td data-col="businessnature">{{ $r->BUSINESSNATURE ?? '&mdash;' }}</td>
+                            <td data-col="users">{{ $r->USERCOUNT ?? '&mdash;' }}</td>
+                            <td data-col="existingsw">{{ $r->EXISTINGSOFTWARE ?? '&mdash;' }}</td>
+                            <td data-col="demomode">{{ $r->DEMOMODE ?? '&mdash;' }}</td>
                             <td data-col="products">
                                 @if(!empty($productIds))
                                     <div class="inquiries-pill-group">
@@ -372,13 +379,29 @@
                                         @endforeach
                                     </div>
                                 @else
-                                    â€”
+                                    &mdash;
+                                @endif
+                            </td>
+                            <td data-col="attachment">
+                                @if(!empty($attachUrls))
+                                    <div class="payouts-attachment-list">
+                                        @foreach(array_slice($attachUrls, 0, 3) as $u)
+                                            <a href="{{ $u }}" target="_blank" rel="noopener" class="payouts-attachment-link">
+                                                <img src="{{ $u }}" alt="Attachment" class="payouts-attachment-thumb">
+                                            </a>
+                                        @endforeach
+                                        @if(count($attachUrls) > 3)
+                                            <span class="payouts-attachment-more">+{{ count($attachUrls) - 3 }}</span>
+                                        @endif
+                                    </div>
+                                @else
+                                    &mdash;
                                 @endif
                             </td>
                             <td data-col="message" class="inquiries-msg-cell {{ $aisLongMsg ? 'inquiries-msg-clickable' : '' }}" @if($aisLongMsg) data-full-message="{{ e($afullMsgTrim) }}" @endif>{{ $amsgPreview }}</td>
-                            <td data-col="referralcode">{{ $r->REFERRALCODE ?? 'â€”' }}</td>
-                            <td data-col="assignedby">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? 'â€”') }}</td>
-                            <td data-col="assignedto">{{ $r->ASSIGNED_TO_NAME ?? ($r->ASSIGNED_TO ?? 'â€”') }}</td>
+                            <td data-col="referralcode">{!! $referralCode !== '' ? e($referralCode) : '&mdash;' !!}</td>
+                            <td data-col="assignedby">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '&mdash;') }}</td>
+                            <td data-col="assignedto">{{ $r->ASSIGNED_TO_NAME ?? ($r->ASSIGNED_TO ?? '&mdash;') }}</td>
                             <td data-col="assigndate">{{ $assignDate }}</td>
                             <td data-col="status"><span class="inquiries-status {{ $statusClass }}">{{ $statusDisp }}</span></td>
                             <td class="inquiries-col-action inquiries-action-cell">
@@ -392,7 +415,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="20" class="inquiries-empty">No rewarded payouts.</td></tr>
+                        <tr><td colspan="22" class="inquiries-empty">No rewarded payouts.</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -414,7 +437,7 @@
         <div class="inquiries-assign-backdrop" data-status-close="1"></div>
         <div class="inquiries-assign-window" role="dialog" aria-modal="true" aria-labelledby="statusModalTitle">
             <div class="inquiries-assign-header">
-                <div class="inquiries-assign-title" id="statusModalTitle">Status â€” Lead #SQL-<span id="statusModalLeadId"></span></div>
+                <div class="inquiries-assign-title" id="statusModalTitle">Status &mdash; Lead #SQL-<span id="statusModalLeadId"></span></div>
                 <button type="button" class="inquiries-assign-close" aria-label="Close" data-status-close="1">&times;</button>
             </div>
             <div class="inquiries-assign-body">
@@ -445,8 +468,8 @@ document.addEventListener('DOMContentLoaded', function() {
     var COMPLETED_DEFAULT_COLUMNS = ['inquiryid','customername','assignedto','referralcode','completiondate','dealtproducts','status'];
     var COMPLETED_ALL_COLUMNS = ['inquiryid','date','customername','source','postcode','city','address','contactno','businessnature','users','existingsw','demomode','dealtproducts','message','referralcode','assignedby','assignedto','completiondate','assigndate','status'];
     var REWARDED_STORAGE_KEY = 'payoutRewardedVisibleColumns';
-    var REWARDED_DEFAULT_COLUMNS = ['inquiryid','customername','assignedto','referralcode','completiondate','status'];
-    var REWARDED_ALL_COLUMNS = ['inquiryid','date','customername','source','postcode','city','completiondate','address','contactno','businessnature','users','existingsw','demomode','products','message','referralcode','assignedby','assignedto','assigndate','status'];
+    var REWARDED_DEFAULT_COLUMNS = ['inquiryid','customername','assignedto','referralcode','completiondate','attachment','status'];
+    var REWARDED_ALL_COLUMNS = ['inquiryid','date','customername','source','postcode','city','completiondate','address','contactno','businessnature','users','existingsw','demomode','products','attachment','message','referralcode','assignedby','assignedto','assigndate','status'];
 
     function getCompletedVisibleColumns() {
         try {
@@ -643,6 +666,22 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    function replaceRewardsTableBody(nextDoc, tableId) {
+        var currentBody = document.querySelector('#' + tableId + ' tbody');
+        var nextBody = nextDoc.querySelector('#' + tableId + ' tbody');
+        if (!currentBody || !nextBody) return false;
+        currentBody.innerHTML = nextBody.innerHTML;
+        return true;
+    }
+
+    function refreshSummaryCardFromDoc(nextDoc) {
+        var card = document.getElementById('payoutSummaryCard');
+        var nextCard = nextDoc.querySelector('#payoutSummaryCard');
+        if (!card || !nextCard) return;
+        card.setAttribute('data-pending-count', nextCard.getAttribute('data-pending-count') || '0');
+        card.setAttribute('data-rewarded-count', nextCard.getAttribute('data-rewarded-count') || '0');
+    }
+
     document.querySelectorAll('.inquiries-sync-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
             if (btn.classList.contains('is-syncing')) return;
@@ -650,14 +689,33 @@ document.addEventListener('DOMContentLoaded', function() {
             var icon = btn.querySelector('.inquiries-sync-icon');
             if (icon) icon.classList.add('spinning');
             var url = btn.getAttribute('data-sync-url');
-            if (!url) url = '{{ route('admin.inquiries.sync') }}';
-            fetch(url, {
+            if (!url) url = '{{ route('admin.rewards') }}';
+            var syncType = (btn.getAttribute('data-sync-type') || '').toLowerCase();
+            var req = new URL(url, window.location.origin);
+            req.searchParams.set('tab', syncType === 'rewarded' ? 'rewarded' : 'completed');
+            req.searchParams.set('_sync', Date.now().toString());
+            fetch(req.toString(), {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 cache: 'no-store'
             }).then(function(res) {
-                return res.ok ? res.json() : Promise.reject();
-            }).then(function(data) {
-                // Silent success â€“ no popup needed.
+                return res.ok ? res.text() : Promise.reject();
+            }).then(function(html) {
+                var parser = new DOMParser();
+                var nextDoc = parser.parseFromString(html, 'text/html');
+                var completedUpdated = replaceRewardsTableBody(nextDoc, 'completedTable');
+                var rewardedUpdated = replaceRewardsTableBody(nextDoc, 'rewardedTable');
+                if (!completedUpdated && !rewardedUpdated) {
+                    return Promise.reject();
+                }
+                refreshSummaryCardFromDoc(nextDoc);
+                bindRewardEmailButtons();
+                applyCompletedColumns(getCompletedVisibleColumns());
+                applyRewardedColumns(getRewardedVisibleColumns());
+                applyAllTables();
+                var activeTab = document.querySelector('.inquiries-tab.active');
+                if (activeTab && typeof activeTab.click === 'function') {
+                    activeTab.click();
+                }
             }).catch(function() {
                 alert('Failed to sync data.');
             }).finally(function() {
@@ -686,62 +744,62 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     var emailCounts = loadEmailCounts();
 
-    document.querySelectorAll('.rewards-email-btn').forEach(function(btn) {
-        var leadId = btn.getAttribute('data-lead-id');
-        if (!leadId) return;
+    function applyRewardEmailIcon(btn, leadId) {
         var icon = btn.querySelector('i.bi');
         var count = emailCounts[leadId] || 0;
-        if (icon) {
-            if (count > 0) {
-                icon.classList.remove('bi-envelope');
-                icon.classList.add('bi-envelope-fill');
-            } else {
-                icon.classList.remove('bi-envelope-fill');
-                icon.classList.add('bi-envelope');
-            }
+        if (!icon) return;
+        if (count > 0) {
+            icon.classList.remove('bi-envelope');
+            icon.classList.add('bi-envelope-fill');
+        } else {
+            icon.classList.remove('bi-envelope-fill');
+            icon.classList.add('bi-envelope');
         }
-    });
+    }
 
-    document.querySelectorAll('.rewards-email-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() {
+    function bindRewardEmailButtons() {
+        document.querySelectorAll('.rewards-email-btn').forEach(function(btn) {
             var leadId = btn.getAttribute('data-lead-id');
             if (!leadId) return;
-            if (!confirm('Remind the assigned dealer to pay out the referral fee?')) return;
-            var token = (document.querySelector('meta[name="csrf-token"]') || {}).content;
-            if (!token) { alert('Session expired. Please refresh the page.'); return; }
-            btn.disabled = true;
-            fetch('{{ route('admin.rewards.send-email') }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': token,
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify({ lead_id: parseInt(leadId, 10) })
-            }).then(function(res) { return res.json().then(function(data) { return { ok: res.ok, data: data }; }); })
-            .then(function(result) {
-                if (result.ok && result.data.success) {
-                    alert(result.data.message || 'Email sent.');
-                    var current = emailCounts[leadId] || 0;
-                    var next = current + 1;
-                    emailCounts[leadId] = next;
-                    saveEmailCounts(emailCounts);
-                    var icon = btn.querySelector('i.bi');
-                    if (icon) {
-                        icon.classList.remove('bi-envelope');
-                        icon.classList.add('bi-envelope-fill');
+            applyRewardEmailIcon(btn, leadId);
+            if (btn.getAttribute('data-email-bound') === '1') return;
+            btn.setAttribute('data-email-bound', '1');
+            btn.addEventListener('click', function() {
+                if (!confirm('Remind the assigned dealer to pay out the referral fee?')) return;
+                var token = (document.querySelector('meta[name="csrf-token"]') || {}).content;
+                if (!token) { alert('Session expired. Please refresh the page.'); return; }
+                btn.disabled = true;
+                fetch('{{ route('admin.rewards.send-email') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': token,
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ lead_id: parseInt(leadId, 10) })
+                }).then(function(res) { return res.json().then(function(data) { return { ok: res.ok, data: data }; }); })
+                .then(function(result) {
+                    if (result.ok && result.data.success) {
+                        alert(result.data.message || 'Email sent.');
+                        var current = emailCounts[leadId] || 0;
+                        var next = current + 1;
+                        emailCounts[leadId] = next;
+                        saveEmailCounts(emailCounts);
+                        applyRewardEmailIcon(btn, leadId);
+                    } else {
+                        alert(result.data.message || 'Failed to send email.');
                     }
-                } else {
-                    alert(result.data.message || 'Failed to send email.');
-                }
-            }).catch(function() {
-                alert('Failed to send email.');
-            }).finally(function() {
-                btn.disabled = false;
+                }).catch(function() {
+                    alert('Failed to send email.');
+                }).finally(function() {
+                    btn.disabled = false;
+                });
             });
         });
-    });
+    }
+
+    bindRewardEmailButtons();
 
     var completedClearFilters = document.getElementById('completedClearFilters');
     if (completedClearFilters) {
@@ -1038,13 +1096,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (emptyEl) emptyEl.style.display = 'none';
                 items.forEach(function(it) {
                     var tr = document.createElement('tr');
-                    var date = it.CREATIONDATE ? String(it.CREATIONDATE).substring(0, 19) : 'â€”';
+                    var date = it.CREATIONDATE ? String(it.CREATIONDATE).substring(0, 19) : '&mdash;';
                     tr.innerHTML =
                         '<td>' + date + '</td>' +
-                        '<td>' + (it.SUBJECT || 'â€”') + '</td>' +
-                        '<td>' + (it.STATUS || 'â€”') + '</td>' +
-                        '<td>' + (it.DESCRIPTION || 'â€”') + '</td>' +
-                        '<td>' + (it.USERID || 'â€”') + '</td>';
+                        '<td>' + (it.SUBJECT || '&mdash;') + '</td>' +
+                        '<td>' + (it.STATUS || '&mdash;') + '</td>' +
+                        '<td>' + (it.DESCRIPTION || '&mdash;') + '</td>' +
+                        '<td>' + (it.USERID || '&mdash;') + '</td>';
                     body.appendChild(tr);
                 });
             }
@@ -1071,3 +1129,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 @endpush
+

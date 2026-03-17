@@ -30,7 +30,6 @@
 
     <div class="rv2-filtered-layer">
         <div class="rv2-filtered-layer-head">
-            <span class="rv2-filtered-layer-label">Filter applies to chart and table below</span>
             <form method="GET" class="rv2-filters rv2-filters-form">
                 @foreach(request()->query() as $key => $val)
                     @if($key !== 'days' && $key !== 'compare_days' && $key !== 'page' && $key !== 'primary_from' && $key !== 'primary_to' && $key !== 'compare_from' && $key !== 'compare_to')
@@ -76,9 +75,8 @@
         <section class="rv2-panel rv2-panel-in-layer">
             <div class="rv2-panel-head">
                 <div>
-                    <div class="rv2-section-title">Top 5 Dealers — Failed vs Closed</div>
-                    <div class="rv2-section-subtitle">Primary vs comparison period. Left: % failed (red). Right: % closed (green).</div>
-                </div>
+                    <div class="rv2-section-title rv2-section-title-prominent">Top 5 Dealer &mdash; Failed vs Closed</div>
+</div>
             </div>
             <div class="rv2-panel-body">
                 <div class="rv2-bar-chart-title-row">
@@ -94,8 +92,12 @@
         <section class="rv2-panel rv2-panel-in-layer">
             <div class="rv2-panel-head">
                 <div>
-                    <div class="rv2-section-title">Action List: At-Risk Dealers</div>
-                    <div class="rv2-section-subtitle">Dealers with 30%+ increase in fail rate vs same period last year</div>
+                    <div class="rv2-section-title">
+                        At-Risk Dealer
+                        <i class="bi bi-info-circle dashboard-info-icon"
+                           title="Fail-rate increase threshold: 30%+ compared with selected compare period."
+                           aria-label="At-risk fail-rate threshold info"></i>
+                    </div>
                 </div>
                 <div class="rv2-badge-danger">{{ $criticalDropsCount ?? 0 }} CRITICAL DROPS</div>
             </div>
@@ -109,11 +111,10 @@
                             <th>FAIL RATE</th>
                             <th>FAIL COUNT</th>
                             <th>LAST ACTIVITY</th>
-                            <th>ACTIONS</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($atRisk as $r)
+                        @forelse ($atRisk as $r)
                             <tr>
                                 <td>
                                     <div class="rv2-dealer-name">{{ $r['name'] }}</div>
@@ -121,7 +122,7 @@
                                 </td>
                                 <td>
                                     <div class="rv2-variance-val">{{ number_format($r['increase_fail_rate'] ?? 0, 1) }}%</div>
-                                    <div class="rv2-variance-sub">vs same period last year</div>
+                                    <div class="rv2-variance-sub">vs selected compare period</div>
                                 </td>
                                 <td>
                                     <span class="rv2-muted">
@@ -140,74 +141,27 @@
                                         <span class="rv2-pill-warn">—</span>
                                     @endif
                                 </td>
-                                <td><button class="rv2-action-btn rv2-intervention-btn" type="button" data-dealer-id="{{ $r['id'] ?? '' }}" data-dealer-name="{{ e($r['name'] ?? '') }}">Log Intervention</button></td>
                             </tr>
-                        @endforeach
+                        @empty
+                            <tr>
+                                <td colspan="5" class="inquiries-empty">No At-Risk Dealer displayed</td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
                 @php
                     $atRiskTotal = $atRiskTotal ?? 0;
-                    $atRiskPage = $atRiskPage ?? 1;
-                    $atRiskPerPage = $atRiskPerPage ?? 10;
-                    $atRiskTotalPages = $atRiskTotalPages ?? 1;
-                    $from = $atRiskTotal === 0 ? 0 : ($atRiskPage - 1) * $atRiskPerPage + 1;
-                    $to = min($atRiskPage * $atRiskPerPage, $atRiskTotal);
-                    $query = request()->query();
+                    $from = $atRiskTotal === 0 ? 0 : 1;
+                    $to = $atRiskTotal;
                 @endphp
-                <div class="rv2-table-footer">
-                    <div class="rv2-muted-xs">Showing {{ $from }} to {{ $to }} of {{ $atRiskTotal }} dealers at risk (30%+ increase)</div>
-                    <div class="rv2-pagination">
-                        @if($atRiskPage > 1)
-                            <a href="{{ request()->url() . '?' . http_build_query(array_merge($query, ['page' => $atRiskPage - 1])) }}" class="rv2-page-btn">Previous</a>
-                        @else
-                            <span class="rv2-page-btn rv2-page-btn-disabled">Previous</span>
-                        @endif
-                        @for($p = 1; $p <= $atRiskTotalPages; $p++)
-                            @if($p == $atRiskPage)
-                                <span class="rv2-page-btn rv2-page-active">{{ $p }}</span>
-                            @else
-                                <a href="{{ request()->url() . '?' . http_build_query(array_merge($query, ['page' => $p])) }}" class="rv2-page-btn">{{ $p }}</a>
-                            @endif
-                        @endfor
-                        @if($atRiskPage < $atRiskTotalPages)
-                            <a href="{{ request()->url() . '?' . http_build_query(array_merge($query, ['page' => $atRiskPage + 1])) }}" class="rv2-page-btn">Next</a>
-                        @else
-                            <span class="rv2-page-btn rv2-page-btn-disabled">Next</span>
-                        @endif
+                @if($atRiskTotal > 0)
+                    <div class="rv2-table-footer">
+                        <span class="rv2-muted-xs">Showing {{ $from }} to {{ $to }} of {{ $atRiskTotal }}</span>
                     </div>
-                </div>
+                @endif
             </div>
         </section>
     </div>
-
-    <section class="rv2-cards">
-        <div class="rv2-mini-card">
-            <div class="rv2-mini-top">
-                <div class="rv2-mini-icon rv2-i-red">↘</div>
-                <div class="rv2-mini-title">Seasonal Market Variance</div>
-            </div>
-            <div class="rv2-mini-value">-1,240 <span class="rv2-mini-unit">Core Units</span></div>
-            <div class="rv2-mini-sub">12.4% below same period last year</div>
-        </div>
-
-        <div class="rv2-mini-card">
-            <div class="rv2-mini-top">
-                <div class="rv2-mini-icon rv2-i-purple">▣</div>
-                <div class="rv2-mini-title">At-Risk Dealers</div>
-            </div>
-            <div class="rv2-mini-value">28 <span class="rv2-mini-unit">Partners</span></div>
-            <div class="rv2-mini-sub">8 requiring urgent intervention</div>
-        </div>
-
-        <div class="rv2-mini-card">
-            <div class="rv2-mini-top">
-                <div class="rv2-mini-icon rv2-i-green">✓</div>
-                <div class="rv2-mini-title">Recovery Score</div>
-            </div>
-            <div class="rv2-mini-value">72% <span class="rv2-mini-unit">Success Rate</span></div>
-            <div class="rv2-mini-sub">Weighted by seasonal baseline</div>
-        </div>
-    </section>
 </div>
 
 {{-- View-only intervention / activity popout (like dealer status process) --}}
@@ -336,11 +290,13 @@
             // ——— Top 10 Failed / Top 10 Closed bar charts (side by side) ———
             const top10Failed = @json($top10Failed ?? []);
             const top10Closed = @json($top10Closed ?? []);
-            // Bar colors: Failed red, Closed green (dark border, light inner fill)
-            const BAR_RED = 'rgba(220, 38, 38, 0.6)';
-            const BAR_RED_BORDER = 'rgba(220, 38, 38, 1)';
-            const BAR_CLOSED = 'rgba(34, 197, 94, 0.4)';
-            const BAR_CLOSED_BORDER = 'rgba(22, 163, 74, 1)';
+            // Keep a single, consistent color per side.
+            const BAR_RED = 'rgba(220, 38, 38, 0.86)';
+            const BAR_RED_HOVER = 'rgba(220, 38, 38, 1)';
+            const BAR_CLOSED = 'rgba(22, 163, 74, 0.82)';
+            const BAR_CLOSED_HOVER = 'rgba(22, 163, 74, 1)';
+            const BAR_RED_BORDER = 'rgba(127, 29, 29, 1)';
+            const BAR_CLOSED_BORDER = 'rgba(20, 83, 45, 1)';
 
             if (window.Chart && typeof window.ChartDataLabels !== 'undefined') {
                 window.Chart.register(window.ChartDataLabels);
@@ -361,8 +317,10 @@
                         yAxisID: 'y',
                         data: Array.from({ length: rowCount }, (_, i) => -Math.min(100, Math.abs(failedPct[i] ?? 0))),
                         backgroundColor: Array.from({ length: rowCount }, () => BAR_RED),
+                        hoverBackgroundColor: Array.from({ length: rowCount }, () => BAR_RED_HOVER),
                         borderColor: Array.from({ length: rowCount }, () => BAR_RED_BORDER),
-                        borderWidth: 1,
+                        borderWidth: 1.2,
+                        borderRadius: 8,
                         barThickness: 40,
                         maxBarThickness: 40
                     },
@@ -371,17 +329,43 @@
                         yAxisID: 'y',
                         data: Array.from({ length: rowCount }, (_, i) => Math.min(100, Math.abs(closedPct[i] ?? 0))),
                         backgroundColor: Array.from({ length: rowCount }, () => BAR_CLOSED),
+                        hoverBackgroundColor: Array.from({ length: rowCount }, () => BAR_CLOSED_HOVER),
                         borderColor: Array.from({ length: rowCount }, () => BAR_CLOSED_BORDER),
-                        borderWidth: 1,
+                        borderWidth: 1.2,
+                        borderRadius: 8,
                         barThickness: 40,
                         maxBarThickness:40
                     }
                 ]
             };
 
+            const failedClosedBackdropPlugin = {
+                id: 'failedClosedBackdropPlugin',
+                beforeDatasetsDraw: function(chart) {
+                    const chartArea = chart.chartArea;
+                    const xScale = chart.scales?.x;
+                    if (!chartArea || !xScale) return;
+
+                    const left = chartArea.left;
+                    const right = chartArea.right;
+                    const top = chartArea.top;
+                    const height = chartArea.bottom - chartArea.top;
+                    const zeroX = xScale.getPixelForValue(0);
+                    const ctx = chart.ctx;
+
+                    ctx.save();
+                    ctx.fillStyle = 'rgba(248, 113, 113, 0.06)';
+                    ctx.fillRect(left, top, Math.max(0, zeroX - left), height);
+                    ctx.fillStyle = 'rgba(74, 222, 128, 0.06)';
+                    ctx.fillRect(zeroX, top, Math.max(0, right - zeroX), height);
+                    ctx.restore();
+                }
+            };
+
             const config = {
                 type: 'bar',
                 data: data,
+                plugins: [failedClosedBackdropPlugin],
                 options: {
                     indexAxis: 'y',
                     responsive: true,
@@ -428,12 +412,26 @@
                         x: {
                             min: -100,
                             max: 100,
-                            grid: { color: 'rgba(148, 163, 184, 0.25)' },
+                            grid: {
+                                color: function(ctx) {
+                                    return Number(ctx.tick?.value) === 0 ? 'rgba(51, 65, 85, 0.4)' : 'rgba(148, 163, 184, 0.22)';
+                                },
+                                lineWidth: function(ctx) {
+                                    return Number(ctx.tick?.value) === 0 ? 1.2 : 1;
+                                },
+                                drawTicks: false
+                            },
                             ticks: {
                                 stepSize: 20,
+                                color: '#475569',
                                 callback: function(v) { return Math.abs(v); }
                             },
-                            title: { display: true, text: 'Percentage of cases', font: { size: 10 } }
+                            title: {
+                                display: true,
+                                text: 'Percentage of cases',
+                                color: '#64748b',
+                                font: { size: 10, weight: '700' }
+                            }
                         },
                         // Left Sidebar Alignment (Failed Names)
                         y: {
@@ -441,7 +439,7 @@
                             grid: { display: false, drawBorder: false },
                             ticks: {
                                 autoSkip: false,
-                                color: '#334155',
+                                color: '#7f1d1d',
                                 font: { size: 10, weight: '700' },
                                 callback: function(value, index) {
                                     const name = failedName[index] ?? '—';
@@ -455,7 +453,7 @@
                             grid: { display: false, drawBorder: false },
                             ticks: {
                                 autoSkip: false,
-                                color: '#334155',
+                                color: '#166534',
                                 font: { size: 10, weight: '700' },
                                 callback: function(value, index) {
                                     const name = closedName[index] ?? '—';
