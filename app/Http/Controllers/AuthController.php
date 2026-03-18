@@ -50,6 +50,10 @@ class AuthController extends Controller
         $request->validate([
             'email' => 'required|email',
             'password' => 'required|string',
+        ], [
+            'email.required' => 'Email is required.',
+            'email.email' => 'Invalid email address format.',
+            'password.required' => 'Password is required.',
         ]);
 
         $email = $request->input('email');
@@ -114,6 +118,9 @@ class AuthController extends Controller
     {
         $validated = $request->validate([
             'email' => 'required|email|max:255',
+        ], [
+            'email.required' => 'Email is required.',
+            'email.email' => 'Invalid email address format.',
         ]);
         $email = trim((string) $validated['email']);
 

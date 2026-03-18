@@ -40,7 +40,7 @@ class AdminController extends Controller
         // Conversion rate: closed / total leads
         $conversionRate = $totalLeads > 0 ? round(($totalClosed / $totalLeads) * 100, 1) : 0;
 
-        // Week-over-week comparison (this week vs last week by timestamp)
+        // Week-over-week comparison uses the previous overall snapshot so it matches the main card value.
         $startThisWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
         $endLastWeek = $startThisWeek->copy()->subSecond();
         $startLastWeek = $startThisWeek->copy()->subWeek();
@@ -48,11 +48,41 @@ class AdminController extends Controller
         $leadsLastWeek = 0;
         $closedThisWeek = 0;
         $closedLastWeek = 0;
+        $leadsUntilLastWeek = 0;
+        $closedUntilLastWeek = 0;
         $referralThisWeek = 0;
         $referralLastWeek = 0;
-        $activeThisWeek = 0;
+        $activeThisWeek = $activeInquiries;
         $activeLastWeek = 0;
         try {
+            $countActiveSnapshot = function (string $cutoff) {
+                $row = DB::selectOne(
+                    'SELECT COUNT(*) AS c
+                     FROM "LEAD" l
+                     LEFT JOIN (
+                         SELECT a."LEADID", a."STATUS"
+                         FROM "LEAD_ACT" a
+                         JOIN (
+                             SELECT "LEADID", MAX("CREATIONDATE") AS max_created
+                             FROM "LEAD_ACT"
+                             WHERE "CREATIONDATE" <= ?
+                             GROUP BY "LEADID"
+                         ) m ON m."LEADID" = a."LEADID" AND m.max_created = a."CREATIONDATE"
+                     ) la ON la."LEADID" = l."LEADID"
+                     WHERE l."CREATEDAT" <= ?
+                       AND (
+                           UPPER(TRIM(COALESCE(la."STATUS", \'\'))) IN (\'PENDING\', \'FOLLOWUP\', \'DEMO\', \'CONFIRMED\')
+                           OR (
+                               TRIM(COALESCE(la."STATUS", \'\')) = \'\'
+                               AND UPPER(TRIM(COALESCE(l."CURRENTSTATUS", \'\'))) = \'ONGOING\'
+                           )
+                       )',
+                    [$cutoff, $cutoff]
+                );
+
+                return (int) ($row->c ?? $row->C ?? 0);
+            };
+
             $r = DB::selectOne(
                 'SELECT COUNT(*) AS c FROM "LEAD" WHERE "CREATEDAT" >= ? AND "CREATEDAT" <= ?',
                 [$startThisWeek->format('Y-m-d H:i:s'), Carbon::now()->format('Y-m-d 23:59:59')]
@@ -76,6 +106,18 @@ class AdminController extends Controller
             $closedLastWeek = (int) ($r->c ?? $r->C ?? 0);
 
             $r = DB::selectOne(
+                'SELECT COUNT(*) AS c FROM "LEAD" WHERE "CREATEDAT" <= ?',
+                [$endLastWeek->format('Y-m-d H:i:s')]
+            );
+            $leadsUntilLastWeek = (int) ($r->c ?? $r->C ?? 0);
+
+            $r = DB::selectOne(
+                'SELECT COUNT(*) AS c FROM "LEAD_ACT" WHERE UPPER(TRIM("STATUS")) = \'COMPLETED\' AND "CREATIONDATE" <= ?',
+                [$endLastWeek->format('Y-m-d H:i:s')]
+            );
+            $closedUntilLastWeek = (int) ($r->c ?? $r->C ?? 0);
+
+            $r = DB::selectOne(
                 'SELECT COUNT(*) AS c FROM "LEAD_ACT" WHERE "STATUS" = \'FollowUp\' AND "CREATIONDATE" >= ? AND "CREATIONDATE" <= ?',
                 [$startThisWeek->format('Y-m-d H:i:s'), Carbon::now()->format('Y-m-d 23:59:59')]
             );
@@ -86,18 +128,10 @@ class AdminController extends Controller
             );
             $referralLastWeek = (int) ($r->c ?? $r->C ?? 0);
 
-            $r = DB::selectOne(
-                'SELECT COUNT(*) AS c FROM "LEAD" WHERE "CREATEDAT" >= ? AND "CREATEDAT" <= ? AND UPPER(TRIM("CURRENTSTATUS")) = \'ONGOING\'',
-                [$startThisWeek->format('Y-m-d H:i:s'), Carbon::now()->format('Y-m-d 23:59:59')]
-            );
-            $activeThisWeek = (int) ($r->c ?? $r->C ?? 0);
-            $r = DB::selectOne(
-                'SELECT COUNT(*) AS c FROM "LEAD" WHERE "CREATEDAT" >= ? AND "CREATEDAT" <= ? AND UPPER(TRIM("CURRENTSTATUS")) = \'ONGOING\'',
-                [$startLastWeek->format('Y-m-d H:i:s'), $endLastWeek->format('Y-m-d 23:59:59')]
-            );
-            $activeLastWeek = (int) ($r->c ?? $r->C ?? 0);
+            $activeThisWeek = $activeInquiries;
+            $activeLastWeek = $countActiveSnapshot($endLastWeek->format('Y-m-d H:i:s'));
         } catch (\Throwable $e) {
-            $activeThisWeek = 0;
+            $activeThisWeek = $activeInquiries;
             $activeLastWeek = 0;
         }
 
@@ -105,9 +139,8 @@ class AdminController extends Controller
         $pctClosed = $closedLastWeek > 0 ? round((($closedThisWeek - $closedLastWeek) / $closedLastWeek) * 100, 1) : ($closedThisWeek > 0 ? 100 : 0);
         $pctActive = $activeLastWeek > 0 ? round((($activeThisWeek - $activeLastWeek) / $activeLastWeek) * 100, 1) : ($activeThisWeek > 0 ? 100 : 0);
         $pctReferral = $referralLastWeek > 0 ? round((($referralThisWeek - $referralLastWeek) / $referralLastWeek) * 100, 1) : ($referralThisWeek > 0 ? 100 : 0);
-        $convThisWeek = $leadsThisWeek > 0 ? ($closedThisWeek / $leadsThisWeek) * 100 : 0;
-        $convLastWeek = $leadsLastWeek > 0 ? ($closedLastWeek / $leadsLastWeek) * 100 : 0;
-        $conversionRateChange = round($convThisWeek - $convLastWeek, 1);
+        $conversionRateLastWeek = $leadsUntilLastWeek > 0 ? ($closedUntilLastWeek / $leadsUntilLastWeek) * 100 : 0;
+        $conversionRateChange = round($conversionRate - $conversionRateLastWeek, 1);
 
         $dealerStats = [];
         try {
@@ -434,6 +467,134 @@ class AdminController extends Controller
             // If LEAD_ACT lookup fails, keep CURRENTSTATUS from LEAD
         }
 
+        // Attach latest completion date, payouts date, dealt products, and latest attachment for assigned inquiries.
+        try {
+            $leadIds = [];
+            foreach ($rows as $r) {
+                $lid = (int) ($r->LEADID ?? 0);
+                if ($lid > 0) {
+                    $leadIds[$lid] = true;
+                }
+            }
+            $leadIds = array_keys($leadIds);
+            if (!empty($leadIds)) {
+                $placeholders = implode(',', array_fill(0, count($leadIds), '?'));
+                $completedRows = DB::select(
+                    'SELECT "LEADID", MAX("CREATIONDATE") AS COMPLETED_AT
+                     FROM "LEAD_ACT"
+                     WHERE UPPER(TRIM("STATUS")) = \'COMPLETED\'
+                       AND "LEADID" IN (' . $placeholders . ')
+                     GROUP BY "LEADID"',
+                    $leadIds
+                );
+                $rewardedRows = DB::select(
+                    'SELECT "LEADID", MAX("CREATIONDATE") AS REWARDED_AT
+                     FROM "LEAD_ACT"
+                     WHERE UPPER(TRIM("STATUS")) = \'REWARDED\'
+                       AND "LEADID" IN (' . $placeholders . ')
+                     GROUP BY "LEADID"',
+                    $leadIds
+                );
+                $dealRows = DB::select(
+                    'SELECT a."LEADID", a."DEALTPRODUCT"
+                     FROM "LEAD_ACT" a
+                     JOIN (
+                         SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
+                         FROM "LEAD_ACT"
+                         WHERE UPPER(TRIM("STATUS")) = \'COMPLETED\'
+                           AND "LEADID" IN (' . $placeholders . ')
+                         GROUP BY "LEADID"
+                     ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
+                     WHERE UPPER(TRIM(a."STATUS")) = \'COMPLETED\'
+                       AND a."LEADID" IN (' . $placeholders . ')',
+                    array_merge($leadIds, $leadIds)
+                );
+                $completedDateMap = [];
+                $rewardedDateMap = [];
+                $dealtProductMap = [];
+                $attachmentMap = [];
+                $attachmentActMap = [];
+                foreach ($completedRows as $item) {
+                    $lid = (int) ($item->LEADID ?? 0);
+                    if ($lid > 0) {
+                        $completedDateMap[$lid] = $item->COMPLETED_AT ?? $item->completed_at ?? null;
+                    }
+                }
+                foreach ($rewardedRows as $item) {
+                    $lid = (int) ($item->LEADID ?? 0);
+                    if ($lid > 0) {
+                        $rewardedDateMap[$lid] = $item->REWARDED_AT ?? $item->rewarded_at ?? null;
+                    }
+                }
+                foreach ($dealRows as $item) {
+                    $lid = (int) ($item->LEADID ?? 0);
+                    if ($lid > 0) {
+                        $dealtProductMap[$lid] = $item->DEALTPRODUCT ?? $item->dealtproduct ?? null;
+                    }
+                }
+                $attachRows = DB::select(
+                    'SELECT "LEADID", "LEAD_ACTID", "ATTACHMENT", "CREATIONDATE"
+                     FROM "LEAD_ACT"
+                     WHERE "LEADID" IN (' . $placeholders . ')
+                       AND "ATTACHMENT" IS NOT NULL
+                     ORDER BY "LEADID" ASC, "CREATIONDATE" DESC, "LEAD_ACTID" DESC',
+                    $leadIds
+                );
+                foreach ($attachRows as $item) {
+                    $lid = (int) ($item->LEADID ?? 0);
+                    if ($lid <= 0 || array_key_exists($lid, $attachmentMap)) {
+                        continue;
+                    }
+                    $attachment = $item->ATTACHMENT ?? $item->attachment ?? null;
+                    if ($attachment === null || trim((string) $attachment) === '') {
+                        continue;
+                    }
+                    $attachmentMap[$lid] = $attachment;
+                    $attachmentActMap[$lid] = (int) ($item->LEAD_ACTID ?? $item->lead_actid ?? 0);
+                }
+                foreach ($rows as $r) {
+                    $lid = (int) ($r->LEADID ?? 0);
+                    if ($lid > 0 && isset($completedDateMap[$lid])) {
+                        $r->COMPLETED_AT = $completedDateMap[$lid];
+                    }
+                    if ($lid > 0 && isset($rewardedDateMap[$lid])) {
+                        $r->REWARDED_AT = $rewardedDateMap[$lid];
+                    }
+                    if ($lid > 0 && isset($dealtProductMap[$lid])) {
+                        $r->DEALTPRODUCT = $dealtProductMap[$lid];
+                    }
+                    if ($lid > 0 && array_key_exists($lid, $attachmentMap)) {
+                        $r->ASSIGNED_ATTACHMENT = $attachmentMap[$lid];
+                        $r->ASSIGNED_LEAD_ACT_ID = $attachmentActMap[$lid] ?? 0;
+                    }
+                    $urls = [];
+                    $attachmentRaw = $r->ASSIGNED_ATTACHMENT ?? null;
+                    $leadActId = (int) ($r->ASSIGNED_LEAD_ACT_ID ?? 0);
+                    if ($attachmentRaw !== null && trim((string) $attachmentRaw) !== '') {
+                        $attachmentStr = trim((string) $attachmentRaw);
+                        $attachmentStr = str_replace('\\', '/', $attachmentStr);
+                        if (str_contains($attachmentStr, ',') || str_starts_with($attachmentStr, 'inquiry-attachments')) {
+                            foreach (explode(',', $attachmentStr) as $path) {
+                                $path = trim(str_replace('\\', '/', $path));
+                                if ($path !== '' && str_starts_with($path, 'inquiry-attachments/')) {
+                                    $urls[] = route('admin.rewards.serve-attachment', ['path' => $path]);
+                                }
+                            }
+                        } else {
+                            if (str_starts_with($attachmentStr, 'inquiry-attachments/')) {
+                                $urls[] = route('admin.rewards.serve-attachment', ['path' => $attachmentStr]);
+                            } elseif ($lid > 0 && $leadActId > 0 && preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', $attachmentStr)) {
+                                $urls[] = route('admin.rewards.activity-attachment', ['leadId' => $lid, 'leadActId' => $leadActId]);
+                            }
+                        }
+                    }
+                    $r->ASSIGNED_ATTACHMENT_URLS = $urls;
+                }
+            }
+        } catch (\Throwable $e) {
+            // Leave assigned activity enrichment blank if LEAD_ACT lookup fails.
+        }
+
         // Resolve display names (ALIAS first) from USERS for:
         // - Source (CREATEDBY)
         // - Assigned By (CREATEDBY)
@@ -652,6 +813,125 @@ class AdminController extends Controller
             } catch (\Throwable $e) {
                 // keep CURRENTSTATUS from LEAD
             }
+        }
+
+        try {
+            if (!empty($leadIds)) {
+                $placeholders = implode(',', array_fill(0, count($leadIds), '?'));
+                $completedRows = DB::select(
+                    'SELECT "LEADID", MAX("CREATIONDATE") AS COMPLETED_AT
+                     FROM "LEAD_ACT"
+                     WHERE UPPER(TRIM("STATUS")) = \'COMPLETED\'
+                       AND "LEADID" IN (' . $placeholders . ')
+                     GROUP BY "LEADID"',
+                    $leadIds
+                );
+                $rewardedRows = DB::select(
+                    'SELECT "LEADID", MAX("CREATIONDATE") AS REWARDED_AT
+                     FROM "LEAD_ACT"
+                     WHERE UPPER(TRIM("STATUS")) = \'REWARDED\'
+                       AND "LEADID" IN (' . $placeholders . ')
+                     GROUP BY "LEADID"',
+                    $leadIds
+                );
+                $dealRows = DB::select(
+                    'SELECT a."LEADID", a."DEALTPRODUCT"
+                     FROM "LEAD_ACT" a
+                     JOIN (
+                         SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
+                         FROM "LEAD_ACT"
+                         WHERE UPPER(TRIM("STATUS")) = \'COMPLETED\'
+                           AND "LEADID" IN (' . $placeholders . ')
+                         GROUP BY "LEADID"
+                     ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
+                     WHERE UPPER(TRIM(a."STATUS")) = \'COMPLETED\'
+                       AND a."LEADID" IN (' . $placeholders . ')',
+                    array_merge($leadIds, $leadIds)
+                );
+                $completedDateMap = [];
+                $rewardedDateMap = [];
+                $dealtProductMap = [];
+                $attachmentMap = [];
+                $attachmentActMap = [];
+                foreach ($completedRows as $item) {
+                    $lid = (int) ($item->LEADID ?? 0);
+                    if ($lid > 0) {
+                        $completedDateMap[$lid] = $item->COMPLETED_AT ?? $item->completed_at ?? null;
+                    }
+                }
+                foreach ($rewardedRows as $item) {
+                    $lid = (int) ($item->LEADID ?? 0);
+                    if ($lid > 0) {
+                        $rewardedDateMap[$lid] = $item->REWARDED_AT ?? $item->rewarded_at ?? null;
+                    }
+                }
+                foreach ($dealRows as $item) {
+                    $lid = (int) ($item->LEADID ?? 0);
+                    if ($lid > 0) {
+                        $dealtProductMap[$lid] = $item->DEALTPRODUCT ?? $item->dealtproduct ?? null;
+                    }
+                }
+                $attachRows = DB::select(
+                    'SELECT "LEADID", "LEAD_ACTID", "ATTACHMENT", "CREATIONDATE"
+                     FROM "LEAD_ACT"
+                     WHERE "LEADID" IN (' . $placeholders . ')
+                       AND "ATTACHMENT" IS NOT NULL
+                     ORDER BY "LEADID" ASC, "CREATIONDATE" DESC, "LEAD_ACTID" DESC',
+                    $leadIds
+                );
+                foreach ($attachRows as $item) {
+                    $lid = (int) ($item->LEADID ?? 0);
+                    if ($lid <= 0 || array_key_exists($lid, $attachmentMap)) {
+                        continue;
+                    }
+                    $attachment = $item->ATTACHMENT ?? $item->attachment ?? null;
+                    if ($attachment === null || trim((string) $attachment) === '') {
+                        continue;
+                    }
+                    $attachmentMap[$lid] = $attachment;
+                    $attachmentActMap[$lid] = (int) ($item->LEAD_ACTID ?? $item->lead_actid ?? 0);
+                }
+                foreach ($rows as $r) {
+                    $lid = (int) ($r->LEADID ?? 0);
+                    if ($lid > 0 && isset($completedDateMap[$lid])) {
+                        $r->COMPLETED_AT = $completedDateMap[$lid];
+                    }
+                    if ($lid > 0 && isset($rewardedDateMap[$lid])) {
+                        $r->REWARDED_AT = $rewardedDateMap[$lid];
+                    }
+                    if ($lid > 0 && isset($dealtProductMap[$lid])) {
+                        $r->DEALTPRODUCT = $dealtProductMap[$lid];
+                    }
+                    if ($lid > 0 && array_key_exists($lid, $attachmentMap)) {
+                        $r->ASSIGNED_ATTACHMENT = $attachmentMap[$lid];
+                        $r->ASSIGNED_LEAD_ACT_ID = $attachmentActMap[$lid] ?? 0;
+                    }
+                    $urls = [];
+                    $attachmentRaw = $r->ASSIGNED_ATTACHMENT ?? null;
+                    $leadActId = (int) ($r->ASSIGNED_LEAD_ACT_ID ?? 0);
+                    if ($attachmentRaw !== null && trim((string) $attachmentRaw) !== '') {
+                        $attachmentStr = trim((string) $attachmentRaw);
+                        $attachmentStr = str_replace('\\', '/', $attachmentStr);
+                        if (str_contains($attachmentStr, ',') || str_starts_with($attachmentStr, 'inquiry-attachments')) {
+                            foreach (explode(',', $attachmentStr) as $path) {
+                                $path = trim(str_replace('\\', '/', $path));
+                                if ($path !== '' && str_starts_with($path, 'inquiry-attachments/')) {
+                                    $urls[] = route('admin.rewards.serve-attachment', ['path' => $path]);
+                                }
+                            }
+                        } else {
+                            if (str_starts_with($attachmentStr, 'inquiry-attachments/')) {
+                                $urls[] = route('admin.rewards.serve-attachment', ['path' => $attachmentStr]);
+                            } elseif ($lid > 0 && $leadActId > 0 && preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', $attachmentStr)) {
+                                $urls[] = route('admin.rewards.activity-attachment', ['leadId' => $lid, 'leadActId' => $leadActId]);
+                            }
+                        }
+                    }
+                    $r->ASSIGNED_ATTACHMENT_URLS = $urls;
+                }
+            }
+        } catch (\Throwable $e) {
+            // Leave assigned activity enrichment blank if LEAD_ACT lookup fails.
         }
 
         $ids = [];
@@ -1617,6 +1897,8 @@ class AdminController extends Controller
         $completedDateMap = [];
         $rewardedDateMap = [];
         $dealtProductMap = [];
+        $assignedAttachmentMap = [];
+        $assignedAttachmentActMap = [];
         try {
             $leadIdsForActs = array_values(array_unique(array_filter(array_map(
                 fn ($r) => (int) ($r->LEADID ?? 0),
@@ -1670,15 +1952,37 @@ class AdminController extends Controller
                         $dealtProductMap[$lid] = $dr->DEALTPRODUCT ?? $dr->dealtproduct ?? null;
                     }
                 }
+                $attachRows = DB::select(
+                    'SELECT "LEADID", "LEAD_ACTID", "ATTACHMENT", "CREATIONDATE"
+                     FROM "LEAD_ACT"
+                     WHERE "LEADID" IN (' . $placeholders . ')
+                       AND "ATTACHMENT" IS NOT NULL
+                     ORDER BY "LEADID" ASC, "CREATIONDATE" DESC, "LEAD_ACTID" DESC',
+                    $leadIdsForActs
+                );
+                foreach ($attachRows as $ar) {
+                    $lid = (int) ($ar->LEADID ?? 0);
+                    if ($lid <= 0 || array_key_exists($lid, $assignedAttachmentMap)) {
+                        continue;
+                    }
+                    $attachment = $ar->ATTACHMENT ?? $ar->attachment ?? null;
+                    if ($attachment === null || trim((string) $attachment) === '') {
+                        continue;
+                    }
+                    $assignedAttachmentMap[$lid] = $attachment;
+                    $assignedAttachmentActMap[$lid] = (int) ($ar->LEAD_ACTID ?? $ar->lead_actid ?? 0);
+                }
             }
         } catch (\Throwable $e) {
             $completedDateMap = [];
             $rewardedDateMap = [];
             $dealtProductMap = [];
+            $assignedAttachmentMap = [];
+            $assignedAttachmentActMap = [];
         }
 
-        // Attach completion/rewarded dates + dealt products to assigned rows where available
-        if (!empty($completedDateMap) || !empty($rewardedDateMap) || !empty($dealtProductMap)) {
+        // Attach completion/rewarded dates, dealt products, and latest attachment to assigned rows where available
+        if (!empty($completedDateMap) || !empty($rewardedDateMap) || !empty($dealtProductMap) || !empty($assignedAttachmentMap)) {
             foreach ($assigned as $r) {
                 $lid = (int) ($r->LEADID ?? 0);
                 if ($lid <= 0) continue;
@@ -1691,6 +1995,32 @@ class AdminController extends Controller
                 if (isset($dealtProductMap[$lid])) {
                     $r->DEALTPRODUCT = $dealtProductMap[$lid];
                 }
+                if (array_key_exists($lid, $assignedAttachmentMap)) {
+                    $r->ASSIGNED_ATTACHMENT = $assignedAttachmentMap[$lid];
+                    $r->ASSIGNED_LEAD_ACT_ID = $assignedAttachmentActMap[$lid] ?? 0;
+                }
+                $urls = [];
+                $attachmentRaw = $r->ASSIGNED_ATTACHMENT ?? null;
+                $leadActId = (int) ($r->ASSIGNED_LEAD_ACT_ID ?? 0);
+                if ($attachmentRaw !== null && trim((string) $attachmentRaw) !== '') {
+                    $attachmentStr = trim((string) $attachmentRaw);
+                    $attachmentStr = str_replace('\\', '/', $attachmentStr);
+                    if (str_contains($attachmentStr, ',') || str_starts_with($attachmentStr, 'inquiry-attachments')) {
+                        foreach (explode(',', $attachmentStr) as $path) {
+                            $path = trim(str_replace('\\', '/', $path));
+                            if ($path !== '' && str_starts_with($path, 'inquiry-attachments/')) {
+                                $urls[] = route('admin.rewards.serve-attachment', ['path' => $path]);
+                            }
+                        }
+                    } else {
+                        if (str_starts_with($attachmentStr, 'inquiry-attachments/')) {
+                            $urls[] = route('admin.rewards.serve-attachment', ['path' => $attachmentStr]);
+                        } elseif ($lid > 0 && $leadActId > 0 && preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', $attachmentStr)) {
+                            $urls[] = route('admin.rewards.activity-attachment', ['leadId' => $lid, 'leadActId' => $leadActId]);
+                        }
+                    }
+                }
+                $r->ASSIGNED_ATTACHMENT_URLS = $urls;
             }
         }
 
@@ -2116,8 +2446,32 @@ class AdminController extends Controller
             }
         }
 
-        // Unassigned leads: match LEAD status \"Open\"
+        // Last month lead status summary for month-over-month status comparisons.
+        $lastMonthLeadStatusRows = DB::select(
+            'SELECT l."CURRENTSTATUS" AS status, COUNT(*) AS c
+             FROM "LEAD" l
+             LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
+             WHERE EXTRACT(YEAR FROM l."CREATEDAT") = ? AND EXTRACT(MONTH FROM l."CREATEDAT") = ?
+             ' . $leadScopeSql . '
+             GROUP BY l."CURRENTSTATUS"',
+            array_merge([$prevYear, $prevMonth], $leadScopeBindings)
+        );
+        $lastMonthLeadStatus = [
+            'Open' => 0,
+            'Ongoing' => 0,
+            'Closed' => 0,
+            'Failed' => 0,
+        ];
+        foreach ($lastMonthLeadStatusRows as $row) {
+            $key = (string) $get($row, 'status');
+            if (isset($lastMonthLeadStatus[$key])) {
+                $lastMonthLeadStatus[$key] = (int) $get($row, 'c');
+            }
+        }
+
+        // Unassigned leads: match LEAD status "Open"
         $unassignedCount = $leadStatus['Open'] ?? 0;
+        $lastMonthUnassignedCount = $lastMonthLeadStatus['Open'] ?? 0;
 
         // Activity status: use LATEST LEAD_ACT per LEADID (by CREATIONDATE)
         $pendingActs = DB::select(
@@ -2279,7 +2633,7 @@ class AdminController extends Controller
             return (int) round(($current - $lastMonth) / $lastMonth * 100);
         };
         $metricPercent = [
-            'unassigned' => $percentChange($currentMonthTotal, $lastMonthTotal),
+            'unassigned' => $percentChange($unassignedCount, $lastMonthUnassignedCount),
             'Pending' => $percentChange($activityStatus['Pending'] ?? 0, $lastMonthActivity['Pending'] ?? 0),
             'FollowUp' => $percentChange($activityStatus['FollowUp'] ?? 0, $lastMonthActivity['FollowUp'] ?? 0),
             'Demo' => $percentChange($activityStatus['Demo'] ?? 0, $lastMonthActivity['Demo'] ?? 0),

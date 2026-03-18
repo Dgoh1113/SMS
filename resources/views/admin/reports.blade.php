@@ -63,19 +63,7 @@
 
 @php
     $totalLeads = array_sum($leadStatus);
-    $totalActivities = array_sum($activityStatus);
     $totalPayouts = array_sum($payoutStatus);
-    $totalStatus = max($totalActivities, 1);
-    $statusColors = [
-        'Created' => '#FF0000',
-        'Pending' => '#FF4500',
-        'FollowUp' => '#FF8C00',
-        'Demo' => '#FFD700',
-        'Confirmed' => '#9ACD32',
-        'Completed' => '#32CD32',
-        'Failed' => '#434343',
-        'reward' => '#008000',
-    ];
 @endphp
 
 @php
@@ -107,6 +95,20 @@
         ],
     ];
 @endphp
+
+@php
+    $statusReportData = [
+        ['label' => 'Unassigned', 'value' => (int) $unassignedLeads, 'color' => '#ef4444'],
+        ['label' => 'Pending', 'value' => (int) ($activityStatus['Pending'] ?? 0), 'color' => '#f97316'],
+        ['label' => 'FollowUp', 'value' => (int) ($activityStatus['FollowUp'] ?? 0), 'color' => '#f59e0b'],
+        ['label' => 'Demo', 'value' => (int) ($activityStatus['Demo'] ?? 0), 'color' => '#eab308'],
+        ['label' => 'Confirmed', 'value' => (int) ($activityStatus['Confirmed'] ?? 0), 'color' => '#84cc16'],
+        ['label' => 'Completed', 'value' => (int) (($activityStatus['Completed'] ?? 0) + ($payoutStatus['Pending'] ?? 0)), 'color' => '#22c55e'],
+        ['label' => 'Rewarded', 'value' => (int) ($activityStatus['reward'] ?? 0), 'color' => '#15803d'],
+    ];
+    $totalStatus = max(array_sum(array_column($statusReportData, 'value')), 1);
+@endphp
+
 <section class="dashboard-metrics-grid">
     @foreach ($metricCards as $card)
     @php
@@ -179,7 +181,8 @@
             @php
                 $segments = [];
                 $offset = 0;
-                foreach ($activityStatus as $name => $value) {
+                foreach ($statusReportData as $item) {
+                    $value = (int) ($item['value'] ?? 0);
                     if ($value <= 0) {
                         continue;
                     }
@@ -187,7 +190,7 @@
                     $segments[] = [
                         'from' => $offset,
                         'to' => $offset + $percent,
-                        'color' => $statusColors[$name] ?? '#e5e7eb',
+                        'color' => $item['color'] ?? '#e5e7eb',
                     ];
                     $offset += $percent;
                 }
@@ -199,18 +202,18 @@
                 <div class="report-donut"
                      style="background: conic-gradient({{ $gradientParts ?: '#e5e7eb 0 100%' }});">
                     <div class="report-donut-center">
-                        <div class="report-donut-total">{{ $totalActivities }}</div>
+                        <div class="report-donut-total">{{ array_sum(array_column($statusReportData, 'value')) }}</div>
                         <div class="report-donut-label">Activities</div>
                     </div>
                 </div>
             </div>
             <ul class="report-legend">
-                @foreach ($activityStatus as $name => $value)
+                @foreach ($statusReportData as $item)
                     <li>
                         <span class="report-legend-color"
-                              style="background-color: {{ $statusColors[$name] ?? '#e5e7eb' }}"></span>
-                        <span class="report-legend-label">{{ $name === 'reward' ? 'Rewarded' : $name }}</span>
-                        <span class="report-legend-value">{{ $value }}</span>
+                              style="background-color: {{ $item['color'] ?? '#e5e7eb' }}"></span>
+                        <span class="report-legend-label">{{ $item['label'] }}</span>
+                        <span class="report-legend-value">{{ $item['value'] }}</span>
                     </li>
                 @endforeach
             </ul>
