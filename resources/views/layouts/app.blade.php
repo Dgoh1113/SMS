@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'SQL Sales Management System')</title>
-    <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
     <script>
@@ -148,12 +147,8 @@
             @yield('content')
         </div>
 
-        <footer class="dashboard-bottombar"></footer>
-    </main>
-    
-</div>
-@push('scripts')
-<footer class="dashboard-bottombar" style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #6b7280;">
+        {{-- FIXED: Footer properly moved here inside the main tag --}}
+        <footer class="dashboard-bottombar" style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #6b7280;">
             <div class="dashboard-bottombar-left">
                 <span class="dashboard-footer-text-main">&copy; {{ date('Y') }} SQL Account. All rights reserved.</span>
             </div>
@@ -161,6 +156,10 @@
                 <span>Designed & Developed by <strong>Damien, Weijian & WenJun with love</strong></span>
             </div>
         </footer>
+    </main>
+</div>
+
+@push('scripts')
 <script>
 (function() {
     // Auto-hide flash messages (success/error) after 3s
@@ -233,7 +232,7 @@
         var hasUnseen = false;
         nList.innerHTML = '';
         
-        // NEW: Limit to exactly 20 items
+        // Limit to exactly 20 items
         var displayItems = items.slice(0, 20);
         
         displayItems.forEach(function(it) {
@@ -279,7 +278,12 @@
         fetch('/dealer/notifications', { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
             .then(function(r) { return r.json(); })
             .then(function(data) { renderNotifications((data && data.items) ? data.items : []); })
-            .catch(function() { nList.innerHTML = '<div class="dashboard-notifications-empty">Failed to load</div>'; });
+            .catch(function() { 
+                // Only show error text if the menu is actively open and it's the first manual load
+                if (!nMenu.hidden && !nLoaded) {
+                    nList.innerHTML = '<div class="dashboard-notifications-empty">Failed to load</div>'; 
+                }
+            });
     }
 
     // Mark all as read functionality
@@ -322,9 +326,18 @@
         });
         nMenu.addEventListener('click', function(e) { e.stopPropagation(); });
         
-        // Initial load just to show dot
+        // Initial load to check for red dot immediately on page load
         loadNotifications();
         nLoaded = true;
+
+        // REAL-TIME AUTO REFRESH: Fetch notifications every 5 seconds
+        setInterval(function() {
+            // We fetch silently in the background. We check if the dropdown is hidden 
+            // so we don't redraw the list while the user is trying to read/click it!
+            if (nMenu && nMenu.hidden) {
+                loadNotifications();
+            }
+        }, 5000);
     }
 
     // Sidebar: apply preload state immediately (avoids flicker) on desktop only
