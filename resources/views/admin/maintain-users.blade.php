@@ -553,13 +553,6 @@
 @endpush
 
 @section('content')
-@php
-    $batchEligibleUsers = array_values(array_filter($users, static function ($u) {
-        return !($u['HAS_LOGGED_IN'] ?? false)
-            && (bool) ($u['ISACTIVE'] ?? false)
-            && trim((string) ($u['EMAIL'] ?? '')) !== '';
-    }));
-@endphp
 <div class="maintain-users-page">
     <div class="maintain-users-header">
         <div class="maintain-users-header-right">
@@ -651,81 +644,8 @@
                     </th>
                 </tr>
                 </thead>
-                <tbody>
-                @foreach ($users as $u)
-                    @php
-                        $roleUpper = strtoupper(trim($u['SYSTEMROLE'] ?? ''));
-                        $roleClass = $roleUpper === 'ADMIN'
-                            ? 'maintain-users-pill-role-admin'
-                            : ($roleUpper === 'MANAGER' ? 'maintain-users-pill-role-manager' : 'maintain-users-pill-role-dealer');
-                        $lastLoginStr = $u['LASTLOGIN'] ? \Carbon\Carbon::parse($u['LASTLOGIN'])->format('Y-m-d H:i') : '';
-                        $searchHaystack = strtolower(
-                            ($u['USERID'] ?? '') . ' ' .
-                            ($u['EMAIL'] ?? '') . ' ' .
-                            ($u['ALIAS'] ?? '') . ' ' .
-                            ($u['COMPANY'] ?? '') . ' ' .
-                            ($u['TEMP_PASSWORD'] ?? '') . ' ' .
-                            (($u['HAS_LOGGED_IN'] ?? false) ? 'logged in' : 'not logged in') . ' ' .
-                            $roleUpper . ' ' .
-                            ($u['ISACTIVE'] ? 'active' : 'inactive') . ' ' .
-                            $lastLoginStr
-                        );
-                    @endphp
-                    <tr class="maintain-users-row" data-search="{{ $searchHaystack }}"
-                        data-userid="{{ $u['USERID'] }}"
-                        data-email="{{ e($u['EMAIL']) }}"
-                        data-role="{{ $roleUpper }}"
-                        data-alias="{{ e($u['ALIAS'] ?? '') }}"
-                        data-company="{{ e($u['COMPANY'] ?? '') }}"
-                        data-postcode="{{ e($u['POSTCODE'] ?? '') }}"
-                        data-city="{{ e($u['CITY'] ?? '') }}"
-                        data-password="{{ ($u['TEMP_PASSWORD'] ?? '') !== '' ? $u['TEMP_PASSWORD'] : (($u['HAS_LOGGED_IN'] ?? false) ? 'protected' : 'not generated') }}"
-                        data-active="{{ $u['ISACTIVE'] ? '1' : '0' }}">
-                        <td data-col="userid">{{ $u['USERID'] }}</td>
-                        <td data-col="email">{{ $u['EMAIL'] }}</td>
-                        <td data-col="role">
-                            <span class="maintain-users-pill-role {{ $roleClass }}">{{ $roleUpper ?: '-' }}</span>
-                        </td>
-                        <td data-col="alias">{{ $u['ALIAS'] ?: '-' }}</td>
-                        <td data-col="company">{{ $u['COMPANY'] ?: '-' }}</td>
-                        <td data-col="password">
-                            @if (!($u['HAS_LOGGED_IN'] ?? false) && ($u['TEMP_PASSWORD'] ?? '') !== '')
-                                <span class="maintain-users-temp-password">{{ $u['TEMP_PASSWORD'] }}</span>
-                            @elseif (!($u['HAS_LOGGED_IN'] ?? false))
-                                <span class="maintain-users-pill-password empty">Not generated</span>
-                            @else
-                                <span class="maintain-users-pill-password set">Protected</span>
-                            @endif
-                        </td>
-                        <td data-col="active">
-                            <span class="maintain-users-pill-active {{ $u['ISACTIVE'] ? 'yes' : 'no' }}">
-                                {{ $u['ISACTIVE'] ? 'Active' : 'Inactive' }}
-                            </span>
-                        </td>
-                        <td data-col="lastlogin">
-                            @if ($u['LASTLOGIN'])
-                                {{ \Carbon\Carbon::parse($u['LASTLOGIN'])->format('Y-m-d H:i') }}
-                            @else
-                                -
-                            @endif
-                        </td>
-                        <td class="maintain-users-col-action">
-                            <div class="maintain-users-action-cell">
-                                <button type="button" class="maintain-users-edit-btn" data-userid="{{ $u['USERID'] }}" title="Edit" aria-label="Edit user">
-                                    <i class="bi bi-pencil-square" aria-hidden="true"></i>
-                                </button>
-                                @if (!($u['HAS_LOGGED_IN'] ?? false))
-                                    <form method="POST" action="{{ route('admin.maintain-users.send-temp-password', $u['USERID']) }}" class="maintain-users-inline-form">
-                                        @csrf
-                                        <button type="submit" class="maintain-users-temp-send-btn" title="{{ ($u['TEMP_PASSWORD_EMAILED'] ?? false) ? 'Temporary password already emailed - send again' : 'Send temporary password' }}" aria-label="Send temporary password">
-                                            <i class="bi {{ ($u['TEMP_PASSWORD_EMAILED'] ?? false) ? 'bi-envelope-fill' : 'bi-envelope' }}" aria-hidden="true"></i>
-                                        </button>
-                                    </form>
-                                @endif
-                            </div>
-                        </td>
-                    </tr>
-                @endforeach
+                <tbody id="maintainUsersTableBody">
+                @include('admin.partials.maintain_users_rows', ['users' => $users])
                 </tbody>
             </table>
             </div>
@@ -868,30 +788,11 @@
         <form method="POST" action="{{ route('admin.maintain-users.send-temp-passwords') }}" id="maintainUsersBatchForm">
             @csrf
             <div class="maintain-users-batch-summary">
-                <span>{{ count($batchEligibleUsers) }} eligible user(s)</span>
-                @if (count($batchEligibleUsers) > 0)
-                    <button type="button" class="maintain-users-batch-toggle" id="maintainUsersBatchToggleAll">Uncheck all</button>
-                @endif
+                <span id="maintainUsersBatchCount">{{ count($batchEligibleUsers) }} eligible user(s)</span>
+                <button type="button" class="maintain-users-batch-toggle" id="maintainUsersBatchToggleAll" {{ count($batchEligibleUsers) > 0 ? '' : 'hidden' }}>Uncheck all</button>
             </div>
-            <div class="maintain-users-batch-list">
-                @if (count($batchEligibleUsers) === 0)
-                    <div class="maintain-users-batch-empty">No users are waiting for a first login email.</div>
-                @else
-                    @foreach ($batchEligibleUsers as $u)
-                        @php
-                            $batchDisplayName = trim((string) ($u['COMPANY'] ?? '')) !== ''
-                                ? trim((string) ($u['COMPANY'] ?? ''))
-                                : (trim((string) ($u['ALIAS'] ?? '')) !== '' ? trim((string) ($u['ALIAS'] ?? '')) : trim((string) ($u['EMAIL'] ?? '')));
-                        @endphp
-                        <label class="maintain-users-batch-item">
-                            <input type="checkbox" name="USERIDS[]" value="{{ $u['USERID'] }}" checked>
-                            <div class="maintain-users-batch-item-main">
-                                <div class="maintain-users-batch-item-name">{{ $batchDisplayName }}</div>
-                                <div class="maintain-users-batch-item-meta">{{ $u['USERID'] }} &bull; {{ $u['EMAIL'] }}</div>
-                            </div>
-                        </label>
-                    @endforeach
-                @endif
+            <div class="maintain-users-batch-list" id="maintainUsersBatchList">
+                @include('admin.partials.maintain_users_batch_items', ['batchEligibleUsers' => $batchEligibleUsers])
             </div>
             <div class="maintain-users-modal-actions">
                 <button type="button" class="maintain-users-btn-secondary" id="maintainUsersBatchCancelBtn">Cancel</button>
@@ -1032,8 +933,42 @@
             });
             if (syncBtn) {
                 syncBtn.addEventListener('click', function () {
+                    if (!tableBody) return;
                     syncBtn.disabled = true;
-                    window.location.reload();
+                    fetch(syncUrl + '?partial=1&_=' + Date.now(), {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        credentials: 'same-origin'
+                    })
+                        .then(function (response) {
+                            if (!response.ok) {
+                                throw new Error('Unable to refresh users.');
+                            }
+                            return response.json();
+                        })
+                        .then(function (payload) {
+                            tableBody.innerHTML = typeof payload.rows_html === 'string' ? payload.rows_html : '';
+                            if (batchList) {
+                                batchList.innerHTML = typeof payload.batch_html === 'string' ? payload.batch_html : '';
+                            }
+                            if (batchCount) {
+                                batchCount.textContent = (payload.batch_count || 0) + ' eligible user(s)';
+                            }
+                            if (batchToggleAllBtn) {
+                                batchToggleAllBtn.hidden = (payload.batch_count || 0) === 0;
+                            }
+                            updateBatchSelectionState();
+                            applyTableFilter();
+                        })
+                        .catch(function (error) {
+                            console.error(error);
+                        })
+                        .finally(function () {
+                            syncBtn.disabled = false;
+                        });
                 });
             }
             if (roleSelect) {
@@ -1062,12 +997,17 @@
             const batchToggleAllBtn = document.getElementById('maintainUsersBatchToggleAll');
             const batchForm = document.getElementById('maintainUsersBatchForm');
             const batchSubmitBtn = document.getElementById('maintainUsersBatchSubmitBtn');
+            const batchCount = document.getElementById('maintainUsersBatchCount');
+            const batchList = document.getElementById('maintainUsersBatchList');
             const editRoleLabel = document.getElementById('edit_SYSTEMROLE_LABEL');
             const editAliasInput = document.getElementById('edit_ALIAS');
             const editCompanyInput = document.getElementById('edit_COMPANY');
             const editPostcodeInput = document.getElementById('edit_POSTCODE');
             const editCityInput = document.getElementById('edit_CITY');
             const editDealerFieldsSection = document.getElementById('maintainUsersEditDealerFields');
+            const table = document.getElementById('maintainUsersTable');
+            const tableBody = document.getElementById('maintainUsersTableBody');
+            const syncUrl = '{{ route('admin.maintain-users') }}';
 
             function formatRoleLabel(role) {
                 if (!role) return '';
@@ -1138,13 +1078,15 @@
             function closeEditModal() {
                 if (editModal) editModal.classList.remove('is-open');
             }
-            document.querySelectorAll('.maintain-users-edit-btn').forEach(function (btn) {
-                btn.addEventListener('click', function (e) {
+            if (table) {
+                table.addEventListener('click', function (e) {
+                    var btn = e.target.closest('.maintain-users-edit-btn');
+                    if (!btn) return;
                     e.preventDefault();
                     var row = btn.closest('tr.maintain-users-row');
                     if (row) openEditModal(row);
                 });
-            });
+            }
             if (editCancelBtn) editCancelBtn.addEventListener('click', function (e) {
                 e.preventDefault();
                 closeEditModal();
@@ -1183,15 +1125,18 @@
                     updateBatchSelectionState();
                 });
             }
-            getBatchCheckboxes().forEach(function (box) {
-                box.addEventListener('change', updateBatchSelectionState);
-            });
+            if (batchForm) {
+                batchForm.addEventListener('change', function (e) {
+                    if (e.target && e.target.matches('input[name="USERIDS[]"]')) {
+                        updateBatchSelectionState();
+                    }
+                });
+            }
             updateBatchSelectionState();
             updateLocationPresetVisuals();
             syncAddRoleState();
 
             // Live search: top search box + per-column filters (all apply as you type)
-            const table = document.getElementById('maintainUsersTable');
             function applyTableFilter() {
                 if (!table) return;
                 const filters = {};

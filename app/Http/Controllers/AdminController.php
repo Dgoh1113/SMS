@@ -3433,7 +3433,7 @@ class AdminController extends Controller
         return view('admin.fulldatabase', ['tables' => $tables, 'currentPage' => 'fulldatabase']);
     }
 
-    public function maintainUsers(Request $request): View|RedirectResponse
+    public function maintainUsers(Request $request): View|RedirectResponse|JsonResponse
     {
         if (strtolower((string) $request->session()->get('user_role')) === 'manager') {
             return redirect()->route('admin.dashboard')->with('error', 'You do not have permission to access Maintain Users.');
@@ -3521,6 +3521,8 @@ class AdminController extends Controller
                 'TEMP_PASSWORD_EMAILED_AT' => $tempPasswordEmailedAt !== '' ? $tempPasswordEmailedAt : null,
             ];
         }, $rows);
+
+        return $users;
     }
 
     private function maintainUsersBatchEligible(array $users): array
