@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Mail\InquiryAssignedToDealer;
 use App\Mail\PayoutCompletedNotification;
 use App\Mail\UserPasswordResetLink;
+use App\Mail\UserTemporaryPasswordMail;
+use App\Support\MaintainUserTemporaryPasswordStore;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
@@ -3439,6 +3441,30 @@ class AdminController extends Controller
 
         $roleFilter = strtoupper(trim((string) $request->query('role', '')));
         $search = trim((string) $request->query('q', ''));
+        $users = $this->loadMaintainUsersData($roleFilter, $search);
+        $batchEligibleUsers = $this->maintainUsersBatchEligible($users);
+
+        if ($request->boolean('partial') || $request->expectsJson()) {
+            return response()->json([
+                'rows_html' => view('admin.partials.maintain_users_rows', ['users' => $users])->render(),
+                'batch_html' => view('admin.partials.maintain_users_batch_items', ['batchEligibleUsers' => $batchEligibleUsers])->render(),
+                'batch_count' => count($batchEligibleUsers),
+            ]);
+        }
+
+        return view('admin.maintain-users', [
+            'currentPage' => 'maintain-users',
+            'users' => $users,
+            'batchEligibleUsers' => $batchEligibleUsers,
+            'filterRole' => $roleFilter,
+            'search' => $search,
+        ]);
+    }
+
+    private function loadMaintainUsersData(string $roleFilter = '', string $search = ''): array
+    {
+        $roleFilter = strtoupper(trim($roleFilter));
+        $search = trim($search);
 
         $params = [];
         $where = [];
@@ -3459,32 +3485,51 @@ class AdminController extends Controller
             $params[] = $like;
         }
 
-        $sql = 'SELECT "USERID","EMAIL","SYSTEMROLE","ISACTIVE","ALIAS","COMPANY","LASTLOGIN" FROM "USERS" u';
+        $sql = 'SELECT "USERID","EMAIL","SYSTEMROLE","ISACTIVE","ALIAS","COMPANY","POSTCODE","CITY","LASTLOGIN","PASSWORDHASH" FROM "USERS" u';
         if (!empty($where)) {
             $sql .= ' WHERE ' . implode(' AND ', $where);
         }
         $sql .= ' ORDER BY "USERID"';
 
         $rows = DB::select($sql, $params);
+        $tempPasswords = $this->tempPasswordStore()->allDecrypted();
 
-        $users = array_map(function ($r) {
+        $users = array_map(function ($r) use ($tempPasswords) {
+            $userId = (string) ($r->USERID ?? '');
+            $hasLoggedIn = $r->LASTLOGIN !== null;
+            $temporaryPassword = !$hasLoggedIn && isset($tempPasswords[$userId]['password'])
+                ? (string) $tempPasswords[$userId]['password']
+                : '';
+            $tempPasswordEmailedAt = !$hasLoggedIn && isset($tempPasswords[$userId]['emailed_at'])
+                ? (string) ($tempPasswords[$userId]['emailed_at'] ?? '')
+                : '';
+
             return [
-                'USERID' => (string) ($r->USERID ?? ''),
+                'USERID' => $userId,
                 'EMAIL' => (string) ($r->EMAIL ?? ''),
                 'SYSTEMROLE' => (string) ($r->SYSTEMROLE ?? ''),
                 'ISACTIVE' => (bool) ($r->ISACTIVE ?? true),
                 'ALIAS' => (string) ($r->ALIAS ?? ''),
                 'COMPANY' => (string) ($r->COMPANY ?? ''),
+                'POSTCODE' => (string) ($r->POSTCODE ?? ''),
+                'CITY' => (string) ($r->CITY ?? ''),
                 'LASTLOGIN' => $r->LASTLOGIN ?? null,
+                'HASPASSWORD' => trim((string) ($r->PASSWORDHASH ?? '')) !== '',
+                'HAS_LOGGED_IN' => $hasLoggedIn,
+                'TEMP_PASSWORD' => $temporaryPassword,
+                'TEMP_PASSWORD_EMAILED' => $tempPasswordEmailedAt !== '',
+                'TEMP_PASSWORD_EMAILED_AT' => $tempPasswordEmailedAt !== '' ? $tempPasswordEmailedAt : null,
             ];
         }, $rows);
+    }
 
-        return view('admin.maintain-users', [
-            'currentPage' => 'maintain-users',
-            'users' => $users,
-            'filterRole' => $roleFilter,
-            'search' => $search,
-        ]);
+    private function maintainUsersBatchEligible(array $users): array
+    {
+        return array_values(array_filter($users, static function ($u) {
+            return !($u['HAS_LOGGED_IN'] ?? false)
+                && (bool) ($u['ISACTIVE'] ?? false)
+                && trim((string) ($u['EMAIL'] ?? '')) !== '';
+        }));
     }
 
     public function maintainUsersStore(Request $request): RedirectResponse
@@ -3495,18 +3540,25 @@ class AdminController extends Controller
 
         $validated = $request->validate([
             'EMAIL' => 'required|email|max:50',
-            'PASSWORD' => 'required|string|min:6|max:255',
+            'PASSWORD' => 'nullable|string|min:6|max:255',
             'SYSTEMROLE' => 'required|string|in:ADMIN,MANAGER,DEALER',
             'ALIAS' => 'nullable|string|max:50',
             'COMPANY' => 'nullable|string|max:40',
-            'POSTCODE' => 'required|string|max:10',
-            'CITY' => 'required|string|max:100',
+            'POSTCODE' => 'nullable|string|digits:5',
+            'CITY' => 'nullable|string|max:100',
             'ISACTIVE' => 'nullable|boolean',
+        ], [
+            'EMAIL.email' => 'Invalid Email Address Format.',
+            'POSTCODE.digits' => 'Invalid Postcode.',
         ]);
 
         $email = trim((string) $validated['EMAIL']);
-        $password = (string) $validated['PASSWORD'];
+        $password = trim((string) ($validated['PASSWORD'] ?? ''));
+        if ($password === '') {
+            $password = $this->generateTemporaryPassword();
+        }
         $roleInput = strtoupper(trim((string) $validated['SYSTEMROLE']));
+        $estreamCompany = 'E Stream Sdn Bhd';
         // INTEG_10: SystemRole IN ('Dealer', 'Manager', 'Admin') — exact casing
         $systemRole = match ($roleInput) {
             'ADMIN' => 'Admin',
@@ -3514,11 +3566,24 @@ class AdminController extends Controller
             'DEALER' => 'Dealer',
             default => 'Dealer',
         };
+        $isDealer = $roleInput === 'DEALER';
         $alias = trim((string) ($validated['ALIAS'] ?? ''));
         $company = trim((string) ($validated['COMPANY'] ?? ''));
         $postcode = trim((string) ($validated['POSTCODE'] ?? ''));
         $city = trim((string) ($validated['CITY'] ?? ''));
         $isActive = (bool) ($validated['ISACTIVE'] ?? true);
+
+        if ($isDealer && ($alias === '' || $company === '' || $postcode === '' || $city === '')) {
+            return back()
+                ->withInput()
+                ->with('error', 'Dealer accounts require alias, company, postcode, and city.');
+        }
+
+        if (!$isDealer) {
+            $company = $estreamCompany;
+            $postcode = '';
+            $city = '';
+        }
 
         // Prevent duplicate email
         $existing = DB::selectOne('SELECT "USERID" FROM "USERS" WHERE UPPER(TRIM("EMAIL")) = UPPER(TRIM(?))', [$email]);
@@ -3532,17 +3597,44 @@ class AdminController extends Controller
             'INSERT INTO "USERS" ("EMAIL","PASSWORDHASH","SYSTEMROLE","ISACTIVE","ALIAS","COMPANY","POSTCODE","CITY") VALUES (?,?,?,?,?,?,?,?)',
             [
                 $email,
-                \Illuminate\Support\Facades\Hash::make($password),
+                Hash::make($password),
                 $systemRole,
                 $isActive ? 1 : 0,
                 $alias !== '' ? $alias : null,
                 $company !== '' ? $company : null,
-                $postcode,
-                $city,
+                $postcode !== '' ? $postcode : '',
+                $city !== '' ? $city : '',
             ]
         );
 
-        return redirect()->route('admin.maintain-users')->with('success', 'User created successfully.');
+        $createdUser = DB::selectOne(
+            'SELECT "USERID" FROM "USERS" WHERE UPPER(TRIM("EMAIL")) = UPPER(TRIM(?))',
+            [$email]
+        );
+        if ($createdUser && trim((string) ($createdUser->USERID ?? '')) !== '') {
+            $this->tempPasswordStore()->put((string) $createdUser->USERID, $password);
+        }
+
+        $createAction = trim((string) $request->input('CREATE_ACTION', 'create'));
+        if ($createAction === 'create_email' && $createdUser && trim((string) ($createdUser->USERID ?? '')) !== '') {
+            try {
+                $newUser = DB::selectOne(
+                    'SELECT "USERID","EMAIL","ALIAS","COMPANY","PASSWORDHASH","LASTLOGIN","ISACTIVE" FROM "USERS" WHERE "USERID" = ?',
+                    [(string) $createdUser->USERID]
+                );
+
+                if (!$newUser || !$this->sendMaintainUserTemporaryPassword($newUser)) {
+                    return redirect()->route('admin.maintain-users')->with('error', 'User created, but failed to send temporary password email.');
+                }
+
+                return redirect()->route('admin.maintain-users')->with('success', 'User created and temporary password emailed.');
+            } catch (\Throwable $e) {
+                report($e);
+                return redirect()->route('admin.maintain-users')->with('error', 'User created, but failed to send temporary password email.');
+            }
+        }
+
+        return redirect()->route('admin.maintain-users')->with('success', 'User created successfully. Temporary password generated.');
     }
 
     public function maintainUsersUpdate(Request $request, string $userid): RedirectResponse
@@ -3551,23 +3643,43 @@ class AdminController extends Controller
             return redirect()->route('admin.dashboard')->with('error', 'You do not have permission to access Maintain Users.');
         }
 
+        $existing = DB::selectOne('SELECT "USERID","SYSTEMROLE" FROM "USERS" WHERE "USERID" = ?', [$userid]);
+        if (!$existing) {
+            return redirect()->route('admin.maintain-users')->with('error', 'User not found.');
+        }
+
         $validated = $request->validate([
             'EMAIL' => 'required|email|max:50',
             'ALIAS' => 'nullable|string|max:50',
             'COMPANY' => 'nullable|string|max:40',
+            'POSTCODE' => 'nullable|string|digits:5',
+            'CITY' => 'nullable|string|max:100',
             'ISACTIVE' => 'nullable|boolean',
             'SEND_RESET_LINK' => 'nullable|boolean',
+        ], [
+            'EMAIL.email' => 'Invalid Email Address Format.',
+            'POSTCODE.digits' => 'Invalid Postcode.',
         ]);
 
         $email = trim((string) $validated['EMAIL']);
+        $roleUpper = strtoupper(trim((string) ($existing->SYSTEMROLE ?? '')));
+        $isDealer = $roleUpper === 'DEALER';
+        $estreamCompany = 'E Stream Sdn Bhd';
         $alias = trim((string) ($validated['ALIAS'] ?? ''));
         $company = trim((string) ($validated['COMPANY'] ?? ''));
+        $postcode = trim((string) ($validated['POSTCODE'] ?? ''));
+        $city = trim((string) ($validated['CITY'] ?? ''));
         $isActive = (bool) ($validated['ISACTIVE'] ?? true);
         $sendResetLink = (bool) ($validated['SEND_RESET_LINK'] ?? false);
 
-        $existing = DB::selectOne('SELECT "USERID" FROM "USERS" WHERE "USERID" = ?', [$userid]);
-        if (!$existing) {
-            return redirect()->route('admin.maintain-users')->with('error', 'User not found.');
+        if ($isDealer && ($alias === '' || $company === '' || $postcode === '' || $city === '')) {
+            return back()->withInput()->with('error', 'Dealer accounts require alias, company, postcode, and city.');
+        }
+
+        if (!$isDealer) {
+            $company = $estreamCompany;
+            $postcode = '';
+            $city = '';
         }
 
         // Email unique except current user
@@ -3596,6 +3708,8 @@ class AdminController extends Controller
         $emailCol = $col('EMAIL');
         $aliasCol = $col('ALIAS');
         $companyCol = $col('COMPANY');
+        $postcodeCol = $col('POSTCODE');
+        $cityCol = $col('CITY');
         $activeCol = $col('ISACTIVE');
         $idCol = $col('USERID');
         if (!$emailCol || !$activeCol || !$idCol) {
@@ -3613,6 +3727,14 @@ class AdminController extends Controller
             if ($companyCol) {
                 $parts[] = $q($companyCol) . ' = ?';
                 $bind[] = $company !== '' ? $company : null;
+            }
+            if ($postcodeCol) {
+                $parts[] = $q($postcodeCol) . ' = ?';
+                $bind[] = $postcode !== '' ? $postcode : '';
+            }
+            if ($cityCol) {
+                $parts[] = $q($cityCol) . ' = ?';
+                $bind[] = $city !== '' ? $city : '';
             }
             $parts[] = $q($activeCol) . ' = ?';
             $bind[] = $isActiveValue;
@@ -3653,6 +3775,81 @@ class AdminController extends Controller
             : 'User updated successfully.';
 
         return redirect()->route('admin.maintain-users')->with('success', $successMessage);
+    }
+
+    public function maintainUsersSendTempPassword(Request $request, string $userid): RedirectResponse
+    {
+        if (strtolower((string) $request->session()->get('user_role')) === 'manager') {
+            return redirect()->route('admin.dashboard')->with('error', 'You do not have permission to access Maintain Users.');
+        }
+
+        $user = DB::selectOne(
+            'SELECT "USERID","EMAIL","ALIAS","COMPANY","PASSWORDHASH","LASTLOGIN","ISACTIVE" FROM "USERS" WHERE "USERID" = ?',
+            [$userid]
+        );
+
+        if (!$user) {
+            return redirect()->route('admin.maintain-users')->with('error', 'User not found.');
+        }
+
+        if ($user->LASTLOGIN !== null) {
+            return redirect()->route('admin.maintain-users')->with('error', 'Temporary password can only be sent to users who have never logged in.');
+        }
+
+        try {
+            $this->sendMaintainUserTemporaryPassword($user);
+        } catch (\Throwable $e) {
+            report($e);
+            return redirect()->route('admin.maintain-users')->with('error', 'Failed to send temporary password email.');
+        }
+
+        return redirect()->route('admin.maintain-users')->with('success', 'Temporary password email sent.');
+    }
+
+    public function maintainUsersSendTempPasswords(Request $request): RedirectResponse
+    {
+        if (strtolower((string) $request->session()->get('user_role')) === 'manager') {
+            return redirect()->route('admin.dashboard')->with('error', 'You do not have permission to access Maintain Users.');
+        }
+
+        $selectedUserIds = array_values(array_unique(array_map(
+            static fn ($value) => trim((string) $value),
+            (array) $request->input('USERIDS', [])
+        )));
+        $selectedUserIds = array_values(array_filter($selectedUserIds, static fn ($value) => $value !== ''));
+
+        if (empty($selectedUserIds)) {
+            return redirect()->route('admin.maintain-users')->with('error', 'Please select at least one user.');
+        }
+
+        $placeholders = implode(',', array_fill(0, count($selectedUserIds), '?'));
+        $users = DB::select(
+            'SELECT "USERID","EMAIL","ALIAS","COMPANY","PASSWORDHASH","LASTLOGIN","ISACTIVE"
+             FROM "USERS"
+             WHERE "LASTLOGIN" IS NULL
+               AND "USERID" IN (' . $placeholders . ')
+             ORDER BY "USERID"'
+            ,
+            $selectedUserIds
+        );
+
+        $sent = 0;
+
+        foreach ($users as $user) {
+            try {
+                if ($this->sendMaintainUserTemporaryPassword($user)) {
+                    $sent++;
+                }
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        if ($sent === 0) {
+            return redirect()->route('admin.maintain-users')->with('error', 'No eligible users found for temporary password email.');
+        }
+
+        return redirect()->route('admin.maintain-users')->with('success', 'Temporary password email sent to ' . $sent . ' user(s).');
     }
 
     private function sendMaintainUserPasswordResetLink(object $user): void
@@ -3699,6 +3896,93 @@ class AdminController extends Controller
             resetUrl: $resetUrl,
             systemName: $systemName
         ));
+    }
+
+    private function sendMaintainUserTemporaryPassword(object $user): bool
+    {
+        $userId = trim((string) ($user->USERID ?? ''));
+        $email = trim((string) ($user->EMAIL ?? ''));
+        $isActive = (bool) ($user->ISACTIVE ?? false);
+        if ($userId === '' || $email === '' || !$isActive || $user->LASTLOGIN !== null) {
+            return false;
+        }
+
+        $temporaryPassword = $this->ensureMaintainUserTemporaryPassword($user);
+        if ($temporaryPassword === '') {
+            return false;
+        }
+
+        $recipientName = $this->maintainUserRecipientName($user);
+
+        $systemName = trim((string) config('app.name', ''));
+        if ($systemName === '' || strtoupper($systemName) === 'LARAVEL') {
+            $systemName = 'SQL SMS';
+        }
+
+        Mail::to($email)->send(new UserTemporaryPasswordMail(
+            toEmail: $email,
+            recipientName: $recipientName,
+            temporaryPassword: $temporaryPassword,
+            systemName: $systemName
+        ));
+
+        $this->tempPasswordStore()->markEmailed($userId);
+
+        return true;
+    }
+
+    private function ensureMaintainUserTemporaryPassword(object $user): string
+    {
+        $userId = trim((string) ($user->USERID ?? ''));
+        if ($userId === '' || $user->LASTLOGIN !== null) {
+            return '';
+        }
+
+        $existing = $this->tempPasswordStore()->getPassword($userId);
+        if ($existing !== null && $existing !== '') {
+            return $existing;
+        }
+
+        $temporaryPassword = $this->generateTemporaryPassword();
+        DB::update(
+            'UPDATE "USERS" SET "PASSWORDHASH" = ? WHERE "USERID" = ?',
+            [Hash::make($temporaryPassword), $userId]
+        );
+        $this->tempPasswordStore()->put($userId, $temporaryPassword);
+
+        return $temporaryPassword;
+    }
+
+    private function maintainUserRecipientName(object $user): string
+    {
+        $email = trim((string) ($user->EMAIL ?? ''));
+        $alias = trim((string) ($user->ALIAS ?? ''));
+        $company = trim((string) ($user->COMPANY ?? ''));
+        $companyUpper = strtoupper($company);
+
+        if ($companyUpper === 'E STREAM SDN BHD') {
+            return $alias !== '' ? $alias : $email;
+        }
+
+        return $company !== '' ? $company : ($alias !== '' ? $alias : $email);
+    }
+
+    private function generateTemporaryPassword(int $length = 10): string
+    {
+        $characters = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+        $max = strlen($characters) - 1;
+        $password = '';
+
+        for ($i = 0; $i < max(8, $length); $i++) {
+            $password .= $characters[random_int(0, $max)];
+        }
+
+        return $password;
+    }
+
+    private function tempPasswordStore(): MaintainUserTemporaryPasswordStore
+    {
+        return app(MaintainUserTemporaryPasswordStore::class);
     }
 
     /**

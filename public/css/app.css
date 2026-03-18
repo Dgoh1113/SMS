@@ -5845,7 +5845,8 @@ button.dealer-pagination-btn:disabled {
   background: #ffffff;
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 .maintain-users-table.dashboard-table {
   background: #ffffff;
@@ -5856,12 +5857,12 @@ button.dealer-pagination-btn:disabled {
 }
 .maintain-users-table.dashboard-table th,
 .maintain-users-table.dashboard-table td {
-  padding: 10px 12px;
+  padding: 8px 10px;
   text-align: left;
   font-size: 13px;
 }
 .maintain-users-table.dashboard-table thead tr.inquiries-header-row th {
-  padding: 8px 10px;
+  padding: 7px 8px;
   vertical-align: top;
   background: #ede9fe;
   border-bottom: 1px solid #ddd6fe;
@@ -5878,23 +5879,52 @@ button.dealer-pagination-btn:disabled {
 .maintain-users-table.dashboard-table thead th.maintain-users-col-action {
   background: #ede9fe;
 }
+.maintain-users-table.dashboard-table th.maintain-users-col-action,
+.maintain-users-table.dashboard-table td.maintain-users-col-action {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  background: #ffffff;
+  box-shadow: -4px 0 8px rgba(0, 0, 0, 0.06);
+}
+.maintain-users-table.dashboard-table thead th.maintain-users-col-action {
+  z-index: 2;
+  background: #ede9fe;
+}
 /* Column min-widths (table size per column, same approach as Inquiries) */
 .maintain-users-table.dashboard-table th:nth-child(1),
-.maintain-users-table.dashboard-table td:nth-child(1) { min-width: 80px; }   /* USER ID */
+.maintain-users-table.dashboard-table td:nth-child(1) { min-width: 54px; }   /* USER ID */
 .maintain-users-table.dashboard-table th:nth-child(2),
-.maintain-users-table.dashboard-table td:nth-child(2) { min-width: 180px; }  /* EMAIL */
+.maintain-users-table.dashboard-table td:nth-child(2) { min-width: 156px; }  /* EMAIL */
 .maintain-users-table.dashboard-table th:nth-child(3),
-.maintain-users-table.dashboard-table td:nth-child(3) { min-width: 90px; }   /* ROLE */
+.maintain-users-table.dashboard-table td:nth-child(3) { min-width: 60px; }   /* ROLE */
 .maintain-users-table.dashboard-table th:nth-child(4),
-.maintain-users-table.dashboard-table td:nth-child(4) { min-width: 100px; }  /* ALIAS */
+.maintain-users-table.dashboard-table td:nth-child(4) { min-width: 84px; }   /* ALIAS */
 .maintain-users-table.dashboard-table th:nth-child(5),
-.maintain-users-table.dashboard-table td:nth-child(5) { min-width: 120px; }   /* COMPANY */
+.maintain-users-table.dashboard-table td:nth-child(5) { min-width: 138px; }  /* COMPANY */
 .maintain-users-table.dashboard-table th:nth-child(6),
-.maintain-users-table.dashboard-table td:nth-child(6) { min-width: 85px; }    /* ACTIVE */
+.maintain-users-table.dashboard-table td:nth-child(6) { min-width: 128px; }  /* PASSWORD */
 .maintain-users-table.dashboard-table th:nth-child(7),
-.maintain-users-table.dashboard-table td:nth-child(7) { min-width: 110px; }   /* LAST LOGIN */
+.maintain-users-table.dashboard-table td:nth-child(7) { min-width: 70px; }   /* ACTIVE */
 .maintain-users-table.dashboard-table th:nth-child(8),
-.maintain-users-table.dashboard-table td:nth-child(8) { min-width: 90px; }    /* ACTION */
+.maintain-users-table.dashboard-table td:nth-child(8) { min-width: 102px; }  /* LAST LOGIN */
+.maintain-users-table.dashboard-table th:nth-child(9),
+.maintain-users-table.dashboard-table td:nth-child(9) { min-width: 92px; }   /* ACTION */
+.maintain-users-table.dashboard-table th[data-col="userid"] .inquiries-grid-filter,
+.maintain-users-table.dashboard-table th[data-col="role"] .inquiries-grid-filter {
+  width: 78px;
+  min-width: 78px;
+  padding-left: 6px;
+  padding-right: 24px;
+}
+.maintain-users-table.dashboard-table th[data-col="userid"] .inquiries-filter-wrap,
+.maintain-users-table.dashboard-table th[data-col="role"] .inquiries-filter-wrap {
+  width: 78px;
+}
+.maintain-users-table.dashboard-table th[data-col="userid"] .inquiries-header-label,
+.maintain-users-table.dashboard-table th[data-col="role"] .inquiries-header-label {
+  letter-spacing: 0.03em;
+}
 .maintain-users-table.dashboard-table tbody td {
   background: #ffffff;
   border-top: 1px solid #f3f4f6;
@@ -5904,6 +5934,7 @@ button.dealer-pagination-btn:disabled {
 }
 .maintain-users-table.dashboard-table tbody td.maintain-users-col-action {
   white-space: nowrap;
+  text-align: center;
 }
 .maintain-users-table.dashboard-table tbody tr:hover td {
   background: #fafafa;

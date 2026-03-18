@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Mail\UserPasswordResetLink;
+use App\Support\MaintainUserTemporaryPasswordStore;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -16,6 +17,10 @@ class AuthController extends Controller
 {
     public function showLoginForm(Request $request): View|RedirectResponse
     {
+        if ($request->session()->has('pending_force_password_change_user_id')) {
+            return redirect()->route('password.force-change.form');
+        }
+
         // After sign-in success we stay on login page to show register passkey; only then go to dashboard.
         if ($request->session()->has('user_id') && $request->session()->has('show_register_passkey')) {
             $role = $request->session()->get('user_role');
@@ -62,7 +67,7 @@ class AuthController extends Controller
 
         // Database login
         $row = DB::selectOne(
-            'SELECT "USERID", "PASSWORDHASH", "SYSTEMROLE", "ISACTIVE", "ALIAS" FROM "USERS" WHERE "EMAIL" = ?',
+            'SELECT "USERID", "PASSWORDHASH", "SYSTEMROLE", "ISACTIVE", "ALIAS", "LASTLOGIN" FROM "USERS" WHERE "EMAIL" = ?',
             [$email]
         );
 
@@ -96,14 +101,31 @@ class AuthController extends Controller
             );
         }
 
-        DB::update('UPDATE "USERS" SET "LASTLOGIN" = CURRENT_TIMESTAMP WHERE "USERID" = ?', [$row->USERID]);
-
         $systemRole = strtoupper(trim((string) ($row->SYSTEMROLE ?? '')));
         $role = match ($systemRole) {
             'ADMIN' => 'admin',
             'MANAGER' => 'manager',
             default => 'dealer',
         };
+
+        $temporaryPassword = $this->tempPasswordStore()->getPassword((string) $row->USERID);
+        $isTemporaryPasswordLogin = $temporaryPassword !== null
+            && $temporaryPassword !== ''
+            && ($row->LASTLOGIN ?? null) === null
+            && hash_equals($temporaryPassword, (string) $password);
+
+        if ($isTemporaryPasswordLogin) {
+            $request->session()->put('pending_force_password_change_user_id', (string) $row->USERID);
+            $request->session()->put('pending_force_password_change_email', (string) $email);
+            $request->session()->put('pending_force_password_change_role', $role);
+            $request->session()->put('pending_force_password_change_alias', (string) ($row->ALIAS ?? ''));
+
+            return redirect()->route('password.force-change.form');
+        }
+
+        $this->tempPasswordStore()->forget((string) $row->USERID);
+        DB::update('UPDATE "USERS" SET "LASTLOGIN" = CURRENT_TIMESTAMP WHERE "USERID" = ?', [$row->USERID]);
+
         $request->session()->put('user_id', $row->USERID);
         $request->session()->put('user_email', $email);
         $request->session()->put('user_alias', $row->ALIAS ?? '');
@@ -176,6 +198,74 @@ class AuthController extends Controller
         ]);
     }
 
+    public function showForceChangePasswordForm(Request $request): View|RedirectResponse
+    {
+        $userId = trim((string) $request->session()->get('pending_force_password_change_user_id', ''));
+        $email = trim((string) $request->session()->get('pending_force_password_change_email', ''));
+
+        if ($userId === '' || $email === '') {
+            return redirect()->route('login');
+        }
+
+        return view('auth.force-change-password', [
+            'email' => $email,
+            'formAction' => route('password.force-change.submit'),
+        ]);
+    }
+
+    public function forceChangePassword(Request $request): RedirectResponse
+    {
+        $userId = trim((string) $request->session()->get('pending_force_password_change_user_id', ''));
+        $email = trim((string) $request->session()->get('pending_force_password_change_email', ''));
+        $role = trim((string) $request->session()->get('pending_force_password_change_role', 'dealer'));
+        $alias = (string) $request->session()->get('pending_force_password_change_alias', '');
+
+        if ($userId === '' || $email === '') {
+            return redirect()->route('login')->with('error', 'Please sign in again.');
+        }
+
+        $validated = $request->validate([
+            'password' => 'required|string|min:6|max:255|confirmed',
+        ]);
+
+        $row = DB::selectOne(
+            'SELECT "USERID", "PASSWORDHASH", "LASTLOGIN" FROM "USERS" WHERE "USERID" = ?',
+            [$userId]
+        );
+
+        if (!$row || $row->LASTLOGIN !== null) {
+            $this->clearPendingForcePasswordChange($request);
+            return redirect()->route('login')->with('error', 'Please sign in again.');
+        }
+
+        $newPassword = (string) $validated['password'];
+        $stored = (string) ($row->PASSWORDHASH ?? '');
+        $looksHashed = str_starts_with($stored, '$2y$') || str_starts_with($stored, '$2a$') || str_starts_with($stored, '$argon2');
+        $matchesCurrent = $looksHashed ? Hash::check($newPassword, $stored) : hash_equals($stored, $newPassword);
+        if ($matchesCurrent) {
+            return back()->withInput()->withErrors([
+                'password' => 'Please create a new password different from the temporary password.',
+            ]);
+        }
+
+        DB::update(
+            'UPDATE "USERS" SET "PASSWORDHASH" = ?, "LASTLOGIN" = CURRENT_TIMESTAMP WHERE "USERID" = ?',
+            [Hash::make($newPassword), $userId]
+        );
+
+        $this->tempPasswordStore()->forget($userId);
+        $this->clearPendingForcePasswordChange($request);
+
+        $request->session()->put('user_id', $userId);
+        $request->session()->put('user_email', $email);
+        $request->session()->put('user_alias', $alias);
+        $request->session()->put('user_role', $role);
+        $request->session()->flash('show_register_passkey', true);
+        $request->session()->flash('success', 'Password created successfully.');
+
+        return redirect()->route('login');
+    }
+
     public function resetPassword(Request $request, string $userid): View|RedirectResponse
     {
         if (!$request->hasValidSignature()) {
@@ -217,6 +307,7 @@ class AuthController extends Controller
             return $this->invalidResetLinkView('This reset link has already been used or expired.');
         }
         Cache::forget($nonceCacheKey);
+        $this->tempPasswordStore()->forget($userid);
 
         return view('auth.reset-password-success', [
             'message' => 'Password reset successful. Please sign in with your new password.',
@@ -309,5 +400,20 @@ class AuthController extends Controller
             resetUrl: $resetUrl,
             systemName: $systemName
         ));
+    }
+
+    private function tempPasswordStore(): MaintainUserTemporaryPasswordStore
+    {
+        return app(MaintainUserTemporaryPasswordStore::class);
+    }
+
+    private function clearPendingForcePasswordChange(Request $request): void
+    {
+        $request->session()->forget([
+            'pending_force_password_change_user_id',
+            'pending_force_password_change_email',
+            'pending_force_password_change_role',
+            'pending_force_password_change_alias',
+        ]);
     }
 }

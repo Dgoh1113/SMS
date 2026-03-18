@@ -53,6 +53,9 @@
                     {{-- After sign-in: stay on login page and show only register passkey; then redirect to dashboard --}}
                     <div class="login-form">
                         <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                        @if (session('success'))
+                            <div class="login-message login-success">{{ session('success') }}</div>
+                        @endif
                         <p class="login-passkey-note" style="margin-bottom: 1rem;">You're signed in. Register a passkey to use it next time, or skip to go to the dashboard.</p>
                         <button type="button" class="login-primary-btn" id="register-passkey-btn">
                             <i class="bi bi-shield-lock" aria-hidden="true"></i>

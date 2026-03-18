@@ -12,6 +12,8 @@ Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::post('/password/forgot', [AuthController::class, 'requestPasswordResetFromLogin'])->name('password.forgot');
+Route::get('/password/force-change', [AuthController::class, 'showForceChangePasswordForm'])->name('password.force-change.form');
+Route::post('/password/force-change', [AuthController::class, 'forceChangePassword'])->name('password.force-change.submit');
 Route::get('/password/reset/{userid}', [AuthController::class, 'showResetPasswordForm'])->name('password.reset.form');
 Route::post('/password/reset/{userid}', [AuthController::class, 'resetPassword'])->name('password.reset.submit');
 
@@ -56,6 +58,8 @@ Route::middleware(['auth.sms', 'admin'])->prefix('admin')->name('admin.')->group
     Route::get('/fulldatabase', [AdminController::class, 'fulldatabase'])->name('fulldatabase');
     Route::get('/maintain-users', [AdminController::class, 'maintainUsers'])->name('maintain-users');
     Route::post('/maintain-users', [AdminController::class, 'maintainUsersStore'])->name('maintain-users.store');
+    Route::post('/maintain-users/send-temp-passwords', [AdminController::class, 'maintainUsersSendTempPasswords'])->name('maintain-users.send-temp-passwords');
+    Route::post('/maintain-users/{userid}/send-temp-password', [AdminController::class, 'maintainUsersSendTempPassword'])->name('maintain-users.send-temp-password');
     Route::put('/maintain-users/{userid}', [AdminController::class, 'maintainUsersUpdate'])->name('maintain-users.update');
 });
 

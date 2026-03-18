@@ -3,12 +3,12 @@
 @push('styles')
     <style>
         .maintain-users-page {
-            padding: 20px 24px;
+            padding: 22px 24px;
             text-align: left;
         }
         .maintain-users-header {
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-end;
             align-items: center;
             gap: 16px;
             margin-bottom: 16px;
@@ -20,9 +20,9 @@
             gap: 4px;
         }
         .maintain-users-title {
-            font-size: 1.25rem;
+            font-size: 1.3rem;
             font-weight: 800;
-            color: #0f172a;
+            color: #312e81;
             margin: 0;
         }
         .maintain-users-subtitle {
@@ -39,33 +39,61 @@
         .maintain-users-actions {
             display: flex;
             align-items: center;
+            gap: 10px;
         }
         .maintain-users-add-btn {
             border-radius: 999px;
             border: none;
-            padding: 8px 14px;
+            padding: 9px 16px;
             font-size: 0.85rem;
             font-weight: 700;
-            background: #4f46e5;
+            background: #7f5af0;
             color: #ffffff;
             display: inline-flex;
             align-items: center;
             gap: 6px;
             cursor: pointer;
-            box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3);
+            box-shadow: 0 10px 24px rgba(127, 90, 240, 0.24);
+            transition: background 0.18s ease, box-shadow 0.18s ease;
         }
         .maintain-users-add-btn:hover {
-            filter: brightness(0.97);
+            background: #6d4ad9;
+            box-shadow: 0 14px 28px rgba(109, 74, 217, 0.28);
+        }
+        .maintain-users-batch-form {
+            margin: 0;
+        }
+        .maintain-users-batch-btn {
+            border-radius: 999px;
+            border: 1px solid #e9dfff;
+            padding: 9px 14px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            background: #f3ebff;
+            color: #7f5af0;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: background 0.18s ease, color 0.18s ease;
+        }
+        .maintain-users-batch-btn:hover {
+            background: #e9dfff;
         }
         .maintain-users-table-wrap {
             margin-top: 12px;
+            background: #ffffff;
+            border: 1px solid #ede9fe;
+            border-radius: 20px;
+            padding: 18px 18px 12px;
+            box-shadow: 0 10px 28px rgba(15, 23, 42, 0.05);
         }
         .maintain-users-pill-role {
             display: inline-flex;
             align-items: center;
-            padding: 2px 8px;
+            padding: 2px 6px;
             border-radius: 999px;
-            font-size: 0.65rem;
+            font-size: 0.62rem;
             font-weight: 700;
         }
         .maintain-users-pill-role-admin {
@@ -96,6 +124,43 @@
             background: rgba(248, 113, 113, 0.1);
             color: #dc2626;
         }
+        .maintain-users-pill-password {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 108px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.74rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            border: 1px solid transparent;
+        }
+        .maintain-users-pill-password.set {
+            background: rgba(79, 70, 229, 0.1);
+            color: #4f46e5;
+            border-color: rgba(165, 180, 252, 0.65);
+        }
+        .maintain-users-pill-password.empty {
+            background: rgba(148, 163, 184, 0.12);
+            color: #64748b;
+            border-color: rgba(203, 213, 225, 0.72);
+        }
+        .maintain-users-temp-password {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 108px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.74rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            font-family: Consolas, 'Courier New', monospace;
+            color: #4338ca;
+            background: rgba(79, 70, 229, 0.1);
+            border: 1px solid rgba(165, 180, 252, 0.65);
+        }
         .maintain-users-empty {
             padding: 14px 16px;
             font-size: 0.8rem;
@@ -116,28 +181,33 @@
         }
         .maintain-users-modal {
             background: #ffffff;
-            border-radius: 16px;
-            padding: 20px 22px 18px;
+            border-radius: 18px;
+            padding: 22px 24px 20px;
             width: 100%;
-            max-width: 480px;
-            box-shadow: 0 20px 45px rgba(15, 23, 42, 0.3);
+            max-width: 560px;
+            box-shadow: 0 20px 48px rgba(15, 23, 42, 0.14);
+            border: 1px solid #ddd6fe;
         }
         .maintain-users-modal-title {
             font-size: 1rem;
             font-weight: 800;
             margin: 0 0 4px 0;
-            color: #0f172a;
+            color: #312e81;
         }
         .maintain-users-modal-sub {
             font-size: 0.78rem;
             color: #64748b;
-            margin-bottom: 12px;
+            margin-bottom: 14px;
         }
         .maintain-users-form-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 10px 12px;
-            margin-bottom: 12px;
+            gap: 12px 14px;
+            margin-bottom: 14px;
+        }
+        .maintain-users-form-grid-nested {
+            margin-bottom: 0;
+            gap: 12px 14px;
         }
         .maintain-users-form-grid .full {
             grid-column: 1 / -1;
@@ -148,25 +218,87 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.06em;
-            color: #94a3b8;
-            margin-bottom: 3px;
+            color: #7c3aed;
+            margin-bottom: 5px;
         }
         .maintain-users-field input,
         .maintain-users-field select {
             width: 100%;
-            border-radius: 8px;
-            border: 1px solid #e5e7eb;
-            padding: 6px 8px;
+            border-radius: 12px;
+            border: 1px solid #c4b5fd;
+            padding: 9px 11px;
             font-size: 0.8rem;
+            background: #ffffff;
+            color: #1e293b;
+            transition: border-color 0.18s ease, box-shadow 0.18s ease;
+        }
+        .maintain-users-field input:focus,
+        .maintain-users-field select:focus {
+            outline: none;
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.14);
+            background: #ffffff;
+        }
+        .maintain-users-field input:disabled,
+        .maintain-users-field select:disabled {
+            background: rgba(241, 245, 249, 0.92);
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+        .maintain-users-field.is-hidden {
+            display: none;
+        }
+        .maintain-users-dealer-section {
+            border-top: 1px solid #ede9fe;
+            padding-top: 14px;
+        }
+        .maintain-users-dealer-section.is-hidden {
+            display: none;
+        }
+        .maintain-users-location-presets {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .maintain-users-location-option {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 10px;
+            border: 1px solid #ddd6fe;
+            border-radius: 999px;
+            background: #faf7ff;
+            color: #6b7280;
+            font-size: 0.72rem;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+        }
+        .maintain-users-location-option input {
+            width: 12px;
+            height: 12px;
+            margin: 0;
+            accent-color: #7f5af0;
+        }
+        .maintain-users-location-option.is-active {
+            border-color: #c4b5fd;
+            background: #f3ebff;
+            color: #6d4ad9;
+        }
+        .maintain-users-readonly {
+            background: rgba(245, 243, 255, 0.95) !important;
+            color: #4c1d95 !important;
+            font-weight: 700;
         }
         .maintain-users-reset-option {
             display: flex;
             align-items: center;
             gap: 8px;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 8px 10px;
-            background: #f8fafc;
+            border: 1px solid #ddd6fe;
+            border-radius: 14px;
+            padding: 10px 12px;
+            background: #faf7ff;
         }
         .maintain-users-reset-option input {
             width: 14px;
@@ -185,6 +317,7 @@
             margin-top: 8px;
         }
         .maintain-users-btn-secondary,
+        .maintain-users-btn-soft,
         .maintain-users-btn-primary {
             border-radius: 999px;
             padding: 6px 14px;
@@ -195,28 +328,51 @@
         }
         .maintain-users-btn-secondary {
             background: #ffffff;
-            border-color: #e5e7eb;
-            color: #475569;
+            border-color: #ddd6fe;
+            color: #6b7280;
         }
         .maintain-users-btn-secondary:hover {
-            background: #f9fafb;
+            background: #f8f4ff;
+        }
+        .maintain-users-btn-soft {
+            background: #f3ebff;
+            border-color: #e9dfff;
+            color: #7f5af0;
+        }
+        .maintain-users-btn-soft:hover {
+            background: #e9dfff;
         }
         .maintain-users-btn-primary {
-            background: #4f46e5;
+            background: #7f5af0;
             color: #ffffff;
+            box-shadow: 0 10px 24px rgba(127, 90, 240, 0.22);
         }
         .maintain-users-btn-primary:hover {
-            filter: brightness(0.97);
+            background: #6d4ad9;
         }
         .maintain-users-error {
             margin-top: 8px;
-            font-size: 0.78rem;
-            color: #dc2626;
+            margin-bottom: 10px;
+            font-size: 0.8rem;
+            color: #b91c1c;
+            padding: 12px 14px;
+            border-radius: 14px;
+            border: 1px solid rgba(252, 165, 165, 0.7);
+            background: rgba(254, 242, 242, 0.95);
         }
         .maintain-users-success {
             margin-top: 8px;
-            font-size: 0.78rem;
-            color: #16a34a;
+            margin-bottom: 10px;
+            font-size: 0.8rem;
+            color: #15803d;
+            padding: 12px 14px;
+            border-radius: 14px;
+            border: 1px solid rgba(134, 239, 172, 0.72);
+            background: rgba(240, 253, 244, 0.96);
+            transition: opacity 0.25s ease;
+        }
+        .maintain-users-success.is-hiding {
+            opacity: 0;
         }
         .maintain-users-confirm {
             display: none;
@@ -236,26 +392,131 @@
             white-space: nowrap;
             vertical-align: middle;
         }
+        .maintain-users-action-cell {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        .maintain-users-inline-form {
+            margin: 0;
+        }
         .maintain-users-edit-btn {
-            border: 1px solid #c7d2fe;
-            background: #eef2ff;
-            color: #4f46e5;
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 36px;
+            min-height: 36px;
+            border: none;
+            background: transparent;
+            color: #4b5563;
+            padding: 6px;
+            border-radius: 6px;
+            font-size: 1rem;
+            line-height: 1;
             cursor: pointer;
+            text-decoration: none;
         }
         .maintain-users-edit-btn:hover {
-            background: #e0e7ff;
-            border-color: #818cf8;
+            background: rgba(139, 92, 246, 0.1);
+            color: #6d28d9;
+        }
+        .maintain-users-edit-btn .bi {
+            font-size: 1.35rem;
+        }
+        .maintain-users-temp-send-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 36px;
+            min-height: 36px;
+            border: none;
+            background: transparent;
+            color: #4b5563;
+            padding: 6px;
+            border-radius: 6px;
+            font-size: 1rem;
+            line-height: 1;
+            cursor: pointer;
+        }
+        .maintain-users-temp-send-btn:hover {
+            background: rgba(139, 92, 246, 0.1);
+            color: #6d28d9;
+        }
+        .maintain-users-temp-send-btn .bi {
+            font-size: 1.2rem;
+        }
+        .maintain-users-temp-help {
+            margin-top: 4px;
+            font-size: 0.72rem;
+            color: #64748b;
+        }
+        .maintain-users-batch-summary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 12px;
+            font-size: 0.8rem;
+            color: #475569;
+        }
+        .maintain-users-batch-toggle {
+            border: none;
+            background: transparent;
+            color: #4f46e5;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 0;
+        }
+        .maintain-users-batch-list {
+            max-height: 320px;
+            overflow-y: auto;
+            border: 1px solid #ddd6fe;
+            border-radius: 16px;
+            background: #faf7ff;
+            padding: 8px;
+        }
+        .maintain-users-batch-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            background: #ffffff;
+        }
+        .maintain-users-batch-item + .maintain-users-batch-item {
+            margin-top: 8px;
+        }
+        .maintain-users-batch-item input[type="checkbox"] {
+            margin-top: 2px;
+        }
+        .maintain-users-batch-item-main {
+            min-width: 0;
+            flex: 1;
+        }
+        .maintain-users-batch-item-name {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .maintain-users-batch-item-meta {
+            margin-top: 2px;
+            font-size: 0.76rem;
+            color: #64748b;
+        }
+        .maintain-users-batch-empty {
+            padding: 24px 12px;
+            text-align: center;
+            font-size: 0.82rem;
+            color: #64748b;
         }
         .maintain-users-table-search-wrap {
             display: flex;
             align-items: center;
-            background: #fff;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
+            background: #ffffff;
+            border: 1px solid #ddd6fe;
+            border-radius: 12px;
             padding: 0 10px;
             min-width: 140px;
             max-width: 220px;
@@ -292,18 +553,27 @@
 @endpush
 
 @section('content')
+@php
+    $batchEligibleUsers = array_values(array_filter($users, static function ($u) {
+        return !($u['HAS_LOGGED_IN'] ?? false)
+            && (bool) ($u['ISACTIVE'] ?? false)
+            && trim((string) ($u['EMAIL'] ?? '')) !== '';
+    }));
+@endphp
 <div class="maintain-users-page">
     <div class="maintain-users-header">
-        <div class="maintain-users-header-left">
-            <h2 class="maintain-users-title">Maintain Users</h2>
-            <div class="maintain-users-subtitle">Create and manage admin, manager, and dealer accounts.</div>
-        </div>
         <div class="maintain-users-header-right">
-            <div class="maintain-users-table-search-wrap">
-                <span class="maintain-users-table-search-icon"><i class="bi bi-search"></i></span>
-                <input type="text" class="maintain-users-table-search-input" id="maintainUsersSearchInput" placeholder="Search table..." autocomplete="off">
-            </div>
             <div class="maintain-users-actions">
+                <button type="button" class="maintain-users-batch-btn" id="maintainUsersSyncBtn">
+                    <i class="bi bi-arrow-repeat"></i>
+                    <span>Sync</span>
+                </button>
+                <div class="maintain-users-batch-form">
+                    <button type="button" class="maintain-users-batch-btn" id="maintainUsersBatchOpenBtn">
+                        <i class="bi bi-envelope"></i>
+                        <span>Send Temp Passwords</span>
+                    </button>
+                </div>
                 <button type="button" class="maintain-users-add-btn" id="maintainUsersAddBtn">
                     <span>+ Add User</span>
                 </button>
@@ -312,11 +582,6 @@
     </div>
 
     <div class="maintain-users-table-wrap">
-        @if (session('error'))
-            <div class="maintain-users-error">{{ session('error') }}</div>
-        @elseif (session('success'))
-            <div class="maintain-users-success">{{ session('success') }}</div>
-        @endif
         @if (count($users) === 0)
             <div class="maintain-users-empty">No users found.</div>
         @else
@@ -327,54 +592,62 @@
                     <th data-col="userid" class="inquiries-header-cell">
                         <span class="inquiries-header-label">USER ID</span>
                         <span class="inquiries-filter-wrap">
-                            <input type="text" class="inquiries-grid-filter" data-col="userid" placeholder="Search">
+                            <input type="text" class="inquiries-grid-filter" data-col="userid" placeholder="">
                             <i class="bi bi-search inquiries-filter-icon"></i>
                         </span>
                     </th>
                     <th data-col="email" class="inquiries-header-cell">
                         <span class="inquiries-header-label">EMAIL</span>
                         <span class="inquiries-filter-wrap">
-                            <input type="text" class="inquiries-grid-filter" data-col="email" placeholder="Search">
+                            <input type="text" class="inquiries-grid-filter" data-col="email" placeholder="">
                             <i class="bi bi-search inquiries-filter-icon"></i>
                         </span>
                     </th>
                     <th data-col="role" class="inquiries-header-cell">
                         <span class="inquiries-header-label">ROLE</span>
                         <span class="inquiries-filter-wrap">
-                            <input type="text" class="inquiries-grid-filter" data-col="role" placeholder="Search">
+                            <input type="text" class="inquiries-grid-filter" data-col="role" placeholder="">
                             <i class="bi bi-search inquiries-filter-icon"></i>
                         </span>
                     </th>
                     <th data-col="alias" class="inquiries-header-cell">
                         <span class="inquiries-header-label">ALIAS</span>
                         <span class="inquiries-filter-wrap">
-                            <input type="text" class="inquiries-grid-filter" data-col="alias" placeholder="Search">
+                            <input type="text" class="inquiries-grid-filter" data-col="alias" placeholder="">
                             <i class="bi bi-search inquiries-filter-icon"></i>
                         </span>
                     </th>
                     <th data-col="company" class="inquiries-header-cell">
                         <span class="inquiries-header-label">COMPANY</span>
                         <span class="inquiries-filter-wrap">
-                            <input type="text" class="inquiries-grid-filter" data-col="company" placeholder="Search">
+                            <input type="text" class="inquiries-grid-filter" data-col="company" placeholder="">
+                            <i class="bi bi-search inquiries-filter-icon"></i>
+                        </span>
+                    </th>
+                    <th data-col="password" class="inquiries-header-cell">
+                        <span class="inquiries-header-label">PASSWORD</span>
+                        <span class="inquiries-filter-wrap">
+                            <input type="text" class="inquiries-grid-filter" data-col="password" placeholder="">
                             <i class="bi bi-search inquiries-filter-icon"></i>
                         </span>
                     </th>
                     <th data-col="active" class="inquiries-header-cell">
                         <span class="inquiries-header-label">ACTIVE</span>
                         <span class="inquiries-filter-wrap">
-                            <input type="text" class="inquiries-grid-filter" data-col="active" placeholder="Search">
+                            <input type="text" class="inquiries-grid-filter" data-col="active" placeholder="">
                             <i class="bi bi-search inquiries-filter-icon"></i>
                         </span>
                     </th>
                     <th data-col="lastlogin" class="inquiries-header-cell">
                         <span class="inquiries-header-label">LAST LOGIN</span>
                         <span class="inquiries-filter-wrap">
-                            <input type="text" class="inquiries-grid-filter" data-col="lastlogin" placeholder="Search">
+                            <input type="text" class="inquiries-grid-filter" data-col="lastlogin" placeholder="">
                             <i class="bi bi-search inquiries-filter-icon"></i>
                         </span>
                     </th>
-                    <th class="maintain-users-col-action">
+                    <th class="maintain-users-col-action inquiries-header-cell">
                         <span class="inquiries-header-label">ACTION</span>
+                        <button type="button" class="inquiries-filter-clear" id="maintainUsersClearFilters">Clear filters</button>
                     </th>
                 </tr>
                 </thead>
@@ -391,6 +664,8 @@
                             ($u['EMAIL'] ?? '') . ' ' .
                             ($u['ALIAS'] ?? '') . ' ' .
                             ($u['COMPANY'] ?? '') . ' ' .
+                            ($u['TEMP_PASSWORD'] ?? '') . ' ' .
+                            (($u['HAS_LOGGED_IN'] ?? false) ? 'logged in' : 'not logged in') . ' ' .
                             $roleUpper . ' ' .
                             ($u['ISACTIVE'] ? 'active' : 'inactive') . ' ' .
                             $lastLoginStr
@@ -402,14 +677,26 @@
                         data-role="{{ $roleUpper }}"
                         data-alias="{{ e($u['ALIAS'] ?? '') }}"
                         data-company="{{ e($u['COMPANY'] ?? '') }}"
+                        data-postcode="{{ e($u['POSTCODE'] ?? '') }}"
+                        data-city="{{ e($u['CITY'] ?? '') }}"
+                        data-password="{{ ($u['TEMP_PASSWORD'] ?? '') !== '' ? $u['TEMP_PASSWORD'] : (($u['HAS_LOGGED_IN'] ?? false) ? 'protected' : 'not generated') }}"
                         data-active="{{ $u['ISACTIVE'] ? '1' : '0' }}">
                         <td data-col="userid">{{ $u['USERID'] }}</td>
                         <td data-col="email">{{ $u['EMAIL'] }}</td>
                         <td data-col="role">
-                            <span class="maintain-users-pill-role {{ $roleClass }}">{{ $roleUpper ?: '—' }}</span>
+                            <span class="maintain-users-pill-role {{ $roleClass }}">{{ $roleUpper ?: '-' }}</span>
                         </td>
-                        <td data-col="alias">{{ $u['ALIAS'] ?: '—' }}</td>
-                        <td data-col="company">{{ $u['COMPANY'] ?: '—' }}</td>
+                        <td data-col="alias">{{ $u['ALIAS'] ?: '-' }}</td>
+                        <td data-col="company">{{ $u['COMPANY'] ?: '-' }}</td>
+                        <td data-col="password">
+                            @if (!($u['HAS_LOGGED_IN'] ?? false) && ($u['TEMP_PASSWORD'] ?? '') !== '')
+                                <span class="maintain-users-temp-password">{{ $u['TEMP_PASSWORD'] }}</span>
+                            @elseif (!($u['HAS_LOGGED_IN'] ?? false))
+                                <span class="maintain-users-pill-password empty">Not generated</span>
+                            @else
+                                <span class="maintain-users-pill-password set">Protected</span>
+                            @endif
+                        </td>
                         <td data-col="active">
                             <span class="maintain-users-pill-active {{ $u['ISACTIVE'] ? 'yes' : 'no' }}">
                                 {{ $u['ISACTIVE'] ? 'Active' : 'Inactive' }}
@@ -419,11 +706,23 @@
                             @if ($u['LASTLOGIN'])
                                 {{ \Carbon\Carbon::parse($u['LASTLOGIN'])->format('Y-m-d H:i') }}
                             @else
-                                —
+                                -
                             @endif
                         </td>
                         <td class="maintain-users-col-action">
-                            <button type="button" class="maintain-users-edit-btn" data-userid="{{ $u['USERID'] }}" aria-label="Edit user">Edit</button>
+                            <div class="maintain-users-action-cell">
+                                <button type="button" class="maintain-users-edit-btn" data-userid="{{ $u['USERID'] }}" title="Edit" aria-label="Edit user">
+                                    <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                                </button>
+                                @if (!($u['HAS_LOGGED_IN'] ?? false))
+                                    <form method="POST" action="{{ route('admin.maintain-users.send-temp-password', $u['USERID']) }}" class="maintain-users-inline-form">
+                                        @csrf
+                                        <button type="submit" class="maintain-users-temp-send-btn" title="{{ ($u['TEMP_PASSWORD_EMAILED'] ?? false) ? 'Temporary password already emailed - send again' : 'Send temporary password' }}" aria-label="Send temporary password">
+                                            <i class="bi {{ ($u['TEMP_PASSWORD_EMAILED'] ?? false) ? 'bi-envelope-fill' : 'bi-envelope' }}" aria-hidden="true"></i>
+                                        </button>
+                                    </form>
+                                @endif
+                            </div>
                         </td>
                     </tr>
                 @endforeach
@@ -437,17 +736,13 @@
 <div class="maintain-users-modal-backdrop" id="maintainUsersModal">
     <div class="maintain-users-modal">
         <h3 class="maintain-users-modal-title">Add User</h3>
-        <div class="maintain-users-modal-sub">Create a new admin, manager, or dealer account.</div>
+        <div class="maintain-users-modal-sub">Create a new admin, manager, or dealer account with a temporary password.</div>
         <form method="POST" action="{{ route('admin.maintain-users.store') }}">
             @csrf
             <div class="maintain-users-form-grid">
                 <div class="maintain-users-field full">
                     <label for="EMAIL">Email</label>
                     <input type="email" id="EMAIL" name="EMAIL" maxlength="50" required>
-                </div>
-                <div class="maintain-users-field">
-                    <label for="PASSWORD">Password</label>
-                    <input type="password" id="PASSWORD" name="PASSWORD" required>
                 </div>
                 <div class="maintain-users-field">
                     <label for="SYSTEMROLE">Role</label>
@@ -458,32 +753,51 @@
                     </select>
                 </div>
                 <div class="maintain-users-field">
-                    <label for="ALIAS">Alias</label>
-                    <input type="text" id="ALIAS" name="ALIAS" maxlength="50">
-                </div>
-                <div class="maintain-users-field">
-                    <label for="COMPANY">Company</label>
-                    <input type="text" id="COMPANY" name="COMPANY" maxlength="40">
-                </div>
-                <div class="maintain-users-field">
-                    <label for="POSTCODE">Postcode</label>
-                    <input type="text" id="POSTCODE" name="POSTCODE" maxlength="10" required>
-                </div>
-                <div class="maintain-users-field">
-                    <label for="CITY">City</label>
-                    <input type="text" id="CITY" name="CITY" maxlength="100" required>
-                </div>
-                <div class="maintain-users-field">
                     <label for="ISACTIVE">Active</label>
                     <select id="ISACTIVE" name="ISACTIVE">
                         <option value="1" selected>Yes</option>
                         <option value="0">No</option>
                     </select>
                 </div>
+                <div class="maintain-users-field">
+                    <label for="COMPANY">Company Name</label>
+                    <input type="text" id="COMPANY" name="COMPANY" maxlength="40">
+                </div>
+                <div class="maintain-users-field">
+                    <label for="ALIAS">Alias</label>
+                    <input type="text" id="ALIAS" name="ALIAS" maxlength="50">
+                </div>
+                <div class="maintain-users-dealer-section full" id="maintainUsersDealerFields">
+                    <div class="maintain-users-location-presets">
+                        <label class="maintain-users-location-option" for="locationPresetSetapak">
+                            <input type="checkbox" id="locationPresetSetapak" data-location-preset data-postcode="53300" data-city="Setapak">
+                            <span>Setapak</span>
+                        </label>
+                        <label class="maintain-users-location-option" for="locationPresetSetiaAlam">
+                            <input type="checkbox" id="locationPresetSetiaAlam" data-location-preset data-postcode="40170" data-city="Setia Alam">
+                            <span>Setia Alam</span>
+                        </label>
+                    </div>
+                    <div class="maintain-users-form-grid maintain-users-form-grid-nested">
+                        <div class="maintain-users-field" data-dealer-field>
+                            <label for="POSTCODE">Postcode</label>
+                            <input type="text" id="POSTCODE" name="POSTCODE" maxlength="10" inputmode="numeric">
+                        </div>
+                        <div class="maintain-users-field" data-dealer-field>
+                            <label for="CITY">City</label>
+                            <input type="text" id="CITY" name="CITY" maxlength="100">
+                        </div>
+                    </div>
+                </div>
+                <div class="maintain-users-field full">
+                    <label for="PASSWORD">Temporary Password</label>
+                    <input type="text" id="PASSWORD" name="PASSWORD" maxlength="255" readonly>
+                </div>
             </div>
             <div class="maintain-users-modal-actions">
                 <button type="button" class="maintain-users-btn-secondary" id="maintainUsersCancelBtn">Cancel</button>
-                <button type="submit" class="maintain-users-btn-primary">Create user</button>
+                <button type="submit" name="CREATE_ACTION" value="create" class="maintain-users-btn-soft">Create user</button>
+                <button type="submit" name="CREATE_ACTION" value="create_email" class="maintain-users-btn-primary">Create &amp; Email</button>
             </div>
         </form>
     </div>
@@ -492,7 +806,7 @@
 <div class="maintain-users-modal-backdrop" id="maintainUsersEditModal">
     <div class="maintain-users-modal">
         <h3 class="maintain-users-modal-title">Edit User</h3>
-        <div class="maintain-users-modal-sub">Update email, alias, company, active status, or send a reset link.</div>
+        <div class="maintain-users-modal-sub">Update account details and optionally send a reset link.</div>
         <form method="POST" id="maintainUsersEditForm" action="">
             @csrf
             @method('PUT')
@@ -502,12 +816,8 @@
                     <input type="email" id="edit_EMAIL" name="EMAIL" maxlength="50" required>
                 </div>
                 <div class="maintain-users-field">
-                    <label for="edit_ALIAS">Alias</label>
-                    <input type="text" id="edit_ALIAS" name="ALIAS" maxlength="50">
-                </div>
-                <div class="maintain-users-field">
-                    <label for="edit_COMPANY">Company</label>
-                    <input type="text" id="edit_COMPANY" name="COMPANY" maxlength="40">
+                    <label for="edit_SYSTEMROLE_LABEL">Role</label>
+                    <input type="text" id="edit_SYSTEMROLE_LABEL" class="maintain-users-readonly" readonly>
                 </div>
                 <div class="maintain-users-field">
                     <label for="edit_ISACTIVE">Active</label>
@@ -515,6 +825,26 @@
                         <option value="1">Yes</option>
                         <option value="0">No</option>
                     </select>
+                </div>
+                <div class="maintain-users-field">
+                    <label for="edit_COMPANY">Company Name</label>
+                    <input type="text" id="edit_COMPANY" name="COMPANY" maxlength="40">
+                </div>
+                <div class="maintain-users-field">
+                    <label for="edit_ALIAS">Alias</label>
+                    <input type="text" id="edit_ALIAS" name="ALIAS" maxlength="50">
+                </div>
+                <div class="maintain-users-dealer-section full" id="maintainUsersEditDealerFields">
+                    <div class="maintain-users-form-grid maintain-users-form-grid-nested">
+                        <div class="maintain-users-field" data-dealer-field>
+                            <label for="edit_POSTCODE">Postcode</label>
+                            <input type="text" id="edit_POSTCODE" name="POSTCODE" maxlength="10" inputmode="numeric">
+                        </div>
+                        <div class="maintain-users-field" data-dealer-field>
+                            <label for="edit_CITY">City</label>
+                            <input type="text" id="edit_CITY" name="CITY" maxlength="100">
+                        </div>
+                    </div>
                 </div>
                 <div class="maintain-users-field full">
                     <label for="edit_SEND_RESET_LINK">Send password reset link</label>
@@ -531,16 +861,165 @@
         </form>
     </div>
 </div>
+
+<div class="maintain-users-modal-backdrop" id="maintainUsersBatchModal">
+    <div class="maintain-users-modal">
+        <h3 class="maintain-users-modal-title">Send Temporary Passwords</h3>
+        <form method="POST" action="{{ route('admin.maintain-users.send-temp-passwords') }}" id="maintainUsersBatchForm">
+            @csrf
+            <div class="maintain-users-batch-summary">
+                <span>{{ count($batchEligibleUsers) }} eligible user(s)</span>
+                @if (count($batchEligibleUsers) > 0)
+                    <button type="button" class="maintain-users-batch-toggle" id="maintainUsersBatchToggleAll">Uncheck all</button>
+                @endif
+            </div>
+            <div class="maintain-users-batch-list">
+                @if (count($batchEligibleUsers) === 0)
+                    <div class="maintain-users-batch-empty">No users are waiting for a first login email.</div>
+                @else
+                    @foreach ($batchEligibleUsers as $u)
+                        @php
+                            $batchDisplayName = trim((string) ($u['COMPANY'] ?? '')) !== ''
+                                ? trim((string) ($u['COMPANY'] ?? ''))
+                                : (trim((string) ($u['ALIAS'] ?? '')) !== '' ? trim((string) ($u['ALIAS'] ?? '')) : trim((string) ($u['EMAIL'] ?? '')));
+                        @endphp
+                        <label class="maintain-users-batch-item">
+                            <input type="checkbox" name="USERIDS[]" value="{{ $u['USERID'] }}" checked>
+                            <div class="maintain-users-batch-item-main">
+                                <div class="maintain-users-batch-item-name">{{ $batchDisplayName }}</div>
+                                <div class="maintain-users-batch-item-meta">{{ $u['USERID'] }} &bull; {{ $u['EMAIL'] }}</div>
+                            </div>
+                        </label>
+                    @endforeach
+                @endif
+            </div>
+            <div class="maintain-users-modal-actions">
+                <button type="button" class="maintain-users-btn-secondary" id="maintainUsersBatchCancelBtn">Cancel</button>
+                <button type="submit" class="maintain-users-btn-primary" id="maintainUsersBatchSubmitBtn" {{ count($batchEligibleUsers) === 0 ? 'disabled' : '' }}>Send selected</button>
+            </div>
+        </form>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const addBtn = document.getElementById('maintainUsersAddBtn');
+            const syncBtn = document.getElementById('maintainUsersSyncBtn');
             const modal = document.getElementById('maintainUsersModal');
             const cancelBtn = document.getElementById('maintainUsersCancelBtn');
+            const tempPasswordInput = document.getElementById('PASSWORD');
+            const addForm = modal ? modal.querySelector('form') : null;
+            const roleSelect = document.getElementById('SYSTEMROLE');
+            const aliasInput = document.getElementById('ALIAS');
+            const companyInput = document.getElementById('COMPANY');
+            const dealerFieldsSection = document.getElementById('maintainUsersDealerFields');
+            const postcodeInput = document.getElementById('POSTCODE');
+            const cityInput = document.getElementById('CITY');
+            const locationPresetInputs = Array.from(document.querySelectorAll('[data-location-preset]'));
+            const ESTREAM_COMPANY = 'E Stream Sdn Bhd';
+
+            function generateTemporaryPassword(length) {
+                const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+                let password = '';
+                for (let i = 0; i < length; i += 1) {
+                    password += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                return password;
+            }
+
+            function setDealerSectionState(section, isDealer) {
+                if (!section) return;
+                section.classList.toggle('is-hidden', !isDealer);
+                section.querySelectorAll('[data-dealer-field]').forEach(function (field) {
+                    field.classList.toggle('is-hidden', !isDealer);
+                    const input = field.querySelector('input, select, textarea');
+                    if (!input) return;
+                    input.disabled = !isDealer;
+                    input.required = isDealer;
+                });
+            }
+
+            function setCompanyFieldState(input, isDealer) {
+                if (!input) return;
+                if (isDealer) {
+                    input.readOnly = false;
+                    input.classList.remove('maintain-users-readonly');
+                    input.required = true;
+                    input.value = input.dataset.dealerDraft || '';
+                    return;
+                }
+
+                const currentValue = (input.value || '').trim();
+                if (currentValue !== '' && currentValue !== ESTREAM_COMPANY) {
+                    input.dataset.dealerDraft = currentValue;
+                }
+
+                input.value = ESTREAM_COMPANY;
+                input.readOnly = true;
+                input.required = false;
+                input.classList.add('maintain-users-readonly');
+            }
+
+            function syncAddRoleState() {
+                const isDealer = !roleSelect || roleSelect.value === 'DEALER';
+                setDealerSectionState(dealerFieldsSection, isDealer);
+                setCompanyFieldState(companyInput, isDealer);
+                if (aliasInput) {
+                    aliasInput.required = isDealer;
+                }
+            }
+
+            function updateLocationPresetVisuals() {
+                locationPresetInputs.forEach(function (input) {
+                    var label = input.closest('.maintain-users-location-option');
+                    if (!label) return;
+                    label.classList.toggle('is-active', input.checked);
+                });
+            }
+
+            function clearLocationPresets() {
+                locationPresetInputs.forEach(function (input) {
+                    input.checked = false;
+                });
+                updateLocationPresetVisuals();
+            }
+
+            locationPresetInputs.forEach(function (input) {
+                input.addEventListener('change', function () {
+                    if (input.checked) {
+                        locationPresetInputs.forEach(function (other) {
+                            if (other !== input) {
+                                other.checked = false;
+                            }
+                        });
+                        if (postcodeInput) {
+                            postcodeInput.value = input.getAttribute('data-postcode') || '';
+                        }
+                        if (cityInput) {
+                            cityInput.value = input.getAttribute('data-city') || '';
+                        }
+                    }
+                    updateLocationPresetVisuals();
+                });
+            });
 
             function openModal() {
+                if (addForm) {
+                    addForm.reset();
+                }
+                if (tempPasswordInput) {
+                    tempPasswordInput.value = generateTemporaryPassword(10);
+                }
+                if (roleSelect) {
+                    roleSelect.value = 'DEALER';
+                }
+                if (companyInput) {
+                    companyInput.dataset.dealerDraft = '';
+                }
+                clearLocationPresets();
+                syncAddRoleState();
                 if (modal) modal.classList.add('is-open');
             }
             function closeModal() {
@@ -551,6 +1030,15 @@
                 e.preventDefault();
                 openModal();
             });
+            if (syncBtn) {
+                syncBtn.addEventListener('click', function () {
+                    syncBtn.disabled = true;
+                    window.location.reload();
+                });
+            }
+            if (roleSelect) {
+                roleSelect.addEventListener('change', syncAddRoleState);
+            }
             if (cancelBtn) cancelBtn.addEventListener('click', function (e) {
                 e.preventDefault();
                 closeModal();
@@ -568,17 +1056,81 @@
             const editForm = document.getElementById('maintainUsersEditForm');
             const editCancelBtn = document.getElementById('maintainUsersEditCancelBtn');
             const updateUrlBase = '{{ url("admin/maintain-users") }}';
+            const batchOpenBtn = document.getElementById('maintainUsersBatchOpenBtn');
+            const batchModal = document.getElementById('maintainUsersBatchModal');
+            const batchCancelBtn = document.getElementById('maintainUsersBatchCancelBtn');
+            const batchToggleAllBtn = document.getElementById('maintainUsersBatchToggleAll');
+            const batchForm = document.getElementById('maintainUsersBatchForm');
+            const batchSubmitBtn = document.getElementById('maintainUsersBatchSubmitBtn');
+            const editRoleLabel = document.getElementById('edit_SYSTEMROLE_LABEL');
+            const editAliasInput = document.getElementById('edit_ALIAS');
+            const editCompanyInput = document.getElementById('edit_COMPANY');
+            const editPostcodeInput = document.getElementById('edit_POSTCODE');
+            const editCityInput = document.getElementById('edit_CITY');
+            const editDealerFieldsSection = document.getElementById('maintainUsersEditDealerFields');
+
+            function formatRoleLabel(role) {
+                if (!role) return '';
+                return role.charAt(0) + role.slice(1).toLowerCase();
+            }
+
+            function getBatchCheckboxes() {
+                return batchForm ? Array.from(batchForm.querySelectorAll('input[name="USERIDS[]"]')) : [];
+            }
+
+            function updateBatchSelectionState() {
+                const boxes = getBatchCheckboxes();
+                const checkedCount = boxes.filter(function (box) { return box.checked; }).length;
+                if (batchSubmitBtn) {
+                    batchSubmitBtn.disabled = checkedCount === 0;
+                }
+                if (batchToggleAllBtn) {
+                    batchToggleAllBtn.textContent = checkedCount === boxes.length && boxes.length > 0 ? 'Uncheck all' : 'Check all';
+                }
+            }
+
+            function openBatchModal() {
+                if (!batchModal) return;
+                updateBatchSelectionState();
+                batchModal.classList.add('is-open');
+            }
+
+            function closeBatchModal() {
+                if (batchModal) {
+                    batchModal.classList.remove('is-open');
+                }
+            }
+
             function openEditModal(row) {
                 if (!editModal || !editForm || !row) return;
                 var userid = row.getAttribute('data-userid');
                 var email = row.getAttribute('data-email') || '';
                 var alias = row.getAttribute('data-alias') || '';
                 var company = row.getAttribute('data-company') || '';
+                var postcode = row.getAttribute('data-postcode') || '';
+                var city = row.getAttribute('data-city') || '';
+                var role = row.getAttribute('data-role') || '';
                 var active = row.getAttribute('data-active') || '1';
                 editForm.action = updateUrlBase + '/' + encodeURIComponent(userid);
                 document.getElementById('edit_EMAIL').value = email;
-                document.getElementById('edit_ALIAS').value = alias;
-                document.getElementById('edit_COMPANY').value = company;
+                if (editRoleLabel) {
+                    editRoleLabel.value = formatRoleLabel(role);
+                }
+                if (editAliasInput) {
+                    editAliasInput.value = alias;
+                    editAliasInput.required = role === 'DEALER';
+                }
+                if (editCompanyInput) {
+                    editCompanyInput.dataset.dealerDraft = company;
+                }
+                if (editPostcodeInput) {
+                    editPostcodeInput.value = postcode;
+                }
+                if (editCityInput) {
+                    editCityInput.value = city;
+                }
+                setDealerSectionState(editDealerFieldsSection, role === 'DEALER');
+                setCompanyFieldState(editCompanyInput, role === 'DEALER');
                 document.getElementById('edit_ISACTIVE').value = active;
                 document.getElementById('edit_SEND_RESET_LINK').checked = false;
                 editModal.classList.add('is-open');
@@ -602,13 +1154,46 @@
                     if (e.target === editModal) closeEditModal();
                 });
             }
+            if (batchOpenBtn) {
+                batchOpenBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    openBatchModal();
+                });
+            }
+            if (batchCancelBtn) {
+                batchCancelBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    closeBatchModal();
+                });
+            }
+            if (batchModal) {
+                batchModal.addEventListener('click', function (e) {
+                    if (e.target === batchModal) {
+                        closeBatchModal();
+                    }
+                });
+            }
+            if (batchToggleAllBtn) {
+                batchToggleAllBtn.addEventListener('click', function () {
+                    const boxes = getBatchCheckboxes();
+                    const shouldCheckAll = boxes.some(function (box) { return !box.checked; });
+                    boxes.forEach(function (box) {
+                        box.checked = shouldCheckAll;
+                    });
+                    updateBatchSelectionState();
+                });
+            }
+            getBatchCheckboxes().forEach(function (box) {
+                box.addEventListener('change', updateBatchSelectionState);
+            });
+            updateBatchSelectionState();
+            updateLocationPresetVisuals();
+            syncAddRoleState();
 
             // Live search: top search box + per-column filters (all apply as you type)
-            const searchInput = document.getElementById('maintainUsersSearchInput');
             const table = document.getElementById('maintainUsersTable');
             function applyTableFilter() {
                 if (!table) return;
-                const q = (searchInput && searchInput.value) ? (searchInput.value || '').toLowerCase().trim() : '';
                 const filters = {};
                 table.querySelectorAll('thead .inquiries-grid-filter').forEach(function (inp) {
                     const col = inp.getAttribute('data-col');
@@ -616,8 +1201,6 @@
                     if (col && val) filters[col] = val;
                 });
                 table.querySelectorAll('tbody .maintain-users-row').forEach(function (row) {
-                    const hay = (row.getAttribute('data-search') || '').toLowerCase();
-                    const searchMatch = !q || hay.indexOf(q) !== -1;
                     let colMatch = true;
                     for (const col in filters) {
                         const cell = row.querySelector('td[data-col="' + col + '"]');
@@ -627,15 +1210,38 @@
                             break;
                         }
                     }
-                    row.style.display = (searchMatch && colMatch) ? '' : 'none';
+                    row.style.display = colMatch ? '' : 'none';
                 });
             }
-            if (searchInput) searchInput.addEventListener('input', applyTableFilter);
             if (table) {
                 table.querySelectorAll('thead .inquiries-grid-filter').forEach(function (inp) {
                     inp.addEventListener('input', applyTableFilter);
                 });
             }
+
+            const clearFiltersBtn = document.getElementById('maintainUsersClearFilters');
+            if (clearFiltersBtn) {
+                clearFiltersBtn.addEventListener('click', function () {
+                    if (table) {
+                        table.querySelectorAll('thead .inquiries-grid-filter').forEach(function (inp) {
+                            inp.value = '';
+                        });
+                    }
+                    applyTableFilter();
+                });
+            }
+
+            const successFlash = document.querySelector('.maintain-users-success');
+            if (successFlash) {
+                window.setTimeout(function () {
+                    successFlash.classList.add('is-hiding');
+                    window.setTimeout(function () {
+                        successFlash.remove();
+                    }, 250);
+                }, 3000);
+            }
         });
     </script>
 @endpush
+
+
