@@ -3,6 +3,26 @@
 
 @push('styles')
 <style>
+    /* Fix for action column height not stretching */
+    .inquiries-table th.inquiries-col-action,
+    .inquiries-table td.inquiries-col-action {
+        display: table-cell !important;
+        height: 100% !important;
+        vertical-align: middle !important;
+        background-color: #ffffff !important;
+        background-clip: padding-box;
+    }
+    
+    /* Magic trick to force table cells to inherit full dynamic row height */
+    .inquiries-table tbody tr.inquiry-row {
+        height: 1px; 
+    }
+
+    /* Ensure hover state matches the row color so it doesn't stay stark white */
+    .inquiries-table tbody tr:hover td.inquiries-col-action {
+        background-color: #f9fafb !important;
+    }
+
     @keyframes shineEffect {
         0% { background-color: transparent; }
         50% { background-color: rgba(76, 29, 149, 0.4); box-shadow: inset 0 0 10px rgba(76, 29, 149, 0.6); }
@@ -982,11 +1002,6 @@ document.addEventListener('DOMContentLoaded', function() {
         var label, rawUpper, cls;
         var s = (toStatus || '').toUpperCase();
         switch (s) {
-            case 'CREATED':
-                rawUpper = 'CREATED';
-                label = 'CREATED';
-                cls = 'inquiries-status-created';
-                break;
             case 'PENDING':
                 rawUpper = 'PENDING';
                 label = 'PENDING';
@@ -1219,6 +1234,29 @@ document.addEventListener('DOMContentLoaded', function() {
     var viewCloseBtnFooter = document.getElementById('inquiryViewModalCloseBtn');
     var currentUpdateButtonEl = null;
 
+    // If URL has ?lead=ID, jump to that row & open modal (e.g. from notification)
+    (function() {
+        var params = new URLSearchParams(window.location.search);
+        var lead = params.get('lead');
+        if (lead && table) {
+            setTimeout(function() {
+                // Find the row, switch to its page, then highlight for 5 seconds
+                var row = table.querySelector('tr.inquiry-row[data-lead-id="' + lead + '"]');
+                if (row && typeof dealerGoToPage === 'function') {
+                    var p = parseInt(row.getAttribute('data-page') || '1', 10);
+                    dealerGoToPage(p);
+                }
+                if (row) {
+                    row.classList.add('inquiry-row--notif-highlight');
+                    try { row.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+                    setTimeout(function() { row.classList.remove('inquiry-row--notif-highlight'); }, 5000);
+                }
+                var btn = table.querySelector('.inquiries-update-btn[data-lead-id="' + lead + '"], .inquiries-view-btn[data-lead-id="' + lead + '"]');
+                if (btn) btn.click();
+            }, 100);
+        }
+    })();
+
     // Delegate click handling for Update / View buttons so it continues to work
     // after the table body is replaced by Sync.
     document.addEventListener('click', function(e) {
@@ -1253,13 +1291,11 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
-    
     function closeViewModal() {
         viewModal.setAttribute('aria-hidden', 'true');
         viewModal.classList.remove('inquiry-modal-open');
         document.body.style.overflow = '';
     }
-    
     if (viewCloseBtn) viewCloseBtn.addEventListener('click', closeViewModal);
     if (viewCloseBtnFooter) viewCloseBtnFooter.addEventListener('click', closeViewModal);
     viewModal.addEventListener('click', function(e) {
@@ -1437,44 +1473,6 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Update failed. Please try again.');
         });
     });
-    
-   // If URL has ?lead=ID, jump to that row & highlight it (e.g. from notification)
-   document.addEventListener('DOMContentLoaded', function() {
-       var params = new URLSearchParams(window.location.search);
-       var lead = params.get('lead');
-       
-       if (lead) {
-           // Wait 300ms to ensure pagination and columns are fully initialized
-           setTimeout(function() {
-               var tbl = document.getElementById('dealerInquiriesTable');
-               if (!tbl) return;
-
-               var row = tbl.querySelector('tr.inquiry-row[data-lead-id="' + lead + '"]');
-               
-               if (row) {
-                   // 1. Find which page the row is on and jump to it globally
-                   var p = parseInt(row.getAttribute('data-page') || '1', 10);
-                   if (typeof window.dealerGoToPage === 'function') {
-                       window.dealerGoToPage(p);
-                   }
-
-                   // 2. Scroll into view and apply the shining effect
-                   try { 
-                       row.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
-                   } catch (e) {}
-                   
-                   row.classList.add('inquiry-row--notif-highlight');
-                   
-                   // Remove the highlight class after the animation finishes (4.5s)
-                   setTimeout(function() { 
-                       row.classList.remove('inquiry-row--notif-highlight'); 
-                   }, 4500);
-
-                   // Note: Auto-opening the modal has been removed as requested.
-               }
-           }, 300);
-       }
-   });
 })();
 </script>
 @endpush
