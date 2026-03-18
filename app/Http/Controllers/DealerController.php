@@ -408,6 +408,38 @@ class DealerController extends Controller
         ]);
     }
 
+    public function payoutsSync(Request $request): JsonResponse
+    {
+        // Reuse the same data-loading logic as the main dealer payouts page
+        $view = $this->payouts($request);
+        $data = $view->getData();
+
+        // Ensure product name labels are available to the partial (used for dealt products pills).
+        if (!isset($data['productNames'])) {
+            $data['productNames'] = [
+                1 => 'SQL Account',
+                2 => 'SQL Payroll',
+                3 => 'SQL Production',
+                4 => 'Mobile Sales',
+                5 => 'SQL Ecommerce',
+                6 => 'SQL EBI Wellness POS',
+                7 => 'SQL X Suduai',
+                8 => 'SQL X-Store',
+                9 => 'SQL Vision',
+                10 => 'SQL HRMS',
+                11 => 'Others',
+            ];
+        }
+
+        $completedRowsHtml = view('dealer.partials.payouts_completed_rows', $data)->render();
+        $rewardedRowsHtml = view('dealer.partials.payouts_rewarded_rows', $data)->render();
+
+        return response()->json([
+            'completed_rows' => $completedRowsHtml,
+            'rewarded_rows' => $rewardedRowsHtml,
+        ]);
+    }
+
     public function inquiryFailedDescription(Request $request, int $leadId): JsonResponse
     {
         $dealerId = $request->session()->get('user_id');
@@ -1106,7 +1138,7 @@ class DealerController extends Controller
                 if (!empty($rewardedIds)) {
                     $placeholders = implode(',', array_fill(0, count($rewardedIds), '?'));
                     $attachRows = DB::select(
-                        'SELECT a."LEADID", a."LEAD_ACTID", a."ATTACHMENT"
+                        'SELECT a."LEADID", a."LEAD_ACTID", a."ATTACHMENT", a."CREATIONDATE"
                          FROM "LEAD_ACT" a
                          JOIN (
                              SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
@@ -1121,11 +1153,13 @@ class DealerController extends Controller
                     );
                     $attachmentMap = [];
                     $attachmentActMap = [];
+                    $rewardDateMap = [];
                     foreach ($attachRows as $ar) {
                         $lid = (int) ($ar->LEADID ?? 0);
                         if ($lid > 0) {
                             $attachmentMap[$lid] = $ar->ATTACHMENT ?? $ar->attachment ?? null;
                             $attachmentActMap[$lid] = (int) ($ar->LEAD_ACTID ?? 0);
+                            $rewardDateMap[$lid] = $ar->CREATIONDATE ?? null;
                         }
                     }
                     if (!empty($attachmentMap)) {
@@ -1134,6 +1168,7 @@ class DealerController extends Controller
                             if ($lid > 0 && array_key_exists($lid, $attachmentMap)) {
                                 $r->REWARD_ATTACHMENT = $attachmentMap[$lid];
                                 $r->REWARD_LEAD_ACT_ID = $attachmentActMap[$lid] ?? 0;
+                                $r->REWARD_DATE = $rewardDateMap[$lid] ?? null;
                             }
                         }
                     }

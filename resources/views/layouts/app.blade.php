@@ -150,8 +150,17 @@
 
         <footer class="dashboard-bottombar"></footer>
     </main>
+    
 </div>
 @push('scripts')
+<footer class="dashboard-bottombar" style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #6b7280;">
+            <div class="dashboard-bottombar-left">
+                <span class="dashboard-footer-text-main">&copy; {{ date('Y') }} SQL Account. All rights reserved.</span>
+            </div>
+            <div class="dashboard-bottombar-right">
+                <span>Designed & Developed by <strong>Damien, Weijian & WenJun with love</strong></span>
+            </div>
+        </footer>
 <script>
 (function() {
     // Auto-hide flash messages (success/error) after 3s

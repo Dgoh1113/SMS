@@ -71,6 +71,7 @@ Route::middleware(['auth.sms', 'dealer'])->prefix('dealer')->name('dealer.')->gr
     Route::post('/inquiries/update-status', [DealerController::class, 'updateInquiryStatus'])->name('inquiries.update-status');
     Route::get('/demo', [DealerController::class, 'demo'])->name('demo');
     Route::get('/payouts', [DealerController::class, 'payouts'])->name('payouts');
+    Route::get('/payouts/sync', [DealerController::class, 'payoutsSync'])->name('payouts.sync');
     Route::get('/rewards', fn () => redirect()->route('dealer.payouts'))->name('rewards');
     Route::get('/reports', [DealerController::class, 'reports'])->name('reports');
     Route::get('/history', [DealerController::class, 'history'])->name('history');
