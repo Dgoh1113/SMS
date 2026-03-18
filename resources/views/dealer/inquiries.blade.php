@@ -5,13 +5,12 @@
 <style>
     @keyframes shineEffect {
         0% { background-color: transparent; }
-        50% { background-color: #4c1d95(255, 235, 59, 0.4); box-shadow: inset 0 0 10px #4c1d95(255, 235, 59, 0.6); }
-        50% { background-color: #ede9fe;
-         }
+        50% { background-color: rgba(76, 29, 149, 0.4); box-shadow: inset 0 0 10px rgba(76, 29, 149, 0.6); }
+        100% { background-color: transparent; }
     }
     .inquiry-row--notif-highlight td {
         animation: shineEffect 1.5s ease-in-out 3; /* Pulses 3 times */
-        background-color:rgb(67, 27, 128)(255, 235, 59, 0.1); /* Leaves a soft highlight */
+        background-color: rgba(76, 29, 149, 0.1); /* Leaves a soft highlight */
         transition: background-color 0.5s ease;
     }
 </style>
@@ -493,7 +492,9 @@ document.addEventListener('DOMContentLoaded', function() {
                             <input type="time" class="inquiry-field-input" id="inquiryFollowupTime">
                         </div>
                     </label>
-                    <label class="inquiry-field inquiry-field-products" id="inquiryProductsField" style="display:none;">
+                    
+                    {{-- CHANGED FROM <label> to <div> to fix the "click anywhere ticks the first box" issue --}}
+                    <div class="inquiry-field inquiry-field-products" id="inquiryProductsField" style="display:none;">
                         <span class="inquiry-field-label">PRODUCTS <span class="inquiry-field-required">*</span></span>
                         <div class="inquiry-products-checklist" id="inquiryProductsChecklist">
                             @foreach($productNames as $id => $name)
@@ -503,7 +504,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </label>
                             @endforeach
                         </div>
-                    </label>
+                    </div>
+                    
                     <label class="inquiry-field">
                         <span class="inquiry-field-label">ATTACHMENT (images)</span>
                         <div class="inquiry-field-input-wrap">
@@ -1438,41 +1440,41 @@ document.addEventListener('DOMContentLoaded', function() {
     
    // If URL has ?lead=ID, jump to that row & highlight it (e.g. from notification)
    document.addEventListener('DOMContentLoaded', function() {
-        var params = new URLSearchParams(window.location.search);
-        var lead = params.get('lead');
-        
-        if (lead) {
-            // Wait 300ms to ensure pagination and columns are fully initialized
-            setTimeout(function() {
-                var tbl = document.getElementById('dealerInquiriesTable');
-                if (!tbl) return;
+       var params = new URLSearchParams(window.location.search);
+       var lead = params.get('lead');
+       
+       if (lead) {
+           // Wait 300ms to ensure pagination and columns are fully initialized
+           setTimeout(function() {
+               var tbl = document.getElementById('dealerInquiriesTable');
+               if (!tbl) return;
 
-                var row = tbl.querySelector('tr.inquiry-row[data-lead-id="' + lead + '"]');
-                
-                if (row) {
-                    // 1. Find which page the row is on and jump to it globally
-                    var p = parseInt(row.getAttribute('data-page') || '1', 10);
-                    if (typeof window.dealerGoToPage === 'function') {
-                        window.dealerGoToPage(p);
-                    }
+               var row = tbl.querySelector('tr.inquiry-row[data-lead-id="' + lead + '"]');
+               
+               if (row) {
+                   // 1. Find which page the row is on and jump to it globally
+                   var p = parseInt(row.getAttribute('data-page') || '1', 10);
+                   if (typeof window.dealerGoToPage === 'function') {
+                       window.dealerGoToPage(p);
+                   }
 
-                    // 2. Scroll into view and apply the shining effect
-                    try { 
-                        row.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
-                    } catch (e) {}
-                    
-                    row.classList.add('inquiry-row--notif-highlight');
-                    
-                    // Remove the highlight class after the animation finishes (4.5s)
-                    setTimeout(function() { 
-                        row.classList.remove('inquiry-row--notif-highlight'); 
-                    }, 4500);
+                   // 2. Scroll into view and apply the shining effect
+                   try { 
+                       row.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
+                   } catch (e) {}
+                   
+                   row.classList.add('inquiry-row--notif-highlight');
+                   
+                   // Remove the highlight class after the animation finishes (4.5s)
+                   setTimeout(function() { 
+                       row.classList.remove('inquiry-row--notif-highlight'); 
+                   }, 4500);
 
-                    // Note: Auto-opening the modal has been removed as requested.
-                }
-            }, 300);
-        }
-    });
+                   // Note: Auto-opening the modal has been removed as requested.
+               }
+           }, 300);
+       }
+   });
 })();
 </script>
 @endpush
