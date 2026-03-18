@@ -1,4 +1,4 @@
-@forelse($assigned as $r)
+﻿@forelse($assigned as $r)
 <tr class="inquiry-row" data-search="{{ strtolower(($r->COMPANYNAME ?? '').' '.($r->CONTACTNAME ?? '').' '.($r->LEADID ?? '')) }}">
     <td data-col="inquiryid">#SQL-{{ $r->LEADID }}</td>
     <td data-col="date">{{ $r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '—' }}</td>
@@ -24,7 +24,9 @@
     <td data-col="demomode">{{ $r->DEMOMODE ?? '—' }}</td>
     <td data-col="products">
         @php
-            $ids = $r->PRODUCTID ? array_map('trim', explode(',', (string)$r->PRODUCTID)) : [];
+        $ids = $r->PRODUCTID ? array_map('trim', explode(',', (string)$r->PRODUCTID)) : [];
+        $dealtRaw = $r->DEALTPRODUCT ?? null;
+        $dealtProductIds = $dealtRaw ? array_map('trim', preg_split('/[\s,\(\)]+/', (string)$dealtRaw)) : [];
             $pillOrder = [
                 1 => 10, 3 => 11, 4 => 12,
                 2 => 20, 10 => 21,
@@ -35,7 +37,13 @@
                 11 => 70,
             ];
             $ids = array_values(array_filter(array_unique(array_map('intval', $ids)), fn($v) => $v > 0));
+            $dealtProductIds = array_values(array_filter(array_unique(array_map('intval', $dealtProductIds)), fn($v) => $v > 0));
             usort($ids, function($a, $b) use ($pillOrder) {
+                $oa = $pillOrder[$a] ?? (1000 + $a);
+                $ob = $pillOrder[$b] ?? (1000 + $b);
+                return $oa <=> $ob;
+            });
+            usort($dealtProductIds, function($a, $b) use ($pillOrder) {
                 $oa = $pillOrder[$a] ?? (1000 + $a);
                 $ob = $pillOrder[$b] ?? (1000 + $b);
                 return $oa <=> $ob;
@@ -50,7 +58,20 @@
                 @endforeach
             </div>
         @else
-            —
+            &mdash;
+        @endif
+    </td>
+    <td data-col="dealtproducts">
+        @if(!empty($dealtProductIds))
+            <div class="inquiries-pill-group">
+                @foreach($dealtProductIds as $id)
+                    @if(isset($productLabels[(int)$id]))
+                        <span class="inquiries-pill inquiries-pill-p{{ (int)$id }}">{{ $productLabels[(int)$id] }}</span>
+                    @endif
+                @endforeach
+            </div>
+        @else
+            &mdash;
         @endif
     </td>
     @php
@@ -66,6 +87,25 @@
     <td data-col="referralcode">{{ $r->REFERRALCODE ?? '—' }}</td>
     <td data-col="assignedby">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '—') }}</td>
     <td data-col="assignedto">{{ $r->ASSIGNED_TO_NAME ?? ($r->ASSIGNED_TO ?? '—') }}</td>
+    <td data-col="completiondate">{{ !empty($r->COMPLETED_AT) ? date('d/m/Y', strtotime($r->COMPLETED_AT)) : '—' }}</td>
+    <td data-col="payoutsdate">{{ !empty($r->REWARDED_AT) ? date('d/m/Y', strtotime($r->REWARDED_AT)) : '—' }}</td>
+    <td data-col="attachment">
+        @php $assignedAttachUrls = !empty($r->ASSIGNED_ATTACHMENT_URLS) && is_array($r->ASSIGNED_ATTACHMENT_URLS) ? $r->ASSIGNED_ATTACHMENT_URLS : []; @endphp
+        @if(!empty($assignedAttachUrls))
+            <div class="payouts-attachment-list">
+                @foreach(array_slice($assignedAttachUrls, 0, 3) as $u)
+                    <a href="{{ $u }}" target="_blank" rel="noopener" class="payouts-attachment-link">
+                        <img src="{{ $u }}" alt="Attachment" class="payouts-attachment-thumb">
+                    </a>
+                @endforeach
+                @if(count($assignedAttachUrls) > 3)
+                    <span class="payouts-attachment-more">+{{ count($assignedAttachUrls) - 3 }}</span>
+                @endif
+            </div>
+        @else
+            —
+        @endif
+    </td>
     <td data-col="assigndate">{{ $r->LASTMODIFIED ? date('d/m/Y', strtotime($r->LASTMODIFIED)) : ($r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '—') }}</td>
     @php
         $arawStatus = strtoupper(trim((string)($r->CURRENTSTATUS ?? '')));
@@ -95,5 +135,7 @@
     </td>
 </tr>
 @empty
-<tr><td colspan="20" class="inquiries-empty">No assigned inquiries.</td></tr>
+<tr><td colspan="24" class="inquiries-empty">No assigned inquiries.</td></tr>
 @endforelse
+
+

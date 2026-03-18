@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 @section('title', 'Inquiries Management – Admin')
 @section('content')
 @php
@@ -122,7 +122,7 @@
             <thead>
                 <tr class="inquiries-header-row">
                     <th data-col="inquiryid" class="inquiries-header-cell"><span class="inquiries-header-label">INQUIRY ID</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="inquiryid"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                    <th data-col="date" class="inquiries-header-cell"><span class="inquiries-header-label">DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="date"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                    <th data-col="date" class="inquiries-header-cell"><span class="inquiries-header-label">INQUIRY DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="date"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="customername" class="inquiries-header-cell"><span class="inquiries-header-label">CUSTOMER NAME</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="customername"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="source" class="inquiries-header-cell"><span class="inquiries-header-label">SOURCE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="source"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="postcode" class="inquiries-header-cell"><span class="inquiries-header-label">POSTCODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="postcode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
@@ -130,7 +130,7 @@
                     <th data-col="address" class="inquiries-header-cell"><span class="inquiries-header-label">ADDRESS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="address"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="contactno" class="inquiries-header-cell"><span class="inquiries-header-label">CONTACT NO</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="contactno"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="businessnature" class="inquiries-header-cell"><span class="inquiries-header-label">BUSINESS NATURE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="businessnature"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                    <th data-col="users" class="inquiries-header-cell"><span class="inquiries-header-label">USERS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="users"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                    <th data-col="users" class="inquiries-header-cell"><span class="inquiries-header-label">USERS</span><span class="inquiries-filter-wrap dealer-operator-search-wrap"><span class="dealer-operator-search-box"><button type="button" class="dealer-operator-btn" data-col="users" data-op="=" aria-haspopup="true" aria-expanded="false" title="Filter operator">=</button><div class="dealer-operator-dropdown" hidden><button type="button" data-op="=">= Equals</button><button type="button" data-op="!=">!= Does not equal</button><button type="button" data-op="<">&lt; Less than</button><button type="button" data-op="<=">&lt;= Less than or equal to</button><button type="button" data-op=">">&gt; Greater than</button><button type="button" data-op=">=">&gt;= Greater than or equal to</button></div><input type="text" class="inquiries-grid-filter" data-col="users" placeholder="0"></span></span></th>
                     <th data-col="existingsw" class="inquiries-header-cell"><span class="inquiries-header-label">EXISTING SW</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="existingsw"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="demomode" class="inquiries-header-cell"><span class="inquiries-header-label">DEMO MODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="demomode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="products" class="inquiries-header-cell"><span class="inquiries-header-label">PRODUCTS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="products"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
@@ -168,6 +168,8 @@
                     <td data-col="products">
                         @php
                             $ids = $r->PRODUCTID ? array_map('trim', explode(',', (string)$r->PRODUCTID)) : [];
+                            $dealtRaw = $r->DEALTPRODUCT ?? null;
+                            $dealtProductIds = $dealtRaw ? array_map('trim', preg_split('/[\\s,\\(\\)]+/', (string)$dealtRaw)) : [];
                             // Group same-color products together for a cleaner look
                             $pillOrder = [
                                 1 => 10, 3 => 11, 4 => 12, // Account group
@@ -179,7 +181,13 @@
                                 11 => 70,                 // Others
                             ];
                             $ids = array_values(array_filter(array_unique(array_map('intval', $ids)), fn($v) => $v > 0));
+                            $dealtProductIds = array_values(array_filter(array_unique(array_map('intval', $dealtProductIds)), fn($v) => $v > 0));
                             usort($ids, function($a, $b) use ($pillOrder) {
+                                $oa = $pillOrder[$a] ?? (1000 + $a);
+                                $ob = $pillOrder[$b] ?? (1000 + $b);
+                                return $oa <=> $ob;
+                            });
+                            usort($dealtProductIds, function($a, $b) use ($pillOrder) {
                                 $oa = $pillOrder[$a] ?? (1000 + $a);
                                 $ob = $pillOrder[$b] ?? (1000 + $b);
                                 return $oa <=> $ob;
@@ -287,7 +295,7 @@
                 <div class="inquiries-columns-menu" id="assignedColumnsMenu" hidden>
                     <div class="inquiries-columns-menu-title">Show columns</div>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="inquiryid"> INQUIRY ID</label>
-                    <label class="inquiries-columns-check"><input type="checkbox" data-col="date"> DATE</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="date"> INQUIRY DATE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="customername"> CUSTOMER NAME</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="source"> SOURCE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="postcode"> POSTCODE</label>
@@ -304,6 +312,9 @@
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="status"> STATUS</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="assignedby"> ASSIGNED BY</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="assignedto"> ASSIGNED TO</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="completiondate"> COMPLETION DATE</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="payoutsdate"> PAYOUTS DATE</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="attachment"> ATTACHMENT</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="assigndate"> ASSIGN DATE</label>
                     <div class="inquiries-columns-actions">
                         <button type="button" class="inquiries-columns-action-btn" id="assignedColumnsAll">All</button>
@@ -328,14 +339,18 @@
                     <th data-col="address" class="inquiries-header-cell"><span class="inquiries-header-label">ADDRESS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="address"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="contactno" class="inquiries-header-cell"><span class="inquiries-header-label">CONTACT NO</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="contactno"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="businessnature" class="inquiries-header-cell"><span class="inquiries-header-label">BUSINESS NATURE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="businessnature"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                    <th data-col="users" class="inquiries-header-cell"><span class="inquiries-header-label">USERS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="users"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                    <th data-col="users" class="inquiries-header-cell"><span class="inquiries-header-label">USERS</span><span class="inquiries-filter-wrap dealer-operator-search-wrap"><span class="dealer-operator-search-box"><button type="button" class="dealer-operator-btn" data-col="users" data-op="=" aria-haspopup="true" aria-expanded="false" title="Filter operator">=</button><div class="dealer-operator-dropdown" hidden><button type="button" data-op="=">= Equals</button><button type="button" data-op="!=">!= Does not equal</button><button type="button" data-op="<">&lt; Less than</button><button type="button" data-op="<=">&lt;= Less than or equal to</button><button type="button" data-op=">">&gt; Greater than</button><button type="button" data-op=">=">&gt;= Greater than or equal to</button></div><input type="text" class="inquiries-grid-filter-assigned" data-col="users" placeholder="0"></span></span></th>
                     <th data-col="existingsw" class="inquiries-header-cell"><span class="inquiries-header-label">EXISTING SW</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="existingsw"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="demomode" class="inquiries-header-cell"><span class="inquiries-header-label">DEMO MODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="demomode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="products" class="inquiries-header-cell"><span class="inquiries-header-label">PRODUCTS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="products"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                    <th data-col="dealtproducts" class="inquiries-header-cell"><span class="inquiries-header-label">DEALT PRODUCTS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="dealtproducts"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="message" class="inquiries-header-cell"><span class="inquiries-header-label">MESSAGE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="message"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="referralcode" class="inquiries-header-cell"><span class="inquiries-header-label">REFERRAL CODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="referralcode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="assignedby" class="inquiries-header-cell"><span class="inquiries-header-label">ASSIGNED BY</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="assignedby"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="assignedto" class="inquiries-header-cell"><span class="inquiries-header-label">ASSIGNED TO</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="assignedto"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                    <th data-col="completiondate" class="inquiries-header-cell"><span class="inquiries-header-label">COMPLETION DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="completiondate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                    <th data-col="payoutsdate" class="inquiries-header-cell"><span class="inquiries-header-label">PAYOUTS DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="payoutsdate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                    <th data-col="attachment" class="inquiries-header-cell"><span class="inquiries-header-label">ATTACHMENT</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="attachment"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="assigndate" class="inquiries-header-cell"><span class="inquiries-header-label">ASSIGN DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="assigndate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="status" class="inquiries-header-cell"><span class="inquiries-header-label">STATUS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="status"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th class="inquiries-col-action inquiries-header-cell"><span class="inquiries-header-label">ACTION</span><button type="button" class="inquiries-filter-clear" id="assignedClearFilters">Clear filters</button></th>
@@ -369,6 +384,8 @@
                     <td data-col="products">
                         @php
                             $ids = $r->PRODUCTID ? array_map('trim', explode(',', (string)$r->PRODUCTID)) : [];
+                            $dealtRaw = $r->DEALTPRODUCT ?? null;
+                            $dealtProductIds = $dealtRaw ? array_map('trim', preg_split('/[\s,\(\)]+/', (string)$dealtRaw)) : [];
                             $pillOrder = [
                                 1 => 10, 3 => 11, 4 => 12,
                                 2 => 20, 10 => 21,
@@ -379,7 +396,13 @@
                                 11 => 70,
                             ];
                             $ids = array_values(array_filter(array_unique(array_map('intval', $ids)), fn($v) => $v > 0));
+                            $dealtProductIds = array_values(array_filter(array_unique(array_map('intval', $dealtProductIds)), fn($v) => $v > 0));
                             usort($ids, function($a, $b) use ($pillOrder) {
+                                $oa = $pillOrder[$a] ?? (1000 + $a);
+                                $ob = $pillOrder[$b] ?? (1000 + $b);
+                                return $oa <=> $ob;
+                            });
+                            usort($dealtProductIds, function($a, $b) use ($pillOrder) {
                                 $oa = $pillOrder[$a] ?? (1000 + $a);
                                 $ob = $pillOrder[$b] ?? (1000 + $b);
                                 return $oa <=> $ob;
@@ -397,6 +420,19 @@
                             —
                         @endif
                     </td>
+                    <td data-col="dealtproducts">
+                        @if(!empty($dealtProductIds))
+                            <div class="inquiries-pill-group">
+                                @foreach($dealtProductIds as $id)
+                                    @if(isset($productLabels[(int)$id]))
+                                        <span class="inquiries-pill inquiries-pill-p{{ (int)$id }}">{{ $productLabels[(int)$id] }}</span>
+                                    @endif
+                                @endforeach
+                            </div>
+                        @else
+                            &mdash;
+                        @endif
+                    </td>
                     @php
                         $afullMsg = (string)($r->DESCRIPTION ?? '');
                         $afullMsgTrim = trim($afullMsg);
@@ -410,6 +446,25 @@
                     <td data-col="referralcode">{{ $r->REFERRALCODE ?? '—' }}</td>
                     <td data-col="assignedby">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '—') }}</td>
                     <td data-col="assignedto">{{ $r->ASSIGNED_TO_NAME ?? ($r->ASSIGNED_TO ?? '—') }}</td>
+                    <td data-col="completiondate">{{ !empty($r->COMPLETED_AT) ? date('d/m/Y', strtotime($r->COMPLETED_AT)) : '—' }}</td>
+                    <td data-col="payoutsdate">{{ !empty($r->REWARDED_AT) ? date('d/m/Y', strtotime($r->REWARDED_AT)) : '—' }}</td>
+                    <td data-col="attachment">
+                        @php $assignedAttachUrls = !empty($r->ASSIGNED_ATTACHMENT_URLS) && is_array($r->ASSIGNED_ATTACHMENT_URLS) ? $r->ASSIGNED_ATTACHMENT_URLS : []; @endphp
+                        @if(!empty($assignedAttachUrls))
+                            <div class="payouts-attachment-list">
+                                @foreach(array_slice($assignedAttachUrls, 0, 3) as $u)
+                                    <a href="{{ $u }}" target="_blank" rel="noopener" class="payouts-attachment-link">
+                                        <img src="{{ $u }}" alt="Attachment" class="payouts-attachment-thumb">
+                                    </a>
+                                @endforeach
+                                @if(count($assignedAttachUrls) > 3)
+                                    <span class="payouts-attachment-more">+{{ count($assignedAttachUrls) - 3 }}</span>
+                                @endif
+                            </div>
+                        @else
+                            —
+                        @endif
+                    </td>
                     <td data-col="assigndate">{{ $r->LASTMODIFIED ? date('d/m/Y', strtotime($r->LASTMODIFIED)) : ($r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '—') }}</td>
                     @php
                         $arawStatus = strtoupper(trim((string)($r->CURRENTSTATUS ?? '')));
@@ -439,7 +494,7 @@
                     </td>
                         </tr>
                     @empty
-                <tr><td colspan="20" class="inquiries-empty">No assigned inquiries.</td></tr>
+                    <tr><td colspan="24" class="inquiries-empty">No assigned inquiries.</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -881,7 +936,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function applyAssignedColumns(visible) {
         var table = document.getElementById('assignedTable');
         if (!table) return;
-        var allCols = ['inquiryid','date','customername','source','city','postcode','address','contactno','businessnature','users','existingsw','demomode','products','message','referralcode','assignedby','assignedto','assigndate','status'];
+        var allCols = ['inquiryid','date','customername','source','city','postcode','address','contactno','businessnature','users','existingsw','demomode','products','dealtproducts','message','referralcode','assignedby','assignedto','completiondate','payoutsdate','attachment','assigndate','status'];
         allCols.forEach(function(col) {
             var show = visible.indexOf(col) !== -1;
             table.querySelectorAll('th[data-col="' + col + '"], td[data-col="' + col + '"]').forEach(function(el) {
@@ -1037,7 +1092,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var aAll = document.getElementById('assignedColumnsAll');
     if (aAll) {
         aAll.addEventListener('click', function() {
-            var allCols = ['inquiryid','date','customername','source','city','postcode','address','contactno','businessnature','users','existingsw','demomode','products','message','referralcode','assignedby','assignedto','assigndate','status'];
+            var allCols = ['inquiryid','date','customername','source','city','postcode','address','contactno','businessnature','users','existingsw','demomode','products','dealtproducts','message','referralcode','assignedby','assignedto','completiondate','payoutsdate','attachment','assigndate','status'];
             setAssignedVisibleColumns(allCols.slice());
             refreshAssignedColumnState();
         });
@@ -1069,24 +1124,106 @@ document.addEventListener('DOMContentLoaded', function() {
         return (searchInput && searchInput.value) ? (searchInput.value || '').toLowerCase().trim().replace(/\s+/g, ' ') : '';
     };
 
+    var INQUIRY_NUMERIC_FILTER_COLS = ['users'];
+
+    function parseInquiryFilterNumber(value) {
+        var num = parseFloat(String(value || '').replace(/[^0-9.\-]/g, ''));
+        return isNaN(num) ? 0 : num;
+    }
+
+    function collectInquiryColumnFilters(tableEl, inputSelector) {
+        var filters = {};
+        if (!tableEl) return filters;
+        tableEl.querySelectorAll(inputSelector).forEach(function(inp) {
+            var col = inp.getAttribute('data-col');
+            var val = (inp.value || '').trim();
+            if (!col || val === '') return;
+            if (INQUIRY_NUMERIC_FILTER_COLS.indexOf(col) !== -1) {
+                var opBtn = tableEl.querySelector('.dealer-operator-btn[data-col="' + col + '"]');
+                filters[col] = {
+                    numeric: true,
+                    op: opBtn ? (opBtn.getAttribute('data-op') || '=') : '=',
+                    val: val
+                };
+            } else {
+                filters[col] = { numeric: false, val: val.toLowerCase() };
+            }
+        });
+        return filters;
+    }
+
+    function inquiryRowMatchesColumnFilters(row, filters) {
+        for (var col in filters) {
+            var cell = row.querySelector('td[data-col="' + col + '"]');
+            var cellText = (cell && cell.textContent) ? cell.textContent.trim() : '';
+            var filter = filters[col];
+            if (filter.numeric) {
+                var cellNum = parseInquiryFilterNumber(cellText);
+                var filterNum = parseInquiryFilterNumber(filter.val);
+                if (filter.op === '=' && cellNum !== filterNum) return false;
+                if (filter.op === '!=' && cellNum === filterNum) return false;
+                if (filter.op === '>' && cellNum <= filterNum) return false;
+                if (filter.op === '>=' && cellNum < filterNum) return false;
+                if (filter.op === '<' && cellNum >= filterNum) return false;
+                if (filter.op === '<=' && cellNum > filterNum) return false;
+            } else if (cellText.toLowerCase().indexOf(filter.val) === -1) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function bindInquiryOperatorMenus(tableEl, applyFn) {
+        if (!tableEl) return;
+        tableEl.querySelectorAll('.dealer-operator-btn').forEach(function(btn) {
+            if (btn.getAttribute('data-operator-bound') === '1') return;
+            btn.setAttribute('data-operator-bound', '1');
+            var dropdown = btn.parentElement.querySelector('.dealer-operator-dropdown');
+            if (!dropdown) return;
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var isOpen = !dropdown.hidden;
+                tableEl.querySelectorAll('.dealer-operator-dropdown').forEach(function(d) { d.hidden = true; });
+                tableEl.querySelectorAll('.dealer-operator-btn').forEach(function(b) { b.setAttribute('aria-expanded', 'false'); });
+                dropdown.hidden = isOpen;
+                btn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+            });
+            dropdown.addEventListener('click', function(e) { e.stopPropagation(); });
+            dropdown.querySelectorAll('button[data-op]').forEach(function(option) {
+                option.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var op = option.getAttribute('data-op') || '=';
+                    btn.setAttribute('data-op', op);
+                    btn.textContent = op;
+                    btn.setAttribute('aria-expanded', 'false');
+                    dropdown.hidden = true;
+                    applyFn();
+                });
+            });
+        });
+    }
+
+    function resetInquiryOperatorMenus(tableEl) {
+        if (!tableEl) return;
+        tableEl.querySelectorAll('.dealer-operator-btn').forEach(function(btn) {
+            btn.setAttribute('data-op', '=');
+            btn.textContent = '=';
+            btn.setAttribute('aria-expanded', 'false');
+        });
+        tableEl.querySelectorAll('.dealer-operator-dropdown').forEach(function(dropdown) {
+            dropdown.hidden = true;
+        });
+    }
+
     function applyGridFilters() {
         var table = document.getElementById('unassignedTable');
         var q = window.getBigSearchQuery ? window.getBigSearchQuery() : '';
         var filters = {};
         if (table) {
-            table.querySelectorAll('.inquiries-grid-filter').forEach(function(inp) {
-                var col = inp.getAttribute('data-col');
-                var val = (inp.value || '').toLowerCase().trim();
-                if (col && val) filters[col] = val;
-            });
+            filters = collectInquiryColumnFilters(table, '.inquiries-grid-filter');
             table.querySelectorAll('tbody .inquiry-row').forEach(function(row) {
                 var searchMatch = rowMatchesBigSearch(row, q);
-                var colMatch = true;
-                for (var col in filters) {
-                    var cell = row.querySelector('td[data-col="' + col + '"]');
-                    var cellText = (cell && cell.textContent) ? cell.textContent.toLowerCase().trim() : '';
-                    if (cellText.indexOf(filters[col]) === -1) { colMatch = false; break; }
-                }
+                var colMatch = inquiryRowMatchesColumnFilters(row, filters);
                 row.style.display = (searchMatch && colMatch) ? '' : 'none';
             });
             if (typeof window.refreshIncomingPagination === 'function') window.refreshIncomingPagination();
@@ -1103,12 +1240,14 @@ document.addEventListener('DOMContentLoaded', function() {
             inp.addEventListener('input', applyGridFilters);
             inp.addEventListener('keyup', applyGridFilters);
         });
+        bindInquiryOperatorMenus(table, applyGridFilters);
     }
     var clearFiltersBtn = document.getElementById('inquiryClearFilters');
     if (clearFiltersBtn) {
         clearFiltersBtn.addEventListener('click', function() {
             var t = document.getElementById('unassignedTable');
             if (t) t.querySelectorAll('.inquiries-grid-filter').forEach(function(inp) { inp.value = ''; });
+            resetInquiryOperatorMenus(t);
             applyGridFilters();
             if (typeof clearInquiriesSort === 'function') clearInquiriesSort('unassignedTable');
         });
@@ -1120,16 +1259,26 @@ document.addEventListener('DOMContentLoaded', function() {
             inp.addEventListener('input', applyAssignedGridFilters);
             inp.addEventListener('keyup', applyAssignedGridFilters);
         });
+        bindInquiryOperatorMenus(assignedTable, applyAssignedGridFilters);
     }
     var assignedClearBtn = document.getElementById('assignedClearFilters');
     if (assignedClearBtn) {
         assignedClearBtn.addEventListener('click', function() {
             var t = document.getElementById('assignedTable');
             if (t) t.querySelectorAll('.inquiries-grid-filter-assigned').forEach(function(inp) { inp.value = ''; });
+            resetInquiryOperatorMenus(t);
             applyAssignedGridFilters();
             if (typeof clearInquiriesSort === 'function') clearInquiriesSort('assignedTable');
         });
     }
+
+    document.addEventListener('click', function() {
+        [document.getElementById('unassignedTable'), document.getElementById('assignedTable')].forEach(function(tableEl) {
+            if (!tableEl) return;
+            tableEl.querySelectorAll('.dealer-operator-dropdown').forEach(function(dropdown) { dropdown.hidden = true; });
+            tableEl.querySelectorAll('.dealer-operator-btn').forEach(function(btn) { btn.setAttribute('aria-expanded', 'false'); });
+        });
+    });
 
     var clearSearchBtn = document.getElementById('inquiryClearSearchBtn');
     if (clearSearchBtn) {
@@ -1512,23 +1661,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         function getMatchingRows() {
             var q = typeof window.getBigSearchQuery === 'function' ? window.getBigSearchQuery() : '';
-            var filters = {};
-            if (table) {
-                table.querySelectorAll('.inquiries-grid-filter').forEach(function(inp) {
-                    var col = inp.getAttribute('data-col');
-                    var val = (inp.value || '').toLowerCase().trim();
-                    if (col && val) filters[col] = val;
-                });
-            }
+            var filters = collectInquiryColumnFilters(table, '.inquiries-grid-filter');
             return getAllRows().filter(function(row) {
                 var searchMatch = !q || rowMatchesBigSearch(row, q);
                 if (!searchMatch) return false;
-                for (var col in filters) {
-                    var cell = row.querySelector('td[data-col="' + col + '"]');
-                    var cellText = (cell && cell.textContent) ? cell.textContent.toLowerCase().trim() : '';
-                    if (cellText.indexOf(filters[col]) === -1) return false;
-                }
-                return true;
+                return inquiryRowMatchesColumnFilters(row, filters);
             });
         }
 
@@ -1637,23 +1774,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         function getMatchingRowsAssigned() {
             var q = typeof window.getBigSearchQuery === 'function' ? window.getBigSearchQuery() : '';
-            var filters = {};
-            if (assignedTable) {
-                assignedTable.querySelectorAll('.inquiries-grid-filter-assigned').forEach(function(inp) {
-                    var col = inp.getAttribute('data-col');
-                    var val = (inp.value || '').toLowerCase().trim();
-                    if (col && val) filters[col] = val;
-                });
-            }
+            var filters = collectInquiryColumnFilters(assignedTable, '.inquiries-grid-filter-assigned');
             return getAllRowsAssigned().filter(function(row) {
                 var searchMatch = !q || rowMatchesBigSearch(row, q);
                 if (!searchMatch) return false;
-                for (var col in filters) {
-                    var cell = row.querySelector('td[data-col="' + col + '"]');
-                    var cellText = (cell && cell.textContent) ? cell.textContent.toLowerCase().trim() : '';
-                    if (cellText.indexOf(filters[col]) === -1) return false;
-                }
-                return true;
+                return inquiryRowMatchesColumnFilters(row, filters);
             });
         }
 
@@ -1766,3 +1891,5 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 @endsection
+
+

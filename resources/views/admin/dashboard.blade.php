@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Dashboard – Admin')
+@section('title', 'Dashboard - Admin')
 @section('content')
 <section class="dashboard-metrics">
     <div class="dashboard-metric-card">
@@ -8,7 +8,7 @@
         <div class="dashboard-metric-value-row">
             <div class="dashboard-metric-value">{{ number_format($totalLeads) }}</div>
             @php $p = (float)($pctLeads ?? 0); $up = $p >= 0; @endphp
-            <span class="dashboard-metric-pill {{ $up ? 'dashboard-metric-pill-up' : 'dashboard-metric-pill-down' }}">{{ $up ? '↑' : '↓' }}{{ abs($p) }}% vs last week</span>
+            <span class="dashboard-metric-pill {{ $up ? 'dashboard-metric-pill-up' : 'dashboard-metric-pill-down' }}">{{ $up ? '+' : '-' }}{{ abs($p) }}% vs last week</span>
         </div>
     </div>
     <div class="dashboard-metric-card">
@@ -17,7 +17,7 @@
         <div class="dashboard-metric-value-row">
             <div class="dashboard-metric-value">{{ number_format($totalClosed) }}</div>
             @php $p = (float)($pctClosed ?? 0); $up = $p >= 0; @endphp
-            <span class="dashboard-metric-pill {{ $up ? 'dashboard-metric-pill-up' : 'dashboard-metric-pill-down' }}">{{ $up ? '↑' : '↓' }}{{ abs($p) }}% vs last week</span>
+            <span class="dashboard-metric-pill {{ $up ? 'dashboard-metric-pill-up' : 'dashboard-metric-pill-down' }}">{{ $up ? '+' : '-' }}{{ abs($p) }}% vs last week</span>
         </div>
     </div>
     <div class="dashboard-metric-card">
@@ -26,7 +26,7 @@
         <div class="dashboard-metric-value-row">
             <div class="dashboard-metric-value">{{ number_format($activeInquiries) }}</div>
             @php $p = (float)($pctActive ?? 0); $up = $p >= 0; @endphp
-            <span class="dashboard-metric-pill {{ $up ? 'dashboard-metric-pill-up' : 'dashboard-metric-pill-down' }}">{{ $up ? '↑' : '↓' }}{{ abs($p) }}% vs last week</span>
+            <span class="dashboard-metric-pill {{ $up ? 'dashboard-metric-pill-up' : 'dashboard-metric-pill-down' }}">{{ $up ? '+' : '-' }}{{ abs($p) }}% vs last week</span>
         </div>
     </div>
     <div class="dashboard-metric-card">
@@ -35,7 +35,7 @@
         <div class="dashboard-metric-value-row">
             <div class="dashboard-metric-value">{{ $conversionRate }}%</div>
             @php $p = (float)($conversionRateChange ?? 0); $up = $p >= 0; @endphp
-            <span class="dashboard-metric-pill {{ $up ? 'dashboard-metric-pill-up' : 'dashboard-metric-pill-down' }}">{{ $up ? '↑' : '↓' }}{{ abs($p) }}% pts vs last week</span>
+            <span class="dashboard-metric-pill {{ $up ? 'dashboard-metric-pill-up' : 'dashboard-metric-pill-down' }}">{{ $up ? '+' : '-' }}{{ abs($p) }}% vs last week</span>
         </div>
     </div>
 </section>
@@ -109,16 +109,16 @@
                             $i = $loop->iteration;
                             if ($i > 5) { break; }
                             $rankEmoji = match($i) {
-                                1 => '🥇',
-                                2 => '🥈',
-                                3 => '🥉',
-                                4 => '🏅',
-                                5 => '🏅',
+                                1 => html_entity_decode('&#x1F947;', ENT_QUOTES, 'UTF-8'),
+                                2 => html_entity_decode('&#x1F948;', ENT_QUOTES, 'UTF-8'),
+                                3 => html_entity_decode('&#x1F949;', ENT_QUOTES, 'UTF-8'),
+                                4 => html_entity_decode('&#x1F396;&#xFE0F;', ENT_QUOTES, 'UTF-8'),
+                                5 => html_entity_decode('&#x1F396;&#xFE0F;', ENT_QUOTES, 'UTF-8'),
                                 default => '',
                             };
                         @endphp
                         <tr>
-                            <td><span class="dashboard-rank-emoji">{{ $rankEmoji }}</span></td>
+                            <td><span class="dashboard-rank-emoji" title="Rank {{ $i }}">{{ $rankEmoji }}</span></td>
                             <td>{{ $d['dealer_name'] }}</td>
                             <td>{{ $d['location'] }}</td>
                             <td>{{ number_format($d['total_leads']) }}</td>
@@ -151,6 +151,10 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    window.setTimeout(function () {
+        window.location.reload();
+    }, 30 * 60 * 1000);
+
     const ctx1 = document.getElementById('closedCaseChart')?.getContext('2d');
     const ctx2 = document.getElementById('referralChart')?.getContext('2d');
     const weekLabels = @json($chartLabels);

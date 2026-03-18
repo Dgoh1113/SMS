@@ -106,11 +106,13 @@
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="users"> USERS</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="existingsw"> EXISTING SW</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="demomode"> DEMO MODE</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="products"> PRODUCTS</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="dealtproducts"> DEALT PRODUCTS</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="message"> MESSAGE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="referralcode"> REFERRAL CODE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="assignedby"> ASSIGNED BY</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="assignedto"> ASSIGNED TO</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="attachment"> ATTACHMENT</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="assigndate"> ASSIGN DATE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="status"> STATUS</label>
                     <div class="inquiries-columns-actions">
@@ -141,12 +143,14 @@
                         <th data-col="address" class="inquiries-header-cell"><span class="inquiries-header-label">ADDRESS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="completed" data-col="address"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="contactno" class="inquiries-header-cell"><span class="inquiries-header-label">CONTACT NO</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="completed" data-col="contactno"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="businessnature" class="inquiries-header-cell"><span class="inquiries-header-label">BUSINESS NATURE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="completed" data-col="businessnature"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="users" class="inquiries-header-cell"><span class="inquiries-header-label">USERS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="completed" data-col="users"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="users" class="inquiries-header-cell"><span class="inquiries-header-label">USERS</span><span class="inquiries-filter-wrap dealer-operator-search-wrap"><span class="dealer-operator-search-box"><button type="button" class="dealer-operator-btn" data-col="users" data-op="=" aria-haspopup="true" aria-expanded="false" title="Filter operator">=</button><div class="dealer-operator-dropdown" hidden><button type="button" data-op="=">= Equals</button><button type="button" data-op="!=">!= Does not equal</button><button type="button" data-op="<">&lt; Less than</button><button type="button" data-op="<=">&lt;= Less than or equal to</button><button type="button" data-op=">">&gt; Greater than</button><button type="button" data-op=">=">&gt;= Greater than or equal to</button></div><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="completed" data-col="users" placeholder="0"></span></span></th>
                         <th data-col="existingsw" class="inquiries-header-cell"><span class="inquiries-header-label">EXISTING SW</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="completed" data-col="existingsw"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="demomode" class="inquiries-header-cell"><span class="inquiries-header-label">DEMO MODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="completed" data-col="demomode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="products" class="inquiries-header-cell"><span class="inquiries-header-label">PRODUCTS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="completed" data-col="products"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="dealtproducts" class="inquiries-header-cell"><span class="inquiries-header-label">DEALT PRODUCTS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="completed" data-col="dealtproducts"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="message" class="inquiries-header-cell"><span class="inquiries-header-label">MESSAGE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="completed" data-col="message"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="assignedby" class="inquiries-header-cell"><span class="inquiries-header-label">ASSIGNED BY</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="completed" data-col="assignedby"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="attachment" class="inquiries-header-cell"><span class="inquiries-header-label">ATTACHMENT</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="completed" data-col="attachment"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="assigndate" class="inquiries-header-cell"><span class="inquiries-header-label">ASSIGN DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="completed" data-col="assigndate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th class="inquiries-col-action inquiries-header-cell"><span class="inquiries-header-label">ACTION</span><button type="button" class="inquiries-filter-clear" id="completedClearFilters">Clear filters</button></th>
                     </tr>
@@ -164,7 +168,7 @@
                             $addr = trim($addr1 . ' ' . $addr2);
                             $afullMsg = (string)($r->DESCRIPTION ?? '');
                             $afullMsgTrim = trim($afullMsg);
-                            $amsgPreview = $afullMsgTrim === '' ? '&mdash;' : (mb_strlen($afullMsgTrim) > 30 ? (mb_substr($afullMsgTrim, 0, 30) . '&hellip;') : $afullMsgTrim);
+                            $amsgPreview = $afullMsgTrim === '' ? '-' : (mb_strlen($afullMsgTrim) > 30 ? (mb_substr($afullMsgTrim, 0, 30) . '...') : $afullMsgTrim);
                             $aisLongMsg = $afullMsgTrim !== '' && mb_strlen($afullMsgTrim) > 30;
                             $rawStatus = strtoupper(trim((string)($r->CURRENTSTATUS ?? '')));
                             $statusClass = 'inquiries-status-new';
@@ -187,6 +191,7 @@
                             $statusDisp = $rawStatus !== '' ? $rawStatus : 'PENDING';
                             $assignDate = $r->LASTMODIFIED ? date('d/m/Y', strtotime($r->LASTMODIFIED)) : ($r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '&mdash;');
                             $searchHaystack = strtolower(($r->COMPANYNAME ?? '').' '.($r->CONTACTNAME ?? '').' '.($r->LEADID ?? ''));
+                            $productIds = $r->PRODUCTID ? array_map('trim', explode(',', (string)$r->PRODUCTID)) : [];
                             $pillOrder = [1=>10,3=>11,4=>12,2=>20,10=>21,8=>30,5=>31,6=>40,9=>50,7=>60,11=>70];
                             $dealtRaw = $r->DEALTPRODUCT ?? null;
                             $dealtProductIds = [];
@@ -202,6 +207,10 @@
                                 $dealtProductIds = array_values(array_unique($dealtProductIds));
                                 usort($dealtProductIds, function($a,$b) use ($pillOrder) { return ($pillOrder[$a] ?? 1000+$a) <=> ($pillOrder[$b] ?? 1000+$b); });
                             }
+                            $productIds = array_values(array_filter(array_unique(array_map('intval', $productIds)), fn($v) => $v > 0));
+                            usort($productIds, function($a,$b) use ($pillOrder) { return ($pillOrder[$a] ?? 1000+$a) <=> ($pillOrder[$b] ?? 1000+$b); });
+                            $payoutAt = $r->REWARDED_AT ?? null;
+                            $attachUrls = !empty($r->ASSIGNED_ATTACHMENT_URLS) && is_array($r->ASSIGNED_ATTACHMENT_URLS) ? $r->ASSIGNED_ATTACHMENT_URLS : [];
                         @endphp
                         <tr class="rewards-row inquiry-row" data-search="{{ $searchHaystack }}">
                             <td data-col="inquiryid">#SQL-{{ $r->LEADID }}</td>
@@ -225,7 +234,21 @@
                             <td data-col="businessnature">{{ $r->BUSINESSNATURE ?? '&mdash;' }}</td>
                             <td data-col="users">{{ $r->USERCOUNT ?? '&mdash;' }}</td>
                             <td data-col="existingsw">{{ $r->EXISTINGSOFTWARE ?? '&mdash;' }}</td>
-                            <td data-col="demomode">{{ $r->DEMOMODE ?? '&mdash;' }}</td><td data-col="dealtproducts">
+                            <td data-col="demomode">{{ $r->DEMOMODE ?? '&mdash;' }}</td>
+                            <td data-col="products">
+                                @if(!empty($productIds))
+                                    <div class="inquiries-pill-group">
+                                        @foreach($productIds as $id)
+                                            @if(isset($productLabels[(int)$id]))
+                                                <span class="inquiries-pill inquiries-pill-p{{ (int)$id }}">{{ $productLabels[(int)$id] }}</span>
+                                            @endif
+                                        @endforeach
+                                    </div>
+                                @else
+                                    &mdash;
+                                @endif
+                            </td>
+                            <td data-col="dealtproducts">
                                 @if(!empty($dealtProductIds))
                                     <div class="inquiries-pill-group">
                                         @foreach($dealtProductIds as $id)
@@ -240,6 +263,22 @@
                             </td>
                             <td data-col="message" class="inquiries-msg-cell {{ $aisLongMsg ? 'inquiries-msg-clickable' : '' }}" @if($aisLongMsg) data-full-message="{{ e($afullMsgTrim) }}" @endif>{{ $amsgPreview }}</td>
                             <td data-col="assignedby">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '&mdash;') }}</td>
+                            <td data-col="attachment">
+                                @if(!empty($attachUrls))
+                                    <div class="payouts-attachment-list">
+                                        @foreach(array_slice($attachUrls, 0, 3) as $u)
+                                            <a href="{{ $u }}" target="_blank" rel="noopener" class="payouts-attachment-link">
+                                                <img src="{{ $u }}" alt="Attachment" class="payouts-attachment-thumb">
+                                            </a>
+                                        @endforeach
+                                        @if(count($attachUrls) > 3)
+                                            <span class="payouts-attachment-more">+{{ count($attachUrls) - 3 }}</span>
+                                        @endif
+                                    </div>
+                                @else
+                                    &mdash;
+                                @endif
+                            </td>
                             <td data-col="assigndate">{{ $assignDate }}</td>
                             <td class="inquiries-col-action inquiries-action-cell">
                                 <button type="button"
@@ -259,7 +298,7 @@
                             </td>
                         </tr>
                     @empty
-                    <tr><td colspan="21" class="inquiries-empty">No completed inquiries.</td></tr>
+                        <tr><td colspan="23" class="inquiries-empty">No completed inquiries.</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -300,7 +339,6 @@
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="source"> SOURCE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="postcode"> POSTCODE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="city"> CITY</label>
-                    <label class="inquiries-columns-check"><input type="checkbox" data-col="completiondate"> PAYOUTS DATE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="address"> ADDRESS</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="contactno"> CONTACT NO</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="businessnature"> BUSINESS NATURE</label>
@@ -308,11 +346,14 @@
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="existingsw"> EXISTING SW</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="demomode"> DEMO MODE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="products"> PRODUCTS</label>
-                    <label class="inquiries-columns-check"><input type="checkbox" data-col="attachment"> ATTACHMENT</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="dealtproducts"> DEALT PRODUCTS</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="message"> MESSAGE</label>
-                    <label class="inquiries-columns-check"><input type="checkbox" data-col="referralcode"> REFERRAL CODE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="assignedby"> ASSIGNED BY</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="assignedto"> ASSIGNED TO</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="completiondate"> COMPLETION DATE</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="payoutsdate"> PAYOUTS DATE</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="attachment"> ATTACHMENT</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="referralcode"> REFERRAL CODE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="assigndate"> ASSIGN DATE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="status"> STATUS</label>
                     <div class="inquiries-columns-actions">
@@ -335,19 +376,21 @@
                         <th data-col="source" class="inquiries-header-cell"><span class="inquiries-header-label">SOURCE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="source"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="postcode" class="inquiries-header-cell"><span class="inquiries-header-label">POSTCODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="postcode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="city" class="inquiries-header-cell"><span class="inquiries-header-label">CITY</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="city"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="completiondate" class="inquiries-header-cell"><span class="inquiries-header-label">PAYOUTS DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="completiondate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="address" class="inquiries-header-cell"><span class="inquiries-header-label">ADDRESS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="address"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="contactno" class="inquiries-header-cell"><span class="inquiries-header-label">CONTACT NO</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="contactno"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="businessnature" class="inquiries-header-cell"><span class="inquiries-header-label">BUSINESS NATURE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="businessnature"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="users" class="inquiries-header-cell"><span class="inquiries-header-label">USERS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="users"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="users" class="inquiries-header-cell"><span class="inquiries-header-label">USERS</span><span class="inquiries-filter-wrap dealer-operator-search-wrap"><span class="dealer-operator-search-box"><button type="button" class="dealer-operator-btn" data-col="users" data-op="=" aria-haspopup="true" aria-expanded="false" title="Filter operator">=</button><div class="dealer-operator-dropdown" hidden><button type="button" data-op="=">= Equals</button><button type="button" data-op="!=">!= Does not equal</button><button type="button" data-op="<">&lt; Less than</button><button type="button" data-op="<=">&lt;= Less than or equal to</button><button type="button" data-op=">">&gt; Greater than</button><button type="button" data-op=">=">&gt;= Greater than or equal to</button></div><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="users" placeholder="0"></span></span></th>
                         <th data-col="existingsw" class="inquiries-header-cell"><span class="inquiries-header-label">EXISTING SW</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="existingsw"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="demomode" class="inquiries-header-cell"><span class="inquiries-header-label">DEMO MODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="demomode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="products" class="inquiries-header-cell"><span class="inquiries-header-label">PRODUCTS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="products"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="attachment" class="inquiries-header-cell"><span class="inquiries-header-label">ATTACHMENT</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="attachment"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="dealtproducts" class="inquiries-header-cell"><span class="inquiries-header-label">DEALT PRODUCTS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="dealtproducts"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="message" class="inquiries-header-cell"><span class="inquiries-header-label">MESSAGE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="message"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="referralcode" class="inquiries-header-cell"><span class="inquiries-header-label">REFERRAL CODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="referralcode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="assignedby" class="inquiries-header-cell"><span class="inquiries-header-label">ASSIGNED BY</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="assignedby"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="assignedto" class="inquiries-header-cell"><span class="inquiries-header-label">ASSIGNED TO</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="assignedto"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="completiondate" class="inquiries-header-cell"><span class="inquiries-header-label">COMPLETION DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="completiondate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="payoutsdate" class="inquiries-header-cell"><span class="inquiries-header-label">PAYOUTS DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="payoutsdate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="attachment" class="inquiries-header-cell"><span class="inquiries-header-label">ATTACHMENT</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="attachment"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="referralcode" class="inquiries-header-cell"><span class="inquiries-header-label">REFERRAL CODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="referralcode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="assigndate" class="inquiries-header-cell"><span class="inquiries-header-label">ASSIGN DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="assigndate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="status" class="inquiries-header-cell"><span class="inquiries-header-label">STATUS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="status"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th class="inquiries-col-action inquiries-header-cell"><span class="inquiries-header-label">ACTION</span><button type="button" class="inquiries-filter-clear" id="rewardedClearFilters">Clear filters</button></th>
@@ -366,7 +409,7 @@
                             $addr = trim($addr1 . ' ' . $addr2);
                             $afullMsg = (string)($r->DESCRIPTION ?? '');
                             $afullMsgTrim = trim($afullMsg);
-                            $amsgPreview = $afullMsgTrim === '' ? '&mdash;' : (mb_strlen($afullMsgTrim) > 30 ? (mb_substr($afullMsgTrim, 0, 30) . '&hellip;') : $afullMsgTrim);
+                            $amsgPreview = $afullMsgTrim === '' ? '-' : (mb_strlen($afullMsgTrim) > 30 ? (mb_substr($afullMsgTrim, 0, 30) . '...') : $afullMsgTrim);
                             $aisLongMsg = $afullMsgTrim !== '' && mb_strlen($afullMsgTrim) > 30;
                             $rawStatus = strtoupper(trim((string)($r->CURRENTSTATUS ?? '')));
                             $statusClass = 'inquiries-status-new';
@@ -387,13 +430,18 @@
                                 default:          $statusClass = 'inquiries-status-new'; break;
                             }
                             $statusDisp = $rawStatus !== '' ? $rawStatus : 'REWARDED';
+                            $completedAt = $r->COMPLETED_AT ?? null;
                             $payoutAt = $r->REWARDED_AT ?? null;
                             $searchHaystack = strtolower(($r->COMPANYNAME ?? '').' '.($r->CONTACTNAME ?? '').' '.($r->LEADID ?? ''));
                             $assignDate = $r->LASTMODIFIED ? date('d/m/Y', strtotime($r->LASTMODIFIED)) : ($r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '&mdash;');
                             $productIds = $r->PRODUCTID ? array_map('trim', explode(',', (string)$r->PRODUCTID)) : [];
+                            $dealtRaw = $r->DEALTPRODUCT ?? null;
+                            $dealtProductIds = $dealtRaw ? array_map('trim', preg_split('/[\s,\(\)]+/', (string)$dealtRaw)) : [];
                             $pillOrder = [1=>10,3=>11,4=>12,2=>20,10=>21,8=>30,5=>31,6=>40,9=>50,7=>60,11=>70];
                             $productIds = array_values(array_filter(array_unique(array_map('intval', $productIds)), fn($v) => $v > 0));
+                            $dealtProductIds = array_values(array_filter(array_unique(array_map('intval', $dealtProductIds)), fn($v) => $v > 0));
                             usort($productIds, function($a,$b) use ($pillOrder) { return ($pillOrder[$a] ?? 1000+$a) <=> ($pillOrder[$b] ?? 1000+$b); });
+                            usort($dealtProductIds, function($a,$b) use ($pillOrder) { return ($pillOrder[$a] ?? 1000+$a) <=> ($pillOrder[$b] ?? 1000+$b); });
                             $attachUrls = [];
                             if (!empty($r->REWARD_ATTACHMENT_URLS) && is_array($r->REWARD_ATTACHMENT_URLS)) {
                                 $attachUrls = $r->REWARD_ATTACHMENT_URLS;
@@ -407,7 +455,6 @@
                             <td data-col="source">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '&mdash;') }}</td>
                             <td data-col="postcode">{{ $r->POSTCODE ?? '&mdash;' }}</td>
                             <td data-col="city">{{ $r->CITY ?? '&mdash;' }}</td>
-                            <td data-col="completiondate">{{ $payoutAt ? date('d/m/Y', strtotime($payoutAt)) : '&mdash;' }}</td>
                             <td data-col="address">{{ $addr !== '' ? $addr : '&mdash;' }}</td>
                             <td data-col="contactno">{{ $r->CONTACTNO ?? '&mdash;' }}</td>
                             <td data-col="businessnature">{{ $r->BUSINESSNATURE ?? '&mdash;' }}</td>
@@ -427,6 +474,24 @@
                                     &mdash;
                                 @endif
                             </td>
+                            <td data-col="dealtproducts">
+                                @if(!empty($dealtProductIds))
+                                    <div class="inquiries-pill-group">
+                                        @foreach($dealtProductIds as $id)
+                                            @if(isset($productLabels[(int)$id]))
+                                                <span class="inquiries-pill inquiries-pill-p{{ (int)$id }}">{{ $productLabels[(int)$id] }}</span>
+                                            @endif
+                                        @endforeach
+                                    </div>
+                                @else
+                                    &mdash;
+                                @endif
+                            </td>
+                            <td data-col="message" class="inquiries-msg-cell {{ $aisLongMsg ? 'inquiries-msg-clickable' : '' }}" @if($aisLongMsg) data-full-message="{{ e($afullMsgTrim) }}" @endif>{{ $amsgPreview }}</td>
+                            <td data-col="assignedby">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '&mdash;') }}</td>
+                            <td data-col="assignedto">{{ $r->ASSIGNED_TO_NAME ?? ($r->ASSIGNED_TO ?? '&mdash;') }}</td>
+                            <td data-col="completiondate">{{ $completedAt ? date('d/m/Y', strtotime($completedAt)) : '&mdash;' }}</td>
+                            <td data-col="payoutsdate">{{ $payoutAt ? date('d/m/Y', strtotime($payoutAt)) : '&mdash;' }}</td>
                             <td data-col="attachment">
                                 @if(!empty($attachUrls))
                                     <div class="payouts-attachment-list">
@@ -443,10 +508,7 @@
                                     &mdash;
                                 @endif
                             </td>
-                            <td data-col="message" class="inquiries-msg-cell {{ $aisLongMsg ? 'inquiries-msg-clickable' : '' }}" @if($aisLongMsg) data-full-message="{{ e($afullMsgTrim) }}" @endif>{{ $amsgPreview }}</td>
                             <td data-col="referralcode">{!! $referralCode !== '' ? e($referralCode) : '&mdash;' !!}</td>
-                            <td data-col="assignedby">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '&mdash;') }}</td>
-                            <td data-col="assignedto">{{ $r->ASSIGNED_TO_NAME ?? ($r->ASSIGNED_TO ?? '&mdash;') }}</td>
                             <td data-col="assigndate">{{ $assignDate }}</td>
                             <td data-col="status"><span class="inquiries-status {{ $statusClass }}">{{ $statusDisp }}</span></td>
                             <td class="inquiries-col-action inquiries-action-cell">
@@ -460,7 +522,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="22" class="inquiries-empty">No rewarded payouts.</td></tr>
+                        <tr><td colspan="24" class="inquiries-empty">No rewarded payouts.</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -511,10 +573,10 @@
 document.addEventListener('DOMContentLoaded', function() {
     var COMPLETED_STORAGE_KEY = 'payoutCompletedVisibleColumns';
     var COMPLETED_DEFAULT_COLUMNS = ['inquiryid','customername','assignedto','referralcode','completiondate','dealtproducts','status'];
-    var COMPLETED_ALL_COLUMNS = ['inquiryid','date','customername','source','postcode','city','address','contactno','businessnature','users','existingsw','demomode','dealtproducts','message','referralcode','assignedby','assignedto','completiondate','assigndate','status'];
-    var REWARDED_STORAGE_KEY = 'payoutRewardedVisibleColumns';
-    var REWARDED_DEFAULT_COLUMNS = ['inquiryid','customername','assignedto','referralcode','completiondate','attachment','status'];
-    var REWARDED_ALL_COLUMNS = ['inquiryid','date','customername','source','postcode','city','completiondate','address','contactno','businessnature','users','existingsw','demomode','products','attachment','message','referralcode','assignedby','assignedto','assigndate','status'];
+    var COMPLETED_ALL_COLUMNS = ['inquiryid','date','customername','source','postcode','city','address','contactno','businessnature','users','existingsw','demomode','products','dealtproducts','message','referralcode','assignedby','assignedto','completiondate','attachment','assigndate','status'];
+    var REWARDED_STORAGE_KEY = 'payoutRewardedVisibleColumnsV2';
+    var REWARDED_DEFAULT_COLUMNS = ['inquiryid','customername','assignedto','payoutsdate','attachment','referralcode','status'];
+    var REWARDED_ALL_COLUMNS = ['inquiryid','date','customername','source','postcode','city','address','contactno','businessnature','users','existingsw','demomode','products','dealtproducts','message','assignedby','assignedto','completiondate','payoutsdate','attachment','referralcode','assigndate','status'];
     function columnsKey(cols) {
         if (!Array.isArray(cols)) return '';
         var uniq = [];
@@ -871,6 +933,7 @@ document.addEventListener('DOMContentLoaded', function() {
         completedClearFilters.addEventListener('click', function() {
             var table = document.getElementById('completedTable');
             if (table) table.querySelectorAll('thead .rewards-grid-filter').forEach(function(inp) { inp.value = ''; });
+            resetRewardsOperatorMenus(table);
             applyTableFilter('completedTable');
         });
     }
@@ -880,6 +943,7 @@ document.addEventListener('DOMContentLoaded', function() {
         rewardedClearFilters.addEventListener('click', function() {
             var table = document.getElementById('rewardedTable');
             if (table) table.querySelectorAll('thead .rewards-grid-filter').forEach(function(inp) { inp.value = ''; });
+            resetRewardsOperatorMenus(table);
             applyTableFilter('rewardedTable');
         });
     }
@@ -986,26 +1050,107 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    var REWARDS_NUMERIC_FILTER_COLS = ['users'];
+
+    function parseRewardsFilterNumber(value) {
+        var num = parseFloat(String(value || '').replace(/[^0-9.\-]/g, ''));
+        return isNaN(num) ? 0 : num;
+    }
+
+    function collectRewardsFilters(table) {
+        var filters = {};
+        if (!table) return filters;
+        table.querySelectorAll('thead .rewards-grid-filter').forEach(function(inp) {
+            var col = inp.getAttribute('data-col');
+            var val = (inp.value || '').trim();
+            if (!col || val === '') return;
+            if (REWARDS_NUMERIC_FILTER_COLS.indexOf(col) !== -1) {
+                var opBtn = table.querySelector('.dealer-operator-btn[data-col="' + col + '"]');
+                filters[col] = {
+                    numeric: true,
+                    op: opBtn ? (opBtn.getAttribute('data-op') || '=') : '=',
+                    val: val
+                };
+            } else {
+                filters[col] = { numeric: false, val: val.toLowerCase() };
+            }
+        });
+        return filters;
+    }
+
+    function rewardsRowMatchesFilters(row, filters) {
+        for (var col in filters) {
+            var cell = row.querySelector('td[data-col="' + col + '"]');
+            var cellText = (cell && cell.textContent) ? cell.textContent.trim() : '';
+            var filter = filters[col];
+            if (filter.numeric) {
+                var cellNum = parseRewardsFilterNumber(cellText);
+                var filterNum = parseRewardsFilterNumber(filter.val);
+                if (filter.op === '=' && cellNum !== filterNum) return false;
+                if (filter.op === '!=' && cellNum === filterNum) return false;
+                if (filter.op === '>' && cellNum <= filterNum) return false;
+                if (filter.op === '>=' && cellNum < filterNum) return false;
+                if (filter.op === '<' && cellNum >= filterNum) return false;
+                if (filter.op === '<=' && cellNum > filterNum) return false;
+            } else if (cellText.toLowerCase().indexOf(filter.val) === -1) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function resetRewardsOperatorMenus(table) {
+        if (!table) return;
+        table.querySelectorAll('.dealer-operator-btn').forEach(function(btn) {
+            btn.setAttribute('data-op', '=');
+            btn.textContent = '=';
+            btn.setAttribute('aria-expanded', 'false');
+        });
+        table.querySelectorAll('.dealer-operator-dropdown').forEach(function(dropdown) {
+            dropdown.hidden = true;
+        });
+    }
+
+    function bindRewardsOperatorMenus(table, tableId) {
+        if (!table) return;
+        table.querySelectorAll('.dealer-operator-btn').forEach(function(btn) {
+            if (btn.getAttribute('data-operator-bound') === '1') return;
+            btn.setAttribute('data-operator-bound', '1');
+            var dropdown = btn.parentElement.querySelector('.dealer-operator-dropdown');
+            if (!dropdown) return;
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var isOpen = !dropdown.hidden;
+                table.querySelectorAll('.dealer-operator-dropdown').forEach(function(d) { d.hidden = true; });
+                table.querySelectorAll('.dealer-operator-btn').forEach(function(b) { b.setAttribute('aria-expanded', 'false'); });
+                dropdown.hidden = isOpen;
+                btn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+            });
+            dropdown.addEventListener('click', function(e) { e.stopPropagation(); });
+            dropdown.querySelectorAll('button[data-op]').forEach(function(option) {
+                option.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var op = option.getAttribute('data-op') || '=';
+                    btn.setAttribute('data-op', op);
+                    btn.textContent = op;
+                    btn.setAttribute('aria-expanded', 'false');
+                    dropdown.hidden = true;
+                    applyTableFilter(tableId);
+                });
+            });
+        });
+    }
+
     function applyTableFilter(tableId) {
         var table = document.getElementById(tableId);
         var searchInput = document.getElementById('payoutSearchInput');
     if (!table) return;
         var q = (searchInput && searchInput.value) ? searchInput.value.toLowerCase().trim() : '';
-        var filters = {};
-        table.querySelectorAll('thead .rewards-grid-filter').forEach(function(inp) {
-            var col = inp.getAttribute('data-col');
-            var val = (inp.value || '').toLowerCase().trim();
-            if (col && val) filters[col] = val;
-        });
+        var filters = collectRewardsFilters(table);
         table.querySelectorAll('tbody tr.rewards-row').forEach(function(row) {
             var hay = (row.getAttribute('data-search') || '').toLowerCase();
             var searchMatch = !q || hay.indexOf(q) !== -1;
-            var colMatch = true;
-            for (var col in filters) {
-                var cell = row.querySelector('td[data-col="' + col + '"]');
-                var cellText = (cell && cell.textContent) ? cell.textContent.toLowerCase().trim() : '';
-                if (cellText.indexOf(filters[col]) === -1) { colMatch = false; break; }
-            }
+            var colMatch = rewardsRowMatchesFilters(row, filters);
             row.style.display = (searchMatch && colMatch) ? '' : 'none';
         });
         if (tableId === 'completedTable') {
@@ -1024,9 +1169,19 @@ document.addEventListener('DOMContentLoaded', function() {
         table.querySelectorAll('thead .rewards-grid-filter').forEach(function(inp) {
             inp.addEventListener('input', function() { applyTableFilter(tableId); });
         });
+        bindRewardsOperatorMenus(table, tableId);
     }
     bindTable('completedTable');
     bindTable('rewardedTable');
+
+    document.addEventListener('click', function() {
+        ['completedTable', 'rewardedTable'].forEach(function(tableId) {
+            var table = document.getElementById(tableId);
+            if (!table) return;
+            table.querySelectorAll('.dealer-operator-dropdown').forEach(function(dropdown) { dropdown.hidden = true; });
+            table.querySelectorAll('.dealer-operator-btn').forEach(function(btn) { btn.setAttribute('aria-expanded', 'false'); });
+        });
+    });
 
     applyCompletedPagination();
     applyRewardedPagination();
@@ -1091,6 +1246,46 @@ document.addEventListener('DOMContentLoaded', function() {
             applyAllTables();
         });
     }
+
+    (function initMessageModal() {
+        if (document.getElementById('rewardMessageModal')) return;
+        var modal = document.createElement('div');
+        modal.id = 'rewardMessageModal';
+        modal.className = 'inquiries-msg-modal';
+        modal.hidden = true;
+        modal.innerHTML = ''
+            + '<div class="inquiries-msg-modal-backdrop" data-close="1"></div>'
+            + '<div class="inquiries-msg-modal-window" role="dialog" aria-modal="true" aria-labelledby="rewardsMsgModalTitle">'
+            + '  <div class="inquiries-msg-modal-header">'
+            + '    <div class="inquiries-msg-modal-title" id="rewardsMsgModalTitle">Message</div>'
+            + '    <button type="button" class="inquiries-msg-modal-close" aria-label="Close" data-close="1">&times;</button>'
+            + '  </div>'
+            + '  <div class="inquiries-msg-modal-body"><pre class="inquiries-msg-modal-text" id="rewardsMsgModalText"></pre></div>'
+            + '</div>';
+        document.body.appendChild(modal);
+
+        function close() { modal.hidden = true; }
+        function open(text) {
+            var el = document.getElementById('rewardsMsgModalText');
+            if (el) el.textContent = text || '';
+            modal.hidden = false;
+        }
+
+        document.addEventListener('click', function(e) {
+            var target = e.target && e.target.nodeType === 3 ? e.target.parentElement : e.target;
+            var cell = target && target.closest ? target.closest('.inquiries-msg-clickable[data-full-message]') : null;
+            if (cell && ((cell.closest && cell.closest('#completedTable')) || (cell.closest && cell.closest('#rewardedTable')))) {
+                e.preventDefault();
+                open(cell.getAttribute('data-full-message') || '');
+                return;
+            }
+            if (target && (target.getAttribute('data-close') === '1')) close();
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && modal && !modal.hidden) close();
+        });
+    })();
 
     document.querySelectorAll('.inquiries-tab').forEach(function(tab) {
         tab.addEventListener('click', function() {

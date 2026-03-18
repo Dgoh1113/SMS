@@ -95,7 +95,7 @@
         <div class="rrp-panel-header">
             <div>
                 <div class="rrp-panel-title">Dealer Product Conversion Ranking</div>
-                <div class="rrp-panel-subtitle">Sorted by closed products in selected quarter</div>
+                <div class="rrp-panel-subtitle">Sorted by closed products in {{ $selectedQuarter ?? 'Q1' }}, {{ $selectedYear ?? now()->format('Y') }}</div>
             </div>
             <div class="rrp-pill rrp-pill-purple">{{ $selectedQuarter ?? 'Q1' }} {{ $selectedYear ?? now()->format('Y') }}</div>
         </div>
@@ -116,7 +116,6 @@
                             <tr>
                                 <td>
                                     <div class="rrp-dealer-name">{{ $row['name'] ?? $row['email'] }}</div>
-                                    <div class="rrp-dealer-id">ID: {{ $row['dealer_id'] }}</div>
                                 </td>
                                 <td>{{ number_format($row['total']) }}</td>
                                 <td>{{ number_format($row['closed']) }}</td>
