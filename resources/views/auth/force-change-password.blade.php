@@ -32,7 +32,7 @@
                         New password
                         <div class="login-input-wrapper">
                             <input type="password" id="forcePasswordInput" name="password" placeholder="Enter new password" required>
-                            <button type="button" class="login-password-toggle" data-password-toggle data-target="forcePasswordInput" aria-label="Show password" aria-pressed="false">
+                            <button type="button" class="login-password-toggle" data-password-toggle data-target="forcePasswordInput" aria-label="Show password" aria-pressed="false" tabindex="-1">
                                 <i class="bi bi-eye" aria-hidden="true"></i>
                             </button>
                         </div>
@@ -42,7 +42,7 @@
                         Confirm password
                         <div class="login-input-wrapper">
                             <input type="password" id="forcePasswordConfirmInput" name="password_confirmation" placeholder="Confirm new password" required>
-                            <button type="button" class="login-password-toggle" data-password-toggle data-target="forcePasswordConfirmInput" aria-label="Show password" aria-pressed="false">
+                            <button type="button" class="login-password-toggle" data-password-toggle data-target="forcePasswordConfirmInput" aria-label="Show password" aria-pressed="false" tabindex="-1">
                                 <i class="bi bi-eye" aria-hidden="true"></i>
                             </button>
                         </div>

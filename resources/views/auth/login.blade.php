@@ -26,9 +26,40 @@
 <div class="login-root">
     <div class="login-splash" id="loginSplash" aria-hidden="false">
         <div class="login-splash-panel" id="loginSplashPanel">
-            <img src="{{ asset('sql-logo.png') }}" alt="SQL logo" class="login-splash-logo">
-            <h1 class="login-splash-title">SQL Sales Management System</h1>
-            <p class="login-splash-subtitle">Admin Console</p>
+            <div class="login-splash-sky" aria-hidden="true">
+                <span class="login-splash-star login-splash-star-a"></span>
+                <span class="login-splash-star login-splash-star-b"></span>
+                <span class="login-splash-star login-splash-star-c"></span>
+                <span class="login-splash-star login-splash-star-d"></span>
+                <span class="login-splash-star login-splash-star-e"></span>
+                <span class="login-splash-star login-splash-star-f"></span>
+                <span class="login-splash-star login-splash-star-g"></span>
+                <span class="login-splash-star login-splash-star-h"></span>
+                <span class="login-splash-star login-splash-star-i"></span>
+                <span class="login-splash-moon">
+                    <span class="login-splash-moon-cut"></span>
+                    <span class="login-splash-moon-star"></span>
+                </span>
+            </div>
+
+            <div class="login-splash-hero">
+                <img src="{{ asset('sql-logo.png') }}" alt="SQL logo" class="login-splash-logo">
+                <span class="login-splash-wordmark" aria-label="SMS">
+                    <span>S</span>
+                    <span>M</span>
+                    <span>S</span>
+                </span>
+            </div>
+
+            <div class="login-splash-typing" aria-label="SALES MANAGEMENT SYSTEM">
+                <span class="login-splash-typing-text">SALES MANAGEMENT SYSTEM</span>
+            </div>
+
+            <div class="login-splash-illustration" aria-hidden="true">
+                <img src="{{ asset('sql-cover-mascot.png') }}" alt="" class="login-splash-illustration-img">
+            </div>
+
+            <p class="login-splash-credits">Wei Jian &amp; Wen Jun &amp; Damien</p>
         </div>
     </div>
 
@@ -111,7 +142,7 @@
                         </button>
                     @endif
 
-                    <button type="submit" class="login-primary-btn">Sign In -&gt;</button>
+                    <button type="submit" class="login-primary-btn">Sign In</button>
 
                     <div class="login-divider"><span>OR</span></div>
 
@@ -244,14 +275,17 @@
             loginSplash.setAttribute('aria-hidden', 'true');
         } else {
             window.setTimeout(function () {
-                loginSplash.classList.add('is-hidden');
-                loginSplash.setAttribute('aria-hidden', 'true');
-                try {
-                    if (window.sessionStorage) {
-                        window.sessionStorage.setItem('loginSplashShown', '1');
-                    }
-                } catch (e) {}
-            }, 1600);
+                loginSplash.classList.add('is-iris-out');
+                window.setTimeout(function () {
+                    loginSplash.classList.add('is-hidden');
+                    loginSplash.setAttribute('aria-hidden', 'true');
+                    try {
+                        if (window.sessionStorage) {
+                            window.sessionStorage.setItem('loginSplashShown', '1');
+                        }
+                    } catch (e) {}
+                }, 500);
+            }, 2000);
         }
     }
 

@@ -20,6 +20,12 @@
         overflow-x: hidden;
     }
 
+    /* Keep payouts panels closer to the Inquiries table height so the footer stays visible. */
+    #completedPanel .inquiries-table-wrap,
+    #rewardedPanel .inquiries-table-wrap {
+        min-height: 380px;
+    }
+
     #completedTable th[data-col="inquiryid"],
     #completedTable td[data-col="inquiryid"],
     #rewardedTable th[data-col="inquiryid"],
@@ -262,7 +268,7 @@
                                 @endif
                             </td>
                             <td data-col="message" class="inquiries-msg-cell {{ $aisLongMsg ? 'inquiries-msg-clickable' : '' }}" @if($aisLongMsg) data-full-message="{{ e($afullMsgTrim) }}" @endif>{{ $amsgPreview }}</td>
-                            <td data-col="assignedby">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '&mdash;') }}</td>
+                                        <td data-col="assignedby">{{ $r->ASSIGNEDBY_NAME ?? ($r->ASSIGNEDBY ?? '—') }}</td>
                             <td data-col="attachment">
                                 @if(!empty($attachUrls))
                                     <div class="payouts-attachment-list">
@@ -488,7 +494,7 @@
                                 @endif
                             </td>
                             <td data-col="message" class="inquiries-msg-cell {{ $aisLongMsg ? 'inquiries-msg-clickable' : '' }}" @if($aisLongMsg) data-full-message="{{ e($afullMsgTrim) }}" @endif>{{ $amsgPreview }}</td>
-                            <td data-col="assignedby">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '&mdash;') }}</td>
+                                        <td data-col="assignedby">{{ $r->ASSIGNEDBY_NAME ?? ($r->ASSIGNEDBY ?? '—') }}</td>
                             <td data-col="assignedto">{{ $r->ASSIGNED_TO_NAME ?? ($r->ASSIGNED_TO ?? '&mdash;') }}</td>
                             <td data-col="completiondate">{{ $completedAt ? date('d/m/Y', strtotime($completedAt)) : '&mdash;' }}</td>
                             <td data-col="payoutsdate">{{ $payoutAt ? date('d/m/Y', strtotime($payoutAt)) : '&mdash;' }}</td>
@@ -809,48 +815,91 @@ document.addEventListener('DOMContentLoaded', function() {
         card.setAttribute('data-rewarded-count', nextCard.getAttribute('data-rewarded-count') || '0');
     }
 
+    function showRewardsToast(message) {
+        var id = 'rewards-action-toast';
+        var el = document.getElementById(id);
+        if (!el) {
+            el = document.createElement('div');
+            el.id = id;
+            el.className = 'inquiries-mark-failed-blocked-toast inquiries-mark-failed-blocked-toast-hidden';
+            el.setAttribute('role', 'status');
+            document.body.appendChild(el);
+        }
+        el.textContent = message || 'Done.';
+        el.classList.remove('inquiries-mark-failed-blocked-toast-hidden');
+        clearTimeout(el._hideTimer);
+        el._hideTimer = setTimeout(function() {
+            el.classList.add('inquiries-mark-failed-blocked-toast-hidden');
+        }, 4000);
+    }
+
+    function shouldAutoSyncRewards(message) {
+        var msg = (message || '').toLowerCase();
+        return msg.indexOf('please sync and try again') !== -1 || msg.indexOf('already rewarded') !== -1 || msg.indexOf('already paid') !== -1 || msg.indexOf('already completed') !== -1;
+    }
+
+    function syncRewardsForButton(btn) {
+        var panel = btn && btn.closest ? btn.closest('.inquiries-tab-panel') : null;
+        var syncBtn = panel ? panel.querySelector('.inquiries-sync-btn') : null;
+        if (!syncBtn) {
+            syncBtn = document.querySelector('.inquiries-sync-btn[data-sync-type="completed"]') || document.querySelector('.inquiries-sync-btn');
+        }
+        triggerRewardsSync(syncBtn, true);
+    }
+
+    var REWARDS_AUTO_SYNC_MS = 15 * 60 * 1000;
+
+    function triggerRewardsSync(btn, silent) {
+        if (!btn || btn.classList.contains('is-syncing')) return;
+        btn.classList.add('is-syncing');
+        var icon = btn.querySelector('.inquiries-sync-icon');
+        if (icon) icon.classList.add('spinning');
+        var url = btn.getAttribute('data-sync-url');
+        if (!url) url = '{{ route('admin.rewards') }}';
+        var syncType = (btn.getAttribute('data-sync-type') || '').toLowerCase();
+        var req = new URL(url, window.location.origin);
+        req.searchParams.set('tab', syncType === 'rewarded' ? 'rewarded' : 'completed');
+        req.searchParams.set('_sync', Date.now().toString());
+        fetch(req.toString(), {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            cache: 'no-store'
+        }).then(function(res) {
+            return res.ok ? res.text() : Promise.reject();
+        }).then(function(html) {
+            var parser = new DOMParser();
+            var nextDoc = parser.parseFromString(html, 'text/html');
+            var completedUpdated = replaceRewardsTableBody(nextDoc, 'completedTable');
+            var rewardedUpdated = replaceRewardsTableBody(nextDoc, 'rewardedTable');
+            if (!completedUpdated && !rewardedUpdated) {
+                return Promise.reject();
+            }
+            refreshSummaryCardFromDoc(nextDoc);
+            bindRewardEmailButtons();
+            applyCompletedColumns(getCompletedVisibleColumns());
+            applyRewardedColumns(getRewardedVisibleColumns());
+            applyAllTables();
+            var activeTab = document.querySelector('.inquiries-tab.active');
+            if (activeTab && typeof activeTab.click === 'function') {
+                activeTab.click();
+            }
+        }).catch(function() {
+            if (!silent) showRewardsToast('Failed to sync data.');
+        }).finally(function() {
+            btn.classList.remove('is-syncing');
+            if (icon) icon.classList.remove('spinning');
+        });
+    }
+
     document.querySelectorAll('.inquiries-sync-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
-            if (btn.classList.contains('is-syncing')) return;
-            btn.classList.add('is-syncing');
-            var icon = btn.querySelector('.inquiries-sync-icon');
-            if (icon) icon.classList.add('spinning');
-            var url = btn.getAttribute('data-sync-url');
-            if (!url) url = '{{ route('admin.rewards') }}';
-            var syncType = (btn.getAttribute('data-sync-type') || '').toLowerCase();
-            var req = new URL(url, window.location.origin);
-            req.searchParams.set('tab', syncType === 'rewarded' ? 'rewarded' : 'completed');
-            req.searchParams.set('_sync', Date.now().toString());
-            fetch(req.toString(), {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                cache: 'no-store'
-            }).then(function(res) {
-                return res.ok ? res.text() : Promise.reject();
-            }).then(function(html) {
-                var parser = new DOMParser();
-                var nextDoc = parser.parseFromString(html, 'text/html');
-                var completedUpdated = replaceRewardsTableBody(nextDoc, 'completedTable');
-                var rewardedUpdated = replaceRewardsTableBody(nextDoc, 'rewardedTable');
-                if (!completedUpdated && !rewardedUpdated) {
-                    return Promise.reject();
-                }
-                refreshSummaryCardFromDoc(nextDoc);
-                bindRewardEmailButtons();
-                applyCompletedColumns(getCompletedVisibleColumns());
-                applyRewardedColumns(getRewardedVisibleColumns());
-                applyAllTables();
-                var activeTab = document.querySelector('.inquiries-tab.active');
-                if (activeTab && typeof activeTab.click === 'function') {
-                    activeTab.click();
-                }
-            }).catch(function() {
-                alert('Failed to sync data.');
-            }).finally(function() {
-                btn.classList.remove('is-syncing');
-                if (icon) icon.classList.remove('spinning');
-            });
+            triggerRewardsSync(btn, false);
         });
     });
+
+    window.setInterval(function() {
+        var autoBtn = document.querySelector('.inquiries-sync-btn[data-sync-type="completed"]') || document.querySelector('.inquiries-sync-btn');
+        triggerRewardsSync(autoBtn, true);
+    }, REWARDS_AUTO_SYNC_MS);
 
     var COMPLETED_PER_PAGE = 10;
     var REWARDED_PER_PAGE = 10;
@@ -894,7 +943,7 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.addEventListener('click', function() {
                 if (!confirm('Remind the assigned dealer to pay out the referral fee?')) return;
                 var token = (document.querySelector('meta[name="csrf-token"]') || {}).content;
-                if (!token) { alert('Session expired. Please refresh the page.'); return; }
+                if (!token) { showRewardsToast('Session expired. Please refresh the page.'); return; }
                 btn.disabled = true;
                 fetch('{{ route('admin.rewards.send-email') }}', {
                     method: 'POST',
@@ -908,17 +957,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 }).then(function(res) { return res.json().then(function(data) { return { ok: res.ok, data: data }; }); })
                 .then(function(result) {
                     if (result.ok && result.data.success) {
-                        alert(result.data.message || 'Email sent.');
+                        showRewardsToast(result.data.message || 'Email sent.');
                         var current = emailCounts[leadId] || 0;
                         var next = current + 1;
                         emailCounts[leadId] = next;
                         saveEmailCounts(emailCounts);
                         applyRewardEmailIcon(btn, leadId);
                     } else {
-                        alert(result.data.message || 'Failed to send email.');
+                        var message = result.data.message || 'Failed to send email.';
+                        showRewardsToast(message);
+                        if (shouldAutoSyncRewards(message)) {
+                            syncRewardsForButton(btn);
+                        }
                     }
                 }).catch(function() {
-                    alert('Failed to send email.');
+                    showRewardsToast('Failed to send email.');
                 }).finally(function() {
                     btn.disabled = false;
                 });
@@ -948,14 +1001,28 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function getVisibleDataRows(table) {
+    var REWARDS_ROW_HEIGHT_PX = 44;
+
+    function getFilteredRewardsRows(table) {
         if (!table) return [];
         var rows = table.querySelectorAll('tbody tr.rewards-row');
         var out = [];
         for (var i = 0; i < rows.length; i++) {
-            if (rows[i].style.display !== 'none') out.push(rows[i]);
+            var filterMatch = rows[i].getAttribute('data-filter-match');
+            if (filterMatch === null || filterMatch === '1') out.push(rows[i]);
         }
         return out;
+    }
+
+    function ensureRewardsFixedHeight(table, visibleDataCount, perPage) {
+        if (!table) return;
+        var tbody = table.querySelector('tbody');
+        if (!tbody) return;
+        if (visibleDataCount >= perPage) {
+            tbody.style.minHeight = '';
+        } else {
+            tbody.style.minHeight = (perPage * REWARDS_ROW_HEIGHT_PX) + 'px';
+        }
     }
 
     function applyCompletedPagination() {
@@ -968,8 +1035,9 @@ document.addEventListener('DOMContentLoaded', function() {
         var lastBtn = document.getElementById('completedPaginationLast');
         var pageNumbersEl = document.getElementById('completedPageNumbers');
         if (!table || !pagEl) return;
-        var visible = getVisibleDataRows(table);
-        var total = visible.length;
+        var allRows = table.querySelectorAll('tbody tr.rewards-row');
+        var filteredRows = getFilteredRewardsRows(table);
+        var total = filteredRows.length;
         var perPage = COMPLETED_PER_PAGE;
         var lastPage = total > 0 ? Math.ceil(total / perPage) : 1;
         var current = parseInt(pagEl.getAttribute('data-current-page') || '1', 10);
@@ -977,9 +1045,14 @@ document.addEventListener('DOMContentLoaded', function() {
         pagEl.setAttribute('data-current-page', String(current));
         var start = (current - 1) * perPage;
         var end = Math.min(start + perPage, total);
-        for (var i = 0; i < visible.length; i++) {
-            visible[i].style.display = (i >= start && i < end) ? '' : 'none';
+        var pageRows = filteredRows.slice(start, end);
+        for (var i = 0; i < allRows.length; i++) {
+            allRows[i].style.display = 'none';
         }
+        for (var j = 0; j < pageRows.length; j++) {
+            pageRows[j].style.display = '';
+        }
+        ensureRewardsFixedHeight(table, pageRows.length, perPage);
         var from = total === 0 ? 0 : start + 1;
         var to = end;
         if (infoEl) infoEl.textContent = 'Showing ' + from + ' to ' + to + ' of ' + total + ' entries (Page ' + current + ')';
@@ -1014,8 +1087,9 @@ document.addEventListener('DOMContentLoaded', function() {
         var lastBtn = document.getElementById('rewardedPaginationLast');
         var pageNumbersEl = document.getElementById('rewardedPageNumbers');
         if (!table || !pagEl) return;
-        var visible = getVisibleDataRows(table);
-        var total = visible.length;
+        var allRows = table.querySelectorAll('tbody tr.rewards-row');
+        var filteredRows = getFilteredRewardsRows(table);
+        var total = filteredRows.length;
         var perPage = REWARDED_PER_PAGE;
         var lastPage = total > 0 ? Math.ceil(total / perPage) : 1;
         var current = parseInt(pagEl.getAttribute('data-current-page') || '1', 10);
@@ -1023,9 +1097,14 @@ document.addEventListener('DOMContentLoaded', function() {
         pagEl.setAttribute('data-current-page', String(current));
         var start = (current - 1) * perPage;
         var end = Math.min(start + perPage, total);
-        for (var i = 0; i < visible.length; i++) {
-            visible[i].style.display = (i >= start && i < end) ? '' : 'none';
+        var pageRows = filteredRows.slice(start, end);
+        for (var i = 0; i < allRows.length; i++) {
+            allRows[i].style.display = 'none';
         }
+        for (var j = 0; j < pageRows.length; j++) {
+            pageRows[j].style.display = '';
+        }
+        ensureRewardsFixedHeight(table, pageRows.length, perPage);
         var from = total === 0 ? 0 : start + 1;
         var to = end;
         if (infoEl) infoEl.textContent = 'Showing ' + from + ' to ' + to + ' of ' + total + ' entries (Page ' + current + ')';
@@ -1151,7 +1230,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var hay = (row.getAttribute('data-search') || '').toLowerCase();
             var searchMatch = !q || hay.indexOf(q) !== -1;
             var colMatch = rewardsRowMatchesFilters(row, filters);
-            row.style.display = (searchMatch && colMatch) ? '' : 'none';
+            row.setAttribute('data-filter-match', (searchMatch && colMatch) ? '1' : '0');
         });
         if (tableId === 'completedTable') {
             var cp = document.getElementById('completedPagination');
@@ -1194,7 +1273,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var pagEl = document.getElementById('completedPagination');
             if (!pagEl) return;
             var cur = parseInt(pagEl.getAttribute('data-current-page') || '1', 10);
-            var last = Math.max(1, Math.ceil(getVisibleDataRows(document.getElementById('completedTable')).length / COMPLETED_PER_PAGE));
+            var last = Math.max(1, Math.ceil(getFilteredRewardsRows(document.getElementById('completedTable')).length / COMPLETED_PER_PAGE));
             if (btn.id === 'completedPaginationFirst') pagEl.setAttribute('data-current-page', '1');
             else if (btn.id === 'completedPaginationPrev') pagEl.setAttribute('data-current-page', String(Math.max(1, cur - 1)));
             else if (btn.id === 'completedPaginationNext') pagEl.setAttribute('data-current-page', String(Math.min(last, cur + 1)));
@@ -1211,7 +1290,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var pagEl = document.getElementById('rewardedPagination');
             if (!pagEl) return;
             var cur = parseInt(pagEl.getAttribute('data-current-page') || '1', 10);
-            var last = Math.max(1, Math.ceil(getVisibleDataRows(document.getElementById('rewardedTable')).length / REWARDED_PER_PAGE));
+            var last = Math.max(1, Math.ceil(getFilteredRewardsRows(document.getElementById('rewardedTable')).length / REWARDED_PER_PAGE));
             if (btn.id === 'rewardedPaginationFirst') pagEl.setAttribute('data-current-page', '1');
             else if (btn.id === 'rewardedPaginationPrev') pagEl.setAttribute('data-current-page', String(Math.max(1, cur - 1)));
             else if (btn.id === 'rewardedPaginationNext') pagEl.setAttribute('data-current-page', String(Math.min(last, cur + 1)));

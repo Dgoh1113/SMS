@@ -55,7 +55,6 @@ Route::middleware(['auth.sms', 'admin'])->prefix('admin')->name('admin.')->group
     Route::get('/reports/dealer-activity/{userid}', [AdminController::class, 'dealerActivity'])->name('reports.dealer-activity');
     Route::get('/reports-revenue', [AdminController::class, 'reportsRevenue'])->name('reports.revenue');
     Route::get('/history', [AdminController::class, 'history'])->name('history');
-    Route::get('/fulldatabase', [AdminController::class, 'fulldatabase'])->name('fulldatabase');
     Route::get('/maintain-users', [AdminController::class, 'maintainUsers'])->name('maintain-users');
     Route::post('/maintain-users', [AdminController::class, 'maintainUsersStore'])->name('maintain-users.store');
     Route::post('/maintain-users/send-temp-passwords', [AdminController::class, 'maintainUsersSendTempPasswords'])->name('maintain-users.send-temp-passwords');

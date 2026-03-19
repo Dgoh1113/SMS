@@ -21,6 +21,156 @@ use Carbon\Carbon;
 
 class AdminController extends Controller
 {
+    private function latestAssignmentUserMap(array $leadIds): array
+    {
+        $leadIds = array_values(array_unique(array_filter(array_map('intval', $leadIds), static fn ($id) => $id > 0)));
+        if (empty($leadIds)) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($leadIds), '?'));
+        $rows = DB::select(
+            'SELECT "LEADID", "LEAD_ACTID", "USERID", "DESCRIPTION"
+             FROM "LEAD_ACT"
+             WHERE "LEADID" IN (' . $placeholders . ')
+               AND (
+                   UPPER(TRIM(COALESCE("SUBJECT", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
+                   OR UPPER(TRIM(COALESCE("DESCRIPTION", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
+               )
+             ORDER BY "LEADID" ASC, "CREATIONDATE" DESC, "LEAD_ACTID" DESC',
+            $leadIds
+        );
+
+        $map = [];
+        foreach ($rows as $row) {
+            $leadId = (int) ($row->LEADID ?? 0);
+            if ($leadId <= 0 || array_key_exists($leadId, $map)) {
+                continue;
+            }
+
+            $userId = trim((string) ($row->USERID ?? ''));
+            if ($userId === '') {
+                $desc = trim((string) ($row->DESCRIPTION ?? ''));
+                if ($desc !== '' && preg_match('/Lead Assigned by\s+(\S+)\s+to\s+(\S+)/i', $desc, $m)) {
+                    $userId = trim((string) ($m[1] ?? ''));
+                }
+            }
+
+            if ($userId !== '') {
+                $map[$leadId] = $userId;
+            }
+        }
+
+        return $map;
+    }
+
+    private function userDisplayMaps(array $userIds): array
+    {
+        $userIds = array_values(array_unique(array_filter(array_map(
+            static fn ($id) => trim((string) $id),
+            $userIds
+        ), static fn ($id) => $id !== '')));
+
+        if (empty($userIds)) {
+            return ['assignedToMap' => [], 'actorMap' => []];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($userIds), '?'));
+        $users = DB::select(
+            'SELECT "USERID","SYSTEMROLE","ALIAS","COMPANY","EMAIL"
+             FROM "USERS"
+             WHERE CAST("USERID" AS VARCHAR(50)) IN (' . $placeholders . ')',
+            $userIds
+        );
+
+        $assignedToMap = [];
+        $actorMap = [];
+
+        foreach ($users as $u) {
+            $uid = trim((string) ($u->USERID ?? ''));
+            if ($uid === '') {
+                continue;
+            }
+
+            $role = trim((string) ($u->SYSTEMROLE ?? ''));
+            $company = trim((string) ($u->COMPANY ?? ''));
+            $alias = trim((string) ($u->ALIAS ?? ''));
+            $email = trim((string) ($u->EMAIL ?? ''));
+            $fallback = $email !== '' ? $email : $uid;
+
+            if ($company !== '' && $alias !== '') {
+                $assignedToMap[$uid] = $company . '- ' . $alias;
+            } elseif ($company !== '') {
+                $assignedToMap[$uid] = $company;
+            } elseif ($alias !== '') {
+                $assignedToMap[$uid] = $alias;
+            } else {
+                $assignedToMap[$uid] = $fallback;
+            }
+
+            if ($role !== '' && $alias !== '') {
+                $actorMap[$uid] = $role . '- ' . $alias;
+            } elseif ($role !== '') {
+                $actorMap[$uid] = $role . '- ' . ($company !== '' ? $company : ($email !== '' ? $email : $uid));
+            } elseif ($alias !== '') {
+                $actorMap[$uid] = $alias;
+            } else {
+                $actorMap[$uid] = $fallback;
+            }
+        }
+
+        return ['assignedToMap' => $assignedToMap, 'actorMap' => $actorMap];
+    }
+
+    private function getLeadCurrentActionState(int $leadId): ?array
+    {
+        $lead = DB::selectOne(
+            'SELECT "LEADID","ASSIGNED_TO" FROM "LEAD" WHERE "LEADID" = ?',
+            [$leadId]
+        );
+
+        if (!$lead) {
+            return null;
+        }
+
+        $latest = DB::selectOne(
+            'SELECT FIRST 1 "STATUS"
+             FROM "LEAD_ACT"
+             WHERE "LEADID" = ?
+             ORDER BY "CREATIONDATE" DESC, "LEAD_ACTID" DESC',
+            [$leadId]
+        );
+
+        return [
+            'assigned_to' => trim((string) ($lead->ASSIGNED_TO ?? '')),
+            'status' => strtoupper(trim((string) ($latest->STATUS ?? ''))),
+        ];
+    }
+
+    private function incomingInquiryStaleMessage(int $leadId): ?string
+    {
+        $state = $this->getLeadCurrentActionState($leadId);
+        if ($state === null) {
+            return 'Lead not found.';
+        }
+
+        $assignedTo = trim((string) ($state['assigned_to'] ?? ''));
+        if ($assignedTo !== '') {
+            $maps = $this->userDisplayMaps([$assignedTo]);
+            $assignedToMap = $maps['assignedToMap'] ?? [];
+            $assignedLabel = $assignedToMap[$assignedTo] ?? $assignedTo;
+
+            return 'This inquiry is already assigned to ' . $assignedLabel . '. Please sync and try again.';
+        }
+
+        $status = strtoupper(trim((string) ($state['status'] ?? '')));
+        if ($status !== '' && !in_array($status, ['OPEN', 'CREATED'], true)) {
+            return 'This inquiry is already ' . $status . '. Please sync and try again.';
+        }
+
+        return null;
+    }
+
     private function dashboardData(): array
     {
         // Total leads: all rows in LEAD
@@ -597,60 +747,37 @@ class AdminController extends Controller
             // Leave assigned activity enrichment blank if LEAD_ACT lookup fails.
         }
 
-        // Resolve display names (ALIAS first) from USERS for:
-        // - Source (CREATEDBY)
-        // - Assigned By (CREATEDBY)
-        // - Assigned To (ASSIGNED_TO)
+        // Resolve display names for source, assigned by, and assigned to.
         try {
+            $assignmentByLeadMap = $this->latestAssignmentUserMap(array_map(
+                static fn ($row) => (int) ($row->LEADID ?? 0),
+                $rows
+            ));
             $ids = [];
             foreach ($rows as $r) {
                 $to = trim((string) ($r->ASSIGNED_TO ?? ''));
                 $by = trim((string) ($r->CREATEDBY ?? ''));
                 if ($to !== '') $ids[$to] = true;
                 if ($by !== '') $ids[$by] = true;
+                $leadId = (int) ($r->LEADID ?? 0);
+                $assignerId = $leadId > 0 ? trim((string) ($assignmentByLeadMap[$leadId] ?? '')) : '';
+                if ($assignerId !== '') $ids[$assignerId] = true;
             }
-            $ids = array_keys($ids);
-            if (!empty($ids)) {
-                $placeholders = implode(',', array_fill(0, count($ids), '?'));
-                $users = DB::select('SELECT "USERID","SYSTEMROLE","ALIAS","COMPANY","EMAIL" FROM "USERS" WHERE CAST("USERID" AS VARCHAR(50)) IN (' . $placeholders . ')', $ids);
-                $assignedToMap = [];
-                $createdByMap = [];
-                foreach ($users as $u) {
-                    $uid = trim((string) ($u->USERID ?? ''));
-                    if ($uid === '') continue;
-                    $role = trim((string) ($u->SYSTEMROLE ?? ''));
-                    $company = trim((string) ($u->COMPANY ?? ''));
-                    $alias = trim((string) ($u->ALIAS ?? ''));
-                    $email = trim((string) ($u->EMAIL ?? ''));
-                    $fallback = $email !== '' ? $email : $uid;
-
-                    // Assigned To: COMPANY-ALIAS (preferred)
-                    if ($company !== '' && $alias !== '') {
-                        $assignedToMap[$uid] = $company . '- ' . $alias;
-                    } elseif ($company !== '') {
-                        $assignedToMap[$uid] = $company;
-                    } elseif ($alias !== '') {
-                        $assignedToMap[$uid] = $alias;
-                    } else {
-                        $assignedToMap[$uid] = $fallback;
-                    }
-
-                    // Created By / Assigned By: SYSTEMROLE-ALIAS (original style)
-                    if ($role !== '' && $alias !== '') {
-                        $createdByMap[$uid] = $role . '- ' . $alias;
-                    } elseif ($role !== '') {
-                        $createdByMap[$uid] = $role . '- ' . ($company !== '' ? $company : ($email !== '' ? $email : $uid));
-                    } elseif ($alias !== '') {
-                        $createdByMap[$uid] = $alias;
-                    } else {
-                        $createdByMap[$uid] = $fallback;
-                    }
-                }
+            $maps = $this->userDisplayMaps(array_keys($ids));
+            $assignedToMap = $maps['assignedToMap'];
+            $actorMap = $maps['actorMap'];
+            if (!empty($assignedToMap) || !empty($actorMap)) {
                 foreach ($rows as $r) {
                     $to = trim((string) ($r->ASSIGNED_TO ?? ''));
                     $by = trim((string) ($r->CREATEDBY ?? ''));
+                    $leadId = (int) ($r->LEADID ?? 0);
+                    $assignerId = $leadId > 0 ? trim((string) ($assignmentByLeadMap[$leadId] ?? '')) : '';
                     if ($to !== '' && isset($assignedToMap[$to])) $r->ASSIGNED_TO_NAME = $assignedToMap[$to];
-                    if ($by !== '' && isset($createdByMap[$by])) $r->CREATEDBY_NAME = $createdByMap[$by];
+                    if ($by !== '' && isset($actorMap[$by])) $r->CREATEDBY_NAME = $actorMap[$by];
+                    if ($assignerId !== '') $r->ASSIGNEDBY = $assignerId;
+                    if ($assignerId !== '' && isset($actorMap[$assignerId])) {
+                        $r->ASSIGNEDBY_NAME = $actorMap[$assignerId];
+                    }
                 }
             }
         } catch (\Throwable $e) {
@@ -936,58 +1063,38 @@ class AdminController extends Controller
             // Leave assigned activity enrichment blank if LEAD_ACT lookup fails.
         }
 
-        $ids = [];
-        foreach ($rows as $r) {
-            $to = trim((string) ($r->ASSIGNED_TO ?? ''));
-            $by = trim((string) ($r->CREATEDBY ?? ''));
-            if ($to !== '') $ids[$to] = true;
-            if ($by !== '') $ids[$by] = true;
-        }
-        $ids = array_keys($ids);
-        if (!empty($ids)) {
-            $placeholders = implode(',', array_fill(0, count($ids), '?'));
-            try {
-                $users = DB::select('SELECT "USERID","SYSTEMROLE","ALIAS","COMPANY","EMAIL" FROM "USERS" WHERE CAST("USERID" AS VARCHAR(50)) IN (' . $placeholders . ')', $ids);
-                $assignedToMap = [];
-                $createdByMap = [];
-                foreach ($users as $u) {
-                    $uid = trim((string) ($u->USERID ?? ''));
-                    if ($uid === '') continue;
-                    $role = trim((string) ($u->SYSTEMROLE ?? ''));
-                    $company = trim((string) ($u->COMPANY ?? ''));
-                    $alias = trim((string) ($u->ALIAS ?? ''));
-                    $email = trim((string) ($u->EMAIL ?? ''));
-                    $fallback = $email !== '' ? $email : $uid;
-                    // Assigned To: COMPANY-ALIAS
-                    if ($company !== '' && $alias !== '') {
-                        $assignedToMap[$uid] = $company . '- ' . $alias;
-                    } elseif ($company !== '') {
-                        $assignedToMap[$uid] = $company;
-                    } elseif ($alias !== '') {
-                        $assignedToMap[$uid] = $alias;
-                    } else {
-                        $assignedToMap[$uid] = $fallback;
-                    }
-                    // Created By: SYSTEMROLE-ALIAS
-                    if ($role !== '' && $alias !== '') {
-                        $createdByMap[$uid] = $role . '- ' . $alias;
-                    } elseif ($role !== '') {
-                        $createdByMap[$uid] = $role . '- ' . ($company !== '' ? $company : ($email !== '' ? $email : $uid));
-                    } elseif ($alias !== '') {
-                        $createdByMap[$uid] = $alias;
-                    } else {
-                        $createdByMap[$uid] = $fallback;
-                    }
-                }
-                foreach ($rows as $r) {
-                    $to = trim((string) ($r->ASSIGNED_TO ?? ''));
-                    $by = trim((string) ($r->CREATEDBY ?? ''));
-                    if ($to !== '' && isset($assignedToMap[$to])) $r->ASSIGNED_TO_NAME = $assignedToMap[$to];
-                    if ($by !== '' && isset($createdByMap[$by])) $r->CREATEDBY_NAME = $createdByMap[$by];
-                }
-            } catch (\Throwable $e) {
-                // fallback raw ids
+        try {
+            $assignmentByLeadMap = $this->latestAssignmentUserMap(array_map(
+                static fn ($row) => (int) ($row->LEADID ?? 0),
+                $rows
+            ));
+            $ids = [];
+            foreach ($rows as $r) {
+                $to = trim((string) ($r->ASSIGNED_TO ?? ''));
+                $by = trim((string) ($r->CREATEDBY ?? ''));
+                if ($to !== '') $ids[$to] = true;
+                if ($by !== '') $ids[$by] = true;
+                $leadId = (int) ($r->LEADID ?? 0);
+                $assignerId = $leadId > 0 ? trim((string) ($assignmentByLeadMap[$leadId] ?? '')) : '';
+                if ($assignerId !== '') $ids[$assignerId] = true;
             }
+            $maps = $this->userDisplayMaps(array_keys($ids));
+            $assignedToMap = $maps['assignedToMap'];
+            $actorMap = $maps['actorMap'];
+            foreach ($rows as $r) {
+                $to = trim((string) ($r->ASSIGNED_TO ?? ''));
+                $by = trim((string) ($r->CREATEDBY ?? ''));
+                $leadId = (int) ($r->LEADID ?? 0);
+                $assignerId = $leadId > 0 ? trim((string) ($assignmentByLeadMap[$leadId] ?? '')) : '';
+                if ($to !== '' && isset($assignedToMap[$to])) $r->ASSIGNED_TO_NAME = $assignedToMap[$to];
+                if ($by !== '' && isset($actorMap[$by])) $r->CREATEDBY_NAME = $actorMap[$by];
+                if ($assignerId !== '') $r->ASSIGNEDBY = $assignerId;
+                if ($assignerId !== '' && isset($actorMap[$assignerId])) {
+                    $r->ASSIGNEDBY_NAME = $actorMap[$assignerId];
+                }
+            }
+        } catch (\Throwable $e) {
+            // fallback raw ids
         }
 
         $productLabels = [
@@ -1068,33 +1175,6 @@ class AdminController extends Controller
             return back()->with('error', 'Could not verify assignee.');
         }
 
-        // Resolve nice names for description (SYSTEMROLE- ALIAS)
-        $nameMap = [];
-        try {
-            $ids = array_values(array_unique(array_filter([$fromUserId, $assignedTo], fn ($v) => trim((string) $v) !== '')));
-            if (!empty($ids)) {
-                $placeholders = implode(',', array_fill(0, count($ids), '?'));
-                $users = DB::select('SELECT "USERID","SYSTEMROLE","ALIAS","COMPANY","EMAIL" FROM "USERS" WHERE CAST("USERID" AS VARCHAR(50)) IN (' . $placeholders . ')', $ids);
-                foreach ($users as $u) {
-                    $uid = trim((string) ($u->USERID ?? ''));
-                    if ($uid === '') continue;
-                    $role = trim((string) ($u->SYSTEMROLE ?? ''));
-                    $alias = trim((string) ($u->ALIAS ?? ''));
-                    $fallback = trim((string) ($u->COMPANY ?? ''));
-                    if ($fallback === '') $fallback = trim((string) ($u->EMAIL ?? ''));
-                    if ($fallback === '') $fallback = $uid;
-                    if ($role !== '' && $alias !== '') $label = $role . '- ' . $alias;
-                    elseif ($role !== '') $label = $role . '- ' . $fallback;
-                    elseif ($alias !== '') $label = $alias;
-                    else $label = $fallback;
-                    $nameMap[$uid] = $label;
-                }
-            }
-        } catch (\Throwable $e) {}
-
-        $fromLabel = $fromUserId !== '' ? ($nameMap[$fromUserId] ?? $fromUserId) : 'System';
-        $toLabel = $nameMap[$assignedTo] ?? $assignedTo;
-
         // Remember previous assignee for possible undo
         $prevAssignedTo = null;
         try {
@@ -1111,16 +1191,50 @@ class AdminController extends Controller
 
         try {
             DB::beginTransaction();
-            // Set assigner in session context so the LEAD trigger can use it for LEAD_ACT.USERID (assigned-by, not assigned-to)
+            // Keep legacy DB context for compatibility; app also writes the assignment activity row explicitly.
             if ($fromUserId !== '') {
                 DB::statement(
                     "SELECT RDB\$SET_CONTEXT('USER_SESSION', 'ASSIGNER', ?) FROM RDB\$DATABASE",
                     [$fromUserId]
                 );
             }
-            DB::update(
-                'UPDATE "LEAD" SET "ASSIGNED_TO" = ?, "LASTMODIFIED" = CURRENT_TIMESTAMP WHERE "LEADID" = ?',
+            $updated = DB::update(
+                'UPDATE "LEAD"
+                 SET "ASSIGNED_TO" = ?, "LASTMODIFIED" = CURRENT_TIMESTAMP
+                 WHERE "LEADID" = ?
+                   AND ("ASSIGNED_TO" IS NULL OR TRIM(CAST("ASSIGNED_TO" AS VARCHAR(50))) = \'\')',
                 [$assignedTo, $leadId]
+            );
+            if ((int) $updated < 1) {
+                $currentAssignedRow = DB::selectOne(
+                    'SELECT "ASSIGNED_TO" FROM "LEAD" WHERE "LEADID" = ?',
+                    [$leadId]
+                );
+                DB::rollBack();
+
+                $currentAssigned = trim((string) ($currentAssignedRow->ASSIGNED_TO ?? ''));
+                if ($currentAssigned !== '') {
+                    $maps = $this->userDisplayMaps([$currentAssigned]);
+                    $assignedToMap = $maps['assignedToMap'] ?? [];
+                    $currentAssignedLabel = $assignedToMap[$currentAssigned] ?? $currentAssigned;
+
+                    return back()->with('error', 'This inquiry is already assigned to ' . $currentAssignedLabel . '. Please sync and try again.');
+                }
+
+                return back()->with('error', 'This inquiry was updated by another user. Please sync and try again.');
+            }
+            DB::insert(
+                'INSERT INTO "LEAD_ACT" (
+                    "LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS"
+                ) VALUES (NEXT VALUE FOR GEN_LEAD_ACTID,?,?,CURRENT_TIMESTAMP,?,?,?,?)',
+                [
+                    $leadId,
+                    $fromUserId !== '' ? $fromUserId : null,
+                    'Lead Assigned',
+                    'Lead Assigned by ' . ($fromUserId !== '' ? $fromUserId : 'System') . ' to ' . $assignedTo,
+                    null,
+                    'Pending',
+                ]
             );
             DB::commit();
         } catch (\Throwable $e) {
@@ -1377,6 +1491,11 @@ class AdminController extends Controller
 
     public function editInquiry(int $leadId): View|RedirectResponse
     {
+        $staleMessage = $this->incomingInquiryStaleMessage($leadId);
+        if ($staleMessage !== null && $staleMessage !== 'Lead not found.') {
+            return redirect()->route('admin.inquiries')->with('error', $staleMessage);
+        }
+
         $row = DB::selectOne(
             'SELECT "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL",
                 "ADDRESS1","ADDRESS2","CITY","POSTCODE","BUSINESSNATURE","USERCOUNT",
@@ -1601,6 +1720,11 @@ class AdminController extends Controller
             return redirect()->route('admin.inquiries')->with('error', 'Lead not found.');
         }
 
+        $staleMessage = $this->incomingInquiryStaleMessage($leadId);
+        if ($staleMessage !== null) {
+            return redirect()->route('admin.inquiries')->with('error', $staleMessage);
+        }
+
         // Same as create: if company name exists on another lead, show confirmation (exclude current lead)
         if (!$request->boolean('duplicate_ok')) {
             try {
@@ -1699,6 +1823,12 @@ class AdminController extends Controller
         );
         if (!$row) {
             return response()->json(['success' => false, 'message' => 'Lead not found.'], 404);
+        }
+
+        $staleMessage = $this->incomingInquiryStaleMessage($leadId);
+        if ($staleMessage !== null) {
+            $code = $staleMessage === 'Lead not found.' ? 404 : 409;
+            return response()->json(['success' => false, 'message' => $staleMessage], $code);
         }
 
         try {
@@ -2113,53 +2243,35 @@ class AdminController extends Controller
             $r->REWARD_ATTACHMENT_URLS = $urls;
         }
 
-        // Resolve CREATEDBY_NAME and ASSIGNED_TO_NAME for display (same as inquiries)
+        // Resolve display names for source, assigned by, and assigned to.
         try {
+            $assignmentByLeadMap = $this->latestAssignmentUserMap(array_map(
+                static fn ($row) => (int) ($row->LEADID ?? 0),
+                array_merge($completed, $rewarded)
+            ));
             $ids = [];
             foreach (array_merge($completed, $rewarded) as $r) {
                 $to = trim((string) ($r->ASSIGNED_TO ?? ''));
                 $by = trim((string) ($r->CREATEDBY ?? ''));
                 if ($to !== '') $ids[$to] = true;
                 if ($by !== '') $ids[$by] = true;
+                $leadId = (int) ($r->LEADID ?? 0);
+                $assignerId = $leadId > 0 ? trim((string) ($assignmentByLeadMap[$leadId] ?? '')) : '';
+                if ($assignerId !== '') $ids[$assignerId] = true;
             }
-            $ids = array_keys($ids);
-            if (!empty($ids)) {
-                $placeholders = implode(',', array_fill(0, count($ids), '?'));
-                $users = DB::select('SELECT "USERID","SYSTEMROLE","ALIAS","COMPANY","EMAIL" FROM "USERS" WHERE CAST("USERID" AS VARCHAR(50)) IN (' . $placeholders . ')', $ids);
-                $assignedToMap = [];
-                $createdByMap = [];
-                foreach ($users as $u) {
-                    $uid = trim((string) ($u->USERID ?? ''));
-                    if ($uid === '') continue;
-                    $role = trim((string) ($u->SYSTEMROLE ?? ''));
-                    $company = trim((string) ($u->COMPANY ?? ''));
-                    $alias = trim((string) ($u->ALIAS ?? ''));
-                    $email = trim((string) ($u->EMAIL ?? ''));
-                    $fallback = $email !== '' ? $email : $uid;
-                    if ($company !== '' && $alias !== '') {
-                        $assignedToMap[$uid] = $company . '- ' . $alias;
-                    } elseif ($company !== '') {
-                        $assignedToMap[$uid] = $company;
-                    } elseif ($alias !== '') {
-                        $assignedToMap[$uid] = $alias;
-                    } else {
-                        $assignedToMap[$uid] = $fallback;
-                    }
-                    if ($role !== '' && $alias !== '') {
-                        $createdByMap[$uid] = $role . '- ' . $alias;
-                    } elseif ($role !== '') {
-                        $createdByMap[$uid] = $role . '-' . ($company !== '' ? $company : ($email !== '' ? $email : $uid));
-                    } elseif ($alias !== '') {
-                        $createdByMap[$uid] = $alias;
-                    } else {
-                        $createdByMap[$uid] = $fallback;
-                    }
-                }
-                foreach (array_merge($completed, $rewarded) as $r) {
-                    $to = trim((string) ($r->ASSIGNED_TO ?? ''));
-                    $by = trim((string) ($r->CREATEDBY ?? ''));
-                    if ($to !== '' && isset($assignedToMap[$to])) $r->ASSIGNED_TO_NAME = $assignedToMap[$to];
-                    if ($by !== '' && isset($createdByMap[$by])) $r->CREATEDBY_NAME = $createdByMap[$by];
+            $maps = $this->userDisplayMaps(array_keys($ids));
+            $assignedToMap = $maps['assignedToMap'];
+            $actorMap = $maps['actorMap'];
+            foreach (array_merge($completed, $rewarded) as $r) {
+                $to = trim((string) ($r->ASSIGNED_TO ?? ''));
+                $by = trim((string) ($r->CREATEDBY ?? ''));
+                $leadId = (int) ($r->LEADID ?? 0);
+                $assignerId = $leadId > 0 ? trim((string) ($assignmentByLeadMap[$leadId] ?? '')) : '';
+                if ($to !== '' && isset($assignedToMap[$to])) $r->ASSIGNED_TO_NAME = $assignedToMap[$to];
+                if ($by !== '' && isset($actorMap[$by])) $r->CREATEDBY_NAME = $actorMap[$by];
+                if ($assignerId !== '') $r->ASSIGNEDBY = $assignerId;
+                if ($assignerId !== '' && isset($actorMap[$assignerId])) {
+                    $r->ASSIGNEDBY_NAME = $actorMap[$assignerId];
                 }
             }
         } catch (\Throwable $e) {
@@ -2320,6 +2432,27 @@ class AdminController extends Controller
             return response()->json(['success' => false, 'message' => 'Lead not found.'], 404);
         }
 
+        $latestAct = DB::selectOne(
+            'SELECT FIRST 1 "STATUS"
+             FROM "LEAD_ACT"
+             WHERE "LEADID" = ?
+             ORDER BY "CREATIONDATE" DESC, "LEAD_ACTID" DESC',
+            [$leadId]
+        );
+        $latestStatus = strtoupper(trim((string) ($latestAct->STATUS ?? '')));
+        if ($latestStatus !== 'COMPLETED') {
+            $displayStatus = $latestStatus !== '' ? ucfirst(strtolower($latestStatus)) : 'Unknown';
+            return response()->json([
+                'success' => false,
+                'message' => 'This inquiry is already ' . $displayStatus . '. Please sync and try again.',
+            ], 409);
+        }
+
+        $referralCode = trim((string) ($lead->REFERRALCODE ?? ''));
+        if ($referralCode === '') {
+            return response()->json(['success' => false, 'message' => 'Referral code is required before sending this email.'], 400);
+        }
+
         $assignedTo = trim((string) ($lead->ASSIGNED_TO ?? ''));
         if ($assignedTo === '') {
             return response()->json(['success' => false, 'message' => 'No dealer assigned to this lead.'], 400);
@@ -2353,7 +2486,7 @@ class AdminController extends Controller
                 dealerName: $dealerName,
                 leadId: $leadId,
                 inquiryId: 'SQL-' . (string) ($lead->LEADID ?? $leadId),
-                referralCode: trim((string) ($lead->REFERRALCODE ?? '')),
+                referralCode: $referralCode,
                 senderAlias: $senderAlias !== '' ? $senderAlias : 'SQL LMS',
                 companyName: trim((string) ($lead->COMPANYNAME ?? ''))
             ));
@@ -3419,18 +3552,6 @@ class AdminController extends Controller
             ORDER BY "LEAD_ACTID" DESC'
         );
         return view('admin.history', ['items' => $rows, 'currentPage' => 'history']);
-    }
-
-    public function fulldatabase(): View
-    {
-        $tables = [
-            'lead' => DB::select('SELECT FIRST 200 * FROM "LEAD" ORDER BY "LEADID" DESC'),
-            'lead_act' => DB::select('SELECT FIRST 200 * FROM "LEAD_ACT" ORDER BY "LEAD_ACTID" DESC'),
-            'referrer_payout' => DB::select('SELECT FIRST 200 * FROM "REFERRER_PAYOUT" ORDER BY "REFERRERPAYOUTID" DESC'),
-            'users' => DB::select('SELECT FIRST 200 * FROM "USERS" ORDER BY "USERID" DESC'),
-            'user_passkey' => DB::select('SELECT FIRST 200 * FROM "USER_PASSKEY" ORDER BY "USER_PASSKEYID" DESC'),
-        ];
-        return view('admin.fulldatabase', ['tables' => $tables, 'currentPage' => 'fulldatabase']);
     }
 
     public function maintainUsers(Request $request): View|RedirectResponse|JsonResponse

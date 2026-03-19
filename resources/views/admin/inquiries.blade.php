@@ -444,7 +444,7 @@
                         {{ $amsgPreview }}
                     </td>
                     <td data-col="referralcode">{{ $r->REFERRALCODE ?? '—' }}</td>
-                    <td data-col="assignedby">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '—') }}</td>
+                                        <td data-col="assignedby">{{ $r->ASSIGNEDBY_NAME ?? ($r->ASSIGNEDBY ?? '—') }}</td>
                     <td data-col="assignedto">{{ $r->ASSIGNED_TO_NAME ?? ($r->ASSIGNED_TO ?? '—') }}</td>
                     <td data-col="completiondate">{{ !empty($r->COMPLETED_AT) ? date('d/m/Y', strtotime($r->COMPLETED_AT)) : '—' }}</td>
                     <td data-col="payoutsdate">{{ !empty($r->REWARDED_AT) ? date('d/m/Y', strtotime($r->REWARDED_AT)) : '—' }}</td>
@@ -1357,14 +1357,16 @@ document.addEventListener('DOMContentLoaded', function() {
         var tbody = table.querySelector('tbody');
         if (!tbody) return;
         var rows = [].slice.call(tbody.querySelectorAll('tr.inquiry-row'));
-        var emptyRow = tbody.querySelector('tr:not(.inquiry-row)');
+        var emptyRow = Array.from(tbody.querySelectorAll('tr')).find(function(row) {
+            return !row.classList.contains('inquiry-row') && !!row.querySelector('.inquiries-empty');
+        }) || null;
         rows.sort(function(a, b) {
             var ia = parseInt(a.getAttribute('data-initial-index') || '0', 10);
             var ib = parseInt(b.getAttribute('data-initial-index') || '0', 10);
             return ia - ib;
         });
         rows.forEach(function(r) { tbody.appendChild(r); });
-        if (emptyRow) tbody.appendChild(emptyRow);
+        if (rows.length === 0 && emptyRow) tbody.appendChild(emptyRow);
     }
     function initSortableInquiries() {
         ['unassignedTable', 'assignedTable'].forEach(function(tableId) {
@@ -1394,6 +1396,57 @@ document.addEventListener('DOMContentLoaded', function() {
         setInitialOrder('assignedTable');
     }
     initSortableInquiries();
+
+    function normalizeInquiryTbody(tbody) {
+        if (!tbody) return;
+        Array.from(tbody.querySelectorAll('tr')).forEach(function(row) {
+            if (row.classList.contains('inquiry-row')) {
+                var rowText = (row.textContent || '').replace(/\s+/g, '');
+                var hasVisualContent = !!row.querySelector('button, a, img, .inquiries-status, .inquiries-pill, .payouts-attachment-list');
+                if (rowText === '' && !hasVisualContent) {
+                    row.remove();
+                }
+                return;
+            }
+            if (row.querySelector('.inquiries-empty')) return;
+            var cells = row.querySelectorAll('td,th');
+            var text = (row.textContent || '').replace(/\s+/g, '');
+            if (cells.length === 0 || text === '') {
+                row.remove();
+            }
+        });
+    }
+
+    function resetInquiryTableScroll(panelId) {
+        var panel = document.getElementById(panelId);
+        if (!panel) return;
+        var scrollWrap = panel.querySelector('.inquiries-table-scroll');
+        if (!scrollWrap) return;
+        scrollWrap.scrollTop = 0;
+    }
+
+    function showInquiriesActionToast(message) {
+        var id = 'inquiries-action-toast';
+        var el = document.getElementById(id);
+        if (!el) {
+            el = document.createElement('div');
+            el.id = id;
+            el.className = 'inquiries-mark-failed-blocked-toast inquiries-mark-failed-blocked-toast-hidden';
+            el.setAttribute('role', 'status');
+            document.body.appendChild(el);
+        }
+        el.textContent = message || 'Done.';
+        el.classList.remove('inquiries-mark-failed-blocked-toast-hidden');
+        clearTimeout(el._hideTimer);
+        el._hideTimer = setTimeout(function() {
+            el.classList.add('inquiries-mark-failed-blocked-toast-hidden');
+        }, 4000);
+    }
+
+    function shouldAutoSyncInquiries(message) {
+        var msg = (message || '').toLowerCase();
+        return msg.indexOf('please sync and try again') !== -1 || msg.indexOf('already assigned') !== -1 || msg.indexOf('already rewarded') !== -1 || msg.indexOf('already completed') !== -1 || msg.indexOf('already failed') !== -1;
+    }
 
     document.querySelectorAll('.inquiries-tab').forEach(function(tab) {
         tab.addEventListener('click', function() {
@@ -1536,108 +1589,131 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (row) row.remove();
                     showDeleteUndoToast(leadId);
                 } else {
-                    res.json().catch(function() { return {}; }).then(function(d) { alert(d.message || 'Could not delete inquiry.'); });
+                    res.json().catch(function() { return {}; }).then(function(d) {
+                        var message = d.message || 'Could not delete inquiry.';
+                        showInquiriesActionToast(message);
+                        if (shouldAutoSyncInquiries(message)) {
+                            var syncBtn = document.querySelector('.inquiries-sync-btn[data-sync-type="incoming"]') || document.querySelector('.inquiries-sync-btn');
+                            triggerInquiriesSync(syncBtn);
+                        }
+                    });
                 }
-            }).catch(function() { alert('Could not delete inquiry.'); });
+            }).catch(function() { showInquiriesActionToast('Could not delete inquiry.'); });
         });
     })();
 
     // Sync buttons (fetch latest inquiries without full reload)
+    var INQUIRIES_AUTO_SYNC_MS = 15 * 60 * 1000;
+
+    function triggerInquiriesSync(btn) {
+        if (!btn || btn.classList.contains('is-syncing')) return;
+        btn.classList.add('is-syncing');
+        var icon = btn.querySelector('.inquiries-sync-icon');
+        if (icon) {
+            icon.classList.add('spinning');
+        }
+        var url = btn.getAttribute('data-sync-url');
+        if (!url) url = window.location.href;
+        fetch(url, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            cache: 'no-store'
+        }).then(function(res) {
+            return res.ok ? res.json() : Promise.reject();
+        }).then(function(data) {
+            var ua = document.querySelector('#unassignedTable tbody');
+            if (ua && data.unassigned !== undefined) {
+                ua.innerHTML = data.unassigned;
+                normalizeInquiryTbody(ua);
+                resetInquiryTableScroll('incomingPanel');
+            }
+            var as = document.querySelector('#assignedTable tbody');
+            if (as && data.assigned !== undefined) {
+                as.innerHTML = data.assigned;
+                normalizeInquiryTbody(as);
+                resetInquiryTableScroll('assignedPanel');
+            }
+
+            // Update summary counts
+            var incomingSummary = document.getElementById('incomingSummaryCard');
+            var assignedSummary = document.getElementById('assignedSummaryCard');
+            if (data.totalNewInquiries !== undefined && incomingSummary) {
+                var v1 = incomingSummary.querySelector('.inquiries-summary-value');
+                if (v1) v1.textContent = new Intl.NumberFormat().format(data.totalNewInquiries);
+            }
+            if (data.totalOngoing !== undefined && assignedSummary) {
+                var v2 = assignedSummary.querySelector('.inquiries-summary-value');
+                if (v2) v2.textContent = new Intl.NumberFormat().format(data.totalOngoing);
+            }
+            var incomingPag = document.getElementById('incomingPagination');
+            if (incomingPag && data.totalNewInquiries !== undefined) {
+                var inTotal = parseInt(data.totalNewInquiries || 0, 10);
+                var inPer = parseInt(incomingPag.getAttribute('data-incoming-per-page') || '10', 10);
+                var inInfo = document.getElementById('incomingPaginationInfo');
+                var inTo = inTotal === 0 ? 0 : Math.min(inPer, inTotal);
+                incomingPag.setAttribute('data-incoming-total', String(inTotal));
+                incomingPag.setAttribute('data-incoming-current-page', '1');
+                if (inInfo) {
+                    inInfo.textContent = 'Showing ' + (inTotal === 0 ? 0 : 1) + ' to ' + inTo + ' of ' + inTotal + ' entries (Page 1)';
+                }
+                if (typeof refreshIncomingPagination === 'function') refreshIncomingPagination();
+            }
+            var paginationEl = document.getElementById('assignedPagination');
+            if (paginationEl && data.assignedTotal !== undefined) {
+                paginationEl.setAttribute('data-assigned-total', data.assignedTotal);
+                paginationEl.setAttribute('data-assigned-last-page', data.assignedLastPage || 1);
+                paginationEl.setAttribute('data-assigned-current-page', '1');
+                var perPage = parseInt(data.assignedPerPage || paginationEl.getAttribute('data-assigned-per-page') || '10', 10);
+                if (data.assignedPerPage !== undefined) paginationEl.setAttribute('data-assigned-per-page', data.assignedPerPage);
+                var total = parseInt(data.assignedTotal || 0, 10);
+                var lastP = parseInt(data.assignedLastPage || 1, 10);
+                var to = Math.min(perPage, total);
+                var infoEl = document.getElementById('assignedPaginationInfo');
+                if (infoEl) infoEl.textContent = 'Showing ' + (total === 0 ? 0 : 1) + ' to ' + to + ' of ' + total + ' entries (Page 1)';
+                var firstBtn = document.getElementById('assignedPaginationFirst');
+                var prevBtn = document.getElementById('assignedPaginationPrev');
+                var nextBtn = document.getElementById('assignedPaginationNext');
+                var lastBtn = document.getElementById('assignedPaginationLast');
+                if (firstBtn) firstBtn.disabled = true;
+                if (prevBtn) prevBtn.disabled = true;
+                if (nextBtn) nextBtn.disabled = lastP <= 1;
+                if (lastBtn) lastBtn.disabled = lastP <= 1;
+                if (typeof renderAssignedPageNumbers === 'function') renderAssignedPageNumbers(1, lastP);
+            }
+
+            // Re-apply current column visibility and filters so layout stays the same
+            applyColumns(getVisibleColumns());
+            applyAssignedColumns(getAssignedVisibleColumns());
+            applyGridFilters();
+            applyAssignedGridFilters();
+            // Set initial order on new rows then clear sort state
+            if (typeof setInitialOrder === 'function') {
+                setInitialOrder('unassignedTable');
+                setInitialOrder('assignedTable');
+            }
+            if (typeof clearInquiriesSort === 'function') {
+                clearInquiriesSort('unassignedTable');
+                clearInquiriesSort('assignedTable');
+            }
+            normalizeInquiryTbody(document.querySelector('#unassignedTable tbody'));
+            normalizeInquiryTbody(document.querySelector('#assignedTable tbody'));
+        }).catch(function() {
+            // ignore errors, just stop spinner
+        }).finally(function() {
+            btn.classList.remove('is-syncing');
+            if (icon) icon.classList.remove('spinning');
+        });
+    }
+
     document.querySelectorAll('.inquiries-sync-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
-            if (btn.classList.contains('is-syncing')) return;
-            btn.classList.add('is-syncing');
-            var icon = btn.querySelector('.inquiries-sync-icon');
-            if (icon) {
-                icon.classList.add('spinning');
-            }
-            var url = btn.getAttribute('data-sync-url');
-            if (!url) url = window.location.href;
-            var syncType = btn.getAttribute('data-sync-type') || 'incoming';
-            fetch(url, {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                cache: 'no-store'
-            }).then(function(res) {
-                return res.ok ? res.json() : Promise.reject();
-            }).then(function(data) {
-                var ua = document.querySelector('#unassignedTable tbody');
-                if (ua && data.unassigned !== undefined) {
-                    ua.innerHTML = data.unassigned;
-                }
-                var as = document.querySelector('#assignedTable tbody');
-                if (as && data.assigned !== undefined) {
-                    as.innerHTML = data.assigned;
-                }
-
-                // Update summary counts
-                var incomingSummary = document.getElementById('incomingSummaryCard');
-                var assignedSummary = document.getElementById('assignedSummaryCard');
-                if (data.totalNewInquiries !== undefined && incomingSummary) {
-                    var v1 = incomingSummary.querySelector('.inquiries-summary-value');
-                    if (v1) v1.textContent = new Intl.NumberFormat().format(data.totalNewInquiries);
-                }
-                if (data.totalOngoing !== undefined && assignedSummary) {
-                    var v2 = assignedSummary.querySelector('.inquiries-summary-value');
-                    if (v2) v2.textContent = new Intl.NumberFormat().format(data.totalOngoing);
-                }
-                var incomingPag = document.getElementById('incomingPagination');
-                if (incomingPag && data.totalNewInquiries !== undefined) {
-                    var inTotal = parseInt(data.totalNewInquiries || 0, 10);
-                    var inPer = parseInt(incomingPag.getAttribute('data-incoming-per-page') || '10', 10);
-                    var inInfo = document.getElementById('incomingPaginationInfo');
-                    var inTo = inTotal === 0 ? 0 : Math.min(inPer, inTotal);
-                    incomingPag.setAttribute('data-incoming-total', String(inTotal));
-                    incomingPag.setAttribute('data-incoming-current-page', '1');
-                    if (inInfo) {
-                        inInfo.textContent = 'Showing ' + (inTotal === 0 ? 0 : 1) + ' to ' + inTo + ' of ' + inTotal + ' entries (Page 1)';
-                    }
-                    if (typeof refreshIncomingPagination === 'function') refreshIncomingPagination();
-                }
-                var paginationEl = document.getElementById('assignedPagination');
-                if (paginationEl && data.assignedTotal !== undefined) {
-                    paginationEl.setAttribute('data-assigned-total', data.assignedTotal);
-                    paginationEl.setAttribute('data-assigned-last-page', data.assignedLastPage || 1);
-                    paginationEl.setAttribute('data-assigned-current-page', '1');
-                    var perPage = parseInt(data.assignedPerPage || paginationEl.getAttribute('data-assigned-per-page') || '10', 10);
-                    if (data.assignedPerPage !== undefined) paginationEl.setAttribute('data-assigned-per-page', data.assignedPerPage);
-                    var total = parseInt(data.assignedTotal || 0, 10);
-                    var lastP = parseInt(data.assignedLastPage || 1, 10);
-                    var to = Math.min(perPage, total);
-                    var infoEl = document.getElementById('assignedPaginationInfo');
-                    if (infoEl) infoEl.textContent = 'Showing ' + (total === 0 ? 0 : 1) + ' to ' + to + ' of ' + total + ' entries (Page 1)';
-                    var firstBtn = document.getElementById('assignedPaginationFirst');
-                    var prevBtn = document.getElementById('assignedPaginationPrev');
-                    var nextBtn = document.getElementById('assignedPaginationNext');
-                    var lastBtn = document.getElementById('assignedPaginationLast');
-                    if (firstBtn) firstBtn.disabled = true;
-                    if (prevBtn) prevBtn.disabled = true;
-                    if (nextBtn) nextBtn.disabled = lastP <= 1;
-                    if (lastBtn) lastBtn.disabled = lastP <= 1;
-                    if (typeof renderAssignedPageNumbers === 'function') renderAssignedPageNumbers(1, lastP);
-                }
-
-                // Re-apply current column visibility and filters so layout stays the same
-                applyColumns(getVisibleColumns());
-                applyAssignedColumns(getAssignedVisibleColumns());
-                applyGridFilters();
-                applyAssignedGridFilters();
-                // Set initial order on new rows then clear sort state
-                if (typeof setInitialOrder === 'function') {
-                    setInitialOrder('unassignedTable');
-                    setInitialOrder('assignedTable');
-                }
-                if (typeof clearInquiriesSort === 'function') {
-                    clearInquiriesSort('unassignedTable');
-                    clearInquiriesSort('assignedTable');
-                }
-            }).catch(function() {
-                // ignore errors, just stop spinner
-            }).finally(function() {
-                btn.classList.remove('is-syncing');
-                if (icon) icon.classList.remove('spinning');
-            });
+            triggerInquiriesSync(btn);
         });
     });
+
+    window.setInterval(function() {
+        var autoBtn = document.querySelector('.inquiries-sync-btn[data-sync-type="incoming"]') || document.querySelector('.inquiries-sync-btn');
+        triggerInquiriesSync(autoBtn);
+    }, INQUIRIES_AUTO_SYNC_MS);
 
     // Incoming pagination (client-side, 10 per page) – operates on filtered rows only (big search + column filters)
     (function initIncomingPagination() {
@@ -1671,12 +1747,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         var ROW_HEIGHT_PX = 44;
         function ensureFixedHeight(visibleDataCount) {
-            var per = getPerPage();
-            if (visibleDataCount >= per) {
-                tbody.style.minHeight = '';
-            } else {
-                tbody.style.minHeight = (per * ROW_HEIGHT_PX) + 'px';
-            }
+            tbody.style.minHeight = '';
         }
 
         function applyPage(current) {
@@ -1822,15 +1893,8 @@ document.addEventListener('DOMContentLoaded', function() {
             pageNumbersEl.appendChild(frag);
         };
 
-        var ROW_HEIGHT_PX = 44;
-
         function ensureFixedHeight(visibleDataCount) {
-            var per = getPerPage();
-            if (visibleDataCount >= per) {
-                tbody.style.minHeight = '';
-            } else {
-                tbody.style.minHeight = (per * ROW_HEIGHT_PX) + 'px';
-            }
+            tbody.style.minHeight = '';
         }
 
         function applyAssignedPage(current) {

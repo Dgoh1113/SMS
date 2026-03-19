@@ -410,41 +410,51 @@ document.addEventListener('DOMContentLoaded', function() {
     initDealerPagination();
 
     // Sync button (same behaviour pattern as admin inquiries sync)
+    var DEALER_INQUIRIES_AUTO_SYNC_MS = 15 * 60 * 1000;
+
+    function triggerDealerInquirySync(btn) {
+        if (!btn || btn.classList.contains('is-syncing')) return;
+        btn.classList.add('is-syncing');
+        var icon = btn.querySelector('.inquiries-sync-icon');
+        if (icon) {
+            icon.classList.add('spinning');
+        }
+
+        var url = btn.getAttribute('data-sync-url') || window.location.href;
+        fetch(url, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            cache: 'no-store'
+        }).then(function(res) {
+            return res.ok ? res.json() : Promise.reject();
+        }).then(function(data) {
+            var tbody = table.querySelector('tbody');
+            if (tbody && data.rows !== undefined) {
+                tbody.innerHTML = data.rows;
+            }
+            // Re-apply filters and column visibility after replacing rows
+            applyDealerGridFilters();
+            var currentCols = loadCols() || defaultCols.slice();
+            applyVisibleCols(currentCols);
+            initDealerPagination();
+        }).catch(function() {
+            // swallow errors for now; button state will reset below
+        }).finally(function() {
+            btn.classList.remove('is-syncing');
+            if (icon) {
+                icon.classList.remove('spinning');
+            }
+        });
+    }
+
     document.querySelectorAll('.inquiries-sync-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
-            if (btn.classList.contains('is-syncing')) return;
-            btn.classList.add('is-syncing');
-            var icon = btn.querySelector('.inquiries-sync-icon');
-            if (icon) {
-                icon.classList.add('spinning');
-            }
-
-            var url = btn.getAttribute('data-sync-url') || window.location.href;
-            fetch(url, {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                cache: 'no-store'
-            }).then(function(res) {
-                return res.ok ? res.json() : Promise.reject();
-            }).then(function(data) {
-                var tbody = table.querySelector('tbody');
-                if (tbody && data.rows !== undefined) {
-                    tbody.innerHTML = data.rows;
-                }
-                // Re-apply filters and column visibility after replacing rows
-                applyDealerGridFilters();
-                var currentCols = loadCols() || defaultCols.slice();
-                applyVisibleCols(currentCols);
-                initDealerPagination();
-            }).catch(function() {
-                // swallow errors for now; button state will reset below
-            }).finally(function() {
-                btn.classList.remove('is-syncing');
-                if (icon) {
-                    icon.classList.remove('spinning');
-                }
-            });
+            triggerDealerInquirySync(btn);
         });
     });
+
+    window.setInterval(function() {
+        triggerDealerInquirySync(document.querySelector('.inquiries-sync-btn'));
+    }, DEALER_INQUIRIES_AUTO_SYNC_MS);
 });
 </script>
 @endpush

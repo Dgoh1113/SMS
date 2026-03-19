@@ -48,10 +48,6 @@
         @if ($role === 'admin')
         <div class="dashboard-nav-group dashboard-nav-group-maintain">
             <div class="sidebar-section">Maintenance</div>
-            <a href="{{ route('admin.fulldatabase') }}" class="dashboard-nav-item {{ $current === 'fulldatabase' ? 'dashboard-nav-item-active' : '' }}">
-                <span class="dashboard-nav-icon"><i class="bi {{ $current === 'fulldatabase' ? 'bi-database-fill' : 'bi-database' }}"></i></span>
-                <span>Full Database</span>
-            </a>
             <a href="{{ route('admin.maintain-users') }}" class="dashboard-nav-item {{ $current === 'maintain-users' ? 'dashboard-nav-item-active' : '' }}">
                 <span class="dashboard-nav-icon"><i class="bi bi-person-gear"></i></span>
                 <span>Maintain Users</span>

@@ -80,6 +80,17 @@
         .maintain-users-batch-btn:hover {
             background: #e9dfff;
         }
+        .maintain-users-sync-btn.is-syncing {
+            opacity: 0.72;
+            cursor: wait;
+        }
+        .maintain-users-sync-icon.spinning {
+            animation: maintain-users-sync-spin 0.8s linear infinite;
+        }
+        @keyframes maintain-users-sync-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
         .maintain-users-table-wrap {
             margin-top: 12px;
             background: #ffffff;
@@ -557,8 +568,8 @@
     <div class="maintain-users-header">
         <div class="maintain-users-header-right">
             <div class="maintain-users-actions">
-                <button type="button" class="maintain-users-batch-btn" id="maintainUsersSyncBtn">
-                    <i class="bi bi-arrow-repeat"></i>
+                <button type="button" class="maintain-users-batch-btn maintain-users-sync-btn" id="maintainUsersSyncBtn">
+                    <i class="bi bi-arrow-repeat maintain-users-sync-icon"></i>
                     <span>Sync</span>
                 </button>
                 <div class="maintain-users-batch-form">
@@ -806,6 +817,7 @@
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            const MAINTAIN_USERS_AUTO_SYNC_MS = 15 * 60 * 1000;
             const addBtn = document.getElementById('maintainUsersAddBtn');
             const syncBtn = document.getElementById('maintainUsersSyncBtn');
             const modal = document.getElementById('maintainUsersModal');
@@ -931,45 +943,62 @@
                 e.preventDefault();
                 openModal();
             });
+            function triggerMaintainUsersSync() {
+                if (!syncBtn || !tableBody) return;
+                if (syncBtn.classList.contains('is-syncing')) return;
+                syncBtn.classList.add('is-syncing');
+                const syncIcon = syncBtn.querySelector('.maintain-users-sync-icon');
+                if (syncIcon) {
+                    syncIcon.classList.add('spinning');
+                }
+                syncBtn.disabled = true;
+                fetch(syncUrl + '?partial=1&_=' + Date.now(), {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin'
+                })
+                    .then(function (response) {
+                        if (!response.ok) {
+                            throw new Error('Unable to refresh users.');
+                        }
+                        return response.json();
+                    })
+                    .then(function (payload) {
+                        tableBody.innerHTML = typeof payload.rows_html === 'string' ? payload.rows_html : '';
+                        if (batchList) {
+                            batchList.innerHTML = typeof payload.batch_html === 'string' ? payload.batch_html : '';
+                        }
+                        if (batchCount) {
+                            batchCount.textContent = (payload.batch_count || 0) + ' eligible user(s)';
+                        }
+                        if (batchToggleAllBtn) {
+                            batchToggleAllBtn.hidden = (payload.batch_count || 0) === 0;
+                        }
+                        updateBatchSelectionState();
+                        applyTableFilter();
+                    })
+                    .catch(function (error) {
+                        console.error(error);
+                    })
+                    .finally(function () {
+                        syncBtn.disabled = false;
+                        syncBtn.classList.remove('is-syncing');
+                        const syncIcon = syncBtn.querySelector('.maintain-users-sync-icon');
+                        if (syncIcon) {
+                            syncIcon.classList.remove('spinning');
+                        }
+                    });
+            }
             if (syncBtn) {
                 syncBtn.addEventListener('click', function () {
-                    if (!tableBody) return;
-                    syncBtn.disabled = true;
-                    fetch(syncUrl + '?partial=1&_=' + Date.now(), {
-                        method: 'GET',
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        credentials: 'same-origin'
-                    })
-                        .then(function (response) {
-                            if (!response.ok) {
-                                throw new Error('Unable to refresh users.');
-                            }
-                            return response.json();
-                        })
-                        .then(function (payload) {
-                            tableBody.innerHTML = typeof payload.rows_html === 'string' ? payload.rows_html : '';
-                            if (batchList) {
-                                batchList.innerHTML = typeof payload.batch_html === 'string' ? payload.batch_html : '';
-                            }
-                            if (batchCount) {
-                                batchCount.textContent = (payload.batch_count || 0) + ' eligible user(s)';
-                            }
-                            if (batchToggleAllBtn) {
-                                batchToggleAllBtn.hidden = (payload.batch_count || 0) === 0;
-                            }
-                            updateBatchSelectionState();
-                            applyTableFilter();
-                        })
-                        .catch(function (error) {
-                            console.error(error);
-                        })
-                        .finally(function () {
-                            syncBtn.disabled = false;
-                        });
+                    triggerMaintainUsersSync();
                 });
+                window.setInterval(function () {
+                    triggerMaintainUsersSync();
+                }, MAINTAIN_USERS_AUTO_SYNC_MS);
             }
             if (roleSelect) {
                 roleSelect.addEventListener('change', syncAddRoleState);
