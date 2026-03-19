@@ -17,7 +17,7 @@ class DealerController extends Controller
         $leads = [];
         $metrics = [
             'activeInquiries' => 0,
-            'activeInquiriesTrend' => '+12%',
+            'pctActive' => 0,
             'conversionRate' => 0,
             'conversionTrend' => 0,
             'closedCaseCount' => 0,
@@ -38,6 +38,13 @@ class DealerController extends Controller
         $inquiriesTotalPages = 1;
         $inquiriesPerPage = 8;
         $leadsPaginated = [];
+        $activeInquiriesCount = 0;
+        $closedCount = 0;
+        $conversion = 0.0;
+        $conversionTrend = 0.0;
+        $pendingFollowupsCount = 0;
+        $pctActive = 0.0;
+        $pctClosed = 0.0;
 
         if ($dealerId) {
             $dealerEmail = trim((string) ($request->session()->get('user_email') ?? ''));
@@ -133,6 +140,75 @@ class DealerController extends Controller
             $countMetricRow = static function ($row): int {
                 return (int) ($row->CNT ?? $row->cnt ?? $row->C ?? $row->c ?? current((array) $row) ?? 0);
             };
+
+            $activeThisWeek = $activeInquiriesCount;
+            $activeLastWeek = 0;
+            $closedThisWeek = 0;
+            $closedLastWeek = 0;
+
+            try {
+                $startThisWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
+                $endLastWeek = $startThisWeek->copy()->subSecond();
+                $startLastWeek = $startThisWeek->copy()->subWeek();
+
+                $countActiveSnapshot = function (string $cutoff) use ($dealerId, $countMetricRow): int {
+                    $row = DB::selectOne(
+                        'SELECT COUNT(*) AS "CNT"
+                         FROM (
+                             SELECT l."LEADID",
+                                    COALESCE(
+                                        (SELECT FIRST 1 la."STATUS"
+                                         FROM "LEAD_ACT" la
+                                         WHERE la."LEADID" = l."LEADID"
+                                           AND la."CREATIONDATE" <= ?
+                                         ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC),
+                                        l."CURRENTSTATUS",
+                                        \'Pending\'
+                                    ) AS "LATEST_STATUS"
+                             FROM "LEAD" l
+                             WHERE l."ASSIGNED_TO" = ?
+                               AND l."CREATEDAT" <= ?
+                         ) x
+                         WHERE UPPER(TRIM(COALESCE(x."LATEST_STATUS", \'\'))) IN (\'PENDING\', \'FOLLOWUP\', \'FOLLOW UP\', \'DEMO\', \'CONFIRMED\', \'CASE CONFIRMED\', \'ONGOING\')',
+                        [$cutoff, $dealerId, $cutoff]
+                    );
+
+                    return $countMetricRow($row);
+                };
+
+                $activeLastWeek = $countActiveSnapshot($endLastWeek->format('Y-m-d H:i:s'));
+
+                $closedThisWeekRow = DB::selectOne(
+                    'SELECT COUNT(DISTINCT "LEADID") AS "CNT"
+                     FROM "LEAD_ACT"
+                     WHERE "USERID" = ?
+                       AND UPPER(TRIM(COALESCE("STATUS", \'\'))) IN (\'COMPLETED\', \'REWARDED\', \'REWARD DISTRIBUTED\')
+                       AND "CREATIONDATE" >= ? AND "CREATIONDATE" <= ?',
+                    [$dealerId, $startThisWeek->format('Y-m-d H:i:s'), Carbon::now()->format('Y-m-d H:i:s')]
+                );
+                $closedThisWeek = $countMetricRow($closedThisWeekRow);
+
+                $closedLastWeekRow = DB::selectOne(
+                    'SELECT COUNT(DISTINCT "LEADID") AS "CNT"
+                     FROM "LEAD_ACT"
+                     WHERE "USERID" = ?
+                       AND UPPER(TRIM(COALESCE("STATUS", \'\'))) IN (\'COMPLETED\', \'REWARDED\', \'REWARD DISTRIBUTED\')
+                       AND "CREATIONDATE" >= ? AND "CREATIONDATE" <= ?',
+                    [$dealerId, $startLastWeek->format('Y-m-d H:i:s'), $endLastWeek->format('Y-m-d H:i:s')]
+                );
+                $closedLastWeek = $countMetricRow($closedLastWeekRow);
+            } catch (\Throwable $e) {
+                $activeLastWeek = 0;
+                $closedThisWeek = 0;
+                $closedLastWeek = 0;
+            }
+
+            $pctActive = $activeLastWeek > 0
+                ? round((($activeThisWeek - $activeLastWeek) / $activeLastWeek) * 100, 1)
+                : ($activeThisWeek > 0 ? 100 : 0);
+            $pctClosed = $closedLastWeek > 0
+                ? round((($closedThisWeek - $closedLastWeek) / $closedLastWeek) * 100, 1)
+                : ($closedThisWeek > 0 ? 100 : 0);
 
             $countConversionLeads = function (?string $cutoff = null) use ($dealerId, $countMetricRow): int {
                 $latestStatusCutoff = '';
@@ -413,10 +489,10 @@ class DealerController extends Controller
     public function inquiries(Request $request): View
     {
         $dealerId = $request->session()->get('user_id');
+        $focusLeadId = (int) $request->query('lead', 0);
         $leads = [];
         if ($dealerId) {
-            $leads = DB::select(
-                'SELECT FIRST 200
+            $dealerInquiriesSql = 'SELECT FIRST 200
                     l."LEADID", l."PRODUCTID", l."COMPANYNAME", l."CONTACTNAME", l."CONTACTNO", l."EMAIL",
                     l."ADDRESS1", l."ADDRESS2", l."CITY", l."POSTCODE", l."BUSINESSNATURE", l."USERCOUNT",
                     l."EXISTINGSOFTWARE", l."DEMOMODE", l."DESCRIPTION", l."REFERRALCODE", l."CREATEDAT", l."CREATEDBY",
@@ -433,9 +509,68 @@ class DealerController extends Controller
                 FROM "LEAD" l
                 LEFT JOIN "USERS" u ON u."USERID" = l."CREATEDBY"
                 WHERE l."ASSIGNED_TO" = ?
-                ORDER BY l."LEADID" DESC',
+                ORDER BY l."LEADID" DESC';
+            $leads = DB::select(
+                $dealerInquiriesSql,
                 [$dealerId]
             );
+
+            if ($focusLeadId > 0) {
+                $hasFocusLead = false;
+                foreach ($leads as $leadRow) {
+                    if ((int) ($leadRow->LEADID ?? 0) === $focusLeadId) {
+                        $hasFocusLead = true;
+                        break;
+                    }
+                }
+
+                if (!$hasFocusLead) {
+                    $focusLeadRows = DB::select(
+                        'SELECT FIRST 1
+                            l."LEADID", l."PRODUCTID", l."COMPANYNAME", l."CONTACTNAME", l."CONTACTNO", l."EMAIL",
+                            l."ADDRESS1", l."ADDRESS2", l."CITY", l."POSTCODE", l."BUSINESSNATURE", l."USERCOUNT",
+                            l."EXISTINGSOFTWARE", l."DEMOMODE", l."DESCRIPTION", l."REFERRALCODE", l."CREATEDAT", l."CREATEDBY",
+                            l."ASSIGNED_TO", l."LASTMODIFIED",
+                            u."EMAIL" AS "ASSIGNED_BY_EMAIL",
+                            COALESCE(
+                                (SELECT FIRST 1 la."STATUS"
+                                   FROM "LEAD_ACT" la
+                                  WHERE la."LEADID" = l."LEADID"
+                                  ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC),
+                                l."CURRENTSTATUS",
+                                \'Pending\'
+                            ) AS "ACT_STATUS"
+                        FROM "LEAD" l
+                        LEFT JOIN "USERS" u ON u."USERID" = l."CREATEDBY"
+                        WHERE l."ASSIGNED_TO" = ?
+                          AND l."LEADID" = ?
+                        ORDER BY l."LEADID" DESC',
+                        [$dealerId, $focusLeadId]
+                    );
+
+                    if (!empty($focusLeadRows)) {
+                        $focusLeadRow = $focusLeadRows[0];
+                        $focusLeadValue = (int) ($focusLeadRow->LEADID ?? 0);
+                        $inserted = false;
+                        $sortedLeads = [];
+
+                        foreach ($leads as $leadRow) {
+                            $leadValue = (int) ($leadRow->LEADID ?? 0);
+                            if (!$inserted && $focusLeadValue > $leadValue) {
+                                $sortedLeads[] = $focusLeadRow;
+                                $inserted = true;
+                            }
+                            $sortedLeads[] = $leadRow;
+                        }
+
+                        if (!$inserted) {
+                            $sortedLeads[] = $focusLeadRow;
+                        }
+
+                        $leads = $sortedLeads;
+                    }
+                }
+            }
 
             // Assigned By: same logic as admin assigned inquiries — SYSTEMROLE-ALIAS (e.g. Admin-Wei Jian)
             try {
@@ -492,6 +627,48 @@ class DealerController extends Controller
                 ))));
                 if (!empty($leadIds)) {
                     $placeholders = implode(',', array_fill(0, count($leadIds), '?'));
+                    $completedRows = DB::select(
+                        'SELECT a."LEADID", a."CREATIONDATE" AS "COMPLETED_AT"
+                         FROM "LEAD_ACT" a
+                         JOIN (
+                             SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
+                             FROM "LEAD_ACT"
+                             WHERE UPPER(TRIM("STATUS")) = \'COMPLETED\'
+                               AND "LEADID" IN (' . $placeholders . ')
+                             GROUP BY "LEADID"
+                         ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
+                         WHERE UPPER(TRIM(a."STATUS")) = \'COMPLETED\'
+                           AND a."LEADID" IN (' . $placeholders . ')',
+                        array_merge($leadIds, $leadIds)
+                    );
+                    $rewardedRows = DB::select(
+                        'SELECT a."LEADID", a."CREATIONDATE" AS "REWARDED_AT"
+                         FROM "LEAD_ACT" a
+                         JOIN (
+                             SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
+                             FROM "LEAD_ACT"
+                             WHERE UPPER(TRIM("STATUS")) IN (\'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\')
+                               AND "LEADID" IN (' . $placeholders . ')
+                             GROUP BY "LEADID"
+                         ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
+                         WHERE UPPER(TRIM(a."STATUS")) IN (\'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\')
+                           AND a."LEADID" IN (' . $placeholders . ')',
+                        array_merge($leadIds, $leadIds)
+                    );
+                    $completedDateMap = [];
+                    foreach ($completedRows as $cr) {
+                        $lid = (int) ($cr->LEADID ?? 0);
+                        if ($lid > 0) {
+                            $completedDateMap[$lid] = $cr->COMPLETED_AT ?? null;
+                        }
+                    }
+                    $rewardedDateMap = [];
+                    foreach ($rewardedRows as $rr) {
+                        $lid = (int) ($rr->LEADID ?? 0);
+                        if ($lid > 0) {
+                            $rewardedDateMap[$lid] = $rr->REWARDED_AT ?? null;
+                        }
+                    }
                     $attachRows = DB::select(
                         'SELECT a."LEADID", a."LEAD_ACTID", a."ATTACHMENT"
                          FROM "LEAD_ACT" a
@@ -516,6 +693,12 @@ class DealerController extends Controller
                     foreach ($leads as $r) {
                         $lid = (int) ($r->LEADID ?? 0);
                         if ($lid > 0) {
+                            if (isset($completedDateMap[$lid])) {
+                                $r->COMPLETED_AT = $completedDateMap[$lid];
+                            }
+                            if (isset($rewardedDateMap[$lid])) {
+                                $r->REWARDED_AT = $rewardedDateMap[$lid];
+                            }
                             $r->ATTACHMENT_URLS = $this->buildLeadActivityAttachmentUrls(
                                 $attachmentMap[$lid] ?? null,
                                 $lid,
@@ -528,7 +711,11 @@ class DealerController extends Controller
                 // ignore attachment mapping failures
             }
         }
-        return view('dealer.inquiries', ['leads' => $leads, 'currentPage' => 'inquiries']);
+        return view('dealer.inquiries', [
+            'leads' => $leads,
+            'focusLeadId' => $focusLeadId,
+            'currentPage' => 'inquiries',
+        ]);
     }
 
     public function inquiriesSync(Request $request): JsonResponse
@@ -600,7 +787,7 @@ class DealerController extends Controller
         if (!$dealerId) {
             return response()->json(['description' => ''], 200);
         }
-        $lead = DB::selectOne('SELECT "LEADID" FROM "LEAD" WHERE "LEADID" = ? AND "ASSIGNED_TO" = ?', [$leadId, $dealerId]);
+        $lead = DB::selectOne('SELECT "LEADID", "REFERRALCODE" FROM "LEAD" WHERE "LEADID" = ? AND "ASSIGNED_TO" = ?', [$leadId, $dealerId]);
         if (!$lead) {
             return response()->json(['description' => ''], 404);
         }
@@ -1087,27 +1274,59 @@ class DealerController extends Controller
             }
         }
 
-        $fromUpper = strtoupper($fromStatus);
-        $toUpper = strtoupper($statusDb);
+        $normalizeTransitionStatus = static function (string $value): string {
+            $upper = strtoupper(trim($value));
+            return match ($upper) {
+                'FOLLOWUP' => 'FOLLOW UP',
+                'CASE CONFIRMED' => 'CONFIRMED',
+                'CASE COMPLETED' => 'COMPLETED',
+                'REWARD DISTRIBUTED' => 'REWARDED',
+                default => $upper,
+            };
+        };
+        $formatTransitionLabel = static function (string $value): string {
+            return match ($value) {
+                'FOLLOW UP' => 'Follow Up',
+                'PENDING' => 'Pending',
+                'DEMO' => 'Demo',
+                'CONFIRMED' => 'Confirmed',
+                'COMPLETED' => 'Completed',
+                'REWARDED' => 'Rewarded',
+                default => ucwords(strtolower(str_replace('_', ' ', $value))),
+            };
+        };
+
+        $fromUpper = $normalizeTransitionStatus($fromStatus);
+        $toUpper = $normalizeTransitionStatus($statusDb);
+        $hasReferralCode = trim((string) ($lead->REFERRALCODE ?? '')) !== '';
 
         // If dealer is "editing" the current status (same status again), allow it.
         $isSameStatusEdit = $toUpper === $fromUpper;
 
-        if (!$isSameStatusEdit && in_array($toUpper, ['DEMO'], true)) {
-            $allowedFrom = ['FOLLOW UP', 'FOLLOWUP'];
-            if (!in_array($fromUpper, $allowedFrom, true)) {
+        if (!$isSameStatusEdit) {
+            $allowedTo = match ($fromUpper) {
+                'PENDING' => ['FOLLOW UP'],
+                'FOLLOW UP' => ['DEMO', 'CONFIRMED', 'COMPLETED'],
+                'DEMO' => ['CONFIRMED', 'COMPLETED'],
+                'CONFIRMED' => ['COMPLETED'],
+                'COMPLETED' => $hasReferralCode ? ['REWARDED'] : [],
+                default => [],
+            };
+
+            if (!in_array($toUpper, $allowedTo, true)) {
+                if ($fromUpper === 'PENDING') {
+                    $message = 'You cant change status from Pending To ' . $formatTransitionLabel($toUpper) . ', Please Follow Up First';
+                } elseif ($toUpper === 'REWARDED' && !$hasReferralCode) {
+                    $message = 'You cant change status to Rewarded, Referral Code is required first';
+                } elseif ($toUpper === 'REWARDED') {
+                    $message = 'You cant change status to Rewarded, Please Complete First';
+                } else {
+                    $message = 'You cant change status from ' . $formatTransitionLabel($fromUpper) . ' To ' . $formatTransitionLabel($toUpper);
+                }
+
                 return response()->json([
                     'success' => false,
-                    'message' => 'You must complete the follow-up (status: FOLLOW UP) before updating to DEMO. Please update the status to FOLLOW UP first.',
-                ], 422);
-            }
-        }
-        if (!$isSameStatusEdit && in_array($toUpper, ['REWARDED', 'REWARD DISTRIBUTED'], true)) {
-            $allowedFrom = ['COMPLETED', 'REWARDED', 'REWARD DISTRIBUTED'];
-            if (!in_array($fromUpper, $allowedFrom, true)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'You must complete the inquiry (status: COMPLETED) before updating to REWARDED. Please update the status to COMPLETED first.',
+                    'message' => $message,
                 ], 422);
             }
         }
@@ -1366,6 +1585,27 @@ class DealerController extends Controller
                 ))));
                 if (!empty($rewardedIds)) {
                     $placeholders = implode(',', array_fill(0, count($rewardedIds), '?'));
+                    $completedRows = DB::select(
+                        'SELECT a."LEADID", a."CREATIONDATE"
+                         FROM "LEAD_ACT" a
+                         JOIN (
+                             SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
+                             FROM "LEAD_ACT"
+                             WHERE UPPER(TRIM("STATUS")) = \'COMPLETED\'
+                               AND "LEADID" IN (' . $placeholders . ')
+                             GROUP BY "LEADID"
+                         ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
+                         WHERE UPPER(TRIM(a."STATUS")) = \'COMPLETED\'
+                           AND a."LEADID" IN (' . $placeholders . ')',
+                        array_merge($rewardedIds, $rewardedIds)
+                    );
+                    $completedDateMap = [];
+                    foreach ($completedRows as $cr) {
+                        $lid = (int) ($cr->LEADID ?? 0);
+                        if ($lid > 0) {
+                            $completedDateMap[$lid] = $cr->CREATIONDATE ?? null;
+                        }
+                    }
                     $attachRows = DB::select(
                         'SELECT a."LEADID", a."LEAD_ACTID", a."ATTACHMENT", a."CREATIONDATE"
                          FROM "LEAD_ACT" a
@@ -1391,14 +1631,18 @@ class DealerController extends Controller
                             $rewardDateMap[$lid] = $ar->CREATIONDATE ?? null;
                         }
                     }
-                    if (!empty($attachmentMap)) {
-                        foreach ($rewarded as $r) {
-                            $lid = (int) ($r->LEADID ?? 0);
-                            if ($lid > 0 && array_key_exists($lid, $attachmentMap)) {
-                                $r->REWARD_ATTACHMENT = $attachmentMap[$lid];
-                                $r->REWARD_LEAD_ACT_ID = $attachmentActMap[$lid] ?? 0;
-                                $r->REWARD_DATE = $rewardDateMap[$lid] ?? null;
-                            }
+                    foreach ($rewarded as $r) {
+                        $lid = (int) ($r->LEADID ?? 0);
+                        if ($lid <= 0) {
+                            continue;
+                        }
+                        if (isset($completedDateMap[$lid])) {
+                            $r->COMPLETED_AT = $completedDateMap[$lid];
+                        }
+                        if (array_key_exists($lid, $attachmentMap)) {
+                            $r->REWARD_ATTACHMENT = $attachmentMap[$lid];
+                            $r->REWARD_LEAD_ACT_ID = $attachmentActMap[$lid] ?? 0;
+                            $r->REWARD_DATE = $rewardDateMap[$lid] ?? null;
                         }
                     }
                 }
@@ -1805,6 +2049,9 @@ class DealerController extends Controller
                 'title' => $title,
                 'description' => $desc,
                 'time' => $createdAt ? $createdAt->format('Y-m-d H:i') : '',
+                'target_url' => $leadId > 0
+                    ? route('dealer.inquiries', ['lead' => $leadId, 'fromNotif' => (string) ($r->LEAD_ACTID ?? '')])
+                    : route('dealer.inquiries'),
             ];
         }, $rows);
 

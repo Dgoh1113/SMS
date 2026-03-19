@@ -22,6 +22,8 @@
         $rawStatus = strtoupper(trim((string) ($r->CURRENTSTATUS ?? '')));
         $statusClass = 'inquiries-status-rewarded';
         $statusDisp = $rawStatus !== '' ? $rawStatus : 'REWARDED';
+        $inquiryDate = !empty($r->CREATEDAT) ? date('d/m/Y', strtotime((string) $r->CREATEDAT)) : 'â€”';
+        $completionDate = !empty($r->COMPLETED_AT) ? date('d/m/Y', strtotime((string) $r->COMPLETED_AT)) : 'â€”';
         $payoutDate = '—';
         if (!empty($r->REWARD_DATE)) {
             $payoutDate = date('d/m/Y', strtotime((string) $r->REWARD_DATE));
@@ -52,7 +54,9 @@
     @endphp
     <tr class="payouts-row inquiry-row" data-search="{{ $searchHaystack }}">
         <td data-col="inquiryid">#SQL-{{ $r->LEADID }}</td>
+        <td data-col="date">{{ $inquiryDate }}</td>
         <td data-col="payoutdate">{{ $payoutDate }}</td>
+        <td data-col="completiondate">{{ $completionDate }}</td>
         <td data-col="customer">{{ $custDisp }}</td>
         <td data-col="source">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '—') }}</td>
         <td data-col="postcode">{{ $r->POSTCODE ?? '—' }}</td>
@@ -100,5 +104,5 @@
         </td>
     </tr>
 @empty
-    <tr><td colspan="9" class="inquiries-empty">No rewarded payouts.</td></tr>
+    <tr><td colspan="21" class="inquiries-empty">No rewarded payouts.</td></tr>
 @endforelse

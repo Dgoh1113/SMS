@@ -104,7 +104,7 @@
                     <div class="dealer-panel-title-row">
                         <h2 class="dealer-panel-title dashboard-panel-title">Active Inquiries</h2>
                     </div>
-                    <a href="{{ route('dealer.inquiries') }}" class="dealer-link-btn">View All Inquiries</a>
+                        <a href="{{ route('dealer.inquiries') }}" class="dealer-link-btn">View My Inquiries</a>
                 </div>
                 <div class="dealer-table-wrapper">
                     <div class="dealer-table-header">

@@ -29,8 +29,14 @@
         width: 110px;
     }
 
+    #completedTable.payouts-default-layout th[data-col="date"],
+    #completedTable.payouts-default-layout td[data-col="date"],
     #completedTable.payouts-default-layout th[data-col="completeddate"],
     #completedTable.payouts-default-layout td[data-col="completeddate"],
+    #rewardedTable.payouts-default-layout th[data-col="date"],
+    #rewardedTable.payouts-default-layout td[data-col="date"],
+    #rewardedTable.payouts-default-layout th[data-col="completiondate"],
+    #rewardedTable.payouts-default-layout td[data-col="completiondate"],
     #rewardedTable.payouts-default-layout th[data-col="payoutdate"],
     #rewardedTable.payouts-default-layout td[data-col="payoutdate"] {
         width: 120px;
@@ -40,7 +46,19 @@
     #completedTable.payouts-default-layout td[data-col="customer"],
     #rewardedTable.payouts-default-layout th[data-col="customer"],
     #rewardedTable.payouts-default-layout td[data-col="customer"] {
-        width: 240px;
+        width: 300px;
+    }
+
+    #completedTable.payouts-default-layout td[data-col="customer"],
+    #rewardedTable.payouts-default-layout td[data-col="customer"] {
+        overflow: visible;
+        text-overflow: clip;
+        white-space: nowrap;
+    }
+
+    #completedTable.payouts-default-layout th[data-col="assignedto"],
+    #completedTable.payouts-default-layout td[data-col="assignedto"] {
+        width: 160px;
     }
 
     #completedTable.payouts-default-layout th[data-col="dealtproducts"],
@@ -126,7 +144,7 @@
         5 => 'SQL Ecommerce', 6 => 'SQL EBI Wellness POS', 7 => 'SQL X Suduai', 8 => 'SQL X-Store',
         9 => 'SQL Vision', 10 => 'SQL HRMS', 11 => 'Others',
     ];
-    $statusFilterOptions = ['Created', 'Followup', 'Demo', 'Confirmed', 'Completed', 'Rewarded', 'Failed'];
+    $statusFilterOptions = ['Followup', 'Demo', 'Confirmed', 'Completed', 'Rewarded', 'Failed'];
 @endphp
 <div class="inquiries-page-wrap">
 <div class="inquiries-mgmt-top-row" style="margin-bottom: 16px;">
@@ -146,7 +164,7 @@
         <div class="inquiries-search-row">
             <div class="inquiries-search-wrap">
                 <span class="inquiries-search-icon"><i class="bi bi-search"></i></span>
-                <input type="text" class="inquiries-search-input" id="payoutSearchInput" placeholder="Search table..." autocomplete="off">
+                <input type="text" class="inquiries-search-input" id="payoutSearchInput" placeholder="Search by customer, company, or Inquiry ID..." autocomplete="off">
                 <button type="button" class="inquiries-search-btn" id="payoutSearchBtn">Search</button>
             </div>
             <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-search-clear-btn" id="payoutClearSearchBtn" title="Clear search">Clear</button>
@@ -176,8 +194,10 @@
                 <div class="inquiries-columns-menu" id="completedColumnsMenu" hidden>
                     <div class="inquiries-columns-menu-title">Show columns</div>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="inquiryid"> INQUIRY ID</label>
-                    <label class="inquiries-columns-check"><input type="checkbox" data-col="completeddate"> COMPLETED DATE</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="date"> INQUIRY DATE</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="completeddate"> COMPLETION DATE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="customer"> CUSTOMER NAME</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="assignedto"> ASSIGNED TO</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="source"> SOURCE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="postcode"> POSTCODE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="city"> CITY</label>
@@ -186,7 +206,8 @@
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="businessnature"> BUSINESS NATURE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="users"> USERS</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="existingsw"> EXISTING SW</label>
-                    <label class="inquiries-columns-check"><input type="checkbox" data-col="demomode"> DEMO MODE</label><label class="inquiries-columns-check"><input type="checkbox" data-col="dealtproducts"> DEALT PRODUCTS</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="demomode"> DEMO MODE</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="dealtproducts"> DEALT PRODUCTS</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="message"> MESSAGE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="referralcode"> REFERRAL CODE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="attachment"> ATTACHMENT</label>
@@ -207,8 +228,13 @@
                 <thead>
                     <tr class="inquiries-header-row">
                         <th data-col="inquiryid" class="inquiries-header-cell"><span class="inquiries-header-label">INQUIRY ID</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="inquiryid"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="completeddate" class="inquiries-header-cell"><span class="inquiries-header-label">COMPLETED DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="completeddate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="date" class="inquiries-header-cell"><span class="inquiries-header-label">INQUIRY DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="date"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="customer" class="inquiries-header-cell"><span class="inquiries-header-label">CUSTOMER NAME</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="customer"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="assignedto" class="inquiries-header-cell"><span class="inquiries-header-label">ASSIGNED TO</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="assignedto"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="referralcode" class="inquiries-header-cell"><span class="inquiries-header-label">REFERRAL CODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="referralcode" placeholder="Has code"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="completeddate" class="inquiries-header-cell"><span class="inquiries-header-label">COMPLETION DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="completeddate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="status" class="inquiries-header-cell"><span class="inquiries-header-label">STATUS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="status" placeholder="Completed only" disabled readonly></span></th>
+                        <th data-col="dealtproducts" class="inquiries-header-cell"><span class="inquiries-header-label">DEALT PRODUCTS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="dealtproducts"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="source" class="inquiries-header-cell"><span class="inquiries-header-label">SOURCE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="source"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="postcode" class="inquiries-header-cell"><span class="inquiries-header-label">POSTCODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="postcode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="city" class="inquiries-header-cell"><span class="inquiries-header-label">CITY</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="city"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
@@ -217,12 +243,10 @@
                         <th data-col="businessnature" class="inquiries-header-cell"><span class="inquiries-header-label">BUSINESS NATURE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="businessnature"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="users" class="inquiries-header-cell"><span class="inquiries-header-label">USERS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="users"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="existingsw" class="inquiries-header-cell"><span class="inquiries-header-label">EXISTING SW</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="existingsw"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="demomode" class="inquiries-header-cell"><span class="inquiries-header-label">DEMO MODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="demomode"><i class="bi bi-search inquiries-filter-icon"></i></span></th><th data-col="dealtproducts" class="inquiries-header-cell"><span class="inquiries-header-label">DEALT PRODUCTS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="dealtproducts"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="demomode" class="inquiries-header-cell"><span class="inquiries-header-label">DEMO MODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="demomode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="message" class="inquiries-header-cell"><span class="inquiries-header-label">MESSAGE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="message"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="referralcode" class="inquiries-header-cell"><span class="inquiries-header-label">REFERRAL CODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="referralcode" placeholder="Has code"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="attachment" class="inquiries-header-cell"><span class="inquiries-header-label">ATTACHMENT</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="attachment"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="assignby" class="inquiries-header-cell"><span class="inquiries-header-label">ASSIGN BY</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="assignby"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="status" class="inquiries-header-cell"><span class="inquiries-header-label">STATUS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="status" placeholder="Completed only" disabled readonly></span></th>
                         <th class="inquiries-col-action inquiries-header-cell"><span class="inquiries-header-label">ACTION</span><button type="button" class="inquiries-filter-clear" id="completedClearFilters">Clear filters</button></th>
                     </tr>
                 </thead>
@@ -262,7 +286,9 @@
                 <div class="inquiries-columns-menu" id="rewardedColumnsMenu" hidden>
                     <div class="inquiries-columns-menu-title">Show columns</div>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="inquiryid"> INQUIRY ID</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="date"> INQUIRY DATE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="payoutdate"> PAYOUTS DATE</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="completiondate"> COMPLETION DATE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="customer"> CUSTOMER NAME</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="source"> SOURCE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="postcode"> POSTCODE</label>
@@ -294,7 +320,9 @@
                 <thead>
                     <tr class="inquiries-header-row">
                         <th data-col="inquiryid" class="inquiries-header-cell"><span class="inquiries-header-label">INQUIRY ID</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="inquiryid"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="date" class="inquiries-header-cell"><span class="inquiries-header-label">INQUIRY DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="date"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="payoutdate" class="inquiries-header-cell"><span class="inquiries-header-label">PAYOUTS DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="payoutdate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="completiondate" class="inquiries-header-cell"><span class="inquiries-header-label">COMPLETION DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="completiondate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="customer" class="inquiries-header-cell"><span class="inquiries-header-label">CUSTOMER NAME</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="customer"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="source" class="inquiries-header-cell"><span class="inquiries-header-label">SOURCE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="source"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="postcode" class="inquiries-header-cell"><span class="inquiries-header-label">POSTCODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="postcode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
@@ -429,21 +457,48 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    var COMPLETED_STORAGE_KEY = 'dealerPayoutCompletedVisibleColumns_v2';
+    var COMPLETED_STORAGE_KEY = 'dealerPayoutCompletedVisibleColumns_v4';
+    var COMPLETED_LEGACY_STORAGE_KEY = 'dealerPayoutCompletedVisibleColumns_v3';
+    var COMPLETED_OLDER_LEGACY_STORAGE_KEY = 'dealerPayoutCompletedVisibleColumns_v2';
     // Default + all columns: match dealer inquiries table column IDs
-    var COMPLETED_DEFAULT_COLUMNS = ['inquiryid','completeddate','customer','dealtproducts','referralcode','attachment','assignby','status'];
-    var COMPLETED_ALL_COLUMNS = ['inquiryid','completeddate','customer','source','postcode','city','address','contactno','businessnature','users','existingsw','demomode','dealtproducts','message','referralcode','attachment','assignby','status'];
+    var COMPLETED_LEGACY_DEFAULT_COLUMNS = ['inquiryid','completeddate','customer','dealtproducts','referralcode','assignby','status'];
+    var COMPLETED_OLDER_LEGACY_DEFAULT_COLUMNS = ['inquiryid','completeddate','customer','dealtproducts','referralcode','attachment','assignby','status'];
+    var COMPLETED_PREVIOUS_DEFAULT_COLUMNS = ['inquiryid','customer','assignedto','referralcode','completeddate','status','dealtproducts'];
+    var COMPLETED_DEFAULT_COLUMNS = ['inquiryid','customer','assignedto','referralcode','completeddate','status','dealtproducts'];
+    var COMPLETED_ALL_COLUMNS = ['inquiryid','date','customer','assignedto','referralcode','completeddate','status','dealtproducts','source','postcode','city','address','contactno','businessnature','users','existingsw','demomode','message','attachment','assignby'];
 
     var REWARDED_STORAGE_KEY = 'dealerPayoutRewardedVisibleColumns_v2';
     var REWARDED_DEFAULT_COLUMNS = ['inquiryid','payoutdate','customer','dealtproducts','referralcode','attachment','assignby','status'];
-    var REWARDED_ALL_COLUMNS = ['inquiryid','payoutdate','customer','source','postcode','city','address','contactno','businessnature','users','existingsw','demomode','dealtproducts','message','referralcode','attachment','assignby','status'];
+    var REWARDED_ALL_COLUMNS = ['inquiryid','date','payoutdate','completiondate','customer','source','postcode','city','address','contactno','businessnature','users','existingsw','demomode','dealtproducts','message','referralcode','attachment','assignby','status'];
 
     function getCompletedVisibleColumns() {
         try {
             var raw = localStorage.getItem(COMPLETED_STORAGE_KEY);
+            if (raw === null) raw = localStorage.getItem(COMPLETED_LEGACY_STORAGE_KEY);
+            if (raw === null) raw = localStorage.getItem(COMPLETED_OLDER_LEGACY_STORAGE_KEY);
             if (raw !== null) {
                 var arr = JSON.parse(raw);
-                if (Array.isArray(arr)) return arr;
+                if (Array.isArray(arr)) {
+                    var isLegacyDefault =
+                        (arr.length === COMPLETED_LEGACY_DEFAULT_COLUMNS.length && arr.every(function(col, index) {
+                            return col === COMPLETED_LEGACY_DEFAULT_COLUMNS[index];
+                        })) ||
+                        (arr.length === COMPLETED_OLDER_LEGACY_DEFAULT_COLUMNS.length && arr.every(function(col, index) {
+                            return col === COMPLETED_OLDER_LEGACY_DEFAULT_COLUMNS[index];
+                        })) ||
+                        (arr.length === COMPLETED_PREVIOUS_DEFAULT_COLUMNS.length && arr.every(function(col, index) {
+                            return col === COMPLETED_PREVIOUS_DEFAULT_COLUMNS[index];
+                        }));
+                    var migrated = isLegacyDefault ? COMPLETED_DEFAULT_COLUMNS.slice() : arr.filter(function(col) {
+                        return COMPLETED_ALL_COLUMNS.indexOf(col) !== -1;
+                    });
+                    try {
+                        localStorage.setItem(COMPLETED_STORAGE_KEY, JSON.stringify(migrated));
+                        localStorage.removeItem(COMPLETED_LEGACY_STORAGE_KEY);
+                        localStorage.removeItem(COMPLETED_OLDER_LEGACY_STORAGE_KEY);
+                    } catch (e) {}
+                    return migrated;
+                }
             }
         } catch (e) {}
         return COMPLETED_DEFAULT_COLUMNS.slice();
@@ -594,12 +649,13 @@ document.addEventListener('DOMContentLoaded', function() {
     var COMPLETED_PER_PAGE = 10;
     var REWARDED_PER_PAGE = 10;
 
-    function getVisibleDataRows(table) {
+    function getFilteredPayoutRows(table) {
         if (!table) return [];
         var rows = table.querySelectorAll('tbody tr.payouts-row');
         var out = [];
         for (var i = 0; i < rows.length; i++) {
-            if (rows[i].style.display !== 'none') out.push(rows[i]);
+            var filterMatch = rows[i].getAttribute('data-filter-match');
+            if (filterMatch === null || filterMatch === '1') out.push(rows[i]);
         }
         return out;
     }
@@ -614,8 +670,9 @@ document.addEventListener('DOMContentLoaded', function() {
         var lastBtn = document.getElementById('completedPaginationLast');
         var pageNumbersEl = document.getElementById('completedPageNumbers');
         if (!table || !pagEl) return;
-        var visible = getVisibleDataRows(table);
-        var total = visible.length;
+        var allRows = table.querySelectorAll('tbody tr.payouts-row');
+        var filteredRows = getFilteredPayoutRows(table);
+        var total = filteredRows.length;
         var perPage = COMPLETED_PER_PAGE;
         var lastPage = total > 0 ? Math.ceil(total / perPage) : 1;
         var current = parseInt(pagEl.getAttribute('data-current-page') || '1', 10);
@@ -623,8 +680,12 @@ document.addEventListener('DOMContentLoaded', function() {
         pagEl.setAttribute('data-current-page', String(current));
         var start = (current - 1) * perPage;
         var end = Math.min(start + perPage, total);
-        for (var i = 0; i < visible.length; i++) {
-            visible[i].style.display = (i >= start && i < end) ? '' : 'none';
+        var pageRows = filteredRows.slice(start, end);
+        for (var i = 0; i < allRows.length; i++) {
+            allRows[i].style.display = 'none';
+        }
+        for (var j = 0; j < pageRows.length; j++) {
+            pageRows[j].style.display = '';
         }
         var from = total === 0 ? 0 : start + 1;
         var to = end;
@@ -660,8 +721,9 @@ document.addEventListener('DOMContentLoaded', function() {
         var lastBtn = document.getElementById('rewardedPaginationLast');
         var pageNumbersEl = document.getElementById('rewardedPageNumbers');
         if (!table || !pagEl) return;
-        var visible = getVisibleDataRows(table);
-        var total = visible.length;
+        var allRows = table.querySelectorAll('tbody tr.payouts-row');
+        var filteredRows = getFilteredPayoutRows(table);
+        var total = filteredRows.length;
         var perPage = REWARDED_PER_PAGE;
         var lastPage = total > 0 ? Math.ceil(total / perPage) : 1;
         var current = parseInt(pagEl.getAttribute('data-current-page') || '1', 10);
@@ -669,8 +731,12 @@ document.addEventListener('DOMContentLoaded', function() {
         pagEl.setAttribute('data-current-page', String(current));
         var start = (current - 1) * perPage;
         var end = Math.min(start + perPage, total);
-        for (var i = 0; i < visible.length; i++) {
-            visible[i].style.display = (i >= start && i < end) ? '' : 'none';
+        var pageRows = filteredRows.slice(start, end);
+        for (var i = 0; i < allRows.length; i++) {
+            allRows[i].style.display = 'none';
+        }
+        for (var j = 0; j < pageRows.length; j++) {
+            pageRows[j].style.display = '';
         }
         var from = total === 0 ? 0 : start + 1;
         var to = end;
@@ -706,6 +772,20 @@ document.addEventListener('DOMContentLoaded', function() {
         return normalized;
     }
 
+    function normalizeDealerPayoutSearch(value) {
+        return String(value || '').toLowerCase().replace(/\s+/g, '');
+    }
+
+    function rowMatchesDealerPayoutSearch(row, q) {
+        if (!q) return true;
+        var inquiryIdCell = row.querySelector('td[data-col="inquiryid"]');
+        var customerCell = row.querySelector('td[data-col="customer"]');
+        var inquiryIdText = inquiryIdCell && inquiryIdCell.textContent ? inquiryIdCell.textContent.toLowerCase().trim() : '';
+        var customerText = customerCell && customerCell.textContent ? customerCell.textContent.toLowerCase().trim() : '';
+        var searchable = normalizeDealerPayoutSearch(inquiryIdText + ' ' + customerText);
+        return searchable.indexOf(normalizeDealerPayoutSearch(q)) !== -1;
+    }
+
     function applyTableFilter(tableId) {
         var table = document.getElementById(tableId);
         var searchInput = document.getElementById('payoutSearchInput');
@@ -722,8 +802,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (val) filters[col] = val;
         });
         table.querySelectorAll('tbody tr.payouts-row').forEach(function(row) {
-            var hay = (row.getAttribute('data-search') || '').toLowerCase();
-            var searchMatch = !q || hay.indexOf(q) !== -1;
+            var searchMatch = rowMatchesDealerPayoutSearch(row, q);
             var colMatch = true;
             for (var col in filters) {
                 var cell = row.querySelector('td[data-col="' + col + '"]');
@@ -741,7 +820,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 if (cellText.indexOf(filters[col]) === -1) { colMatch = false; break; }
             }
-            row.style.display = (searchMatch && colMatch) ? '' : 'none';
+            row.setAttribute('data-filter-match', (searchMatch && colMatch) ? '1' : '0');
         });
         if (tableId === 'completedTable') {
             var cp = document.getElementById('completedPagination');
@@ -913,7 +992,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var pagEl = document.getElementById('completedPagination');
             if (!pagEl) return;
             var cur = parseInt(pagEl.getAttribute('data-current-page') || '1', 10);
-            var last = Math.max(1, Math.ceil(getVisibleDataRows(document.getElementById('completedTable')).length / COMPLETED_PER_PAGE));
+            var last = Math.max(1, Math.ceil(getFilteredPayoutRows(document.getElementById('completedTable')).length / COMPLETED_PER_PAGE));
             if (btn.id === 'completedPaginationFirst') pagEl.setAttribute('data-current-page', '1');
             else if (btn.id === 'completedPaginationPrev') pagEl.setAttribute('data-current-page', String(Math.max(1, cur - 1)));
             else if (btn.id === 'completedPaginationNext') pagEl.setAttribute('data-current-page', String(Math.min(last, cur + 1)));
@@ -930,7 +1009,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var pagEl = document.getElementById('rewardedPagination');
             if (!pagEl) return;
             var cur = parseInt(pagEl.getAttribute('data-current-page') || '1', 10);
-            var last = Math.max(1, Math.ceil(getVisibleDataRows(document.getElementById('rewardedTable')).length / REWARDED_PER_PAGE));
+            var last = Math.max(1, Math.ceil(getFilteredPayoutRows(document.getElementById('rewardedTable')).length / REWARDED_PER_PAGE));
             if (btn.id === 'rewardedPaginationFirst') pagEl.setAttribute('data-current-page', '1');
             else if (btn.id === 'rewardedPaginationPrev') pagEl.setAttribute('data-current-page', String(Math.max(1, cur - 1)));
             else if (btn.id === 'rewardedPaginationNext') pagEl.setAttribute('data-current-page', String(Math.min(last, cur + 1)));
@@ -957,11 +1036,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (payoutClearBtn) {
         payoutClearBtn.addEventListener('click', function() {
             if (payoutSearchInput) payoutSearchInput.value = '';
-            ['completedTable','rewardedTable'].forEach(function(tid) {
-                var t = document.getElementById(tid);
-                if (!t) return;
-                t.querySelectorAll('thead .payouts-grid-filter').forEach(function(inp) { inp.value = ''; });
-            });
             applyAllTables();
         });
     }
@@ -1070,31 +1144,103 @@ document.addEventListener('DOMContentLoaded', function() {
     var selectedStatusIdx = 0;
     var viewMode = false;
     var cachedActivities = [];
+    var currentReferralCode = '';
+
+    function hasReferralCode(value) {
+        var normalized = String(value || '').trim();
+        return normalized !== '' && normalized !== '-' && normalized !== '—';
+    }
+
+    function formatStatusLabel(status) {
+        switch (status) {
+            case 'FOLLOW UP': return 'Follow Up';
+            case 'PENDING': return 'Pending';
+            case 'DEMO': return 'Demo';
+            case 'CONFIRMED': return 'Confirmed';
+            case 'COMPLETED': return 'Completed';
+            case 'REWARDED': return 'Rewarded';
+            default: return String(status || '').trim();
+        }
+    }
+
+    function canSelectFutureStatus(fromStatus, toStatus) {
+        if (!fromStatus || !toStatus) return false;
+        var fromIdx = statusOrder.indexOf(fromStatus);
+        var toIdx = statusOrder.indexOf(toStatus);
+        if (fromIdx < 0 || toIdx <= fromIdx) return false;
+
+        switch (fromStatus) {
+            case 'PENDING':
+                return toStatus === 'FOLLOW UP';
+            case 'FOLLOW UP':
+                return toStatus === 'DEMO' || toStatus === 'CONFIRMED' || toStatus === 'COMPLETED';
+            case 'DEMO':
+                return toStatus === 'CONFIRMED' || toStatus === 'COMPLETED';
+            case 'CONFIRMED':
+                return toStatus === 'COMPLETED';
+            case 'COMPLETED':
+                return toStatus === 'REWARDED' && hasReferralCode(currentReferralCode);
+            default:
+                return false;
+        }
+    }
+
+    function getDefaultSelectedStatusIdx(idx) {
+        var currentStatus = statusOrder[idx] || 'PENDING';
+        for (var i = idx + 1; i < statusOrder.length; i++) {
+            if (canSelectFutureStatus(currentStatus, statusOrder[i])) {
+                return i;
+            }
+        }
+        return idx;
+    }
+
+    function getBlockedStatusMessage(fromStatus, toStatus) {
+        if (fromStatus === 'PENDING' && toStatus !== 'FOLLOW UP') {
+            return 'You cant change status from Pending To ' + formatStatusLabel(toStatus) + ', Please Follow Up First';
+        }
+        if (toStatus === 'REWARDED' && !hasReferralCode(currentReferralCode)) {
+            return 'You cant change status to Rewarded, Referral Code is required first';
+        }
+        if (toStatus === 'REWARDED') {
+            return 'You cant change status to Rewarded, Please Complete First';
+        }
+        return 'You cant change status from ' + formatStatusLabel(fromStatus) + ' To ' + formatStatusLabel(toStatus);
+    }
+
+    function refreshProgressionState() {
+        if (!progressionSteps) return;
+        var currentStatus = statusOrder[currentStatusIdx] || 'PENDING';
+        progressionSteps.querySelectorAll('.inquiry-step').forEach(function(step, i) {
+            step.classList.remove('inquiry-step--done', 'inquiry-step--active', 'inquiry-step--selected', 'inquiry-step--clickable', 'inquiry-step--no-click', 'inquiry-step--viewable');
+            var stepName = step.dataset.step;
+            var isDone = i <= currentStatusIdx;
+            if (isDone) {
+                step.classList.add('inquiry-step--done', 'inquiry-step--viewable');
+                if (i === selectedStatusIdx && viewMode) step.classList.add('inquiry-step--selected');
+                step.innerHTML = '<i class="bi bi-check"></i><span>' + stepName + '</span>';
+                return;
+            }
+
+            var canClick = canSelectFutureStatus(currentStatus, statusOrder[i]);
+            step.innerHTML = '<span>' + stepName + '</span>';
+            if (i === selectedStatusIdx && canClick) {
+                step.classList.add('inquiry-step--active', 'inquiry-step--selected');
+            } else if (canClick) {
+                step.classList.add('inquiry-step--clickable');
+            } else {
+                step.classList.add('inquiry-step--no-click');
+            }
+        });
+    }
 
     function setProgression(currentStatus) {
         var normalized = statusMap[currentStatus] || 'PENDING';
         var idx = statusOrder.indexOf(normalized);
         if (idx < 0) idx = 0;
         currentStatusIdx = idx;
-        selectedStatusIdx = Math.min(idx + 1, statusOrder.length - 1);
-        if (progressionSteps) {
-            var steps = progressionSteps.querySelectorAll('.inquiry-step');
-            var showDone = function(i) { return i <= idx; };
-            steps.forEach(function(step, i) {
-                step.classList.remove('inquiry-step--done', 'inquiry-step--active', 'inquiry-step--selected', 'inquiry-step--clickable', 'inquiry-step--no-click', 'inquiry-step--viewable');
-                step.innerHTML = '<span>' + step.dataset.step + '</span>';
-                if (showDone(i)) {
-                    step.classList.add('inquiry-step--done', 'inquiry-step--viewable');
-                    step.innerHTML = '<i class="bi bi-check"></i><span>' + step.dataset.step + '</span>';
-                } else if (i === selectedStatusIdx) {
-                    step.classList.add('inquiry-step--active', 'inquiry-step--selected');
-                } else if (i === 0) {
-                    step.classList.add('inquiry-step--no-click');
-                } else {
-                    step.classList.add('inquiry-step--clickable');
-                }
-            });
-        }
+        selectedStatusIdx = getDefaultSelectedStatusIdx(idx);
+        refreshProgressionState();
         var remarkEl = document.getElementById('inquiryRemark');
         if (remarkEl) remarkEl.placeholder = remarkPlaceholders[statusOrder[selectedStatusIdx]] || remarkPlaceholders['PENDING'];
         setDateTimeLabels(statusOrder[selectedStatusIdx]);
@@ -1135,7 +1281,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function toggleUpdateButton() {
         var isRewarded = currentStatusIdx === statusOrder.length - 1;
-        var disable = isRewarded || viewMode;
+        var selectedName = statusOrder[selectedStatusIdx] || '';
+        var isBlockedFuture = selectedStatusIdx > currentStatusIdx && !canSelectFutureStatus(statusOrder[currentStatusIdx] || 'PENDING', selectedName);
+        var disable = isRewarded || viewMode || selectedStatusIdx <= currentStatusIdx || isBlockedFuture;
         updateBtn.disabled = disable;
         updateBtn.classList.toggle('inquiry-btn-update--disabled', disable);
     }
@@ -1351,8 +1499,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function openModal(leadId, customer, status) {
+    function openModal(leadId, customer, status, referralCode) {
         currentLeadId = leadId;
+        currentReferralCode = String(referralCode || '').trim();
         currentCustomer = customer || '&mdash;';
         viewMode = false;
         subtitle.textContent = 'Inquiry ID: #SQL-' + leadId + ' &mdash; ' + currentCustomer;
@@ -1410,25 +1559,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 setRemarkPlaceholder(statusOrder[stepIdx]);
                 setDateTimeLabels(statusOrder[stepIdx]);
             }
-            progressionSteps.querySelectorAll('.inquiry-step').forEach(function(s, i) {
-                s.classList.remove('inquiry-step--active', 'inquiry-step--selected', 'inquiry-step--clickable', 'inquiry-step--no-click', 'inquiry-step--viewable');
-                var stepName = s.dataset.step;
-                var sIsDone = i <= currentStatusIdx;
-                if (sIsDone) {
-                    s.classList.add('inquiry-step--done', 'inquiry-step--viewable');
-                    if (i === selectedStatusIdx && viewMode) s.classList.add('inquiry-step--selected');
-                    s.innerHTML = '<i class="bi bi-check"></i><span>' + stepName + '</span>';
-                } else if (i === selectedStatusIdx) {
-                    s.classList.add('inquiry-step--active', 'inquiry-step--selected');
-                    s.innerHTML = '<span>' + stepName + '</span>';
-                } else if (i === 0) {
-                    s.classList.add('inquiry-step--no-click');
-                    s.innerHTML = '<span>' + stepName + '</span>';
-                } else {
-                    s.classList.add('inquiry-step--clickable');
-                    s.innerHTML = '<span>' + stepName + '</span>';
-                }
-            });
+            refreshProgressionState();
             toggleAddCalendarButton();
             toggleProductChecklist();
             toggleUpdateButton();
@@ -1439,7 +1570,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var updateBtnEl = e.target.closest('.inquiries-update-btn');
         if (updateBtnEl) {
             e.preventDefault();
-            openModal(updateBtnEl.dataset.leadId, updateBtnEl.dataset.customer, updateBtnEl.dataset.status);
+            openModal(updateBtnEl.dataset.leadId, updateBtnEl.dataset.customer, updateBtnEl.dataset.status, updateBtnEl.dataset.referralCode);
             return;
         }
     });
@@ -1488,22 +1619,37 @@ document.addEventListener('DOMContentLoaded', function() {
             window.open(url, '_blank', 'noopener,noreferrer');
         });
     }
+    function showDealerPayoutToast(message) {
+        var id = 'dealer-payout-action-toast';
+        var el = document.getElementById(id);
+        if (!el) {
+            el = document.createElement('div');
+            el.id = id;
+            el.className = 'inquiries-mark-failed-blocked-toast inquiries-mark-failed-blocked-toast-hidden';
+            el.setAttribute('role', 'status');
+            el.setAttribute('aria-live', 'polite');
+            document.body.appendChild(el);
+        }
+        el.textContent = message || 'Done.';
+        el.classList.remove('inquiries-mark-failed-blocked-toast-hidden');
+        clearTimeout(el._hideTimer);
+        el._hideTimer = setTimeout(function() {
+            el.classList.add('inquiries-mark-failed-blocked-toast-hidden');
+        }, 4200);
+    }
 
     updateBtn.addEventListener('click', function() {
         if (this.disabled || selectedStatusIdx <= currentStatusIdx) return;
         var toStatus = statusOrder[selectedStatusIdx];
-        if (toStatus === 'DEMO' && currentStatusIdx < 1) {
-            alert('You must complete the follow-up (status: FOLLOW UP) before updating to DEMO. Please update the status to FOLLOW UP first.');
-            return;
-        }
-        if (toStatus === 'REWARDED' && currentStatusIdx < 4) {
-            alert('You must complete the inquiry (status: COMPLETED) before updating to REWARDED. Please update the status to COMPLETED first.');
+        var fromStatus = statusOrder[currentStatusIdx] || 'PENDING';
+        if (!canSelectFutureStatus(fromStatus, toStatus)) {
+            showDealerPayoutToast(getBlockedStatusMessage(fromStatus, toStatus));
             return;
         }
         if (toStatus === 'COMPLETED') {
             var checked = document.querySelectorAll('.inquiry-product-checkbox:checked');
             if (!checked.length) {
-                alert('Please select at least one product for COMPLETED status.');
+                showDealerPayoutToast('Please select at least one product for COMPLETED status.');
                 return;
             }
         }
@@ -1551,12 +1697,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 closeModal();
                 window.location.reload();
             } else {
-                alert(res.data.message || 'Update failed');
+                showDealerPayoutToast(res.data.message || 'Update failed');
             }
         })
         .catch(function() {
             updateBtn.disabled = false;
-            alert('Update failed. Please try again.');
+            showDealerPayoutToast('Update failed. Please try again.');
         });
     });
 })();

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -94,7 +94,7 @@
                                 <button type="button" class="dashboard-notifications-mark-read" id="dealerMarkAllReadBtn">Mark all as read</button>
                             </div>
                             <div class="dashboard-notifications-list" id="dealerNotificationsList">
-                                <div class="dashboard-notifications-empty">Loading…</div>
+                                <div class="dashboard-notifications-empty">Loadingâ€¦</div>
                             </div>
                         </div>
                     </div>
@@ -156,7 +156,7 @@
                 <span class="dashboard-footer-text-main">&copy; {{ date('Y') }} E Stream Software. All rights reserved.</span>
             </div>
             <div class="dashboard-bottombar-right">
-                <span>Designed & Developed by <strong>Damien, Weijian & WenJun with 💜</strong></span>
+                <span>Designed & Developed by <strong>Damien, WeiJian & WenJun with ðŸ’œ</strong></span>
             </div>
         </footer>
     </main>
@@ -245,6 +245,7 @@
             var title = (it.title || ('Inquiry #SQL-' + leadId)).toString();
             var desc = (it.description || '').toString();
             var time = (it.time || '').toString();
+            var targetUrl = (it.target_url || ('/dealer/inquiries?lead=' + encodeURIComponent(leadId) + '&fromNotif=' + encodeURIComponent(id))).toString();
             
             // Check if this ID exists in our local browser storage
             var isSeen = !!seen[id];
@@ -255,7 +256,7 @@
             }
 
             var a = document.createElement('a');
-            a.href = '/dealer/inquiries?lead=' + encodeURIComponent(leadId) + '&fromNotif=' + encodeURIComponent(id);
+            a.href = targetUrl;
             a.className = 'dashboard-notification-item' + (isSeen ? '' : ' dashboard-notification-item--new');
             a.setAttribute('data-notif-id', id);
             a.innerHTML =
@@ -264,11 +265,12 @@
                 (time ? '<div class="dashboard-notification-time">' + time.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>' : '');
             
             // Mark individual item as read when clicked
-            a.addEventListener('click', function() {
+            a.addEventListener('click', function(e) {
+                e.preventDefault();
                 var s = getSeen();
                 s[id] = Date.now();
                 setSeen(s);
-                // The browser will follow the href and navigate away
+                window.location.href = targetUrl;
             });
             nList.appendChild(a);
         });
@@ -469,3 +471,4 @@
 @stack('scripts')
 </body>
 </html>
+

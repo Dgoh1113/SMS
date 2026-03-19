@@ -90,8 +90,9 @@
                     <div class="inquiries-columns-menu-title">Show columns</div>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="inquiryid"> INQUIRY ID</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="date"> INQUIRY DATE</label>
-                    <label class="inquiries-columns-check"><input type="checkbox" data-col="customername"> CUSTOMER NAME</label>
-                    <label class="inquiries-columns-check"><input type="checkbox" data-col="source"> SOURCE</label>
+                <label class="inquiries-columns-check"><input type="checkbox" data-col="customername"> CUSTOMER NAME</label>
+                <label class="inquiries-columns-check"><input type="checkbox" data-col="email"> EMAIL</label>
+                <label class="inquiries-columns-check"><input type="checkbox" data-col="source"> SOURCE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="postcode"> POSTCODE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="city"> CITY</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="address"> ADDRESS</label>
@@ -125,6 +126,7 @@
                     <th data-col="inquiryid" class="inquiries-header-cell"><span class="inquiries-header-label">INQUIRY ID</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="inquiryid"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="date" class="inquiries-header-cell"><span class="inquiries-header-label">INQUIRY DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="date"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="customername" class="inquiries-header-cell"><span class="inquiries-header-label">CUSTOMER NAME</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="customername"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                    <th data-col="email" class="inquiries-header-cell"><span class="inquiries-header-label">EMAIL</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="email"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="source" class="inquiries-header-cell"><span class="inquiries-header-label">SOURCE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="source"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="postcode" class="inquiries-header-cell"><span class="inquiries-header-label">POSTCODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="postcode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="city" class="inquiries-header-cell"><span class="inquiries-header-label">CITY</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="city"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
@@ -152,6 +154,7 @@
                         $customerDisplay = $company !== '' && $contact !== '' ? ($company . ' - ' . $contact) : ($company !== '' ? $company : ($contact !== '' ? $contact : '—'));
                     @endphp
                     <td data-col="customername">{{ $customerDisplay }}</td>
+                    <td data-col="email">{{ $r->EMAIL ?? '—' }}</td>
                     <td data-col="source">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '—') }}</td>
                     <td data-col="postcode">{{ $r->POSTCODE ?? '—' }}</td>
                     <td data-col="city">{{ $r->CITY ?? '—' }}</td>
@@ -250,7 +253,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="17" class="inquiries-empty">No unassigned inquiries.</td></tr>
+                <tr><td colspan="18" class="inquiries-empty">No unassigned inquiries.</td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -298,6 +301,7 @@
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="inquiryid"> INQUIRY ID</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="date"> INQUIRY DATE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="customername"> CUSTOMER NAME</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="email"> EMAIL</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="source"> SOURCE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="postcode"> POSTCODE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="city"> CITY</label>
@@ -334,6 +338,7 @@
                     <th data-col="inquiryid" class="inquiries-header-cell"><span class="inquiries-header-label">INQUIRY ID</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="inquiryid"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="date" class="inquiries-header-cell"><span class="inquiries-header-label">INQUIRY DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="date"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="customername" class="inquiries-header-cell"><span class="inquiries-header-label">CUSTOMER NAME</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="customername"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                    <th data-col="email" class="inquiries-header-cell"><span class="inquiries-header-label">EMAIL</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="email"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="source" class="inquiries-header-cell"><span class="inquiries-header-label">SOURCE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="source"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="postcode" class="inquiries-header-cell"><span class="inquiries-header-label">POSTCODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="postcode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="city" class="inquiries-header-cell"><span class="inquiries-header-label">CITY</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="city"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
@@ -368,6 +373,7 @@
                         $custDisp = $ccompany !== '' && $ccontact !== '' ? ($ccompany . ' - ' . $ccontact) : ($ccompany !== '' ? $ccompany : ($ccontact !== '' ? $ccontact : '—'));
                     @endphp
                     <td data-col="customername">{{ $custDisp }}</td>
+                    <td data-col="email">{{ $r->EMAIL ?? '—' }}</td>
                     <td data-col="source">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '—') }}</td>
                     <td data-col="postcode">{{ $r->POSTCODE ?? '—' }}</td>
                     <td data-col="city">{{ $r->CITY ?? '—' }}</td>
@@ -495,7 +501,7 @@
                     </td>
                         </tr>
                     @empty
-                    <tr><td colspan="24" class="inquiries-empty">No assigned inquiries.</td></tr>
+                <tr><td colspan="25" class="inquiries-empty">No assigned inquiries.</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -991,11 +997,16 @@ document.addEventListener('DOMContentLoaded', function() {
     })();
     @endif
 
-    var STORAGE_KEY = 'inquiryVisibleColumns_v2';
-    var DEFAULT_COLUMNS = ['inquiryid', 'date', 'customername', 'postcode', 'city', 'businessnature', 'products', 'status'];
-    var ASSIGNED_STORAGE_KEY = 'assignedVisibleColumns_v2';
-    // Default Assigned layout (can still toggle INQUIRY DATE from Columns menu)
-    var ASSIGNED_DEFAULT_COLUMNS = ['inquiryid', 'customername', 'postcode', 'city', 'assignedto', 'assigndate', 'status'];
+    var STORAGE_KEY = 'inquiryVisibleColumns_v3';
+    var LEGACY_STORAGE_KEY = 'inquiryVisibleColumns_v2';
+    var LEGACY_DEFAULT_COLUMNS = ['inquiryid', 'date', 'customername', 'postcode', 'city', 'businessnature', 'products', 'status'];
+    var DEFAULT_COLUMNS = ['inquiryid', 'date', 'customername', 'email', 'postcode', 'city', 'products', 'status'];
+    var INCOMING_ALL_COLUMNS = ['inquiryid','date','customername','email','source','city','postcode','address','contactno','businessnature','users','existingsw','demomode','products','message','referralcode','status'];
+    var ASSIGNED_STORAGE_KEY = 'assignedVisibleColumns_v3';
+    var ASSIGNED_LEGACY_STORAGE_KEY = 'assignedVisibleColumns_v2';
+    var ASSIGNED_LEGACY_DEFAULT_COLUMNS = ['inquiryid', 'customername', 'postcode', 'city', 'assignedto', 'assigndate', 'status'];
+    // Default Assigned layout
+    var ASSIGNED_DEFAULT_COLUMNS = ['inquiryid', 'date', 'customername', 'postcode', 'city', 'assignedto', 'assigndate', 'status'];
 
     function updateTableScrollMode(table, visible, defaults) {
         if (!table) return;
@@ -1003,6 +1014,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!scroller) return;
         var visibleCols = Array.isArray(visible) ? visible : [];
         var hasExtras = visibleCols.some(function(c) { return defaults.indexOf(c) === -1; });
+        var hasProducts = visibleCols.indexOf('products') !== -1 || visibleCols.indexOf('dealtproducts') !== -1;
         // If user selected "None", we keep current scrolling behavior (doesn't matter).
         var enabled = visibleCols.length > 0;
 
@@ -1014,16 +1026,29 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        scroller.classList.toggle('inquiries-table-scroll--no-x', enabled && !hasExtras);
-        table.classList.toggle('inquiries-table--fit', enabled && !hasExtras);
+        scroller.classList.toggle('inquiries-table-scroll--no-x', enabled && !hasExtras && !hasProducts);
+        table.classList.toggle('inquiries-table--fit', enabled && !hasExtras && !hasProducts);
     }
 
     function getVisibleColumns() {
         try {
             var raw = localStorage.getItem(STORAGE_KEY);
+            if (raw === null) raw = localStorage.getItem(LEGACY_STORAGE_KEY);
             if (raw !== null) {
                 var arr = JSON.parse(raw);
-                if (Array.isArray(arr)) return arr; // allow empty array for "None"
+                if (Array.isArray(arr)) {
+                    var isLegacyDefault = arr.length === LEGACY_DEFAULT_COLUMNS.length && arr.every(function(col, index) {
+                        return col === LEGACY_DEFAULT_COLUMNS[index];
+                    });
+                    var migrated = isLegacyDefault ? DEFAULT_COLUMNS.slice() : arr.filter(function(col) {
+                        return INCOMING_ALL_COLUMNS.indexOf(col) !== -1;
+                    });
+                    try {
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+                        localStorage.removeItem(LEGACY_STORAGE_KEY);
+                    } catch (e) {}
+                    return migrated; // allow empty array for "None"
+                }
             }
         } catch (e) {}
         return DEFAULT_COLUMNS.slice();
@@ -1036,9 +1061,20 @@ document.addEventListener('DOMContentLoaded', function() {
     function getAssignedVisibleColumns() {
         try {
             var raw = localStorage.getItem(ASSIGNED_STORAGE_KEY);
+            if (raw === null) raw = localStorage.getItem(ASSIGNED_LEGACY_STORAGE_KEY);
             if (raw !== null) {
                 var arr = JSON.parse(raw);
-                if (Array.isArray(arr)) return arr; // allow empty array for "None"
+                if (Array.isArray(arr)) {
+                    var isLegacyDefault = arr.length === ASSIGNED_LEGACY_DEFAULT_COLUMNS.length && arr.every(function(col, index) {
+                        return col === ASSIGNED_LEGACY_DEFAULT_COLUMNS[index];
+                    });
+                    var migrated = isLegacyDefault ? ASSIGNED_DEFAULT_COLUMNS.slice() : arr;
+                    try {
+                        localStorage.setItem(ASSIGNED_STORAGE_KEY, JSON.stringify(migrated));
+                        localStorage.removeItem(ASSIGNED_LEGACY_STORAGE_KEY);
+                    } catch (e) {}
+                    return migrated; // allow empty array for "None"
+                }
             }
         } catch (e) {}
         return ASSIGNED_DEFAULT_COLUMNS.slice();
@@ -1050,8 +1086,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function applyColumns(visible) {
         var table = document.getElementById('unassignedTable');
         if (!table) return;
-        var allCols = ['inquiryid','date','customername','source','city','postcode','address','contactno','businessnature','users','existingsw','demomode','products','message','referralcode','status'];
-        allCols.forEach(function(col) {
+        INCOMING_ALL_COLUMNS.forEach(function(col) {
             var show = visible.indexOf(col) !== -1;
             table.querySelectorAll('th[data-col="' + col + '"], td[data-col="' + col + '"]').forEach(function(el) {
                 el.style.display = show ? '' : 'none';
@@ -1070,7 +1105,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function applyAssignedColumns(visible) {
         var table = document.getElementById('assignedTable');
         if (!table) return;
-        var allCols = ['inquiryid','date','customername','source','city','postcode','address','contactno','businessnature','users','existingsw','demomode','products','dealtproducts','message','referralcode','assignedby','assignedto','completiondate','payoutsdate','attachment','assigndate','status'];
+        var allCols = ['inquiryid','date','customername','email','source','city','postcode','address','contactno','businessnature','users','existingsw','demomode','products','dealtproducts','message','referralcode','assignedby','assignedto','completiondate','payoutsdate','attachment','assigndate','status'];
         allCols.forEach(function(col) {
             var show = visible.indexOf(col) !== -1;
             table.querySelectorAll('th[data-col="' + col + '"], td[data-col="' + col + '"]').forEach(function(el) {
@@ -1164,8 +1199,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var allBtn = document.getElementById('inquiryColumnsAll');
     if (allBtn) {
         allBtn.addEventListener('click', function() {
-            var allCols = ['inquiryid','date','customername','source','city','postcode','address','contactno','businessnature','users','existingsw','demomode','products','message','referralcode','status'];
-            setVisibleColumns(allCols.slice());
+            setVisibleColumns(INCOMING_ALL_COLUMNS.slice());
             refreshColumnState();
         });
     }
@@ -1226,7 +1260,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var aAll = document.getElementById('assignedColumnsAll');
     if (aAll) {
         aAll.addEventListener('click', function() {
-            var allCols = ['inquiryid','date','customername','source','city','postcode','address','contactno','businessnature','users','existingsw','demomode','products','dealtproducts','message','referralcode','assignedby','assignedto','completiondate','payoutsdate','attachment','assigndate','status'];
+            var allCols = ['inquiryid','date','customername','email','source','city','postcode','address','contactno','businessnature','users','existingsw','demomode','products','dealtproducts','message','referralcode','assignedby','assignedto','completiondate','payoutsdate','attachment','assigndate','status'];
             setAssignedVisibleColumns(allCols.slice());
             refreshAssignedColumnState();
         });

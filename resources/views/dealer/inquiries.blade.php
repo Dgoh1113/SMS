@@ -1,17 +1,32 @@
 @extends('layouts.app')
-@section('title', 'All Inquiries – SQL LMS Dealer Console')
+@section('title', 'My Inquiries – SQL LMS Dealer Console')
 
 @push('styles')
 <style>
     @keyframes shineEffect {
-        0% { background-color: transparent; }
-        50% { background-color: rgba(76, 29, 149, 0.4); box-shadow: inset 0 0 10px rgba(76, 29, 149, 0.6); }
-        100% { background-color: transparent; }
+        0% { background-color: rgba(124, 58, 237, 0); }
+        45% { background-color: rgba(124, 58, 237, 0.14); }
+        100% { background-color: rgba(124, 58, 237, 0.06); }
+    }
+    .inquiry-row--notif-highlight {
+        position: relative;
+        outline: none;
+        box-shadow: none;
     }
     .inquiry-row--notif-highlight td {
-        animation: shineEffect 1.5s ease-in-out 3; /* Pulses 3 times */
-        background-color: rgba(76, 29, 149, 0.1); /* Leaves a soft highlight */
-        transition: background-color 0.5s ease;
+        animation: shineEffect 1.2s ease-out 2;
+        background-color: rgba(124, 58, 237, 0.06);
+        transition: background-color 0.35s ease;
+    }
+    .inquiry-row--notif-highlight td.inquiries-col-action {
+        background-color: rgba(124, 58, 237, 0.10);
+        z-index: 7;
+    }
+    .inquiry-row--notif-highlight td:first-child {
+        box-shadow: inset 4px 0 0 #7c3aed;
+    }
+    .inquiry-row--notif-highlight::after {
+        display: none;
     }
 </style>
 @endpush
@@ -23,14 +38,14 @@
         5 => 'SQL Ecommerce', 6 => 'SQL EBI Wellness POS', 7 => 'SQL X Suduai', 8 => 'SQL X-Store',
         9 => 'SQL Vision', 10 => 'SQL HRMS', 11 => 'Others',
     ];
-    $statusFilterOptions = ['Created', 'Followup', 'Demo', 'Confirmed', 'Completed', 'Rewarded', 'Failed'];
+    $statusFilterOptions = ['Followup', 'Demo', 'Confirmed', 'Completed', 'Rewarded', 'Failed'];
 @endphp
 <div class="dashboard-content inquiries-page-wrap">
     <section class="inquiries-mgmt-panel dealer-inquiries-panel">
         <div class="inquiries-panel-header">
             <div class="inquiries-panel-title-wrap">
                 <i class="bi bi-folder2-open inquiries-panel-icon"></i>
-                <h2 class="inquiries-panel-title">All Inquiries</h2>
+                <h2 class="inquiries-panel-title">My Inquiries</h2>
             </div>
             <div class="inquiries-panel-actions">
                 <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-sync-btn" data-sync-url="{{ route('dealer.inquiries.sync') }}">
@@ -44,7 +59,7 @@
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="inquiryid"> INQUIRY ID</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="date"> INQUIRY DATE</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="customer"> CUSTOMER NAME</label>
-                        <label class="inquiries-columns-check"><input type="checkbox" data-col="source"> SOURCE</label>
+                        <label class="inquiries-columns-check"><input type="checkbox" data-col="email"> EMAIL</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="postcode"> POSTCODE</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="city"> CITY</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="address"> ADDRESS</label>
@@ -54,6 +69,8 @@
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="existingsw"> EXISTING SW</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="demomode"> DEMO MODE</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="products"> PRODUCTS</label>
+                        <label class="inquiries-columns-check"><input type="checkbox" data-col="completiondate"> COMPLETION DATE</label>
+                        <label class="inquiries-columns-check"><input type="checkbox" data-col="payoutsdate"> PAYOUTS DATE</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="message"> MESSAGE</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="referralcode"> REFERRAL CODE</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="attachment"> ATTACHMENT</label>
@@ -74,18 +91,20 @@
                 <thead>
                     <tr class="inquiries-header-row">
                         <th data-col="inquiryid" class="inquiries-header-cell"><span class="inquiries-header-label">INQUIRY ID</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="inquiryid"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="date" class="inquiries-header-cell"><span class="inquiries-header-label">DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="date"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="date" class="inquiries-header-cell"><span class="inquiries-header-label">INQUIRY DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="date"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="customer" class="inquiries-header-cell"><span class="inquiries-header-label">CUSTOMER NAME</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="customer"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="source" class="inquiries-header-cell"><span class="inquiries-header-label">SOURCE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="source"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="email" class="inquiries-header-cell"><span class="inquiries-header-label">EMAIL</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="email"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="postcode" class="inquiries-header-cell"><span class="inquiries-header-label">POSTCODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="postcode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="city" class="inquiries-header-cell"><span class="inquiries-header-label">CITY</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="city"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="address" class="inquiries-header-cell"><span class="inquiries-header-label">ADDRESS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="address"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="contactno" class="inquiries-header-cell"><span class="inquiries-header-label">CONTACT NO</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="contactno"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="businessnature" class="inquiries-header-cell"><span class="inquiries-header-label">BUSINESS NATURE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="businessnature"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="users" class="inquiries-header-cell"><span class="inquiries-header-label">USERS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="users"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="users" class="inquiries-header-cell"><span class="inquiries-header-label">USERS</span><span class="inquiries-filter-wrap dealer-operator-search-wrap"><span class="dealer-operator-search-box"><button type="button" class="dealer-operator-btn" data-col="users" data-op="=" aria-haspopup="true" aria-expanded="false" title="Filter operator">=</button><div class="dealer-operator-dropdown" hidden><button type="button" data-op="=">= Equals</button><button type="button" data-op="!=">!= Does not equal</button><button type="button" data-op="<">&lt; Less than</button><button type="button" data-op="<=">&lt;= Less than or equal to</button><button type="button" data-op=">">&gt; Greater than</button><button type="button" data-op=">=">&gt;= Greater than or equal to</button></div><input type="text" class="inquiries-grid-filter" data-col="users" placeholder="0"></span></span></th>
                         <th data-col="existingsw" class="inquiries-header-cell"><span class="inquiries-header-label">EXISTING SW</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="existingsw"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="demomode" class="inquiries-header-cell"><span class="inquiries-header-label">DEMO MODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="demomode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="products" class="inquiries-header-cell"><span class="inquiries-header-label">PRODUCTS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="products"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="completiondate" class="inquiries-header-cell"><span class="inquiries-header-label">COMPLETION DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="completiondate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="payoutsdate" class="inquiries-header-cell"><span class="inquiries-header-label">PAYOUTS DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="payoutsdate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="message" class="inquiries-header-cell"><span class="inquiries-header-label">MESSAGE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="message"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="referralcode" class="inquiries-header-cell"><span class="inquiries-header-label">REFERRAL CODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="referralcode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="attachment" class="inquiries-header-cell"><span class="inquiries-header-label">ATTACHMENT</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="attachment"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
@@ -151,16 +170,68 @@ document.addEventListener('DOMContentLoaded', function() {
     var table = document.getElementById('dealerInquiriesTable');
     if (!table) return;
 
+    function normalizeDealerTableStructure() {
+        table.querySelectorAll('th[data-col="source"], td[data-col="source"]').forEach(function(el) {
+            el.remove();
+        });
+    }
+
+    normalizeDealerTableStructure();
+
+    (function initMessageModal() {
+        if (document.getElementById('inquiryMessageModal')) return;
+        var modal = document.createElement('div');
+        modal.id = 'inquiryMessageModal';
+        modal.className = 'inquiries-msg-modal';
+        modal.hidden = true;
+        modal.innerHTML = ''
+            + '<div class="inquiries-msg-modal-backdrop" data-close="1"></div>'
+            + '<div class="inquiries-msg-modal-window" role="dialog" aria-modal="true" aria-labelledby="inquiriesMsgModalTitle">'
+            + '  <div class="inquiries-msg-modal-header">'
+            + '    <div class="inquiries-msg-modal-title" id="inquiriesMsgModalTitle">Message</div>'
+            + '    <button type="button" class="inquiries-msg-modal-close" aria-label="Close" data-close="1">&times;</button>'
+            + '  </div>'
+            + '  <div class="inquiries-msg-modal-body"><pre class="inquiries-msg-modal-text" id="inquiriesMsgModalText"></pre></div>'
+            + '</div>';
+        document.body.appendChild(modal);
+
+        function close() { modal.hidden = true; }
+        function open(text) {
+            var el = document.getElementById('inquiriesMsgModalText');
+            if (el) el.textContent = text || '';
+            modal.hidden = false;
+        }
+
+        document.addEventListener('click', function(e) {
+            var cell = e.target && e.target.closest ? e.target.closest('.inquiries-msg-clickable[data-full-message]') : null;
+            if (cell && table.contains(cell)) {
+                open(cell.getAttribute('data-full-message') || '');
+                return;
+            }
+            if (e.target && e.target.getAttribute && e.target.getAttribute('data-close') === '1') {
+                close();
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && !modal.hidden) close();
+        });
+    })();
+
     // Columns dropdown (admin-like)
     var colsBtn = document.getElementById('dealerInquiryColumnsBtn');
     var colsMenu = document.getElementById('dealerInquiryColumnsMenu');
     var colsAll = document.getElementById('dealerInquiryColumnsAll');
     var colsNone = document.getElementById('dealerInquiryColumnsNone');
     var colsReset = document.getElementById('dealerInquiryColumnsReset');
-    var storageKey = 'dealer_inquiries_visible_cols_v3';
+    var storageKey = 'dealer_inquiries_visible_cols_v7';
+    var legacyStorageKey = 'dealer_inquiries_visible_cols_v6';
+    var olderLegacyStorageKey = 'dealer_inquiries_visible_cols_v5';
     // Default columns follow admin incoming inquiries table, but message → assignby + status
-    var defaultCols = ['inquiryid','date','customer','postcode','city','businessnature','products','attachment','assignby','status'];
-    var allCols = ['inquiryid','date','customer','source','postcode','city','address','contactno','businessnature','users','existingsw','demomode','products','message','referralcode','attachment','assignby','status'];
+    var legacyDefaultCols = ['inquiryid','date','customer','email','postcode','city','products','assignby','status'];
+    var olderLegacyDefaultCols = ['inquiryid','date','customer','postcode','city','businessnature','products','assignby','status'];
+    var defaultCols = ['inquiryid','date','customer','email','postcode','city','products','status'];
+    var allCols = ['inquiryid','date','customer','email','postcode','city','address','contactno','businessnature','users','existingsw','demomode','products','completiondate','payoutsdate','message','referralcode','attachment','assignby','status'];
 
     var statusCheckbox = colsMenu ? colsMenu.querySelector('input[type="checkbox"][data-col="status"]') : null;
     if (statusCheckbox) {
@@ -191,8 +262,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function applyVisibleCols(cols) {
-        // hide/show based on cols; keep ACTION column always visible
+        normalizeDealerTableStructure();
+        // Hide/show data columns, and hide ACTION too when "None" is selected.
         allCols.forEach(function(c) { setColVisible(c, cols.indexOf(c) !== -1); });
+        var showAction = Array.isArray(cols) && cols.length > 0;
+        table.querySelectorAll('th.inquiries-col-action, td.inquiries-col-action').forEach(function(el) {
+            el.style.display = showAction ? '' : 'none';
+        });
+        clearDealerColumnWidths();
         updateScrollMode(cols);
         // sync checkboxes
         if (colsMenu) {
@@ -206,18 +283,19 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateScrollMode(visibleCols) {
         var scroller = table.closest('.inquiries-table-scroll');
         if (!scroller) return;
+        var activeCols = Array.isArray(visibleCols) ? visibleCols : [];
+        var hasExtras = activeCols.some(function(col) { return defaultCols.indexOf(col) === -1; });
+        var hasProducts = activeCols.indexOf('products') !== -1;
+        var enabled = activeCols.length > 0;
 
-        // On smaller screens, always allow horizontal scroll so no columns feel "blocked".
-        // Fit-mode is desktop-only.
         if (window.innerWidth && window.innerWidth < 1200) {
             scroller.classList.remove('inquiries-table-scroll--no-x');
             table.classList.remove('inquiries-table--fit');
             return;
         }
 
-        var hasExtras = (visibleCols || []).some(function(c) { return defaultCols.indexOf(c) === -1; });
-        scroller.classList.toggle('inquiries-table-scroll--no-x', !hasExtras);
-        table.classList.toggle('inquiries-table--fit', !hasExtras);
+        scroller.classList.toggle('inquiries-table-scroll--no-x', enabled && !hasExtras && !hasProducts);
+        table.classList.toggle('inquiries-table--fit', enabled && !hasExtras && !hasProducts);
     }
 
     function saveCols(cols) {
@@ -227,12 +305,45 @@ document.addEventListener('DOMContentLoaded', function() {
     function loadCols() {
         try {
             var raw = localStorage.getItem(storageKey);
+            if (!raw) raw = localStorage.getItem(legacyStorageKey);
+            if (!raw) raw = localStorage.getItem(olderLegacyStorageKey);
             if (!raw) return null;
             var parsed = JSON.parse(raw);
-            return Array.isArray(parsed) ? parsed : null;
+            if (!Array.isArray(parsed)) return null;
+
+            var isLegacyDefault =
+                (parsed.length === legacyDefaultCols.length && parsed.every(function(col, index) {
+                    return col === legacyDefaultCols[index];
+                })) ||
+                (parsed.length === olderLegacyDefaultCols.length && parsed.every(function(col, index) {
+                    return col === olderLegacyDefaultCols[index];
+                }));
+            var migrated = isLegacyDefault ? defaultCols.slice() : parsed.filter(function(col) {
+                return allCols.indexOf(col) !== -1;
+            });
+
+            try {
+                localStorage.setItem(storageKey, JSON.stringify(migrated));
+                localStorage.removeItem(legacyStorageKey);
+                localStorage.removeItem(olderLegacyStorageKey);
+            } catch (e) {}
+
+            return migrated;
         } catch (e) {
             return null;
         }
+    }
+
+    function clearDealerColumnWidths() {
+        allCols.forEach(function(col) {
+            var nodes = table.querySelectorAll('th[data-col="' + col + '"], td[data-col="' + col + '"]');
+            if (!nodes.length) return;
+            nodes.forEach(function(node) {
+                node.style.removeProperty('width');
+                node.style.removeProperty('min-width');
+                node.style.removeProperty('max-width');
+            });
+        });
     }
 
     window.dealerPaginationState = window.dealerPaginationState || { currentPage: 1, perPage: 10 };
@@ -247,39 +358,114 @@ document.addEventListener('DOMContentLoaded', function() {
         return normalized;
     }
 
+    var DEALER_INQUIRY_NUMERIC_FILTER_COLS = ['users'];
+
+    function parseDealerInquiryFilterNumber(value) {
+        var num = parseFloat(String(value || '').replace(/[^0-9.\-]/g, ''));
+        return isNaN(num) ? 0 : num;
+    }
+
+    function bindDealerInquiryOperatorMenus(tableEl) {
+        if (!tableEl) return;
+        tableEl.querySelectorAll('.dealer-operator-btn').forEach(function(btn) {
+            if (btn.getAttribute('data-operator-bound') === '1') return;
+            btn.setAttribute('data-operator-bound', '1');
+            var dropdown = btn.parentElement.querySelector('.dealer-operator-dropdown');
+            if (!dropdown) return;
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var isOpen = !dropdown.hidden;
+                tableEl.querySelectorAll('.dealer-operator-dropdown').forEach(function(d) { d.hidden = true; });
+                tableEl.querySelectorAll('.dealer-operator-btn').forEach(function(b) { b.setAttribute('aria-expanded', 'false'); });
+                dropdown.hidden = isOpen;
+                btn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+            });
+            dropdown.addEventListener('click', function(e) { e.stopPropagation(); });
+            dropdown.querySelectorAll('button[data-op]').forEach(function(option) {
+                option.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    var op = option.getAttribute('data-op') || '=';
+                    btn.setAttribute('data-op', op);
+                    btn.textContent = op;
+                    btn.setAttribute('aria-expanded', 'false');
+                    dropdown.hidden = true;
+                    applyDealerGridFilters();
+                });
+            });
+        });
+    }
+
+    function resetDealerInquiryOperatorMenus(tableEl) {
+        if (!tableEl) return;
+        tableEl.querySelectorAll('.dealer-operator-btn').forEach(function(btn) {
+            btn.setAttribute('data-op', '=');
+            btn.textContent = '=';
+            btn.setAttribute('aria-expanded', 'false');
+        });
+        tableEl.querySelectorAll('.dealer-operator-dropdown').forEach(function(dropdown) {
+            dropdown.hidden = true;
+        });
+    }
+
     function applyDealerGridFilters() {
         var filters = {};
         table.querySelectorAll('.inquiries-grid-filter').forEach(function(inp) {
             var col = inp.getAttribute('data-col');
-            var val = (inp.value || '').toLowerCase().trim();
+            var val = (inp.value || '').trim();
             if (!col) return;
+            if (val === '') return;
             if (col === 'status') {
                 val = normalizeDealerInquiryStatus(val);
+                if (!val) return;
+                filters[col] = { numeric: false, val: val };
+                return;
             }
-            if (val) filters[col] = val;
+            if (DEALER_INQUIRY_NUMERIC_FILTER_COLS.indexOf(col) !== -1) {
+                var opBtn = table.querySelector('.dealer-operator-btn[data-col="' + col + '"]');
+                filters[col] = {
+                    numeric: true,
+                    op: opBtn ? (opBtn.getAttribute('data-op') || '=') : '=',
+                    val: val
+                };
+                return;
+            }
+            filters[col] = { numeric: false, val: val.toLowerCase() };
         });
 
         table.querySelectorAll('tbody .inquiry-row').forEach(function(row) {
             var colMatch = true;
             for (var col in filters) {
                 var cell = row.querySelector('td[data-col="' + col + '"]');
-                var cellText = (cell && cell.textContent) ? cell.textContent.toLowerCase().trim() : '';
+                var cellText = (cell && cell.textContent) ? cell.textContent.trim() : '';
+                var filter = filters[col];
+                if (filter.numeric) {
+                    var cellNum = parseDealerInquiryFilterNumber(cellText);
+                    var filterNum = parseDealerInquiryFilterNumber(filter.val);
+                    if (filter.op === '=' && cellNum !== filterNum) { colMatch = false; break; }
+                    if (filter.op === '!=' && cellNum === filterNum) { colMatch = false; break; }
+                    if (filter.op === '>' && cellNum <= filterNum) { colMatch = false; break; }
+                    if (filter.op === '>=' && cellNum < filterNum) { colMatch = false; break; }
+                    if (filter.op === '<' && cellNum >= filterNum) { colMatch = false; break; }
+                    if (filter.op === '<=' && cellNum > filterNum) { colMatch = false; break; }
+                    continue;
+                }
                 if (col === 'status') {
-                    var normalizedStatusFilter = normalizeDealerInquiryStatus(filters[col]);
+                    var normalizedStatusFilter = normalizeDealerInquiryStatus(filter.val);
                     if (!normalizedStatusFilter) {
                         continue;
                     }
-                    if (normalizeDealerInquiryStatus(cellText) !== normalizedStatusFilter) {
+                    if (normalizeDealerInquiryStatus(cellText.toLowerCase()) !== normalizedStatusFilter) {
                         colMatch = false;
                         break;
                     }
                     continue;
                 }
-                if (cellText.indexOf(filters[col]) === -1) { colMatch = false; break; }
+                if (cellText.toLowerCase().indexOf(filter.val) === -1) { colMatch = false; break; }
             }
             row.dataset.filterMatch = colMatch ? '1' : '0';
         });
 
+        window.dealerPaginationState.currentPage = 1;
         if (typeof window.dealerApplyPagination === 'function') {
             window.dealerApplyPagination();
         }
@@ -290,11 +476,17 @@ document.addEventListener('DOMContentLoaded', function() {
         inp.addEventListener('keyup', applyDealerGridFilters);
         inp.addEventListener('change', applyDealerGridFilters);
     });
+    bindDealerInquiryOperatorMenus(table);
+    document.addEventListener('click', function() {
+        table.querySelectorAll('.dealer-operator-dropdown').forEach(function(dropdown) { dropdown.hidden = true; });
+        table.querySelectorAll('.dealer-operator-btn').forEach(function(btn) { btn.setAttribute('aria-expanded', 'false'); });
+    });
 
     var clearBtn = document.getElementById('dealerInquiryClearFilters');
     if (clearBtn) {
         clearBtn.addEventListener('click', function() {
             table.querySelectorAll('.inquiries-grid-filter').forEach(function(inp) { inp.value = ''; });
+            resetDealerInquiryOperatorMenus(table);
             applyDealerGridFilters();
         });
     }
@@ -349,27 +541,27 @@ document.addEventListener('DOMContentLoaded', function() {
         var infoEl = pagination.querySelector('.inquiries-assigned-pagination-info');
         var pageNumbersEl = document.getElementById('dealerInquiriesPageNumbers');
         var controls = pagination.querySelectorAll('.inquiries-pagination-btn');
-
-        var total = parseInt(pagination.getAttribute('data-total') || '0', 10);
         var perPage = parseInt(pagination.getAttribute('data-per-page') || '10', 10);
         window.dealerPaginationState.perPage = perPage;
 
-        var rows = Array.prototype.slice.call(table.querySelectorAll('tbody .inquiry-row'));
-        var lastPage = parseInt(pagination.getAttribute('data-last-page') || '1', 10);
+        function getAllRows() {
+            return Array.prototype.slice.call(table.querySelectorAll('tbody .inquiry-row'));
+        }
 
-        // Assign pages for all current rows (fresh after Sync)
-        rows.forEach(function(row, index) {
-            row.setAttribute('data-page', String(Math.floor(index / perPage) + 1));
-            if (!row.dataset.filterMatch) row.dataset.filterMatch = '1';
-        });
+        function getMatchingRows() {
+            return getAllRows().filter(function(row) {
+                if (!row.dataset.filterMatch) row.dataset.filterMatch = '1';
+                return row.dataset.filterMatch !== '0';
+            });
+        }
 
-        function buildPageNumbers() {
+        function buildPageNumbers(currentPage, lastPage) {
             if (!pageNumbersEl) return;
             pageNumbersEl.innerHTML = '';
             for (var p = 1; p <= lastPage; p++) {
                 var btn = document.createElement('button');
                 btn.type = 'button';
-                btn.className = 'inquiries-pagination-num' + (p === window.dealerPaginationState.currentPage ? ' inquiries-pagination-num-active' : '');
+                btn.className = 'inquiries-pagination-num' + (p === currentPage ? ' inquiries-pagination-num-active' : '');
                 btn.setAttribute('data-page', String(p));
                 btn.textContent = String(p);
                 btn.addEventListener('click', function() {
@@ -381,25 +573,32 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         window.dealerApplyPagination = function() {
-            var currentPage = window.dealerPaginationState.currentPage;
-            rows = Array.prototype.slice.call(table.querySelectorAll('tbody .inquiry-row'));
+            var rows = getAllRows();
+            var matchingRows = getMatchingRows();
+            var total = matchingRows.length;
+            var lastPage = total > 0 ? Math.ceil(total / perPage) : 1;
+            var currentPage = parseInt(window.dealerPaginationState.currentPage || '1', 10);
+
+            currentPage = Math.max(1, Math.min(currentPage, lastPage));
+            window.dealerPaginationState.currentPage = currentPage;
+
+            var start = (currentPage - 1) * perPage;
+            var end = Math.min(start + perPage, total);
+            var pageRows = matchingRows.slice(start, end);
+
             rows.forEach(function(row) {
-                var p = parseInt(row.getAttribute('data-page') || '1', 10);
-                var filterOk = row.dataset.filterMatch !== '0';
-                row.style.display = (filterOk && p === currentPage) ? '' : 'none';
+                row.style.display = pageRows.indexOf(row) !== -1 ? '' : 'none';
             });
-        };
 
-        window.dealerGoToPage = function(page) {
-            window.dealerPaginationState.currentPage = Math.max(1, Math.min(page, lastPage));
-            window.dealerApplyPagination();
+            pagination.setAttribute('data-total', String(total));
+            pagination.setAttribute('data-last-page', String(lastPage));
+            pagination.setAttribute('data-current-page', String(currentPage));
 
-            var currentPage = window.dealerPaginationState.currentPage;
-            var from = total > 0 ? ((currentPage - 1) * perPage) + 1 : 0;
-            var to = Math.min(currentPage * perPage, total);
             if (infoEl) {
-                infoEl.textContent = 'Showing ' + (total > 0 ? from : 0) + ' to ' + (total > 0 ? to : 0) + ' of ' + total + ' entries (Page ' + currentPage + ')';
+                var from = total === 0 ? 0 : start + 1;
+                infoEl.textContent = 'Showing ' + from + ' to ' + end + ' of ' + total + ' entries (Page ' + currentPage + ')';
             }
+
             controls.forEach(function(btn) {
                 var type = btn.getAttribute('data-page');
                 if (type === 'first' || type === 'prev') {
@@ -408,11 +607,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     btn.disabled = currentPage >= lastPage;
                 }
             });
-            if (pageNumbersEl) {
-                Array.prototype.forEach.call(pageNumbersEl.querySelectorAll('.inquiries-pagination-num'), function(n) {
-                    n.classList.toggle('inquiries-pagination-num-active', parseInt(n.getAttribute('data-page') || '1', 10) === currentPage);
-                });
-            }
+
+            buildPageNumbers(currentPage, lastPage);
+        };
+
+        window.dealerGoToPage = function(page) {
+            window.dealerPaginationState.currentPage = parseInt(page || '1', 10) || 1;
+            window.dealerApplyPagination();
         };
 
         // Bind controls once (safe because init runs after Sync too)
@@ -427,10 +628,7 @@ document.addEventListener('DOMContentLoaded', function() {
             };
         });
 
-        buildPageNumbers();
-        // Keep existing page when possible; otherwise reset to 1
-        if (window.dealerPaginationState.currentPage > lastPage) window.dealerPaginationState.currentPage = 1;
-        window.dealerGoToPage(window.dealerPaginationState.currentPage || 1);
+        window.dealerApplyPagination();
     }
 
     // Simple client-side pagination: 10 inquiries per page
@@ -458,6 +656,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (tbody && data.rows !== undefined) {
                 tbody.innerHTML = data.rows;
             }
+            normalizeDealerTableStructure();
             // Re-apply filters and column visibility after replacing rows
             applyDealerGridFilters();
             var currentCols = loadCols() || defaultCols.slice();
@@ -584,6 +783,7 @@ document.addEventListener('DOMContentLoaded', function() {
 @push('scripts')
 <script>
 (function() {
+    var table = document.getElementById('dealerInquiriesTable');
     var modal = document.getElementById('inquiryUpdateModal');
     var subtitle = document.getElementById('inquiryModalSubtitle');
     var closeBtn = document.getElementById('inquiryModalClose');
@@ -627,6 +827,96 @@ document.addEventListener('DOMContentLoaded', function() {
     var userPickedStep = false;
     var latestMinDate = '';
     var latestMinTime = '';
+    var currentReferralCode = '';
+
+    function hasReferralCode(value) {
+        var normalized = String(value || '').trim();
+        return normalized !== '' && normalized !== '-' && normalized !== '—';
+    }
+
+    function formatStatusLabel(status) {
+        switch (status) {
+            case 'FOLLOW UP': return 'Follow Up';
+            case 'PENDING': return 'Pending';
+            case 'DEMO': return 'Demo';
+            case 'CONFIRMED': return 'Confirmed';
+            case 'COMPLETED': return 'Completed';
+            case 'REWARDED': return 'Rewarded';
+            default: return String(status || '').trim();
+        }
+    }
+
+    function canSelectFutureStatus(fromStatus, toStatus) {
+        if (!fromStatus || !toStatus) return false;
+        var fromIdx = statusOrder.indexOf(fromStatus);
+        var toIdx = statusOrder.indexOf(toStatus);
+        if (fromIdx < 0 || toIdx <= fromIdx) return false;
+
+        switch (fromStatus) {
+            case 'PENDING':
+                return toStatus === 'FOLLOW UP';
+            case 'FOLLOW UP':
+                return toStatus === 'DEMO' || toStatus === 'CONFIRMED' || toStatus === 'COMPLETED';
+            case 'DEMO':
+                return toStatus === 'CONFIRMED' || toStatus === 'COMPLETED';
+            case 'CONFIRMED':
+                return toStatus === 'COMPLETED';
+            case 'COMPLETED':
+                return toStatus === 'REWARDED' && hasReferralCode(currentReferralCode);
+            default:
+                return false;
+        }
+    }
+
+    function getDefaultSelectedStatusIdx(idx) {
+        var currentStatus = statusOrder[idx] || 'PENDING';
+        for (var i = idx + 1; i < statusOrder.length; i++) {
+            if (canSelectFutureStatus(currentStatus, statusOrder[i])) {
+                return i;
+            }
+        }
+        return idx;
+    }
+
+    function getBlockedStatusMessage(fromStatus, toStatus) {
+        if (fromStatus === 'PENDING' && toStatus !== 'FOLLOW UP') {
+            return 'You cant change status from Pending To ' + formatStatusLabel(toStatus) + ', Please Follow Up First';
+        }
+        if (toStatus === 'REWARDED' && !hasReferralCode(currentReferralCode)) {
+            return 'You cant change status to Rewarded, Referral Code is required first';
+        }
+        if (toStatus === 'REWARDED') {
+            return 'You cant change status to Rewarded, Please Complete First';
+        }
+        return 'You cant change status from ' + formatStatusLabel(fromStatus) + ' To ' + formatStatusLabel(toStatus);
+    }
+
+    function refreshProgressionState() {
+        if (!progressionSteps) return;
+        var currentStatus = statusOrder[currentStatusIdx] || 'PENDING';
+        progressionSteps.querySelectorAll('.inquiry-step').forEach(function(step, i) {
+            step.classList.remove('inquiry-step--done', 'inquiry-step--active', 'inquiry-step--selected', 'inquiry-step--clickable', 'inquiry-step--no-click', 'inquiry-step--viewable');
+            var label = getStepDisplayLabel(i);
+            var displayText = label || step.dataset.step;
+            var isDone = i <= currentStatusIdx;
+            if (isDone) {
+                step.classList.add('inquiry-step--done', 'inquiry-step--viewable');
+                if (i === selectedStatusIdx && viewMode) step.classList.add('inquiry-step--selected');
+                step.innerHTML = '<i class="bi bi-check"></i><span>' + displayText + '</span>';
+                return;
+            }
+
+            var canClick = canSelectFutureStatus(currentStatus, statusOrder[i]);
+            step.innerHTML = '<span>' + displayText + '</span>';
+            if (i === selectedStatusIdx && canClick) {
+                step.classList.add('inquiry-step--active', 'inquiry-step--selected');
+            } else if (canClick) {
+                step.classList.add('inquiry-step--clickable');
+            } else {
+                step.classList.add('inquiry-step--no-click');
+            }
+        });
+    }
 
     function setDateTimeMinConstraints() {
         var dateEl = document.getElementById('inquiryFollowupDate');
@@ -670,35 +960,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (idx < 0) idx = 0;
         currentStatusIdx = idx;
         // In view mode, keep selection on the latest saved status.
-        // In edit mode, select the next status to be updated.
-        selectedStatusIdx = viewMode ? idx : Math.min(idx + 1, statusOrder.length - 1);
-        if (progressionSteps) {
-            var steps = progressionSteps.querySelectorAll('.inquiry-step');
-            // Statuses up to the last submitted one are "done" (ticked).
-            // The next step (idx + 1) is the active one to be updated.
-            var showDone = function(i) { return i <= idx; };
-            steps.forEach(function(step, i) {
-                step.classList.remove('inquiry-step--done', 'inquiry-step--active', 'inquiry-step--selected', 'inquiry-step--clickable', 'inquiry-step--no-click', 'inquiry-step--viewable');
-                var label = getStepDisplayLabel(i);
-                step.innerHTML = '<span>' + (label || step.dataset.step) + '</span>';
-                if (showDone(i)) {
-                    step.classList.add('inquiry-step--done', 'inquiry-step--viewable');
-                    step.innerHTML = '<i class="bi bi-check"></i><span>' + (label || step.dataset.step) + '</span>';
-                } else if (i === selectedStatusIdx) {
-                    step.classList.add('inquiry-step--active', 'inquiry-step--selected');
-                } else if (i === 0) {
-                    // Allow Pending to be clickable when it has not been submitted yet.
-                    // Otherwise keep the original "no-click" behavior.
-                    if (idx === 0 && !hasActivityForStatus('PENDING') && selectedStatusIdx === 0) {
-                        step.classList.add('inquiry-step--active', 'inquiry-step--selected');
-                    } else {
-                        step.classList.add('inquiry-step--no-click');
-                    }
-                } else {
-                    step.classList.add('inquiry-step--clickable');
-                }
-            });
-        }
+        // In edit mode, select the first allowed next status.
+        selectedStatusIdx = viewMode ? idx : getDefaultSelectedStatusIdx(idx);
+        refreshProgressionState();
         var remarkEl = document.getElementById('inquiryRemark');
         if (remarkEl) remarkEl.placeholder = remarkPlaceholders[statusOrder[selectedStatusIdx]] || remarkPlaceholders['PENDING'];
         setDateTimeLabels(statusOrder[selectedStatusIdx]);
@@ -754,7 +1018,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Allow editing/re-submitting the CURRENT status, and submitting the NEXT status.
         var selectedName = statusOrder[selectedStatusIdx] || '';
         var isOlderStep = selectedStatusIdx < currentStatusIdx;
-        var disable = isRewarded || viewMode || isOlderStep;
+        var isBlockedFuture = selectedStatusIdx > currentStatusIdx && !canSelectFutureStatus(statusOrder[currentStatusIdx] || 'PENDING', selectedName);
+        var disable = isRewarded || viewMode || isOlderStep || isBlockedFuture;
         updateBtn.disabled = disable;
         updateBtn.classList.toggle('inquiry-btn-update--disabled', disable);
     }
@@ -1150,8 +1415,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     var openStartNext = false;
 
-    function openModal(leadId, customer, status, startNext) {
+    function openModal(leadId, customer, status, startNext, referralCode) {
         currentLeadId = leadId;
+        currentReferralCode = String(referralCode || '').trim();
         currentCustomer = customer || '—';
         userPickedStep = false;
         openStartNext = !!startNext;
@@ -1218,28 +1484,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 setRemarkPlaceholder(statusOrder[stepIdx]);
                 setDateTimeLabels(statusOrder[stepIdx]);
             }
-            progressionSteps.querySelectorAll('.inquiry-step').forEach(function(s, i) {
-                s.classList.remove('inquiry-step--active', 'inquiry-step--selected', 'inquiry-step--clickable', 'inquiry-step--no-click', 'inquiry-step--viewable');
-                var stepName = s.dataset.step;
-                var label = getStepDisplayLabel(i);
-                var displayText = label || stepName;
-                // Keep ticks for all statuses up to the latest submitted one.
-                var sIsDone = i <= currentStatusIdx;
-                if (sIsDone) {
-                    s.classList.add('inquiry-step--done', 'inquiry-step--viewable');
-                    if (i === selectedStatusIdx && viewMode) s.classList.add('inquiry-step--selected');
-                    s.innerHTML = '<i class="bi bi-check"></i><span>' + displayText + '</span>';
-                } else if (i === selectedStatusIdx) {
-                    s.classList.add('inquiry-step--active', 'inquiry-step--selected');
-                    s.innerHTML = '<span>' + displayText + '</span>';
-                } else if (i === 0) {
-                    s.classList.add('inquiry-step--no-click');
-                    s.innerHTML = '<span>' + displayText + '</span>';
-                } else {
-                    s.classList.add('inquiry-step--clickable');
-                    s.innerHTML = '<span>' + displayText + '</span>';
-                }
-            });
+            refreshProgressionState();
             toggleAddCalendarButton();
             toggleProductChecklist();
             toggleUpdateButton();
@@ -1252,27 +1497,69 @@ document.addEventListener('DOMContentLoaded', function() {
     var viewCloseBtn = document.getElementById('inquiryViewModalClose');
     var viewCloseBtnFooter = document.getElementById('inquiryViewModalCloseBtn');
     var currentUpdateButtonEl = null;
+    var notificationFocusLeadId = null;
 
-    // If URL has ?lead=ID, jump to that row & open modal (e.g. from notification)
+    function clearNotificationFocusParams() {
+        if (window.history && typeof window.history.replaceState === 'function') {
+            var url = new URL(window.location.href);
+            url.searchParams.delete('lead');
+            url.searchParams.delete('fromNotif');
+            url.searchParams.delete('notif');
+            window.history.replaceState({}, document.title, url.pathname + url.search + url.hash);
+        }
+    }
+
+    function focusLeadFromNotification(lead, attempt) {
+        attempt = attempt || 0;
+        if (!lead || !table) {
+            clearNotificationFocusParams();
+            return;
+        }
+
+        var row = table.querySelector('tr.inquiry-row[data-lead-id="' + lead + '"]');
+        if (!row) {
+            if (attempt >= 4) {
+                clearNotificationFocusParams();
+                return;
+            }
+            setTimeout(function() { focusLeadFromNotification(lead, attempt + 1); }, 180);
+            return;
+        }
+
+        var page = parseInt(row.getAttribute('data-page') || '1', 10);
+        if (typeof window.dealerGoToPage === 'function') {
+            window.dealerGoToPage(page);
+        }
+
+        setTimeout(function() {
+            var activeRow = table.querySelector('tr.inquiry-row[data-lead-id="' + lead + '"]');
+            if (!activeRow) {
+                if (attempt >= 4) {
+                    clearNotificationFocusParams();
+                    return;
+                }
+                focusLeadFromNotification(lead, attempt + 1);
+                return;
+            }
+
+            activeRow.classList.add('inquiry-row--notif-highlight');
+            notificationFocusLeadId = lead;
+            try { activeRow.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+            setTimeout(function() {
+                activeRow.classList.remove('inquiry-row--notif-highlight');
+                if (notificationFocusLeadId === lead) notificationFocusLeadId = null;
+            }, 8000);
+
+            clearNotificationFocusParams();
+        }, 180);
+    }
+
+    // If URL has ?lead=ID, jump to that row and highlight it.
     (function() {
         var params = new URLSearchParams(window.location.search);
         var lead = params.get('lead');
         if (lead && table) {
-            setTimeout(function() {
-                // Find the row, switch to its page, then highlight for 5 seconds
-                var row = table.querySelector('tr.inquiry-row[data-lead-id="' + lead + '"]');
-                if (row && typeof dealerGoToPage === 'function') {
-                    var p = parseInt(row.getAttribute('data-page') || '1', 10);
-                    dealerGoToPage(p);
-                }
-                if (row) {
-                    row.classList.add('inquiry-row--notif-highlight');
-                    try { row.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
-                    setTimeout(function() { row.classList.remove('inquiry-row--notif-highlight'); }, 5000);
-                }
-                var btn = table.querySelector('.inquiries-update-btn[data-lead-id="' + lead + '"], .inquiries-view-btn[data-lead-id="' + lead + '"]');
-                if (btn) btn.click();
-            }, 100);
+            setTimeout(function() { focusLeadFromNotification(lead, 0); }, 120);
         }
     })();
 
@@ -1284,7 +1571,7 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             currentUpdateButtonEl = updateBtnEl;
             // Clicking edit icon should jump to the next status to be updated.
-            openModal(updateBtnEl.dataset.leadId, updateBtnEl.dataset.customer, updateBtnEl.dataset.status, true);
+            openModal(updateBtnEl.dataset.leadId, updateBtnEl.dataset.customer, updateBtnEl.dataset.status, true, updateBtnEl.dataset.referralCode);
             return;
         }
 
@@ -1314,6 +1601,15 @@ document.addEventListener('DOMContentLoaded', function() {
         viewModal.setAttribute('aria-hidden', 'true');
         viewModal.classList.remove('inquiry-modal-open');
         document.body.style.overflow = '';
+        if (notificationFocusLeadId && table) {
+            var highlightedRow = table.querySelector('tr.inquiry-row[data-lead-id="' + notificationFocusLeadId + '"]');
+            if (highlightedRow) {
+                highlightedRow.classList.remove('inquiry-row--notif-highlight');
+                void highlightedRow.offsetWidth;
+                highlightedRow.classList.add('inquiry-row--notif-highlight');
+                try { highlightedRow.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+            }
+        }
     }
     if (viewCloseBtn) viewCloseBtn.addEventListener('click', closeViewModal);
     if (viewCloseBtnFooter) viewCloseBtnFooter.addEventListener('click', closeViewModal);
@@ -1375,6 +1671,24 @@ document.addEventListener('DOMContentLoaded', function() {
     if (followupTimeEl) followupTimeEl.addEventListener('input', toggleAddCalendarButton);
     if (followupDateEl) followupDateEl.addEventListener('input', setDateTimeMinConstraints);
     if (followupTimeEl) followupTimeEl.addEventListener('input', setDateTimeMinConstraints);
+    function showDealerInquiryToast(message) {
+        var id = 'dealer-inquiry-action-toast';
+        var el = document.getElementById(id);
+        if (!el) {
+            el = document.createElement('div');
+            el.id = id;
+            el.className = 'inquiries-mark-failed-blocked-toast inquiries-mark-failed-blocked-toast-hidden';
+            el.setAttribute('role', 'status');
+            el.setAttribute('aria-live', 'polite');
+            document.body.appendChild(el);
+        }
+        el.textContent = message || 'Done.';
+        el.classList.remove('inquiries-mark-failed-blocked-toast-hidden');
+        clearTimeout(el._hideTimer);
+        el._hideTimer = setTimeout(function() {
+            el.classList.add('inquiries-mark-failed-blocked-toast-hidden');
+        }, 4200);
+    }
 
     updateBtn.addEventListener('click', function() {
         // Allow submitting the selected step:
@@ -1384,18 +1698,15 @@ document.addEventListener('DOMContentLoaded', function() {
         if (this.disabled) return;
         if (selectedStatusIdx < currentStatusIdx) return;
         var toStatus = statusOrder[selectedStatusIdx];
-        if (toStatus === 'DEMO' && currentStatusIdx < 1) {
-            alert('You must complete the follow-up (status: FOLLOW UP) before updating to DEMO. Please update the status to FOLLOW UP first.');
-            return;
-        }
-        if (toStatus === 'REWARDED' && currentStatusIdx < 4) {
-            alert('You must complete the inquiry (status: COMPLETED) before updating to REWARDED. Please update the status to COMPLETED first.');
+        var fromStatus = statusOrder[currentStatusIdx] || 'PENDING';
+        if (selectedStatusIdx > currentStatusIdx && !canSelectFutureStatus(fromStatus, toStatus)) {
+            showDealerInquiryToast(getBlockedStatusMessage(fromStatus, toStatus));
             return;
         }
         if (toStatus === 'COMPLETED') {
             var checked = document.querySelectorAll('.inquiry-product-checkbox:checked');
             if (!checked.length) {
-                alert('Please select at least one product for COMPLETED status.');
+                showDealerInquiryToast('Please select at least one product for COMPLETED status.');
                 return;
             }
         }
@@ -1482,14 +1793,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 toggleProductChecklist();
                 toggleUpdateButton();
 
-                alert(res.data.message || 'Status updated successfully');
+                showDealerInquiryToast(res.data.message || 'Status updated successfully');
             } else {
-                alert(res.data.message || 'Update failed');
+                showDealerInquiryToast(res.data.message || 'Update failed');
             }
         })
         .catch(function() {
             updateBtn.disabled = false;
-            alert('Update failed. Please try again.');
+            showDealerInquiryToast('Update failed. Please try again.');
         });
     });
 })();
