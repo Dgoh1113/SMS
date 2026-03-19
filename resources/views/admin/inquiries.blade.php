@@ -4,6 +4,7 @@
 @php
     $assignUndo = session('assign_undo');
     $assignEmailPending = session('assign_email_pending');
+    $statusFilterOptions = ['Created', 'Followup', 'Demo', 'Confirmed', 'Completed', 'Rewarded', 'Failed'];
 @endphp
 <div class="inquiries-page-wrap">
 <div class="inquiries-mgmt-top-row">
@@ -136,7 +137,7 @@
                     <th data-col="products" class="inquiries-header-cell"><span class="inquiries-header-label">PRODUCTS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="products"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="message" class="inquiries-header-cell"><span class="inquiries-header-label">MESSAGE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="message"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="referralcode" class="inquiries-header-cell"><span class="inquiries-header-label">REFERRAL CODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="referralcode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                    <th data-col="status" class="inquiries-header-cell"><span class="inquiries-header-label">STATUS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="status"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                    <th data-col="status" class="inquiries-header-cell"><span class="inquiries-header-label">STATUS</span><span class="inquiries-filter-wrap"><select class="inquiries-grid-filter inquiries-grid-filter-select" data-col="status"><option value="">All</option>@foreach($statusFilterOptions as $statusOption)<option value="{{ $statusOption }}">{{ $statusOption }}</option>@endforeach</select></span></th>
                     <th class="inquiries-col-action inquiries-header-cell"><span class="inquiries-header-label">ACTION</span><button type="button" class="inquiries-filter-clear" id="inquiryClearFilters">Clear filters</button></th>
                 </tr>
             </thead>
@@ -352,7 +353,7 @@
                     <th data-col="payoutsdate" class="inquiries-header-cell"><span class="inquiries-header-label">PAYOUTS DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="payoutsdate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="attachment" class="inquiries-header-cell"><span class="inquiries-header-label">ATTACHMENT</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="attachment"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                     <th data-col="assigndate" class="inquiries-header-cell"><span class="inquiries-header-label">ASSIGN DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="assigndate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                    <th data-col="status" class="inquiries-header-cell"><span class="inquiries-header-label">STATUS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter-assigned" data-col="status"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                    <th data-col="status" class="inquiries-header-cell"><span class="inquiries-header-label">STATUS</span><span class="inquiries-filter-wrap"><select class="inquiries-grid-filter-assigned inquiries-grid-filter-select" data-col="status"><option value="">All</option>@foreach($statusFilterOptions as $statusOption)<option value="{{ $statusOption }}">{{ $statusOption }}</option>@endforeach</select></span></th>
                     <th class="inquiries-col-action inquiries-header-cell"><span class="inquiries-header-label">ACTION</span><button type="button" class="inquiries-filter-clear" id="assignedClearFilters">Clear filters</button></th>
                     </tr>
                 </thead>
@@ -624,11 +625,13 @@
             <button type="button" class="inquiries-assign-close" aria-label="Close" data-status-close="1">&times;</button>
         </div>
         <div class="inquiries-assign-body">
-            <div class="inquiries-status-table-wrap">
-                <table class="inquiries-table">
-                    <thead><tr><th>Date</th><th>Subject</th><th>Status</th><th>Description</th><th>User</th></tr></thead>
-                    <tbody id="statusModalBody"></tbody>
-                </table>
+            <div class="inquiries-status-table-wrap inquiries-status-timeline-wrap">
+                <div class="inquiry-activity">
+                    <div class="inquiry-activity-header">
+                        <h3 class="inquiry-activity-title">Activity</h3>
+                    </div>
+                    <div class="inquiry-activity-timeline" id="statusModalBody"></div>
+                </div>
             </div>
             <p id="statusModalEmpty" class="inquiries-empty" style="display:none;">No status history.</p>
         </div>
@@ -666,6 +669,88 @@ document.addEventListener('DOMContentLoaded', function() {
         var emptyEl = document.getElementById('statusModalEmpty');
         if (!modal || !body) return;
         function closeStatus() { modal.hidden = true; }
+        function escapeStatusHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+        function formatStatusTime(isoStr, now) {
+            if (!isoStr) return '—';
+            var d = null;
+            if (typeof isoStr === 'string') {
+                var m = isoStr.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+                if (m) {
+                    d = new Date(
+                        parseInt(m[1], 10),
+                        parseInt(m[2], 10) - 1,
+                        parseInt(m[3], 10),
+                        parseInt(m[4], 10),
+                        parseInt(m[5], 10),
+                        m[6] ? parseInt(m[6], 10) : 0
+                    );
+                }
+            }
+            if (!d) d = new Date(isoStr);
+            if (isNaN(d.getTime())) return escapeStatusHtml(isoStr);
+            if (!now || !(now instanceof Date)) now = new Date();
+            var diffSec = Math.floor((now - d) / 1000);
+            if (diffSec < 60) return 'just now';
+            if (diffSec < 3600) return Math.floor(diffSec / 60) + ' min ago';
+            if (diffSec < 86400) return Math.floor(diffSec / 3600) + ' hr ago';
+            if (diffSec < 172800) return '1 day ago';
+            if (diffSec < 604800) {
+                var days = Math.floor(diffSec / 86400);
+                return days + ' day' + (days === 1 ? '' : 's') + ' ago';
+            }
+            if (diffSec < 1209600) return '1 week ago';
+            if (diffSec < 2592000) return Math.floor(diffSec / 604800) + ' weeks ago';
+            if (diffSec < 5184000) return '1 month ago';
+            if (diffSec < 31536000) return Math.floor(diffSec / 2592000) + ' months ago';
+            if (diffSec < 63072000) return '1 year ago';
+            return Math.floor(diffSec / 31536000) + ' years ago';
+        }
+        function formatStatusStamp(isoStr) {
+            if (!isoStr) return '';
+            var d = null;
+            if (typeof isoStr === 'string') {
+                var m = isoStr.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+                if (m) {
+                    d = new Date(
+                        parseInt(m[1], 10),
+                        parseInt(m[2], 10) - 1,
+                        parseInt(m[3], 10),
+                        parseInt(m[4], 10),
+                        parseInt(m[5], 10),
+                        m[6] ? parseInt(m[6], 10) : 0
+                    );
+                }
+            }
+            if (!d) d = new Date(isoStr);
+            if (isNaN(d.getTime())) return '';
+            return d.toLocaleString(undefined, {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+            });
+        }
+        function getStatusTone(rawStatus, rawSubject, type) {
+            if (type === 'created') return 'created';
+            var normalized = String(rawStatus || '').toLowerCase().replace(/\s+/g, ' ').trim();
+            if (normalized === 'follow up' || normalized === 'followup') return 'followup';
+            if (normalized === 'confirmed' || normalized === 'case confirmed') return 'confirmed';
+            if (normalized === 'completed' || normalized === 'case completed') return 'completed';
+            if (normalized === 'rewarded' || normalized === 'reward distributed' || normalized === 'paid') return 'rewarded';
+            if (normalized === 'demo') return 'demo';
+            if (normalized === 'pending') return 'pending';
+            if (normalized === 'failed') return 'failed';
+            if (normalized === 'created' || String(rawSubject || '').toLowerCase().trim() === 'lead created') return 'created';
+            return 'default';
+        }
         function openStatus(leadId, items) {
             if (titleLeadId) titleLeadId.textContent = leadId;
             body.innerHTML = '';
@@ -673,11 +758,60 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (emptyEl) emptyEl.style.display = 'block';
             } else {
                 if (emptyEl) emptyEl.style.display = 'none';
+                var now = new Date();
                 items.forEach(function(it) {
-                    var tr = document.createElement('tr');
-                    var date = it.CREATIONDATE ? String(it.CREATIONDATE).substring(0, 19) : '—';
-                    tr.innerHTML = '<td>' + date + '</td><td>' + (it.SUBJECT || '—') + '</td><td>' + (it.STATUS || '—') + '</td><td>' + (it.DESCRIPTION || '—') + '</td><td>' + (it.USERID || '—') + '</td>';
-                    body.appendChild(tr);
+                    var item = document.createElement('div');
+                    var rawUser = String(it.user || it.USERID || 'System').trim();
+                    var rawSubject = String(it.subject || it.SUBJECT || '').trim();
+                    var rawStatus = String(it.status || it.STATUS || '').trim();
+                    var rawDesc = String(it.description || it.DESCRIPTION || '').trim();
+                    var user = escapeStatusHtml(rawUser);
+                    var subject = escapeStatusHtml(rawSubject);
+                    var status = escapeStatusHtml(rawStatus);
+                    var desc = escapeStatusHtml(rawDesc);
+                    var timeStr = formatStatusTime(it.created_at || it.CREATIONDATE, now);
+                    var stamp = escapeStatusHtml(formatStatusStamp(it.created_at || it.CREATIONDATE));
+                    var lowerSubject = rawSubject.toLowerCase();
+                    var isCreated = it.type === 'created' || rawStatus.toUpperCase() === 'CREATED' || lowerSubject === 'lead created';
+                    var tone = getStatusTone(rawStatus, rawSubject, isCreated ? 'created' : 'activity');
+                    var headlineText = 'updated lead status';
+                    if (lowerSubject === 'lead assigned') headlineText = 'assigned lead';
+                    else if (lowerSubject && lowerSubject !== 'updated status' && lowerSubject !== 'lead created') headlineText = rawSubject;
+                    var html = '<span class="inquiry-activity-bullet"></span><div class="inquiry-activity-content">';
+                    html += '<div class="inquiries-status-entry-head">';
+                    if (isCreated) {
+                        html += '<strong class="inquiries-status-actor">' + user + '</strong>';
+                        html += '<span class="inquiries-status-subject">created lead</span>';
+                        html += '<span class="inquiry-activity-link">#SQL-' + leadId + '</span>';
+                    } else {
+                        html += '<strong class="inquiries-status-actor">' + user + '</strong>';
+                        html += '<span class="inquiries-status-subject">' + escapeStatusHtml(headlineText) + '</span>';
+                        if (status) {
+                            html += '<span class="inquiries-status-badge inquiries-status-badge--' + tone + '">' + status + '</span>';
+                        }
+                    }
+                    html += '</div>';
+                    if (desc) {
+                        html += '<div class="inquiries-status-body">' + desc + '</div>';
+                    }
+                    html += '<div class="inquiries-status-meta"><span class="inquiry-activity-time">' + timeStr + '</span>';
+                    if (stamp) {
+                        html += '<span class="inquiries-status-date">' + stamp + '</span>';
+                    }
+                    html += '</div>';
+                    if (it.attachment_urls && it.attachment_urls.length > 0) {
+                        html += '<div class="inquiries-status-attachments"><span class="inquiries-status-attachments-label">Attachments</span><div class="inquiry-activity-attachments">';
+                        it.attachment_urls.forEach(function(url, index) {
+                            var safeUrl = escapeStatusHtml(url || '');
+                            html += '<a href="' + safeUrl + '" target="_blank" rel="noopener" class="inquiry-activity-attachment-link" title="Open attachment ' + (index + 1) + '"><img src="' + safeUrl + '" alt="Attachment ' + (index + 1) + '" class="inquiry-activity-attachment-img"></a>';
+                        });
+                        html += '</div></div>';
+                    }
+                    html += '</div>';
+                    item.className = 'inquiry-activity-item inquiries-status-item';
+                    item.setAttribute('data-tone', tone);
+                    item.innerHTML = html;
+                    body.appendChild(item);
                 });
             }
             modal.hidden = false;
@@ -689,7 +823,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (leadId) {
                     fetch('{{ url("/admin/inquiries") }}/' + leadId + '/status', { headers: { 'Accept': 'application/json' } })
                         .then(function(r) { return r.json(); })
-                        .then(function(data) { openStatus(leadId, data.items || []); })
+                        .then(function(data) { openStatus(leadId, data.activities || data.items || []); })
                         .catch(function() { openStatus(leadId, []); });
                 }
                 return;
@@ -1131,6 +1265,16 @@ document.addEventListener('DOMContentLoaded', function() {
         return isNaN(num) ? 0 : num;
     }
 
+    function normalizeInquiryStatusFilterValue(value) {
+        var normalized = String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+        if (normalized === '' || normalized === 'all') return '';
+        if (normalized === 'follow up' || normalized === 'followup') return 'followup';
+        if (normalized === 'confirmed' || normalized === 'case confirmed') return 'confirmed';
+        if (normalized === 'completed' || normalized === 'case completed') return 'completed';
+        if (normalized === 'rewarded' || normalized === 'reward distributed' || normalized === 'paid') return 'rewarded';
+        return normalized;
+    }
+
     function collectInquiryColumnFilters(tableEl, inputSelector) {
         var filters = {};
         if (!tableEl) return filters;
@@ -1138,6 +1282,10 @@ document.addEventListener('DOMContentLoaded', function() {
             var col = inp.getAttribute('data-col');
             var val = (inp.value || '').trim();
             if (!col || val === '') return;
+            if (col === 'status') {
+                val = normalizeInquiryStatusFilterValue(val);
+                if (val === '') return;
+            }
             if (INQUIRY_NUMERIC_FILTER_COLS.indexOf(col) !== -1) {
                 var opBtn = tableEl.querySelector('.dealer-operator-btn[data-col="' + col + '"]');
                 filters[col] = {
@@ -1166,6 +1314,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (filter.op === '>=' && cellNum < filterNum) return false;
                 if (filter.op === '<' && cellNum >= filterNum) return false;
                 if (filter.op === '<=' && cellNum > filterNum) return false;
+            } else if (col === 'status') {
+                var normalizedStatusFilter = normalizeInquiryStatusFilterValue(filter.val);
+                if (!normalizedStatusFilter) {
+                    continue;
+                }
+                if (normalizeInquiryStatusFilterValue(cellText) !== normalizedStatusFilter) {
+                    return false;
+                }
             } else if (cellText.toLowerCase().indexOf(filter.val) === -1) {
                 return false;
             }
@@ -1239,6 +1395,7 @@ document.addEventListener('DOMContentLoaded', function() {
         table.querySelectorAll('.inquiries-grid-filter').forEach(function(inp) {
             inp.addEventListener('input', applyGridFilters);
             inp.addEventListener('keyup', applyGridFilters);
+            inp.addEventListener('change', applyGridFilters);
         });
         bindInquiryOperatorMenus(table, applyGridFilters);
     }
@@ -1258,6 +1415,7 @@ document.addEventListener('DOMContentLoaded', function() {
         assignedTable.querySelectorAll('.inquiries-grid-filter-assigned').forEach(function(inp) {
             inp.addEventListener('input', applyAssignedGridFilters);
             inp.addEventListener('keyup', applyAssignedGridFilters);
+            inp.addEventListener('change', applyAssignedGridFilters);
         });
         bindInquiryOperatorMenus(assignedTable, applyAssignedGridFilters);
     }
@@ -1377,7 +1535,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 th.classList.add('inquiries-sortable');
                 th.style.cursor = 'pointer';
                 th.addEventListener('click', function(e) {
-                    if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+                    if (e.target.closest('input, select, button, .inquiries-filter-wrap, .dealer-operator-btn, .dealer-operator-dropdown')) return;
                     var col = th.getAttribute('data-col');
                     if (!col) return;
                     state.dir = (state.col === col) ? -state.dir : 1;

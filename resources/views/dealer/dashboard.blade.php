@@ -87,7 +87,8 @@
             <div class="dashboard-metric-label">Conversion Rate</div>
             <div class="dashboard-metric-value-row">
                 <div class="dashboard-metric-value">{{ $metrics['conversionRate'] ?? 0 }}%</div>
-                <span class="dashboard-metric-pill dashboard-metric-pill-down">-2%</span>
+                @php $p = (float)($metrics['conversionTrend'] ?? 0); $up = $p >= 0; @endphp
+                <span class="dashboard-metric-pill {{ $up ? 'dashboard-metric-pill-up' : 'dashboard-metric-pill-down' }}">{{ $up ? '+' : '-' }}{{ abs($p) }}% vs last week</span>
             </div>
         </div>
     </section>

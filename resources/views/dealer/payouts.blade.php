@@ -116,6 +116,7 @@
         5 => 'SQL Ecommerce', 6 => 'SQL EBI Wellness POS', 7 => 'SQL X Suduai', 8 => 'SQL X-Store',
         9 => 'SQL Vision', 10 => 'SQL HRMS', 11 => 'Others',
     ];
+    $statusFilterOptions = ['Created', 'Followup', 'Demo', 'Confirmed', 'Completed', 'Rewarded', 'Failed'];
 @endphp
 <div class="inquiries-page-wrap">
 <div class="inquiries-mgmt-top-row" style="margin-bottom: 16px;">
@@ -208,10 +209,10 @@
                         <th data-col="existingsw" class="inquiries-header-cell"><span class="inquiries-header-label">EXISTING SW</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="existingsw"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="demomode" class="inquiries-header-cell"><span class="inquiries-header-label">DEMO MODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="demomode"><i class="bi bi-search inquiries-filter-icon"></i></span></th><th data-col="dealtproducts" class="inquiries-header-cell"><span class="inquiries-header-label">DEALT PRODUCTS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="dealtproducts"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="message" class="inquiries-header-cell"><span class="inquiries-header-label">MESSAGE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="message"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="referralcode" class="inquiries-header-cell"><span class="inquiries-header-label">REFERRAL CODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="referralcode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="referralcode" class="inquiries-header-cell"><span class="inquiries-header-label">REFERRAL CODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="referralcode" placeholder="Has code"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="attachment" class="inquiries-header-cell"><span class="inquiries-header-label">ATTACHMENT</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="attachment"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="assignby" class="inquiries-header-cell"><span class="inquiries-header-label">ASSIGN BY</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="assignby"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="status" class="inquiries-header-cell"><span class="inquiries-header-label">STATUS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="status"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="status" class="inquiries-header-cell"><span class="inquiries-header-label">STATUS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="status" placeholder="Completed only" disabled readonly></span></th>
                         <th class="inquiries-col-action inquiries-header-cell"><span class="inquiries-header-label">ACTION</span><button type="button" class="inquiries-filter-clear" id="completedClearFilters">Clear filters</button></th>
                     </tr>
                 </thead>
@@ -299,7 +300,7 @@
                         <th data-col="referralcode" class="inquiries-header-cell"><span class="inquiries-header-label">REFERRAL CODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="referralcode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="attachment" class="inquiries-header-cell"><span class="inquiries-header-label">ATTACHMENT</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="attachment"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="assignby" class="inquiries-header-cell"><span class="inquiries-header-label">ASSIGN BY</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="assignby"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="status" class="inquiries-header-cell"><span class="inquiries-header-label">STATUS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="status"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="status" class="inquiries-header-cell"><span class="inquiries-header-label">STATUS</span><span class="inquiries-filter-wrap"><select class="inquiries-grid-filter inquiries-grid-filter-select payouts-grid-filter" data-table="rewarded" data-col="status"><option value="">All</option>@foreach($statusFilterOptions as $statusOption)<option value="{{ $statusOption }}">{{ $statusOption }}</option>@endforeach</select></span></th>
                         <th class="inquiries-col-action inquiries-header-cell"><span class="inquiries-header-label">ACTION</span><button type="button" class="inquiries-filter-clear" id="rewardedClearFilters">Clear filters</button></th>
                     </tr>
                 </thead>
@@ -685,6 +686,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    function normalizeDealerPayoutStatus(value) {
+        var normalized = String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+        if (normalized === '' || normalized === 'all') return '';
+        if (normalized === 'follow up' || normalized === 'followup') return 'followup';
+        if (normalized === 'confirmed' || normalized === 'case confirmed') return 'confirmed';
+        if (normalized === 'completed' || normalized === 'case completed') return 'completed';
+        if (normalized === 'rewarded' || normalized === 'reward distributed' || normalized === 'paid') return 'rewarded';
+        return normalized;
+    }
+
     function applyTableFilter(tableId) {
         var table = document.getElementById(tableId);
         var searchInput = document.getElementById('payoutSearchInput');
@@ -694,7 +705,11 @@ document.addEventListener('DOMContentLoaded', function() {
         table.querySelectorAll('thead .payouts-grid-filter').forEach(function(inp) {
             var col = inp.getAttribute('data-col');
             var val = (inp.value || '').toLowerCase().trim();
-            if (col && val) filters[col] = val;
+            if (!col) return;
+            if (col === 'status') {
+                val = normalizeDealerPayoutStatus(val);
+            }
+            if (val) filters[col] = val;
         });
         table.querySelectorAll('tbody tr.payouts-row').forEach(function(row) {
             var hay = (row.getAttribute('data-search') || '').toLowerCase();
@@ -703,6 +718,17 @@ document.addEventListener('DOMContentLoaded', function() {
             for (var col in filters) {
                 var cell = row.querySelector('td[data-col="' + col + '"]');
                 var cellText = (cell && cell.textContent) ? cell.textContent.toLowerCase().trim() : '';
+                if (col === 'status') {
+                    var normalizedStatusFilter = normalizeDealerPayoutStatus(filters[col]);
+                    if (!normalizedStatusFilter) {
+                        continue;
+                    }
+                    if (normalizeDealerPayoutStatus(cellText) !== normalizedStatusFilter) {
+                        colMatch = false;
+                        break;
+                    }
+                    continue;
+                }
                 if (cellText.indexOf(filters[col]) === -1) { colMatch = false; break; }
             }
             row.style.display = (searchMatch && colMatch) ? '' : 'none';
@@ -722,6 +748,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!table) return;
         table.querySelectorAll('thead .payouts-grid-filter').forEach(function(inp) {
             inp.addEventListener('input', function() { applyTableFilter(tableId); });
+            inp.addEventListener('change', function() { applyTableFilter(tableId); });
         });
     }
     bindTable('completedTable');
@@ -1521,4 +1548,3 @@ document.addEventListener('DOMContentLoaded', function() {
 })();
 </script>
 @endpush
-

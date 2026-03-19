@@ -44,6 +44,7 @@ Route::middleware(['auth.sms', 'admin'])->prefix('admin')->name('admin.')->group
     Route::get('/inquiries/company-lookup', [AdminController::class, 'companyLookup'])->name('inquiries.company-lookup');
     Route::get('/inquiries/{leadId}/status', [AdminController::class, 'leadStatus'])->name('inquiries.lead-status');
     Route::get('/dealers', [AdminController::class, 'dealers'])->name('dealers');
+    Route::get('/dealers/sync', [AdminController::class, 'dealersSync'])->name('dealers.sync');
     Route::post('/dealers', [AdminController::class, 'dealersStore'])->name('dealers.store');
     Route::post('/dealers/{userId}', [AdminController::class, 'dealersUpdate'])->name('dealers.update');
     Route::get('/rewards', [AdminController::class, 'rewards'])->name('rewards');

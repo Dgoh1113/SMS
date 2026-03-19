@@ -18,8 +18,8 @@ class DealerController extends Controller
         $metrics = [
             'activeInquiries' => 0,
             'activeInquiriesTrend' => '+12%',
-            'conversionRate' => '0%',
-            'conversionTrend' => '-2%',
+            'conversionRate' => 0,
+            'conversionTrend' => 0,
             'closedCaseCount' => 0,
             'demosTrend' => '+5',
             'pendingFollowups' => 0,
@@ -82,7 +82,6 @@ class DealerController extends Controller
                 [$dealerId, 'ONGOING']
             );
             $activeInquiriesCount = (int) ($activeCountRow->CNT ?? 0);
-            $totalAssignedCount = count($leads);
 
             // Total closed should only count leads whose latest status for this dealer
             // is COMPLETED or REWARDED (and not later marked as FAILED).
@@ -104,7 +103,93 @@ class DealerController extends Controller
                 [$dealerId]
             );
             $closedCount = (int) ($closedCountRow->CNT ?? 0);
-            $conversion = $totalAssignedCount > 0 ? round(($closedCount / $totalAssignedCount) * 100, 1) : 0;
+
+            $countMetricRow = static function ($row): int {
+                return (int) ($row->CNT ?? $row->cnt ?? $row->C ?? $row->c ?? current((array) $row) ?? 0);
+            };
+
+            $countConversionLeads = function (?string $cutoff = null) use ($dealerId, $countMetricRow): int {
+                $latestStatusCutoff = '';
+                $leadCreatedCutoff = '';
+                $params = [$dealerId];
+
+                if ($cutoff !== null) {
+                    $latestStatusCutoff = ' AND la."CREATIONDATE" <= ?';
+                    $leadCreatedCutoff = ' AND l."CREATEDAT" <= ?';
+                    $params = [$cutoff, $dealerId, $cutoff];
+                }
+
+                $row = DB::selectOne(
+                    'SELECT COUNT(*) AS "CNT"
+                     FROM (
+                         SELECT l."LEADID",
+                                COALESCE(
+                                    (SELECT FIRST 1 la."STATUS"
+                                     FROM "LEAD_ACT" la
+                                     WHERE la."LEADID" = l."LEADID"' . $latestStatusCutoff . '
+                                     ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC),
+                                    l."CURRENTSTATUS",
+                                    \'Pending\'
+                                ) AS "LATEST_STATUS"
+                         FROM "LEAD" l
+                         WHERE l."ASSIGNED_TO" = ?' . $leadCreatedCutoff . '
+                     ) x
+                     WHERE UPPER(TRIM(COALESCE(x."LATEST_STATUS", \'\'))) <> \'FAILED\'',
+                    $params
+                );
+
+                return $countMetricRow($row);
+            };
+
+            $countConvertedLeads = function (?string $cutoff = null) use ($dealerId, $countMetricRow): int {
+                $latestStatusCutoff = '';
+                $leadCreatedCutoff = '';
+                $params = [$dealerId];
+
+                if ($cutoff !== null) {
+                    $latestStatusCutoff = ' AND la."CREATIONDATE" <= ?';
+                    $leadCreatedCutoff = ' AND l."CREATEDAT" <= ?';
+                    $params = [$cutoff, $dealerId, $cutoff];
+                }
+
+                $row = DB::selectOne(
+                    'SELECT COUNT(*) AS "CNT"
+                     FROM (
+                         SELECT l."LEADID",
+                                COALESCE(
+                                    (SELECT FIRST 1 la."STATUS"
+                                     FROM "LEAD_ACT" la
+                                     WHERE la."LEADID" = l."LEADID"' . $latestStatusCutoff . '
+                                     ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC),
+                                    l."CURRENTSTATUS",
+                                    \'Pending\'
+                                ) AS "LATEST_STATUS"
+                         FROM "LEAD" l
+                         WHERE l."ASSIGNED_TO" = ?' . $leadCreatedCutoff . '
+                     ) x
+                     WHERE UPPER(TRIM(COALESCE(x."LATEST_STATUS", \'\'))) IN (\'COMPLETED\', \'REWARDED\')',
+                    $params
+                );
+
+                return $countMetricRow($row);
+            };
+
+            $conversionLeadCount = $countConversionLeads();
+            $conversionClosedCount = $countConvertedLeads();
+            $conversion = $conversionLeadCount > 0 ? round(($conversionClosedCount / $conversionLeadCount) * 100, 1) : 0;
+            $conversionTrend = 0.0;
+
+            try {
+                $endLastWeek = Carbon::now()->startOfWeek(Carbon::MONDAY)->subSecond()->format('Y-m-d H:i:s');
+                $conversionLeadCountLastWeek = $countConversionLeads($endLastWeek);
+                $conversionClosedCountLastWeek = $countConvertedLeads($endLastWeek);
+                $conversionRateLastWeek = $conversionLeadCountLastWeek > 0
+                    ? ($conversionClosedCountLastWeek / $conversionLeadCountLastWeek) * 100
+                    : 0;
+                $conversionTrend = round($conversion - $conversionRateLastWeek, 1);
+            } catch (\Throwable $e) {
+                $conversionTrend = 0.0;
+            }
 
             $pendingFollowupsSql = $dealerEmail
                 ? 'SELECT COUNT(*) AS "CNT" FROM "LEAD"
@@ -196,7 +281,7 @@ class DealerController extends Controller
                 'activeInquiries' => $activeInquiriesCount,
                 'activeInquiriesTrend' => '+12%',
                 'conversionRate' => $conversion,
-                'conversionTrend' => '-2%',
+                'conversionTrend' => $conversionTrend,
                 'closedCaseCount' => $closedCount,
                 'demosTrend' => '+5',
                 'pendingFollowups' => $pendingFollowupsCount,

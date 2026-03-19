@@ -2723,16 +2723,16 @@ textarea.inquiry-form-input { resize: vertical; min-height: 140px; }
   font-weight: 600;
 }
 .dealer-conversion-high {
-  background: #bbf7d0;
-  color: #15803d;
+  background: #dcfce7;
+  color: #166534;
 }
 .dealer-conversion-mid {
-  background: #fef08a;
-  color: #854d0e;
+  background: #ffedd5;
+  color: #9a3412;
 }
 .dealer-conversion-low {
-  background: #fecaca;
-  color: #b91c1c;
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 /* Dealers panel: Columns button on the right */
@@ -6853,6 +6853,7 @@ button.dealer-pagination-btn:disabled {
 }
 .inquiries-header-cell .inquiries-grid-filter,
 .inquiries-header-cell .inquiries-grid-filter-assigned,
+.inquiries-header-cell .inquiries-grid-filter-select,
 .inquiries-header-cell .dealer-grid-filter {
   width: 100%;
   min-width: 50px;
@@ -6860,11 +6861,12 @@ button.dealer-pagination-btn:disabled {
   font-size: 12px;
   border: 1px solid #ddd6fe;
   border-radius: 6px;
-  background: #fff;
+  background-color: #fff;
   color: #374151;
 }
 .inquiries-header-cell .inquiries-grid-filter:focus,
 .inquiries-header-cell .inquiries-grid-filter-assigned:focus,
+.inquiries-header-cell .inquiries-grid-filter-select:focus,
 .inquiries-header-cell .dealer-grid-filter:focus {
   outline: none;
   border-color: #7f5af0;
@@ -7556,6 +7558,180 @@ button.dealer-pagination-btn:disabled {
 .inquiries-status-table-wrap {
   max-height: 60vh;
   overflow: auto;
+}
+.inquiries-status-timeline-wrap {
+  padding-right: 4px;
+}
+.inquiries-status-timeline-wrap .inquiry-activity {
+  border-top: 0;
+  padding-top: 0;
+}
+.inquiries-status-timeline-wrap .inquiry-activity-timeline {
+  padding-left: 26px;
+}
+.inquiries-status-timeline-wrap .inquiry-activity-timeline::before {
+  left: 8px;
+  background: linear-gradient(180deg, #c7d2fe 0%, #e2e8f0 100%);
+}
+.inquiries-status-timeline-wrap .inquiries-status-item {
+  padding-bottom: 20px;
+}
+.inquiries-status-timeline-wrap .inquiries-status-item:last-child {
+  padding-bottom: 6px;
+}
+.inquiries-status-timeline-wrap .inquiries-status-item .inquiry-activity-bullet {
+  left: -22px;
+  top: 8px;
+  width: 12px;
+  height: 12px;
+  box-shadow: 0 0 0 4px #ffffff;
+}
+.inquiries-status-timeline-wrap .inquiries-status-item[data-tone="created"] .inquiry-activity-bullet {
+  background: #FF0000;
+}
+.inquiries-status-timeline-wrap .inquiries-status-item[data-tone="pending"] .inquiry-activity-bullet {
+  background: #FF4500;
+}
+.inquiries-status-timeline-wrap .inquiries-status-item[data-tone="followup"] .inquiry-activity-bullet {
+  background: #FF8C00;
+}
+.inquiries-status-timeline-wrap .inquiries-status-item[data-tone="demo"] .inquiry-activity-bullet {
+  background: #FFD700;
+}
+.inquiries-status-timeline-wrap .inquiries-status-item[data-tone="confirmed"] .inquiry-activity-bullet {
+  background: #9ACD32;
+}
+.inquiries-status-timeline-wrap .inquiries-status-item[data-tone="completed"] .inquiry-activity-bullet {
+  background: #32CD32;
+}
+.inquiries-status-timeline-wrap .inquiries-status-item[data-tone="rewarded"] .inquiry-activity-bullet {
+  background: #008000;
+}
+.inquiries-status-timeline-wrap .inquiries-status-item[data-tone="failed"] .inquiry-activity-bullet {
+  background: #434343;
+}
+.inquiries-status-timeline-wrap .inquiries-status-entry-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  line-height: 1.45;
+}
+.inquiries-status-timeline-wrap .inquiries-status-actor {
+  color: #0f172a;
+}
+.inquiries-status-timeline-wrap .inquiries-status-subject {
+  color: #475569;
+  font-weight: 600;
+}
+.inquiries-status-timeline-wrap .inquiries-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+.inquiries-status-timeline-wrap .inquiries-status-badge--created {
+  background: #FF0000;
+  border-color: #FF0000;
+  color: #ffffff;
+}
+.inquiries-status-timeline-wrap .inquiries-status-badge--pending {
+  background: #FF4500;
+  border-color: #FF4500;
+  color: #ffffff;
+}
+.inquiries-status-timeline-wrap .inquiries-status-badge--followup {
+  background: #FF8C00;
+  border-color: #FF8C00;
+  color: #ffffff;
+}
+.inquiries-status-timeline-wrap .inquiries-status-badge--demo {
+  background: #FFD700;
+  border-color: #FFD700;
+  color: #ffffff;
+}
+.inquiries-status-timeline-wrap .inquiries-status-badge--confirmed {
+  background: #9ACD32;
+  border-color: #9ACD32;
+  color: #ffffff;
+}
+.inquiries-status-timeline-wrap .inquiries-status-badge--completed {
+  background: #32CD32;
+  border-color: #32CD32;
+  color: #ffffff;
+}
+.inquiries-status-timeline-wrap .inquiries-status-badge--rewarded {
+  background: #008000;
+  border-color: #008000;
+  color: #ffffff;
+}
+.inquiries-status-timeline-wrap .inquiries-status-badge--failed {
+  background: #434343;
+  border-color: #434343;
+  color: #ffffff;
+}
+.inquiries-status-timeline-wrap .inquiries-status-badge--default {
+  background: #434343;
+  border-color: #434343;
+  color: #ffffff;
+}
+.inquiries-status-timeline-wrap .inquiries-status-body {
+  display: block;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  font-size: 13px;
+}
+.inquiries-status-timeline-wrap .inquiries-status-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.inquiries-status-timeline-wrap .inquiry-activity-time {
+  display: inline-flex;
+  align-items: center;
+  color: #4f46e5;
+  font-size: 12px;
+  font-weight: 700;
+}
+.inquiries-status-timeline-wrap .inquiries-status-date {
+  color: #94a3b8;
+  font-size: 12px;
+}
+.inquiries-status-timeline-wrap .inquiries-status-attachments {
+  margin-top: 10px;
+}
+.inquiries-status-timeline-wrap .inquiries-status-attachments-label {
+  display: block;
+  margin-bottom: 6px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.inquiries-status-timeline-wrap .inquiry-activity-attachments {
+  gap: 10px;
+}
+.inquiries-status-timeline-wrap .inquiry-activity-attachment-link {
+  border-color: #cbd5e1;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+.inquiries-status-timeline-wrap .inquiry-activity-attachment-img {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
 }
 .inquiries-icon-btn {
   background: none;

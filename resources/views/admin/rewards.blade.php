@@ -52,6 +52,9 @@
 </style>
 @endpush
 @section('content')
+@php
+    $statusFilterOptions = ['Created', 'Followup', 'Demo', 'Confirmed', 'Completed', 'Rewarded', 'Failed'];
+@endphp
 <div class="inquiries-page-wrap">
 <div class="inquiries-mgmt-top-row" style="margin-bottom: 16px;">
 <section class="inquiries-mgmt-summary">
@@ -138,9 +141,9 @@
                         <th data-col="inquiryid" class="inquiries-header-cell"><span class="inquiries-header-label">INQUIRY ID</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="completed" data-col="inquiryid"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="customername" class="inquiries-header-cell"><span class="inquiries-header-label">CUSTOMER NAME</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="completed" data-col="customername"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="assignedto" class="inquiries-header-cell"><span class="inquiries-header-label">ASSIGNED TO</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="completed" data-col="assignedto"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="referralcode" class="inquiries-header-cell"><span class="inquiries-header-label">REFERRAL CODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="completed" data-col="referralcode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="referralcode" class="inquiries-header-cell"><span class="inquiries-header-label">REFERRAL CODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="completed" data-col="referralcode" placeholder="Has code"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                                 <th data-col="completiondate" class="inquiries-header-cell"><span class="inquiries-header-label">COMPLETION DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="completed" data-col="completiondate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="status" class="inquiries-header-cell"><span class="inquiries-header-label">STATUS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="completed" data-col="status"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="status" class="inquiries-header-cell"><span class="inquiries-header-label">STATUS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="completed" data-col="status" placeholder="Completed only" disabled readonly></span></th>
 
                         <th data-col="date" class="inquiries-header-cell"><span class="inquiries-header-label">INQUIRY DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="completed" data-col="date"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="source" class="inquiries-header-cell"><span class="inquiries-header-label">SOURCE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="completed" data-col="source"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
@@ -398,7 +401,7 @@
                         <th data-col="attachment" class="inquiries-header-cell"><span class="inquiries-header-label">ATTACHMENT</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="attachment"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="referralcode" class="inquiries-header-cell"><span class="inquiries-header-label">REFERRAL CODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="referralcode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="assigndate" class="inquiries-header-cell"><span class="inquiries-header-label">ASSIGN DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="assigndate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="status" class="inquiries-header-cell"><span class="inquiries-header-label">STATUS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter rewards-grid-filter" data-table="rewarded" data-col="status"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="status" class="inquiries-header-cell"><span class="inquiries-header-label">STATUS</span><span class="inquiries-filter-wrap"><select class="inquiries-grid-filter inquiries-grid-filter-select rewards-grid-filter" data-table="rewarded" data-col="status"><option value="">All</option>@foreach($statusFilterOptions as $statusOption)<option value="{{ $statusOption }}">{{ $statusOption }}</option>@endforeach</select></span></th>
                         <th class="inquiries-col-action inquiries-header-cell"><span class="inquiries-header-label">ACTION</span><button type="button" class="inquiries-filter-clear" id="rewardedClearFilters">Clear filters</button></th>
                     </tr>
                 </thead>
@@ -554,19 +557,13 @@
                 <button type="button" class="inquiries-assign-close" aria-label="Close" data-status-close="1">&times;</button>
             </div>
             <div class="inquiries-assign-body">
-                <div class="inquiries-status-table-wrap">
-                    <table class="inquiries-table">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Subject</th>
-                                <th>Status</th>
-                                <th>Description</th>
-                                <th>User</th>
-                            </tr>
-                        </thead>
-                        <tbody id="statusModalBody"></tbody>
-                    </table>
+                <div class="inquiries-status-table-wrap inquiries-status-timeline-wrap">
+                    <div class="inquiry-activity">
+                        <div class="inquiry-activity-header">
+                            <h3 class="inquiry-activity-title">Activity</h3>
+                        </div>
+                        <div class="inquiry-activity-timeline" id="statusModalBody"></div>
+                    </div>
                 </div>
                 <p id="statusModalEmpty" class="inquiries-empty" style="display:none;">No status history.</p>
             </div>
@@ -1136,6 +1133,16 @@ document.addEventListener('DOMContentLoaded', function() {
         return isNaN(num) ? 0 : num;
     }
 
+    function normalizeRewardsStatusFilterValue(value) {
+        var normalized = String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+        if (normalized === '' || normalized === 'all') return '';
+        if (normalized === 'follow up' || normalized === 'followup') return 'followup';
+        if (normalized === 'confirmed' || normalized === 'case confirmed') return 'confirmed';
+        if (normalized === 'completed' || normalized === 'case completed') return 'completed';
+        if (normalized === 'rewarded' || normalized === 'reward distributed' || normalized === 'paid') return 'rewarded';
+        return normalized;
+    }
+
     function collectRewardsFilters(table) {
         var filters = {};
         if (!table) return filters;
@@ -1143,6 +1150,10 @@ document.addEventListener('DOMContentLoaded', function() {
             var col = inp.getAttribute('data-col');
             var val = (inp.value || '').trim();
             if (!col || val === '') return;
+            if (col === 'status') {
+                val = normalizeRewardsStatusFilterValue(val);
+                if (val === '') return;
+            }
             if (REWARDS_NUMERIC_FILTER_COLS.indexOf(col) !== -1) {
                 var opBtn = table.querySelector('.dealer-operator-btn[data-col="' + col + '"]');
                 filters[col] = {
@@ -1171,6 +1182,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (filter.op === '>=' && cellNum < filterNum) return false;
                 if (filter.op === '<' && cellNum >= filterNum) return false;
                 if (filter.op === '<=' && cellNum > filterNum) return false;
+            } else if (col === 'status') {
+                var normalizedStatusFilter = normalizeRewardsStatusFilterValue(filter.val);
+                if (!normalizedStatusFilter) {
+                    continue;
+                }
+                if (normalizeRewardsStatusFilterValue(cellText) !== normalizedStatusFilter) {
+                    return false;
+                }
             } else if (cellText.toLowerCase().indexOf(filter.val) === -1) {
                 return false;
             }
@@ -1247,6 +1266,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!table) return;
         table.querySelectorAll('thead .rewards-grid-filter').forEach(function(inp) {
             inp.addEventListener('input', function() { applyTableFilter(tableId); });
+            inp.addEventListener('change', function() { applyTableFilter(tableId); });
         });
         bindRewardsOperatorMenus(table, tableId);
     }
@@ -1426,6 +1446,88 @@ document.addEventListener('DOMContentLoaded', function() {
         var emptyEl = document.getElementById('statusModalEmpty');
         if (!modal || !body) return;
         function closeStatus() { modal.hidden = true; }
+        function escapeStatusHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+        function formatStatusTime(isoStr, now) {
+            if (!isoStr) return '—';
+            var d = null;
+            if (typeof isoStr === 'string') {
+                var m = isoStr.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+                if (m) {
+                    d = new Date(
+                        parseInt(m[1], 10),
+                        parseInt(m[2], 10) - 1,
+                        parseInt(m[3], 10),
+                        parseInt(m[4], 10),
+                        parseInt(m[5], 10),
+                        m[6] ? parseInt(m[6], 10) : 0
+                    );
+                }
+            }
+            if (!d) d = new Date(isoStr);
+            if (isNaN(d.getTime())) return escapeStatusHtml(isoStr);
+            if (!now || !(now instanceof Date)) now = new Date();
+            var diffSec = Math.floor((now - d) / 1000);
+            if (diffSec < 60) return 'just now';
+            if (diffSec < 3600) return Math.floor(diffSec / 60) + ' min ago';
+            if (diffSec < 86400) return Math.floor(diffSec / 3600) + ' hr ago';
+            if (diffSec < 172800) return '1 day ago';
+            if (diffSec < 604800) {
+                var days = Math.floor(diffSec / 86400);
+                return days + ' day' + (days === 1 ? '' : 's') + ' ago';
+            }
+            if (diffSec < 1209600) return '1 week ago';
+            if (diffSec < 2592000) return Math.floor(diffSec / 604800) + ' weeks ago';
+            if (diffSec < 5184000) return '1 month ago';
+            if (diffSec < 31536000) return Math.floor(diffSec / 2592000) + ' months ago';
+            if (diffSec < 63072000) return '1 year ago';
+            return Math.floor(diffSec / 31536000) + ' years ago';
+        }
+        function formatStatusStamp(isoStr) {
+            if (!isoStr) return '';
+            var d = null;
+            if (typeof isoStr === 'string') {
+                var m = isoStr.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+                if (m) {
+                    d = new Date(
+                        parseInt(m[1], 10),
+                        parseInt(m[2], 10) - 1,
+                        parseInt(m[3], 10),
+                        parseInt(m[4], 10),
+                        parseInt(m[5], 10),
+                        m[6] ? parseInt(m[6], 10) : 0
+                    );
+                }
+            }
+            if (!d) d = new Date(isoStr);
+            if (isNaN(d.getTime())) return '';
+            return d.toLocaleString(undefined, {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+            });
+        }
+        function getStatusTone(rawStatus, rawSubject, type) {
+            if (type === 'created') return 'created';
+            var normalized = String(rawStatus || '').toLowerCase().replace(/\s+/g, ' ').trim();
+            if (normalized === 'follow up' || normalized === 'followup') return 'followup';
+            if (normalized === 'confirmed' || normalized === 'case confirmed') return 'confirmed';
+            if (normalized === 'completed' || normalized === 'case completed') return 'completed';
+            if (normalized === 'rewarded' || normalized === 'reward distributed' || normalized === 'paid') return 'rewarded';
+            if (normalized === 'demo') return 'demo';
+            if (normalized === 'pending') return 'pending';
+            if (normalized === 'failed') return 'failed';
+            if (normalized === 'created' || String(rawSubject || '').toLowerCase().trim() === 'lead created') return 'created';
+            return 'default';
+        }
         function openStatus(leadId, items) {
             if (titleLeadId) titleLeadId.textContent = leadId;
             body.innerHTML = '';
@@ -1433,16 +1535,60 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (emptyEl) emptyEl.style.display = 'block';
             } else {
                 if (emptyEl) emptyEl.style.display = 'none';
+                var now = new Date();
                 items.forEach(function(it) {
-                    var tr = document.createElement('tr');
-                    var date = it.CREATIONDATE ? String(it.CREATIONDATE).substring(0, 19) : '&mdash;';
-                    tr.innerHTML =
-                        '<td>' + date + '</td>' +
-                        '<td>' + (it.SUBJECT || '&mdash;') + '</td>' +
-                        '<td>' + (it.STATUS || '&mdash;') + '</td>' +
-                        '<td>' + (it.DESCRIPTION || '&mdash;') + '</td>' +
-                        '<td>' + (it.USERID || '&mdash;') + '</td>';
-                    body.appendChild(tr);
+                    var item = document.createElement('div');
+                    var rawUser = String(it.user || it.USERID || 'System').trim();
+                    var rawSubject = String(it.subject || it.SUBJECT || '').trim();
+                    var rawStatus = String(it.status || it.STATUS || '').trim();
+                    var rawDesc = String(it.description || it.DESCRIPTION || '').trim();
+                    var user = escapeStatusHtml(rawUser);
+                    var subject = escapeStatusHtml(rawSubject);
+                    var status = escapeStatusHtml(rawStatus);
+                    var desc = escapeStatusHtml(rawDesc);
+                    var timeStr = formatStatusTime(it.created_at || it.CREATIONDATE, now);
+                    var stamp = escapeStatusHtml(formatStatusStamp(it.created_at || it.CREATIONDATE));
+                    var lowerSubject = rawSubject.toLowerCase();
+                    var isCreated = it.type === 'created' || rawStatus.toUpperCase() === 'CREATED' || lowerSubject === 'lead created';
+                    var tone = getStatusTone(rawStatus, rawSubject, isCreated ? 'created' : 'activity');
+                    var headlineText = 'updated lead status';
+                    if (lowerSubject === 'lead assigned') headlineText = 'assigned lead';
+                    else if (lowerSubject && lowerSubject !== 'updated status' && lowerSubject !== 'lead created') headlineText = rawSubject;
+                    var html = '<span class="inquiry-activity-bullet"></span><div class="inquiry-activity-content">';
+                    html += '<div class="inquiries-status-entry-head">';
+                    if (isCreated) {
+                        html += '<strong class="inquiries-status-actor">' + user + '</strong>';
+                        html += '<span class="inquiries-status-subject">created lead</span>';
+                        html += '<span class="inquiry-activity-link">#SQL-' + leadId + '</span>';
+                    } else {
+                        html += '<strong class="inquiries-status-actor">' + user + '</strong>';
+                        html += '<span class="inquiries-status-subject">' + escapeStatusHtml(headlineText) + '</span>';
+                        if (status) {
+                            html += '<span class="inquiries-status-badge inquiries-status-badge--' + tone + '">' + status + '</span>';
+                        }
+                    }
+                    html += '</div>';
+                    if (desc) {
+                        html += '<div class="inquiries-status-body">' + desc + '</div>';
+                    }
+                    html += '<div class="inquiries-status-meta"><span class="inquiry-activity-time">' + timeStr + '</span>';
+                    if (stamp) {
+                        html += '<span class="inquiries-status-date">' + stamp + '</span>';
+                    }
+                    html += '</div>';
+                    if (it.attachment_urls && it.attachment_urls.length > 0) {
+                        html += '<div class="inquiries-status-attachments"><span class="inquiries-status-attachments-label">Attachments</span><div class="inquiry-activity-attachments">';
+                        it.attachment_urls.forEach(function(url, index) {
+                            var safeUrl = escapeStatusHtml(url || '');
+                            html += '<a href="' + safeUrl + '" target="_blank" rel="noopener" class="inquiry-activity-attachment-link" title="Open attachment ' + (index + 1) + '"><img src="' + safeUrl + '" alt="Attachment ' + (index + 1) + '" class="inquiry-activity-attachment-img"></a>';
+                        });
+                        html += '</div></div>';
+                    }
+                    html += '</div>';
+                    item.className = 'inquiry-activity-item inquiries-status-item';
+                    item.setAttribute('data-tone', tone);
+                    item.innerHTML = html;
+                    body.appendChild(item);
                 });
             }
             modal.hidden = false;
@@ -1454,7 +1600,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (leadId) {
                     fetch('{{ url("/admin/inquiries") }}/' + leadId + '/status', { headers: { 'Accept': 'application/json' } })
                         .then(function(r) { return r.json(); })
-                        .then(function(data) { openStatus(leadId, data.items || []); })
+                        .then(function(data) { openStatus(leadId, data.activities || data.items || []); })
                         .catch(function() { openStatus(leadId, []); });
                 }
                 return;

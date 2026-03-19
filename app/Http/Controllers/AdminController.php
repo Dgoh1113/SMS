@@ -21,6 +21,64 @@ use Carbon\Carbon;
 
 class AdminController extends Controller
 {
+    private function buildDealerItems(): array
+    {
+        $rows = DB::select(
+            'SELECT "USERID","EMAIL","POSTCODE","CITY","ISACTIVE","COMPANY","ALIAS"
+             FROM "USERS"
+             WHERE TRIM("SYSTEMROLE") = \'Dealer\'
+             ORDER BY "USERID"'
+        );
+
+        $leadStats = [];
+        try {
+            $statsRows = DB::select(
+                'SELECT
+                    TRIM(CAST("ASSIGNED_TO" AS VARCHAR(50))) AS UID,
+                    COUNT(*) AS TOTAL_LEAD,
+                    SUM(CASE WHEN UPPER(TRIM("CURRENTSTATUS")) = \'ONGOING\' THEN 1 ELSE 0 END) AS TOTAL_ONGOING,
+                    SUM(CASE WHEN "CURRENTSTATUS" = \'Closed\' THEN 1 ELSE 0 END) AS TOTAL_CLOSED,
+                    SUM(CASE WHEN UPPER(TRIM("CURRENTSTATUS")) = \'FAILED\' THEN 1 ELSE 0 END) AS TOTAL_FAILED
+                 FROM "LEAD"
+                 WHERE "ASSIGNED_TO" IS NOT NULL AND TRIM(CAST("ASSIGNED_TO" AS VARCHAR(50))) <> \'\'
+                 GROUP BY TRIM(CAST("ASSIGNED_TO" AS VARCHAR(50)))'
+            );
+
+            foreach ($statsRows as $sr) {
+                $uid = trim((string) ($sr->UID ?? $sr->uid ?? ''));
+                if ($uid === '') {
+                    continue;
+                }
+
+                $leadStats[$uid] = [
+                    'totalLead' => (int) ($sr->TOTAL_LEAD ?? $sr->total_lead ?? 0),
+                    'totalOngoing' => (int) ($sr->TOTAL_ONGOING ?? $sr->total_ongoing ?? 0),
+                    'totalClosed' => (int) ($sr->TOTAL_CLOSED ?? $sr->total_closed ?? 0),
+                    'totalFailed' => (int) ($sr->TOTAL_FAILED ?? $sr->total_failed ?? 0),
+                ];
+            }
+        } catch (\Throwable $e) {
+            // Leave stats empty if the aggregation fails.
+        }
+
+        return array_map(function ($r) use ($leadStats) {
+            $uid = trim((string) ($r->USERID ?? ''));
+            $totalLead = $leadStats[$uid]['totalLead'] ?? 0;
+            $totalOngoing = $leadStats[$uid]['totalOngoing'] ?? 0;
+            $totalClosed = $leadStats[$uid]['totalClosed'] ?? 0;
+            $totalFailed = $leadStats[$uid]['totalFailed'] ?? 0;
+            $conversion = $totalLead > 0 ? ($totalClosed / $totalLead) * 100 : 0;
+
+            $r->TOTAL_LEAD = $totalLead;
+            $r->TOTAL_ONGOING = $totalOngoing;
+            $r->TOTAL_CLOSED = $totalClosed;
+            $r->TOTAL_FAILED = $totalFailed;
+            $r->CONVERSION_RATE = $conversion;
+
+            return $r;
+        }, $rows);
+    }
+
     private function latestAssignmentUserMap(array $leadIds): array
     {
         $leadIds = array_values(array_unique(array_filter(array_map('intval', $leadIds), static fn ($id) => $id > 0)));
@@ -1398,6 +1456,80 @@ class AdminController extends Controller
              FROM "LEAD_ACT" WHERE "LEADID" = ? ORDER BY "CREATIONDATE" DESC, "LEAD_ACTID" DESC',
             [$leadId]
         );
+
+        $userIds = [];
+        foreach ($rows as $r) {
+            $uid = trim((string) ($r->USERID ?? ''));
+            if ($uid !== '') {
+                $userIds[$uid] = true;
+            }
+        }
+
+        $userNameMap = [];
+        try {
+            $ids = array_keys($userIds);
+            if (!empty($ids)) {
+                $placeholders = implode(',', array_fill(0, count($ids), '?'));
+                $users = DB::select(
+                    'SELECT "USERID","SYSTEMROLE","ALIAS","COMPANY","EMAIL"
+                     FROM "USERS"
+                     WHERE CAST("USERID" AS VARCHAR(50)) IN (' . $placeholders . ')',
+                    $ids
+                );
+                foreach ($users as $u) {
+                    $uid = trim((string) ($u->USERID ?? ''));
+                    if ($uid === '') {
+                        continue;
+                    }
+                    $role = trim((string) ($u->SYSTEMROLE ?? ''));
+                    $alias = trim((string) ($u->ALIAS ?? ''));
+                    $company = trim((string) ($u->COMPANY ?? ''));
+                    $email = trim((string) ($u->EMAIL ?? ''));
+                    $fallback = $email !== '' ? $email : $uid;
+
+                    if ($role !== '' && $alias !== '') {
+                        $userNameMap[$uid] = $role . '- ' . $alias;
+                    } elseif ($role !== '') {
+                        $userNameMap[$uid] = $role . '- ' . ($company !== '' ? $company : ($email !== '' ? $email : $uid));
+                    } elseif ($alias !== '') {
+                        $userNameMap[$uid] = $alias;
+                    } else {
+                        $userNameMap[$uid] = $fallback;
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            $userNameMap = [];
+        }
+
+        $activities = [];
+        foreach ($rows as $r) {
+            $createdAtIso = null;
+            if (!empty($r->CREATIONDATE)) {
+                try {
+                    $createdAtIso = Carbon::parse($r->CREATIONDATE)->toIso8601String();
+                } catch (\Throwable $e) {
+                    $createdAtIso = (string) $r->CREATIONDATE;
+                }
+            }
+
+            $status = trim((string) ($r->STATUS ?? ''));
+            $userId = trim((string) ($r->USERID ?? ''));
+            $activities[] = [
+                'type' => strtoupper($status) === 'CREATED' ? 'created' : 'activity',
+                'user' => $userId !== '' ? ($userNameMap[$userId] ?? $userId) : 'System',
+                'subject' => trim((string) ($r->SUBJECT ?? '')),
+                'description' => trim((string) ($r->DESCRIPTION ?? '')),
+                'status' => $status,
+                'created_at' => $createdAtIso,
+                'attachment_urls' => $this->buildAdminLeadActivityAttachmentUrls(
+                    $r->ATTACHMENT ?? null,
+                    (int) ($r->LEADID ?? $leadId),
+                    (int) ($r->LEAD_ACTID ?? 0)
+                ),
+            ];
+        }
+
         $items = array_map(fn ($r) => [
             'LEAD_ACTID' => $r->LEAD_ACTID,
             'LEADID' => $r->LEADID,
@@ -1407,7 +1539,11 @@ class AdminController extends Controller
             'DESCRIPTION' => $r->DESCRIPTION,
             'STATUS' => $r->STATUS,
         ], $rows);
-        return response()->json(['items' => $items]);
+
+        return response()->json([
+            'items' => $items,
+            'activities' => $activities,
+        ]);
     }
 
     public function companyLookup(Request $request): JsonResponse
@@ -1900,60 +2036,20 @@ class AdminController extends Controller
 
     public function dealers(): View
     {
-        $rows = DB::select(
-            'SELECT "USERID","EMAIL","POSTCODE","CITY","ISACTIVE","COMPANY","ALIAS"
-             FROM "USERS"
-             WHERE TRIM("SYSTEMROLE") = \'Dealer\'
-             ORDER BY "USERID"'
-        );
-
-        $leadStats = [];
-        try {
-            $statsRows = DB::select(
-                'SELECT
-                    TRIM(CAST("ASSIGNED_TO" AS VARCHAR(50))) AS UID,
-                    COUNT(*) AS TOTAL_LEAD,
-                    SUM(CASE WHEN UPPER(TRIM("CURRENTSTATUS")) = \'ONGOING\' THEN 1 ELSE 0 END) AS TOTAL_ONGOING,
-                    SUM(CASE WHEN "CURRENTSTATUS" = \'Closed\' THEN 1 ELSE 0 END) AS TOTAL_CLOSED,
-                    SUM(CASE WHEN UPPER(TRIM("CURRENTSTATUS")) = \'FAILED\' THEN 1 ELSE 0 END) AS TOTAL_FAILED
-                 FROM "LEAD"
-                 WHERE "ASSIGNED_TO" IS NOT NULL AND TRIM(CAST("ASSIGNED_TO" AS VARCHAR(50))) <> \'\'
-                 GROUP BY TRIM(CAST("ASSIGNED_TO" AS VARCHAR(50)))'
-            );
-            foreach ($statsRows as $sr) {
-                $uid = trim((string) ($sr->UID ?? $sr->uid ?? ''));
-                if ($uid === '') continue;
-                $totalLead = (int) ($sr->TOTAL_LEAD ?? $sr->total_lead ?? 0);
-                $totalOngoing = (int) ($sr->TOTAL_ONGOING ?? $sr->total_ongoing ?? 0);
-                $totalClosed = (int) ($sr->TOTAL_CLOSED ?? $sr->total_closed ?? 0);
-                $totalFailed = (int) ($sr->TOTAL_FAILED ?? $sr->total_failed ?? 0);
-                $leadStats[$uid] = [
-                    'totalLead' => $totalLead,
-                    'totalOngoing' => $totalOngoing,
-                    'totalClosed' => $totalClosed,
-                    'totalFailed' => $totalFailed,
-                ];
-            }
-        } catch (\Throwable $e) {
-            // leave stats empty
-        }
-
-        $items = array_map(function ($r) use ($leadStats) {
-            $uid = trim((string) ($r->USERID ?? ''));
-            $totalLead = $leadStats[$uid]['totalLead'] ?? 0;
-            $totalOngoing = $leadStats[$uid]['totalOngoing'] ?? 0;
-            $totalClosed = $leadStats[$uid]['totalClosed'] ?? 0;
-            $totalFailed = $leadStats[$uid]['totalFailed'] ?? 0;
-            $conversion = $totalLead > 0 ? ($totalClosed / $totalLead) * 100 : 0;
-            $r->TOTAL_LEAD = $totalLead;
-            $r->TOTAL_ONGOING = $totalOngoing;
-            $r->TOTAL_CLOSED = $totalClosed;
-            $r->TOTAL_FAILED = $totalFailed;
-            $r->CONVERSION_RATE = $conversion;
-            return $r;
-        }, $rows);
+        $items = $this->buildDealerItems();
 
         return view('admin.dealers', ['items' => $items, 'currentPage' => 'dealers']);
+    }
+
+    public function dealersSync(): JsonResponse
+    {
+        $items = $this->buildDealerItems();
+
+        return response()->json([
+            'rows_html' => view('admin.partials.dealers_rows', ['items' => $items])->render(),
+            'count' => count($items),
+            'synced_at' => now()->toIso8601String(),
+        ]);
     }
 
     public function rewards(): View
@@ -2413,6 +2509,35 @@ class AdminController extends Controller
             }
         }
         return null;
+    }
+
+    private function buildAdminLeadActivityAttachmentUrls(mixed $attachmentRaw, int $leadId, int $leadActId): array
+    {
+        $urls = [];
+        if ($attachmentRaw === null || trim((string) $attachmentRaw) === '') {
+            return $urls;
+        }
+
+        $attachmentStr = trim((string) $attachmentRaw);
+        $attachmentStr = str_replace('\\', '/', $attachmentStr);
+
+        if (str_contains($attachmentStr, ',') || str_starts_with($attachmentStr, 'inquiry-attachments')) {
+            foreach (explode(',', $attachmentStr) as $path) {
+                $path = trim(str_replace('\\', '/', $path));
+                if ($path !== '' && str_starts_with($path, 'inquiry-attachments/')) {
+                    $urls[] = route('admin.rewards.serve-attachment', ['path' => $path]);
+                }
+            }
+            return array_values(array_unique($urls));
+        }
+
+        if (str_starts_with($attachmentStr, 'inquiry-attachments/')) {
+            $urls[] = route('admin.rewards.serve-attachment', ['path' => $attachmentStr]);
+        } elseif ($leadId > 0 && $leadActId > 0 && preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', $attachmentStr)) {
+            $urls[] = route('admin.rewards.activity-attachment', ['leadId' => $leadId, 'leadActId' => $leadActId]);
+        }
+
+        return array_values(array_unique($urls));
     }
 
     /**
