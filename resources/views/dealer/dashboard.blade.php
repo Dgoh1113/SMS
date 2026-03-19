@@ -52,16 +52,17 @@
     <section class="dashboard-metrics dealer-metrics">
         <div class="dashboard-metric-card">
             <div class="dashboard-metric-icon dashboard-metric-icon-inquiries">
-                <i class="bi bi-people"></i>
+                <i class="bi bi-inbox"></i>
             </div>
             <div class="dashboard-metric-label">Active Inquiries</div>
             <div class="dashboard-metric-value-row">
                 <div class="dashboard-metric-value">{{ number_format($metrics['activeInquiries'] ?? 0) }}</div>
-                <span class="dashboard-metric-pill dashboard-metric-pill-up">↑12%</span>
+                @php $p = (float) ($metrics['pctActive'] ?? 0); $up = $p >= 0; @endphp
+                <span class="dashboard-metric-pill {{ $up ? 'dashboard-metric-pill-up' : 'dashboard-metric-pill-down' }}">{{ $up ? '+' : '-' }}{{ abs($p) }}% vs last week</span>
             </div>
         </div>
         <div class="dashboard-metric-card">
-            <div class="dashboard-metric-icon dashboard-metric-icon-inquiries">
+            <div class="dashboard-metric-icon dashboard-metric-icon-critical">
                 <i class="bi bi-clock"></i>
             </div>
             <div class="dashboard-metric-label">Pending Follow-ups</div>
@@ -72,17 +73,18 @@
         </div>
         <div class="dashboard-metric-card">
             <div class="dashboard-metric-icon dashboard-metric-icon-closed">
-                <i class="bi bi-calendar-check"></i>
+                <i class="bi bi-cash-stack"></i>
             </div>
             <div class="dashboard-metric-label">Total Closed</div>
             <div class="dashboard-metric-value-row">
                 <div class="dashboard-metric-value">{{ number_format($metrics['closedCaseCount'] ?? 0) }}</div>
-                <span class="dashboard-metric-pill dashboard-metric-pill-up">↑5</span>
+                @php $p = (float) ($metrics['pctClosed'] ?? 0); $up = $p >= 0; @endphp
+                <span class="dashboard-metric-pill {{ $up ? 'dashboard-metric-pill-up' : 'dashboard-metric-pill-down' }}">{{ $up ? '+' : '-' }}{{ abs($p) }}% vs last week</span>
             </div>
         </div>
         <div class="dashboard-metric-card">
             <div class="dashboard-metric-icon dashboard-metric-icon-conversion">
-                <i class="bi bi-graph-up"></i>
+                <i class="bi bi-percent"></i>
             </div>
             <div class="dashboard-metric-label">Conversion Rate</div>
             <div class="dashboard-metric-value-row">
@@ -100,10 +102,7 @@
             <div class="dealer-panel dealer-inquiries-panel">
                 <div class="dealer-panel-header">
                     <div class="dealer-panel-title-row">
-                        <div class="dealer-panel-icon dealer-panel-icon-demos">
-                            <i class="bi bi-folder2"></i>
-                        </div>
-                        <h2 class="dealer-panel-title">Active Inquiries</h2>
+                        <h2 class="dealer-panel-title dashboard-panel-title">Active Inquiries</h2>
                     </div>
                     <a href="{{ route('dealer.inquiries') }}" class="dealer-link-btn">View All Inquiries</a>
                 </div>
@@ -130,7 +129,7 @@
                             $idx = $idx !== false ? $idx : 0;
                             $filledCount = $idx + 1;
                             $displayStatus = $status;
-                            $rowPage = (int) floor($i / ($inquiriesPerPage ?? 6)) + 1;
+                            $rowPage = (int) floor($i / ($inquiriesPerPage ?? 8)) + 1;
                             
                             // Customer name truncation limit to 24 characters
                             $customerFull = trim(($r->COMPANYNAME ?? '') . ' ' . ($r->CONTACTNAME ?? '')) ?: '—';
@@ -139,7 +138,7 @@
                         <div class="dealer-table-row dealer-inquiry-row" data-page="{{ $rowPage }}">
                             <span class="dealer-inquiry-id">#SQL-{{ $r->LEADID }}</span>
                             <span title="{{ $customerFull !== '—' ? $customerFull : '' }}">{{ $customerShort }}</span>
-                            <span>{{ ($r->ACT_LAST_UPDATE ?? $r->LASTMODIFIED) ? date('M j, Y', strtotime($r->ACT_LAST_UPDATE ?? $r->LASTMODIFIED)) : '—' }}</span>
+                            <span>{{ $r->LASTMODIFIED ? date('M j, Y', strtotime($r->LASTMODIFIED)) : '—' }}</span>
                             <div class="dealer-progress-cell">
                                 <span class="dealer-progress-text">{{ $displayStatus }}</span>
                                 <div class="dealer-status-bar">
@@ -184,12 +183,11 @@
 
         <div class="dealer-dashboard-main-right" id="dealerRightPanel">
             <div class="dealer-panel dealer-closed-case-panel dashboard-chart-panel">
-                <div class="dealer-panel-header dealer-panel-header--no-action">
-                    <div class="dealer-panel-title-row">
-                        <div class="dealer-panel-icon dealer-panel-icon-demos">
-                            <i class="bi bi-bar-chart-fill"></i>
-                        </div>
-                        <h2 class="dealer-panel-title">Total Closed</h2>
+                <div class="dashboard-panel-header">
+                    <div class="dashboard-panel-title">
+                        Closed Case
+                        <i class="bi bi-info-circle dashboard-info-icon"
+                           title="Count of leads turned into closed cases grouped by creation date (week/month/year)."></i>
                     </div>
                     <div class="dashboard-chart-tabs" id="dealerClosedCaseRangeTabs">
                         <button type="button" class="dashboard-chart-tab active" data-range="week">Week</button>
@@ -207,16 +205,18 @@
             <div class="dealer-panel dealer-alert-panel">
                 <div class="dealer-panel-header dealer-panel-header--simple">
                     <div class="dealer-panel-title-row">
-                        <span class="dealer-alert-panel-icon"><i class="bi bi-exclamation-circle-fill"></i></span>
-                        <h2 class="dealer-panel-title">High Priority Follow-ups</h2>
+                        <h2 class="dealer-panel-title dashboard-panel-title">
+                            High Priority Follow-ups
+                            <i class="bi bi-info-circle dashboard-info-icon"
+                               title="Upcoming and overdue follow-ups (overdue by more than 3 days)."></i>
+                        </h2>
                     </div>
                 </div>
                 <div class="dealer-alert-list">
                     @foreach($highPriorityFollowups ?? [] as $h)
                         <div class="dealer-alert-item dealer-alert-item--{{ strtolower(str_replace(' ', '-', $h->status)) }}">
                             <div class="dealer-alert-top">
-                                <span class="dealer-alert-badge dealer-alert-badge--{{ $h->status === 'OVERDUE' ? 'overdue' : 'due' }}">{{ $h->status }}</span>
-                                <span class="dealer-alert-time">{{ $h->time }}</span>
+                                <span class="dealer-alert-badge dealer-alert-badge--{{ $h->status === 'OVERDUE' ? 'overdue' : 'due' }}">{{ $h->status }} <span class="dealer-alert-badge-time">{{ $h->time }}</span></span>
                             </div>
                             <div class="dealer-alert-main">
                                 <span class="dealer-alert-title">{{ $h->inquiryId }} {{ $h->contact }}</span>

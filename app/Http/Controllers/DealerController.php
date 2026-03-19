@@ -21,7 +21,7 @@ class DealerController extends Controller
             'conversionRate' => 0,
             'conversionTrend' => 0,
             'closedCaseCount' => 0,
-            'demosTrend' => '+5',
+            'pctClosed' => 0,
             'pendingFollowups' => 0,
         ];
         $closedCaseChartData = [
@@ -36,7 +36,7 @@ class DealerController extends Controller
         $leadsTotal = 0;
         $inquiriesPage = 1;
         $inquiriesTotalPages = 1;
-        $inquiriesPerPage = 6;
+        $inquiriesPerPage = 8;
         $leadsPaginated = [];
 
         if ($dealerId) {
@@ -47,7 +47,7 @@ class DealerController extends Controller
             }
 
             $leadsRaw = DB::select(
-                'SELECT FIRST 50
+                'SELECT FIRST 200
                     l."LEADID", l."PRODUCTID", l."COMPANYNAME", l."CONTACTNAME", l."CONTACTNO", l."EMAIL",
                     l."CITY", l."POSTCODE", l."BUSINESSNATURE", l."USERCOUNT", l."EXISTINGSOFTWARE", l."DEMOMODE",
                     l."DESCRIPTION", l."REFERRALCODE", l."CREATEDAT", l."CREATEDBY",
@@ -71,10 +71,36 @@ class DealerController extends Controller
                 ORDER BY l."LEADID" DESC',
                 [$dealerId]
             );
-            $leads = array_values(array_filter($leadsRaw, function ($l) {
+            $allAssignedLeads = array_values(array_filter($leadsRaw, function ($l) {
                 $s = strtoupper(trim($l->ACT_STATUS ?? $l->CURRENTSTATUS ?? ''));
                 return $s !== 'FAILED';
             }));
+            $leads = DB::select(
+                'SELECT FIRST 200
+                    l."LEADID", l."PRODUCTID", l."COMPANYNAME", l."CONTACTNAME", l."CONTACTNO", l."EMAIL",
+                    l."CITY", l."POSTCODE", l."BUSINESSNATURE", l."USERCOUNT", l."EXISTINGSOFTWARE", l."DEMOMODE",
+                    l."DESCRIPTION", l."REFERRALCODE", l."CREATEDAT", l."CREATEDBY",
+                    l."ASSIGNED_TO", l."LASTMODIFIED",
+                    u."EMAIL" AS "ASSIGNED_BY_EMAIL",
+                    COALESCE(
+                        (SELECT FIRST 1 la."STATUS"
+                           FROM "LEAD_ACT" la
+                          WHERE la."LEADID" = l."LEADID"
+                          ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC),
+                        l."CURRENTSTATUS",
+                        \'Pending\'
+                    ) AS "ACT_STATUS",
+                    (SELECT FIRST 1 la."CREATIONDATE"
+                       FROM "LEAD_ACT" la
+                      WHERE la."LEADID" = l."LEADID"
+                      ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC) AS "ACT_LAST_UPDATE"
+                FROM "LEAD" l
+                LEFT JOIN "USERS" u ON u."USERID" = l."CREATEDBY"
+                WHERE l."ASSIGNED_TO" = ?
+                  AND UPPER(TRIM(COALESCE(l."CURRENTSTATUS", \'\'))) = ?
+                ORDER BY l."LEADID" DESC',
+                [$dealerId, 'ONGOING']
+            );
 
             $activeCountRow = DB::selectOne(
                 'SELECT COUNT(*) AS "CNT" FROM "LEAD"
@@ -279,11 +305,11 @@ class DealerController extends Controller
 
             $metrics = [
                 'activeInquiries' => $activeInquiriesCount,
-                'activeInquiriesTrend' => '+12%',
+                'pctActive' => $pctActive,
                 'conversionRate' => $conversion,
                 'conversionTrend' => $conversionTrend,
                 'closedCaseCount' => $closedCount,
-                'demosTrend' => '+5',
+                'pctClosed' => $pctClosed,
                 'pendingFollowups' => $pendingFollowupsCount,
             ];
 
@@ -315,11 +341,11 @@ class DealerController extends Controller
                         $hours = (int) floor($diffSec / 3600);
                         $days = (int) floor($diffSec / 86400);
                         if ($mins < 60) {
-                            $time = max(1, $mins) . 'm late';
+                            $time = max(1, $mins) . 'm';
                         } elseif ($hours < 24) {
-                            $time = $hours . 'h late';
+                            $time = $hours . 'h';
                         } else {
-                            $time = $days . ' day' . ($days !== 1 ? 's' : '') . ' overdue';
+                            $time = $days . 'd';
                         }
                     } else {
                         $status = 'DUE SOON';
@@ -328,13 +354,13 @@ class DealerController extends Controller
                         $hours = max(0, (int) floor($untilSec / 3600));
                         $days = max(0, (int) floor($untilSec / 86400));
                         if ($mins < 60) {
-                            $time = 'In ' . max(1, $mins) . 'm';
+                            $time = max(1, $mins) . 'm';
                         } elseif ($hours < 24) {
-                            $time = 'In ' . $hours . 'h';
+                            $time = $hours . 'h';
                         } elseif ($days < 2) {
-                            $time = 'In 1 day';
+                            $time = '1d';
                         } else {
-                            $time = 'In ' . $days . ' days';
+                            $time = $days . 'd';
                         }
                     }
 
@@ -368,7 +394,7 @@ class DealerController extends Controller
                 ->all();
         }
 
-        $inquiriesPerPage = 6;
+        $inquiriesPerPage = 8;
         $leadsTotal = count($leads);
         $inquiriesTotalPages = max(1, (int) ceil($leadsTotal / $inquiriesPerPage));
 

@@ -80,17 +80,18 @@
 
     #completedTable td.inquiries-col-action,
     #rewardedTable td.inquiries-col-action {
-        width: 88px;
-        min-width: 88px;
-        max-width: 88px;
+        width: 112px;
+        min-width: 112px;
+        max-width: 112px;
         padding: 0;
     }
 
     #completedTable th.inquiries-col-action,
     #rewardedTable th.inquiries-col-action {
-        width: 88px;
-        min-width: 88px;
-        max-width: 88px;
+        width: 112px;
+        min-width: 112px;
+        max-width: 112px;
+        box-sizing: border-box;
     }
 
     #completedTable td.inquiries-col-action .inquiries-update-btn,
@@ -105,6 +106,15 @@
         border-radius: 0;
         justify-content: center;
         align-items: center;
+    }
+
+    #completedTable th.inquiries-col-action .inquiries-filter-clear,
+    #rewardedTable th.inquiries-col-action .inquiries-filter-clear {
+        width: 100%;
+        min-width: 0;
+        padding: 6px 8px;
+        white-space: nowrap;
+        box-sizing: border-box;
     }
 
 </style>
@@ -1181,19 +1191,23 @@ document.addEventListener('DOMContentLoaded', function() {
         var d = null;
 
         if (typeof isoStr === 'string') {
-            var m = isoStr.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
-            if (m) {
-                var year = parseInt(m[1], 10);
-                var month = parseInt(m[2], 10) - 1;
-                var day = parseInt(m[3], 10);
-                var hour = parseInt(m[4], 10);
-                var min = parseInt(m[5], 10);
-                var sec = m[6] ? parseInt(m[6], 10) : 0;
-                d = new Date(year, month, day, hour, min, sec);
+            // Prefer native parsing first so ISO8601 timezone offsets are respected.
+            var nativeParsed = new Date(isoStr);
+            if (!isNaN(nativeParsed.getTime())) {
+                d = nativeParsed;
+            } else {
+                var m = isoStr.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+                if (m) {
+                    var year = parseInt(m[1], 10);
+                    var month = parseInt(m[2], 10) - 1;
+                    var day = parseInt(m[3], 10);
+                    var hour = parseInt(m[4], 10);
+                    var min = parseInt(m[5], 10);
+                    var sec = m[6] ? parseInt(m[6], 10) : 0;
+                    d = new Date(year, month, day, hour, min, sec);
+                }
             }
-        }
-
-        if (!d) {
+        } else {
             d = new Date(isoStr);
         }
 

@@ -2027,6 +2027,11 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
   color: #1d4ed8; /* dark blue */
 }
 
+.dashboard-metric-icon-critical {
+  background: #fef2f2; /* light red */
+  color: #dc2626; /* red */
+}
+
 .dashboard-metric-icon-conversion {
   background: #dcfce7; /* light green */
   color: #047857; /* dark green */
@@ -4828,12 +4833,6 @@ textarea.inquiry-form-input { resize: vertical; min-height: 140px; }
   border-radius: 6px;
 }
 
-.dealer-alert-panel-icon {
-  font-size: 18px;
-  color: var(--primary);
-  margin-right: 8px;
-}
-
 .dealer-alert-item--due-soon {
   background: #fefce8;
   border-left: 4px solid #eab308;
@@ -4923,16 +4922,30 @@ textarea.inquiry-form-input { resize: vertical; min-height: 140px; }
 
 .dealer-closed-case-panel {
   overflow: hidden;
-  padding: 18px 20px;
+  padding: 22px 20px 18px;
 }
 
-.dealer-closed-case-panel .dealer-panel-header {
+.dealer-closed-case-panel .dashboard-panel-header {
   flex-wrap: wrap;
+  align-items: flex-start;
   gap: 8px;
 }
 
+.dealer-closed-case-panel .dashboard-panel-title {
+  order: 2;
+  flex: 0 0 100%;
+  min-width: 0;
+  padding-top: 0;
+}
+
 .dealer-closed-case-panel .dashboard-chart-tabs {
+  order: 1;
   margin-left: auto;
+  flex-shrink: 0;
+}
+
+.dealer-closed-case-panel .dashboard-panel-body {
+  margin-top: 12px;
 }
 
 .dealer-chart-period-selector {
@@ -5131,35 +5144,16 @@ textarea.inquiry-form-input { resize: vertical; min-height: 140px; }
   margin-bottom: 14px;
 }
 
+.dealer-alert-panel .dealer-panel-header--simple {
+  justify-content: flex-start;
+  align-items: flex-start;
+  padding: 0;
+}
+
 .dealer-panel-title-row {
   display: flex;
   align-items: center;
   gap: 10px;
-}
-
-.dealer-panel-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  background: #dbeafe;
-  color: #1d4ed8;
-}
-
-/* purple version for upcoming demos (matches Demos This Week metric) */
-.dealer-panel-icon-demos {
-  background: #ede9fe; /* light purple */
-  color: #5b21b6; /* dark purple */
-}
-
-.dealer-panel-icon--alert {
-  font-weight: 900;
-  font-size: 16px;
-  background: #ffe4e6; /* light red/pink */
-  color: #b91c1c; /* dark red */
 }
 
 .dealer-panel-title {
@@ -5167,6 +5161,11 @@ textarea.inquiry-form-input { resize: vertical; min-height: 140px; }
   font-size: 16px;
   font-weight: 700;
   color: #1f2933;
+}
+
+.dealer-dashboard-content .dealer-panel-title.dashboard-panel-title {
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .dealer-link-btn {
@@ -5497,11 +5496,18 @@ button.dealer-pagination-btn:disabled {
 .dealer-alert-top {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 6px;
+  flex-wrap: nowrap;
+  width: 100%;
 }
 
 .dealer-alert-badge {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
   padding: 6px 12px;
+  padding-right: 30px;
   border-radius: 8px;
   font-size: 12px;
   font-weight: 700;
@@ -5509,6 +5515,7 @@ button.dealer-pagination-btn:disabled {
   letter-spacing: 0.06em;
   background: #fecaca;
   color: #b91c1c;
+  flex-shrink: 0;
 }
 
 .dealer-alert-badge--due {
@@ -5516,9 +5523,17 @@ button.dealer-pagination-btn:disabled {
   color: #92400e;
 }
 
-.dealer-alert-time {
-  font-size: 14px;
-  color: var(--text-muted);
+.dealer-alert-badge-time {
+  position: absolute;
+  top: 4px;
+  right: 12px;
+  font-size: 9px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: currentColor;
+  white-space: nowrap;
+  text-transform: none;
 }
 
 .dealer-alert-main {
@@ -8195,8 +8210,7 @@ button.dealer-pagination-btn:disabled {
   border-bottom: none; /* Removes the bottom border so it connects to the footer */
   border-radius: 10px 10px 0 0; /* Rounds only the top corners */
   background: #fff;
-  scrollbar-gutter: stable both-edges;
-  scrollbar-width: none; /* Firefox: hide until hover */
+  scrollbar-width: none;
 }
 .dealer-table-wrapper:hover {
   scrollbar-width: thin;
@@ -8204,18 +8218,18 @@ button.dealer-pagination-btn:disabled {
 .dealer-table-wrapper::-webkit-scrollbar {
   height: 0;
 }
-.dealer-table-wrapper:hover::-webkit-scrollbar {
-  height: 10px;
-}
 .dealer-table-wrapper::-webkit-scrollbar-track {
   background: transparent;
 }
-.dealer-table-wrapper:hover::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 6px;
-}
 .dealer-table-wrapper::-webkit-scrollbar-thumb {
   background: transparent;
+  border-radius: 6px;
+}
+.dealer-table-wrapper:hover::-webkit-scrollbar {
+  height: 10px;
+}
+.dealer-table-wrapper:hover::-webkit-scrollbar-track {
+  background: #f1f5f9;
   border-radius: 6px;
 }
 .dealer-table-wrapper:hover::-webkit-scrollbar-thumb {
@@ -8253,7 +8267,7 @@ button.dealer-pagination-btn:disabled {
   padding: 20px 24px; 
   gap: 20px; 
   font-size: 14.5px; /* Slightly larger text */
-  min-width: 850px; /* Keeps the horizontal scroll triggering at the right time */
+  min-width: 980px; /* Forces horizontal overflow sooner, matching inquiries-style scrolling */
 }
 
 /* 3. HEADER SPECIFICS */

@@ -103,5 +103,5 @@
         </td>
     </tr>
 @empty
-    <tr><td colspan="19" class="inquiries-empty">No completed inquiries.</td></tr>
+    <tr><td colspan="9" class="inquiries-empty">No completed inquiries.</td></tr>
 @endforelse
