@@ -523,3 +523,118 @@
 .reports-page .reports-product-section .dashboard-panel-body p {
   font-size: 12px;
 }
+
+/* Admin report border styling */
+.reports-page .reports-tabs-nav,
+.reports-page .dashboard-metric-card,
+.reports-page .dashboard-panel,
+.reports-page .reports-product-chart-wrapper,
+.reports-page .report-donut {
+  position: relative;
+  border: 1px solid transparent;
+  background:
+    linear-gradient(#ffffff, #ffffff) padding-box,
+    linear-gradient(135deg, rgba(124, 92, 246, 0.22) 0%, rgba(222, 229, 249, 0.94) 38%, rgba(191, 219, 254, 0.82) 100%) border-box;
+  box-shadow: 0 10px 24px rgba(91, 104, 156, 0.08);
+}
+
+.reports-page .dashboard-metric-card {
+  --report-border-accent: #7c5bff;
+  --report-border-soft: rgba(124, 92, 246, 0.22);
+  --report-card-wash: rgba(124, 92, 246, 0.08);
+  --report-border-shadow: rgba(124, 92, 246, 0.14);
+  background:
+    radial-gradient(circle at top right, var(--report-card-wash) 0%, rgba(255, 255, 255, 0) 42%),
+    linear-gradient(#ffffff, #ffffff) padding-box,
+    linear-gradient(
+      135deg,
+      var(--report-border-soft) 0%,
+      rgba(255, 255, 255, 0.96) 20%,
+      rgba(227, 233, 249, 0.98) 50%,
+      rgba(191, 219, 254, 0.84) 78%,
+      var(--report-border-soft) 100%
+    ) border-box;
+  box-shadow: 0 10px 24px rgba(91, 104, 156, 0.08), 0 14px 28px -22px var(--report-border-shadow);
+}
+
+.reports-page .dashboard-metrics-grid > *:nth-child(1) .dashboard-metric-card,
+.reports-page .dashboard-metrics-grid > *:nth-child(1).dashboard-metric-card {
+  --report-border-accent: #f97316;
+  --report-border-soft: rgba(249, 115, 22, 0.22);
+  --report-card-wash: rgba(249, 115, 22, 0.09);
+  --report-border-shadow: rgba(249, 115, 22, 0.2);
+}
+
+.reports-page .dashboard-metrics-grid > *:nth-child(2) .dashboard-metric-card,
+.reports-page .dashboard-metrics-grid > *:nth-child(2).dashboard-metric-card {
+  --report-border-accent: #f97316;
+  --report-border-soft: rgba(249, 115, 22, 0.22);
+  --report-card-wash: rgba(249, 115, 22, 0.09);
+  --report-border-shadow: rgba(249, 115, 22, 0.2);
+}
+
+.reports-page .dashboard-metrics-grid > *:nth-child(3) .dashboard-metric-card,
+.reports-page .dashboard-metrics-grid > *:nth-child(3).dashboard-metric-card {
+  --report-border-accent: #f59e0b;
+  --report-border-soft: rgba(245, 158, 11, 0.22);
+  --report-card-wash: rgba(245, 158, 11, 0.09);
+  --report-border-shadow: rgba(245, 158, 11, 0.2);
+}
+
+.reports-page .dashboard-metrics-grid > *:nth-child(4) .dashboard-metric-card,
+.reports-page .dashboard-metrics-grid > *:nth-child(4).dashboard-metric-card {
+  --report-border-accent: #eab308;
+  --report-border-soft: rgba(234, 179, 8, 0.22);
+  --report-card-wash: rgba(234, 179, 8, 0.09);
+  --report-border-shadow: rgba(234, 179, 8, 0.2);
+}
+
+.reports-page .dashboard-metrics-grid > *:nth-child(5) .dashboard-metric-card,
+.reports-page .dashboard-metrics-grid > *:nth-child(5).dashboard-metric-card {
+  --report-border-accent: #84cc16;
+  --report-border-soft: rgba(132, 204, 22, 0.22);
+  --report-card-wash: rgba(132, 204, 22, 0.09);
+  --report-border-shadow: rgba(132, 204, 22, 0.2);
+}
+
+.reports-page .dashboard-metrics-grid > *:nth-child(6) .dashboard-metric-card,
+.reports-page .dashboard-metrics-grid > *:nth-child(6).dashboard-metric-card {
+  --report-border-accent: #22c55e;
+  --report-border-soft: rgba(34, 197, 94, 0.22);
+  --report-card-wash: rgba(34, 197, 94, 0.09);
+  --report-border-shadow: rgba(34, 197, 94, 0.2);
+}
+
+.reports-page .dashboard-metrics-grid > *:nth-child(7) .dashboard-metric-card,
+.reports-page .dashboard-metrics-grid > *:nth-child(7).dashboard-metric-card {
+  --report-border-accent: #15803d;
+  --report-border-soft: rgba(21, 128, 61, 0.22);
+  --report-card-wash: rgba(21, 128, 61, 0.09);
+  --report-border-shadow: rgba(21, 128, 61, 0.2);
+}
+
+.reports-page .reports-tabs-nav,
+.reports-page .dashboard-panel {
+  border-radius: 16px;
+}
+
+.reports-page .dashboard-metric-card,
+.reports-page .reports-product-chart-wrapper {
+  border-radius: 14px;
+}
+
+.reports-page .report-donut {
+  border-radius: 50%;
+}
+
+.reports-page .reports-period-form-compact {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.reports-page .report-metric-link:hover,
+.reports-page .report-metric-link:focus-visible {
+  text-decoration: none;
+}

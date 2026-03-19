@@ -651,8 +651,28 @@ class DealerController extends Controller
                                AND "LEADID" IN (' . $placeholders . ')
                              GROUP BY "LEADID"
                          ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
-                         WHERE UPPER(TRIM(a."STATUS")) IN (\'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\')
+                        WHERE UPPER(TRIM(a."STATUS")) IN (\'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\')
                            AND a."LEADID" IN (' . $placeholders . ')',
+                        array_merge($leadIds, $leadIds)
+                    );
+                    $assignRows = DB::select(
+                        'SELECT a."LEADID", a."CREATIONDATE" AS "ASSIGNDATE"
+                         FROM "LEAD_ACT" a
+                         JOIN (
+                             SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
+                             FROM "LEAD_ACT"
+                             WHERE "LEADID" IN (' . $placeholders . ')
+                               AND (
+                                   UPPER(TRIM(COALESCE("SUBJECT", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
+                                   OR UPPER(TRIM(COALESCE("DESCRIPTION", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
+                               )
+                             GROUP BY "LEADID"
+                         ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
+                         WHERE a."LEADID" IN (' . $placeholders . ')
+                           AND (
+                               UPPER(TRIM(COALESCE(a."SUBJECT", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
+                               OR UPPER(TRIM(COALESCE(a."DESCRIPTION", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
+                           )',
                         array_merge($leadIds, $leadIds)
                     );
                     $completedDateMap = [];
@@ -667,6 +687,13 @@ class DealerController extends Controller
                         $lid = (int) ($rr->LEADID ?? 0);
                         if ($lid > 0) {
                             $rewardedDateMap[$lid] = $rr->REWARDED_AT ?? null;
+                        }
+                    }
+                    $assignDateMap = [];
+                    foreach ($assignRows as $ar) {
+                        $lid = (int) ($ar->LEADID ?? 0);
+                        if ($lid > 0) {
+                            $assignDateMap[$lid] = $ar->ASSIGNDATE ?? null;
                         }
                     }
                     $attachRows = DB::select(
@@ -698,6 +725,9 @@ class DealerController extends Controller
                             }
                             if (isset($rewardedDateMap[$lid])) {
                                 $r->REWARDED_AT = $rewardedDateMap[$lid];
+                            }
+                            if (isset($assignDateMap[$lid])) {
+                                $r->ASSIGNDATE = $assignDateMap[$lid];
                             }
                             $r->ATTACHMENT_URLS = $this->buildLeadActivityAttachmentUrls(
                                 $attachmentMap[$lid] ?? null,
@@ -1518,6 +1548,50 @@ class DealerController extends Controller
                 }
             } catch (\Throwable $e) {
                 // ignore dealt product mapping failures
+            }
+
+            // Attach latest assignment date per lead for optional "Assign Date" column
+            try {
+                if (!empty($leadIds)) {
+                    $placeholders = implode(',', array_fill(0, count($leadIds), '?'));
+                    $assignRows = DB::select(
+                        'SELECT a."LEADID", a."CREATIONDATE" AS "ASSIGNDATE"
+                         FROM "LEAD_ACT" a
+                         JOIN (
+                             SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
+                             FROM "LEAD_ACT"
+                             WHERE "LEADID" IN (' . $placeholders . ')
+                               AND (
+                                   UPPER(TRIM(COALESCE("SUBJECT", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
+                                   OR UPPER(TRIM(COALESCE("DESCRIPTION", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
+                               )
+                             GROUP BY "LEADID"
+                         ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
+                         WHERE a."LEADID" IN (' . $placeholders . ')
+                           AND (
+                               UPPER(TRIM(COALESCE(a."SUBJECT", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
+                               OR UPPER(TRIM(COALESCE(a."DESCRIPTION", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
+                           )',
+                        array_merge($leadIds, $leadIds)
+                    );
+                    $assignDateMap = [];
+                    foreach ($assignRows as $ar) {
+                        $lid = (int) ($ar->LEADID ?? 0);
+                        if ($lid > 0) {
+                            $assignDateMap[$lid] = $ar->ASSIGNDATE ?? null;
+                        }
+                    }
+                    if (!empty($assignDateMap)) {
+                        foreach ($rows as $r) {
+                            $lid = (int) ($r->LEADID ?? 0);
+                            if ($lid > 0 && isset($assignDateMap[$lid])) {
+                                $r->ASSIGNDATE = $assignDateMap[$lid];
+                            }
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+                // ignore assign date mapping failures
             }
 
             foreach ($rows as $r) {

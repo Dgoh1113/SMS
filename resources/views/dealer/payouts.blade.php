@@ -31,10 +31,14 @@
 
     #completedTable.payouts-default-layout th[data-col="date"],
     #completedTable.payouts-default-layout td[data-col="date"],
+    #completedTable.payouts-default-layout th[data-col="assigndate"],
+    #completedTable.payouts-default-layout td[data-col="assigndate"],
     #completedTable.payouts-default-layout th[data-col="completeddate"],
     #completedTable.payouts-default-layout td[data-col="completeddate"],
     #rewardedTable.payouts-default-layout th[data-col="date"],
     #rewardedTable.payouts-default-layout td[data-col="date"],
+    #rewardedTable.payouts-default-layout th[data-col="assigndate"],
+    #rewardedTable.payouts-default-layout td[data-col="assigndate"],
     #rewardedTable.payouts-default-layout th[data-col="completiondate"],
     #rewardedTable.payouts-default-layout td[data-col="completiondate"],
     #rewardedTable.payouts-default-layout th[data-col="payoutdate"],
@@ -198,6 +202,7 @@
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="completeddate"> COMPLETION DATE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="customer"> CUSTOMER NAME</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="assignedto"> ASSIGNED TO</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="assigndate"> ASSIGN DATE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="source"> SOURCE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="postcode"> POSTCODE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="city"> CITY</label>
@@ -231,6 +236,7 @@
                         <th data-col="date" class="inquiries-header-cell"><span class="inquiries-header-label">INQUIRY DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="date"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="customer" class="inquiries-header-cell"><span class="inquiries-header-label">CUSTOMER NAME</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="customer"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="assignedto" class="inquiries-header-cell"><span class="inquiries-header-label">ASSIGNED TO</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="assignedto"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="assigndate" class="inquiries-header-cell"><span class="inquiries-header-label">ASSIGN DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="assigndate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="referralcode" class="inquiries-header-cell"><span class="inquiries-header-label">REFERRAL CODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="referralcode" placeholder="Has code"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="completeddate" class="inquiries-header-cell"><span class="inquiries-header-label">COMPLETION DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="completeddate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="status" class="inquiries-header-cell"><span class="inquiries-header-label">STATUS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="completed" data-col="status" placeholder="Completed only" disabled readonly></span></th>
@@ -273,7 +279,7 @@
 <section class="inquiries-mgmt-panel">
     <div class="inquiries-panel-header">
         <div class="inquiries-panel-title-wrap">
-            <i class="bi bi-cash-coin inquiries-panel-icon"></i>
+            <i class="bi bi-gift inquiries-panel-icon"></i>
             <h2 class="inquiries-panel-title">Rewarded</h2>
         </div>
         <div class="inquiries-panel-actions">
@@ -289,6 +295,7 @@
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="date"> INQUIRY DATE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="payoutdate"> PAYOUTS DATE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="completiondate"> COMPLETION DATE</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="assigndate"> ASSIGN DATE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="customer"> CUSTOMER NAME</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="source"> SOURCE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="postcode"> POSTCODE</label>
@@ -323,6 +330,7 @@
                         <th data-col="date" class="inquiries-header-cell"><span class="inquiries-header-label">INQUIRY DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="date"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="payoutdate" class="inquiries-header-cell"><span class="inquiries-header-label">PAYOUTS DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="payoutdate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="completiondate" class="inquiries-header-cell"><span class="inquiries-header-label">COMPLETION DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="completiondate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="assigndate" class="inquiries-header-cell"><span class="inquiries-header-label">ASSIGN DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="assigndate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="customer" class="inquiries-header-cell"><span class="inquiries-header-label">CUSTOMER NAME</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="customer"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="source" class="inquiries-header-cell"><span class="inquiries-header-label">SOURCE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="source"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="postcode" class="inquiries-header-cell"><span class="inquiries-header-label">POSTCODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter payouts-grid-filter" data-table="rewarded" data-col="postcode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
@@ -465,11 +473,11 @@ document.addEventListener('DOMContentLoaded', function() {
     var COMPLETED_OLDER_LEGACY_DEFAULT_COLUMNS = ['inquiryid','completeddate','customer','dealtproducts','referralcode','attachment','assignby','status'];
     var COMPLETED_PREVIOUS_DEFAULT_COLUMNS = ['inquiryid','customer','assignedto','referralcode','completeddate','status','dealtproducts'];
     var COMPLETED_DEFAULT_COLUMNS = ['inquiryid','customer','assignedto','referralcode','completeddate','status','dealtproducts'];
-    var COMPLETED_ALL_COLUMNS = ['inquiryid','date','customer','assignedto','referralcode','completeddate','status','dealtproducts','source','postcode','city','address','contactno','businessnature','users','existingsw','demomode','message','attachment','assignby'];
+    var COMPLETED_ALL_COLUMNS = ['inquiryid','date','customer','assignedto','assigndate','referralcode','completeddate','status','dealtproducts','source','postcode','city','address','contactno','businessnature','users','existingsw','demomode','message','attachment','assignby'];
 
     var REWARDED_STORAGE_KEY = 'dealerPayoutRewardedVisibleColumns_v2';
     var REWARDED_DEFAULT_COLUMNS = ['inquiryid','payoutdate','customer','dealtproducts','referralcode','attachment','assignby','status'];
-    var REWARDED_ALL_COLUMNS = ['inquiryid','date','payoutdate','completiondate','customer','source','postcode','city','address','contactno','businessnature','users','existingsw','demomode','dealtproducts','message','referralcode','attachment','assignby','status'];
+    var REWARDED_ALL_COLUMNS = ['inquiryid','date','payoutdate','completiondate','assigndate','customer','source','postcode','city','address','contactno','businessnature','users','existingsw','demomode','dealtproducts','message','referralcode','attachment','assignby','status'];
 
     function getCompletedVisibleColumns() {
         try {

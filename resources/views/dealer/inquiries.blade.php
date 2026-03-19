@@ -69,6 +69,7 @@
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="existingsw"> EXISTING SW</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="demomode"> DEMO MODE</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="products"> PRODUCTS</label>
+                        <label class="inquiries-columns-check"><input type="checkbox" data-col="assigndate"> ASSIGN DATE</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="completiondate"> COMPLETION DATE</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="payoutsdate"> PAYOUTS DATE</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="message"> MESSAGE</label>
@@ -103,6 +104,7 @@
                         <th data-col="existingsw" class="inquiries-header-cell"><span class="inquiries-header-label">EXISTING SW</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="existingsw"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="demomode" class="inquiries-header-cell"><span class="inquiries-header-label">DEMO MODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="demomode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="products" class="inquiries-header-cell"><span class="inquiries-header-label">PRODUCTS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="products"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="assigndate" class="inquiries-header-cell"><span class="inquiries-header-label">ASSIGN DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="assigndate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="completiondate" class="inquiries-header-cell"><span class="inquiries-header-label">COMPLETION DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="completiondate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="payoutsdate" class="inquiries-header-cell"><span class="inquiries-header-label">PAYOUTS DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="payoutsdate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="message" class="inquiries-header-cell"><span class="inquiries-header-label">MESSAGE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="message"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
@@ -224,14 +226,16 @@ document.addEventListener('DOMContentLoaded', function() {
     var colsAll = document.getElementById('dealerInquiryColumnsAll');
     var colsNone = document.getElementById('dealerInquiryColumnsNone');
     var colsReset = document.getElementById('dealerInquiryColumnsReset');
-    var storageKey = 'dealer_inquiries_visible_cols_v7';
-    var legacyStorageKey = 'dealer_inquiries_visible_cols_v6';
-    var olderLegacyStorageKey = 'dealer_inquiries_visible_cols_v5';
+    var storageKey = 'dealer_inquiries_visible_cols_v8';
+    var legacyStorageKey = 'dealer_inquiries_visible_cols_v7';
+    var olderLegacyStorageKey = 'dealer_inquiries_visible_cols_v6';
+    var oldestLegacyStorageKey = 'dealer_inquiries_visible_cols_v5';
     // Default columns follow admin incoming inquiries table, but message → assignby + status
     var legacyDefaultCols = ['inquiryid','date','customer','email','postcode','city','products','assignby','status'];
     var olderLegacyDefaultCols = ['inquiryid','date','customer','postcode','city','businessnature','products','assignby','status'];
-    var defaultCols = ['inquiryid','date','customer','email','postcode','city','products','status'];
-    var allCols = ['inquiryid','date','customer','email','postcode','city','address','contactno','businessnature','users','existingsw','demomode','products','completiondate','payoutsdate','message','referralcode','attachment','assignby','status'];
+    var previousDefaultCols = ['inquiryid','date','customer','email','postcode','city','products','status'];
+    var defaultCols = ['inquiryid','date','customer','email','postcode','city','products','assigndate','status'];
+    var allCols = ['inquiryid','date','customer','email','postcode','city','address','contactno','businessnature','users','existingsw','demomode','products','assigndate','completiondate','payoutsdate','message','referralcode','attachment','assignby','status'];
 
     var statusCheckbox = colsMenu ? colsMenu.querySelector('input[type="checkbox"][data-col="status"]') : null;
     if (statusCheckbox) {
@@ -307,6 +311,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var raw = localStorage.getItem(storageKey);
             if (!raw) raw = localStorage.getItem(legacyStorageKey);
             if (!raw) raw = localStorage.getItem(olderLegacyStorageKey);
+            if (!raw) raw = localStorage.getItem(oldestLegacyStorageKey);
             if (!raw) return null;
             var parsed = JSON.parse(raw);
             if (!Array.isArray(parsed)) return null;
@@ -317,6 +322,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 })) ||
                 (parsed.length === olderLegacyDefaultCols.length && parsed.every(function(col, index) {
                     return col === olderLegacyDefaultCols[index];
+                })) ||
+                (parsed.length === previousDefaultCols.length && parsed.every(function(col, index) {
+                    return col === previousDefaultCols[index];
                 }));
             var migrated = isLegacyDefault ? defaultCols.slice() : parsed.filter(function(col) {
                 return allCols.indexOf(col) !== -1;
@@ -326,6 +334,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 localStorage.setItem(storageKey, JSON.stringify(migrated));
                 localStorage.removeItem(legacyStorageKey);
                 localStorage.removeItem(olderLegacyStorageKey);
+                localStorage.removeItem(oldestLegacyStorageKey);
             } catch (e) {}
 
             return migrated;

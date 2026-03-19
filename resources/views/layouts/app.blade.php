@@ -436,6 +436,173 @@
         window.addEventListener('scroll', onScroll, { passive: true });
     })();
 
+    // Shared "Columns" dropdown search for admin/dealer tables
+    (function() {
+        function normalizeText(value) {
+            return String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
+        }
+
+        function ensureColumnsMenuReady(menu) {
+            if (!menu || menu.dataset.columnsSearchReady === '1') return;
+            menu.dataset.columnsSearchReady = '1';
+
+            var title = menu.querySelector('.inquiries-columns-menu-title');
+            if (!title) return;
+
+            var emptyState = document.createElement('div');
+            emptyState.className = 'inquiries-columns-empty';
+            emptyState.textContent = 'No columns found';
+            title.insertAdjacentElement('afterend', emptyState);
+
+            menu._columnsEmptyState = emptyState;
+            menu._columnsCheckItems = Array.prototype.slice.call(menu.querySelectorAll('.inquiries-columns-check'));
+        }
+
+        function isMenuOpen(menu) {
+            if (!menu) return false;
+            if (menu.hidden) return false;
+            return window.getComputedStyle(menu).display !== 'none';
+        }
+
+        function matchesColumnsTypeahead(text, keyword) {
+            if (!keyword) return true;
+            if (text.indexOf(keyword) === 0) return true;
+
+            for (var i = keyword.length - 1; i >= 1; i--) {
+                if (text.indexOf(keyword.slice(0, i)) === 0) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        function applyColumnsTypeahead(menu, keyword) {
+            ensureColumnsMenuReady(menu);
+            if (!menu) return;
+
+            var shown = 0;
+            var normalizedKeyword = normalizeText(keyword);
+            var checkItems = menu._columnsCheckItems || [];
+            var emptyState = menu._columnsEmptyState;
+            var firstMatch = null;
+
+            menu.dataset.columnsTypeahead = normalizedKeyword;
+
+            checkItems.forEach(function(item) {
+                var matched = matchesColumnsTypeahead(normalizeText(item.textContent), normalizedKeyword);
+                item.hidden = !matched;
+                if (matched) {
+                    shown += 1;
+                    if (!firstMatch) firstMatch = item;
+                }
+            });
+
+            if (emptyState) {
+                emptyState.classList.toggle('is-visible', shown === 0);
+            }
+
+            if (normalizedKeyword && firstMatch) {
+                firstMatch.scrollIntoView({ block: 'nearest' });
+            }
+        }
+
+        function resetColumnsSearch(menu) {
+            if (!menu) return;
+            ensureColumnsMenuReady(menu);
+            applyColumnsTypeahead(menu, '');
+        }
+
+        function getOpenColumnsMenus() {
+            return Array.prototype.filter.call(
+                document.querySelectorAll('.inquiries-columns-menu'),
+                function(menu) { return isMenuOpen(menu); }
+            );
+        }
+
+        function getActiveColumnsMenu() {
+            var openMenus = getOpenColumnsMenus();
+            return openMenus.length ? openMenus[openMenus.length - 1] : null;
+        }
+
+        function isTypingTarget(target) {
+            if (!target) return false;
+            var tagName = (target.tagName || '').toUpperCase();
+            if (tagName === 'TEXTAREA' || tagName === 'SELECT' || !!target.isContentEditable) return true;
+            if (tagName !== 'INPUT') return false;
+
+            var inputType = String(target.type || '').toLowerCase();
+            return ['text', 'search', 'email', 'number', 'password', 'tel', 'url'].indexOf(inputType) !== -1;
+        }
+
+        Array.prototype.forEach.call(document.querySelectorAll('.inquiries-columns-menu'), function(menu) {
+            ensureColumnsMenuReady(menu);
+
+            menu.addEventListener('change', function(e) {
+                if (!e.target || e.target.tagName !== 'INPUT' || e.target.type !== 'checkbox') return;
+                resetColumnsSearch(menu);
+                if (typeof e.target.blur === 'function') {
+                    e.target.blur();
+                }
+            });
+
+            menu.addEventListener('click', function(e) {
+                var resetButton = e.target.closest('.inquiries-columns-reset');
+                if (!resetButton) return;
+
+                window.setTimeout(function() {
+                    resetColumnsSearch(menu);
+                }, 0);
+            });
+        });
+
+        Array.prototype.forEach.call(document.querySelectorAll('.inquiries-columns-dropdown > button'), function(button) {
+            button.addEventListener('click', function() {
+                var menu = button.parentElement ? button.parentElement.querySelector('.inquiries-columns-menu') : null;
+                if (!menu) return;
+
+                window.setTimeout(function() {
+                    resetColumnsSearch(menu);
+                }, 0);
+            });
+        });
+
+        document.addEventListener('keydown', function(e) {
+            var menu = getActiveColumnsMenu();
+            if (!menu) return;
+
+            if (e.key === 'Escape') {
+                resetColumnsSearch(menu);
+                return;
+            }
+
+            if (isTypingTarget(e.target)) return;
+
+            if (e.key === 'Backspace') {
+                e.preventDefault();
+                applyColumnsTypeahead(menu, (menu.dataset.columnsTypeahead || '').slice(0, -1));
+                return;
+            }
+
+            if (e.ctrlKey || e.metaKey || e.altKey || e.key.length !== 1) return;
+            if (!/[a-z0-9 _-]/i.test(e.key)) return;
+
+            e.preventDefault();
+            applyColumnsTypeahead(menu, (menu.dataset.columnsTypeahead || '') + e.key);
+        });
+
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.inquiries-columns-dropdown')) return;
+            window.setTimeout(function() {
+                Array.prototype.forEach.call(document.querySelectorAll('.inquiries-columns-menu'), function(menu) {
+                    if (!isMenuOpen(menu)) {
+                        resetColumnsSearch(menu);
+                    }
+                });
+            }, 0);
+        });
+    })();
+
     // Strict client-side idle timeout: redirect to login after SESSION_LIFETIME minutes
     // This handles the "no requests made" case where server can't enforce timeout.
     var isLoggedIn = {{ session()->has('user_role') ? 'true' : 'false' }};

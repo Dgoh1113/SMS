@@ -34,6 +34,7 @@
         }
         $statusDisp = $rawStatus !== '' ? $rawStatus : 'PENDING';
         $inquiryDate = $r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '-';
+        $assignDate = !empty($r->ASSIGNDATE) ? date('d/m/Y', strtotime($r->ASSIGNDATE)) : ($r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '-');
         $completionDate = $r->LASTMODIFIED ? date('d/m/Y', strtotime($r->LASTMODIFIED)) : ($r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '-');
         $searchHaystack = strtolower(($r->COMPANYNAME ?? '') . ' ' . ($r->CONTACTNAME ?? '') . ' ' . ($r->LEADID ?? ''));
         $pillOrder = [1 => 10, 3 => 11, 4 => 12, 2 => 20, 10 => 21, 8 => 30, 5 => 31, 6 => 40, 9 => 50, 7 => 60, 11 => 70];
@@ -60,6 +61,7 @@
         <td data-col="date">{{ $inquiryDate }}</td>
         <td data-col="customer">{{ $custDisp }}</td>
         <td data-col="assignedto">{{ $r->ASSIGNED_TO_NAME ?? ($r->ASSIGNED_TO ?? '-') }}</td>
+        <td data-col="assigndate">{{ $assignDate }}</td>
         <td data-col="referralcode">{{ $r->REFERRALCODE ?? '-' }}</td>
         <td data-col="completeddate">{{ $completionDate }}</td>
         <td data-col="status"><span class="inquiries-status {{ $statusClass }}">{{ $statusDisp }}</span></td>
@@ -108,5 +110,5 @@
         </td>
     </tr>
 @empty
-    <tr><td colspan="21" class="inquiries-empty">No completed inquiries.</td></tr>
+    <tr><td colspan="22" class="inquiries-empty">No completed inquiries.</td></tr>
 @endforelse

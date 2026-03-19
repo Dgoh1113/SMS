@@ -25,7 +25,7 @@
                 <span>Inquiries</span>
             </a>
             <a href="{{ route('dealer.payouts') }}" class="dashboard-nav-item {{ $current === 'payouts' ? 'dashboard-nav-item-active' : '' }}">
-                <span class="dashboard-nav-icon"><i class="bi {{ $current === 'payouts' ? 'bi-cash-coin' : 'bi-cash' }}"></i></span>
+        <span class="dashboard-nav-icon"><i class="bi {{ $current === 'payouts' ? 'bi-gift-fill' : 'bi-gift' }}"></i></span>
                 <span>Payouts</span>
             </a>
             <a href="{{ route('dealer.reports') }}" class="dashboard-nav-item {{ $current === 'reports' ? 'dashboard-nav-item-active' : '' }}">

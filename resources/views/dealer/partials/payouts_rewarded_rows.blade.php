@@ -57,6 +57,7 @@
         <td data-col="date">{{ $inquiryDate }}</td>
         <td data-col="payoutdate">{{ $payoutDate }}</td>
         <td data-col="completiondate">{{ $completionDate }}</td>
+        <td data-col="assigndate">{{ !empty($r->ASSIGNDATE) ? date('d/m/Y', strtotime((string) $r->ASSIGNDATE)) : (!empty($r->CREATEDAT) ? date('d/m/Y', strtotime((string) $r->CREATEDAT)) : 'â€”') }}</td>
         <td data-col="customer">{{ $custDisp }}</td>
         <td data-col="source">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '—') }}</td>
         <td data-col="postcode">{{ $r->POSTCODE ?? '—' }}</td>
@@ -104,5 +105,5 @@
         </td>
     </tr>
 @empty
-    <tr><td colspan="21" class="inquiries-empty">No rewarded payouts.</td></tr>
+    <tr><td colspan="22" class="inquiries-empty">No rewarded payouts.</td></tr>
 @endforelse

@@ -60,6 +60,7 @@
                 -
             @endif
         </td>
+        <td data-col="assigndate">{{ !empty($r->ASSIGNDATE) ? date('d/m/Y', strtotime($r->ASSIGNDATE)) : ($r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '-') }}</td>
         <td data-col="completiondate">{{ !empty($r->COMPLETED_AT) ? date('d/m/Y', strtotime($r->COMPLETED_AT)) : '-' }}</td>
         <td data-col="payoutsdate">{{ !empty($r->REWARDED_AT) ? date('d/m/Y', strtotime($r->REWARDED_AT)) : '-' }}</td>
         @php
@@ -96,7 +97,7 @@
     </tr>
 @empty
     <tr class="inquiries-empty-row">
-        <td colspan="21" class="inquiries-empty-cell">
+        <td colspan="22" class="inquiries-empty-cell">
             <div class="dealer-table-empty">No inquiries assigned yet.</div>
         </td>
     </tr>

@@ -2,41 +2,20 @@
 @section('title', 'Reports – SQL LMS Dealer Console')
 @section('content')
 <div class="dashboard-content reports-page">
-    <header class="reports-header">
+    <header class="reports-header reports-header--dealer">
         <div class="reports-header-actions">
-            <form method="get" action="{{ route('dealer.reports') }}" class="reports-period-form" id="reportsPeriodForm">
-                <input type="hidden" name="period" id="reportsPeriodInput" value="{{ $period ?? 'month' }}">
-                <input type="hidden" name="from" id="reportsFromInput" value="{{ $from ?? '' }}">
-                <input type="hidden" name="to" id="reportsToInput" value="{{ $to ?? '' }}">
-                <div class="reports-period-dropdown">
-                    <button type="button" class="reports-period-btn" id="reportsPeriodBtn" aria-expanded="false" aria-haspopup="listbox">
-                        <i class="bi bi-calendar3"></i>
-                        <span class="reports-period-label">{{ $periodLabel ?? 'Current Month' }}</span>
-                        <i class="bi bi-chevron-down"></i>
-                    </button>
-                    <div class="reports-period-menu" id="reportsPeriodMenu" role="listbox" hidden>
-                        <button type="button" class="reports-period-option" data-value="week">Current Week</button>
-                        <button type="button" class="reports-period-option" data-value="month">Current Month</button>
-                        <button type="button" class="reports-period-option" data-value="year">Current Year</button>
-                        <button type="button" class="reports-period-option reports-period-option-range" data-value="range">Range</button>
-                        <div class="reports-range-panel" id="reportsRangePanel" hidden>
-                            <div class="reports-range-inputs">
-                                <label>
-                                    <span>From</span>
-                                    <input type="date" id="reportsRangeFrom" class="reports-range-input" value="{{ $from ?? '' }}">
-                                </label>
-                                <label>
-                                    <span>To</span>
-                                    <input type="date" id="reportsRangeTo" class="reports-range-input" value="{{ $to ?? '' }}">
-                                </label>
-                            </div>
-                            <div class="reports-range-actions">
-                                <button type="button" class="reports-range-back" id="reportsRangeBack">Back</button>
-                                <button type="button" class="reports-range-apply" id="reportsRangeApply">Apply</button>
-                            </div>
-                        </div>
-                    </div>
+            <form method="get" action="{{ route('dealer.reports') }}" class="reports-period-form reports-period-form-compact reports-period-form--dealer" id="reportsPeriodForm">
+                <select name="period" id="reportsPeriodSelect" class="reports-period-select reports-period-select--dealer" aria-label="Report period">
+                    <option value="week" {{ ($period ?? 'month') === 'week' ? 'selected' : '' }}>Current Week</option>
+                    <option value="month" {{ ($period ?? 'month') === 'month' ? 'selected' : '' }}>Current Month</option>
+                    <option value="year" {{ ($period ?? 'month') === 'year' ? 'selected' : '' }}>Current Year</option>
+                    <option value="range" {{ ($period ?? 'month') === 'range' ? 'selected' : '' }}>Range</option>
+                </select>
+                <div class="reports-period-range-inline{{ ($period ?? 'month') === 'range' ? '' : ' is-hidden' }}" id="reportsRangeInline">
+                    <input type="date" name="from" id="reportsRangeFrom" class="reports-period-select reports-period-select--dealer reports-period-date" value="{{ $from ?? '' }}" aria-label="From date">
+                    <input type="date" name="to" id="reportsRangeTo" class="reports-period-select reports-period-select--dealer reports-period-date" value="{{ $to ?? '' }}" aria-label="To date">
                 </div>
+                <button type="submit" class="reports-period-apply reports-period-apply--dealer">Apply</button>
             </form>
         </div>
     </header>
@@ -184,97 +163,44 @@
 <script>
 (function() {
     var form = document.getElementById('reportsPeriodForm');
-    var periodInput = document.getElementById('reportsPeriodInput');
-    var fromInput = document.getElementById('reportsFromInput');
-    var toInput = document.getElementById('reportsToInput');
-    var btn = document.getElementById('reportsPeriodBtn');
-    var menu = document.getElementById('reportsPeriodMenu');
-    var label = document.querySelector('.reports-period-label');
-    var options = document.querySelectorAll('.reports-period-option:not(.reports-period-option-range)');
-    var rangeOption = document.querySelector('.reports-period-option-range');
-    var rangePanel = document.getElementById('reportsRangePanel');
+    var periodSelect = document.getElementById('reportsPeriodSelect');
+    var rangeWrap = document.getElementById('reportsRangeInline');
     var rangeFrom = document.getElementById('reportsRangeFrom');
     var rangeTo = document.getElementById('reportsRangeTo');
-    var rangeApply = document.getElementById('reportsRangeApply');
-    var rangeBack = document.getElementById('reportsRangeBack');
 
-    var labels = { week: 'Current Week', month: 'Current Month', year: 'Current Year' };
+    if (!form || !periodSelect || !rangeWrap || !rangeFrom || !rangeTo) return;
 
-    function closeMenu() {
-        menu.hidden = true;
-        btn.setAttribute('aria-expanded', 'false');
-        rangePanel.hidden = true;
-        options.forEach(function(o) { o.hidden = false; });
-        if (rangeOption) rangeOption.hidden = false;
-    }
-
-    function showRangeOnly() {
-        options.forEach(function(o) { o.hidden = true; });
-        if (rangeOption) rangeOption.hidden = true;
-        rangePanel.hidden = false;
-    }
-
-    function showOptionsOnly() {
-        options.forEach(function(o) { o.hidden = false; });
-        if (rangeOption) rangeOption.hidden = false;
-        rangePanel.hidden = true;
-    }
-
-    btn.addEventListener('click', function(e) {
-        e.preventDefault();
-        var open = !menu.hidden;
-        if (open) {
-            closeMenu();
+    function syncRangeInputs() {
+        var isRange = periodSelect.value === 'range';
+        rangeWrap.classList.toggle('is-hidden', !isRange);
+        rangeFrom.disabled = !isRange;
+        rangeTo.disabled = !isRange;
+        rangeFrom.required = isRange;
+        rangeTo.required = isRange;
+        if (!isRange) {
+            rangeTo.min = '';
         } else {
-            menu.hidden = false;
-            btn.setAttribute('aria-expanded', 'true');
-            showOptionsOnly();
+            rangeTo.min = rangeFrom.value || '';
         }
-    });
-
-    options.forEach(function(opt) {
-        opt.addEventListener('click', function(e) {
-            e.preventDefault();
-            periodInput.value = opt.dataset.value;
-            fromInput.value = '';
-            toInput.value = '';
-            form.submit();
-        });
-    });
-
-    if (rangeOption) {
-        rangeOption.addEventListener('click', function(e) {
-            e.stopPropagation();
-            e.preventDefault();
-            showRangeOnly();
-        });
     }
 
-    if (rangeFrom.value) rangeTo.min = rangeFrom.value;
+    periodSelect.addEventListener('change', syncRangeInputs);
     rangeFrom.addEventListener('change', function() {
         rangeTo.min = rangeFrom.value || '';
     });
 
-    rangeApply.addEventListener('click', function(e) {
-        e.preventDefault();
-        var from = rangeFrom.value;
-        var to = rangeTo.value;
-        if (from && to && from <= to) {
-            periodInput.value = 'range';
-            fromInput.value = from;
-            toInput.value = to;
-            form.submit();
+    form.addEventListener('submit', function(e) {
+        if (periodSelect.value === 'range') {
+            var from = rangeFrom.value;
+            var to = rangeTo.value;
+            if (!from || !to || from > to) {
+                e.preventDefault();
+                rangeFrom.focus();
+            }
         }
     });
 
-    rangeBack.addEventListener('click', function(e) {
-        e.preventDefault();
-        showOptionsOnly();
-    });
-
-    document.addEventListener('click', function(e) {
-        if (!btn.contains(e.target) && !menu.contains(e.target)) closeMenu();
-    });
+    syncRangeInputs();
 })();
 </script>
 @endpush
