@@ -156,7 +156,7 @@
                 <span class="dashboard-footer-text-main">&copy; {{ date('Y') }} E Stream Software. All rights reserved.</span>
             </div>
             <div class="dashboard-bottombar-right">
-                <span>Designed & Developed by <strong>Damien, WeiJian & WenJun with ðŸ’œ</strong></span>
+                <span>Designed &amp; Developed by <strong>Damien, WeiJian &amp; WenJun with &#x1F49C;</strong></span>
             </div>
         </footer>
     </main>

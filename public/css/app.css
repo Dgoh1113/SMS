@@ -2074,6 +2074,11 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
   color: #dc2626;
 }
 
+.dashboard-metric-pill-neutral {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
 .dashboard-metric-pill-critical {
   background: #fef2f2;
   color: #dc2626;

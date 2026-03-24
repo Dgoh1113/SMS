@@ -141,7 +141,7 @@
             <span>{{ $pct }}% vs last month</span>
             @else
             <svg class="dashboard-metric-trend-icon dashboard-metric-trend-icon-same" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-4 4 4-4m0 0 4-4"/></svg>
-            <span>→ No change</span>
+            <span>No change vs last month</span>
             @endif
         </div>
         <div class="dashboard-metric-btn-wrap"></div>
@@ -160,7 +160,7 @@
             <div id="inquiryPercentBadge" class="flex items-center inquiry-trend-badge font-medium text-center inquiry-trend-same">
                 <svg class="inquiry-percent-arrow inquiry-percent-arrow-up" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v13m0-13 4 4m-4-4-4 4"/></svg>
                 <svg class="inquiry-percent-arrow inquiry-percent-arrow-down" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19V5m0 0-4 4m4-4 4 4"/></svg>
-                <span id="inquiryPercent" class="inquiry-percent">0%</span>
+                <span id="inquiryPercent" class="inquiry-percent">No change</span>
                 <span class="inquiry-percent-suffix">vs last month</span>
             </div>
         </div>
@@ -430,7 +430,7 @@
                         elPercent.textContent = Math.round(diffPct) + '%';
                     } else {
                         elBadge.classList.add('inquiry-trend-same');
-                        elPercent.textContent = '0%';
+                        elPercent.textContent = 'No change';
                     }
                     elBadge.title = 'Vs last month';
                 }

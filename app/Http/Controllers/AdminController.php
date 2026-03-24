@@ -250,7 +250,7 @@ class AdminController extends Controller
         // Conversion rate: closed / total leads
         $conversionRate = $totalLeads > 0 ? round(($totalClosed / $totalLeads) * 100, 1) : 0;
 
-        // Week-over-week comparison uses the previous overall snapshot so it matches the main card value.
+        // Week-over-week comparison uses the current week versus the previous week for activity cards.
         $startThisWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
         $endLastWeek = $startThisWeek->copy()->subSecond();
         $startLastWeek = $startThisWeek->copy()->subWeek();
@@ -264,6 +264,13 @@ class AdminController extends Controller
         $referralLastWeek = 0;
         $activeThisWeek = $activeInquiries;
         $activeLastWeek = 0;
+        $percentChange = static function ($current, $previous): float {
+            $change = $previous > 0
+                ? round((($current - $previous) / $previous) * 100, 1)
+                : ($current > 0 ? 100.0 : 0.0);
+
+            return abs($change) < 0.05 ? 0.0 : $change;
+        };
         try {
             $countActiveSnapshot = function (string $cutoff) {
                 $row = DB::selectOne(
@@ -345,12 +352,15 @@ class AdminController extends Controller
             $activeLastWeek = 0;
         }
 
-        $pctLeads = $leadsLastWeek > 0 ? round((($leadsThisWeek - $leadsLastWeek) / $leadsLastWeek) * 100, 1) : ($leadsThisWeek > 0 ? 100 : 0);
-        $pctClosed = $closedLastWeek > 0 ? round((($closedThisWeek - $closedLastWeek) / $closedLastWeek) * 100, 1) : ($closedThisWeek > 0 ? 100 : 0);
-        $pctActive = $activeLastWeek > 0 ? round((($activeThisWeek - $activeLastWeek) / $activeLastWeek) * 100, 1) : ($activeThisWeek > 0 ? 100 : 0);
-        $pctReferral = $referralLastWeek > 0 ? round((($referralThisWeek - $referralLastWeek) / $referralLastWeek) * 100, 1) : ($referralThisWeek > 0 ? 100 : 0);
+        $pctLeads = $percentChange($leadsThisWeek, $leadsLastWeek);
+        $pctClosed = $percentChange($closedThisWeek, $closedLastWeek);
+        $pctActive = $percentChange($activeThisWeek, $activeLastWeek);
+        $pctReferral = $percentChange($referralThisWeek, $referralLastWeek);
         $conversionRateLastWeek = $leadsUntilLastWeek > 0 ? ($closedUntilLastWeek / $leadsUntilLastWeek) * 100 : 0;
         $conversionRateChange = round($conversionRate - $conversionRateLastWeek, 1);
+        if (abs($conversionRateChange) < 0.05) {
+            $conversionRateChange = 0.0;
+        }
 
         $dealerStats = [];
         try {
