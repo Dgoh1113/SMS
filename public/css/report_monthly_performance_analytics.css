@@ -712,3 +712,170 @@
 .reports-page .inquiry-filter-btn {
   font-size: 13px;
 }
+
+@media (max-width: 1024px) {
+  .reports-page-layout {
+    width: 100% !important;
+    max-width: 100%;
+    zoom: 1 !important;
+    padding: 0 20px 24px;
+  }
+
+  .reports-page .dashboard-metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-auto-flow: row;
+  }
+
+  .reports-page .dashboard-metrics-grid > *,
+  .reports-page .dashboard-metrics-grid > *:nth-child(5),
+  .reports-page .dashboard-metrics-grid > *:nth-child(6),
+  .reports-page .dashboard-metrics-grid > *:nth-child(7) {
+    grid-column: auto !important;
+    grid-row: auto !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .reports-page {
+    font-size: 100%;
+  }
+
+  .reports-page-layout {
+    width: 100% !important;
+    max-width: 100%;
+    zoom: 1 !important;
+    padding: 0 16px 24px;
+    gap: 16px;
+  }
+
+  .reports-period-row {
+    justify-content: flex-start;
+    margin: 0 0 12px;
+  }
+
+  .reports-period-form-compact {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .reports-period-select,
+  .reports-period-check,
+  .reports-period-apply {
+    width: 100%;
+    min-width: 0;
+    height: 42px;
+    font-size: 14px;
+    box-sizing: border-box;
+  }
+
+  .reports-period-check {
+    justify-content: flex-start;
+    padding: 0 12px;
+  }
+
+  .reports-period-apply {
+    grid-column: 1 / -1;
+  }
+
+  .reports-page .dashboard-metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-auto-flow: row;
+    gap: 12px;
+  }
+
+  .reports-page .dashboard-metrics-grid > *,
+  .reports-page .dashboard-metrics-grid > *:nth-child(5),
+  .reports-page .dashboard-metrics-grid > *:nth-child(6),
+  .reports-page .dashboard-metrics-grid > *:nth-child(7) {
+    grid-column: auto !important;
+    grid-row: auto !important;
+    min-width: 0;
+  }
+
+  .reports-page .dashboard-metric-card {
+    padding: 14px;
+    min-height: 170px;
+  }
+
+  .dashboard-metric-card-top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    min-height: 0;
+  }
+
+  .dashboard-metric-dealer-tag {
+    max-width: 100%;
+    white-space: normal;
+  }
+
+  .dashboard-metric-dealer-spacer {
+    display: none;
+  }
+
+  .reports-page .dashboard-metrics-grid .dashboard-metric-label {
+    font-size: 12px;
+  }
+
+  .reports-page .dashboard-metrics-grid .dashboard-metric-value {
+    font-size: 18px;
+  }
+
+  .reports-page .dashboard-metric-trend {
+    font-size: 11px;
+    align-items: flex-start;
+  }
+
+  .reports-page .report-metric-chevron {
+    display: none;
+  }
+
+  .reports-page .dashboard-panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .reports-page .inquiry-trend-badge {
+    align-self: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .reports-page .report-legend {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .reports-page-layout {
+    padding: 0 12px 20px;
+  }
+
+  .reports-period-form-compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .reports-page .dashboard-metric-card {
+    min-height: 158px;
+  }
+
+  .reports-page .dashboard-metrics-grid .dashboard-metric-value {
+    font-size: 17px;
+  }
+
+  .reports-page .dashboard-metric-trend {
+    font-size: 10px;
+  }
+
+  .reports-page .inquiry-trend-badge {
+    font-size: 12px;
+  }
+
+  .reports-page .report-donut {
+    width: 170px;
+    height: 170px;
+  }
+}

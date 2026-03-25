@@ -1571,3 +1571,16 @@ button.dealer-pagination-btn:disabled {
   outline: 2px solid #7c3aed;
   outline-offset: -2px;
 }
+
+@media (max-width: 768px) {
+  .dealer-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dealer-metrics {
+    gap: 8px;
+  }
+}

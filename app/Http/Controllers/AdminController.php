@@ -368,22 +368,29 @@ class AdminController extends Controller
             // Leads: COUNT(*) from LEAD where ASSIGNED_TO = dealer
             // Closed: COUNT(*) where ASSIGNED_TO = dealer and CURRENTSTATUS = 'Closed'
             // Conversion: Closed / Leads
-            // Pull dealer list first (company is display name).
-            // Some schemas may not have COMPANY populated; still return rows.
+            // Pull dealer list first so we can build a readable company/alias label.
+            // Older schemas may not expose every profile column; still return rows.
             $topDealersRaw = [];
         try {
             $topDealersRaw = DB::select(
-                    'SELECT u."USERID", u."EMAIL", u."COMPANY" AS "COMPANY", u."POSTCODE" AS "POSTCODE", u."CITY" AS "CITY"
+                    'SELECT u."USERID", u."EMAIL", u."COMPANY" AS "COMPANY", u."ALIAS" AS "ALIAS", u."POSTCODE" AS "POSTCODE", u."CITY" AS "CITY"
                 FROM "USERS" u
                      WHERE UPPER(TRIM(u."SYSTEMROLE")) LIKE \'%DEALER%\''
                 );
             } catch (\Throwable $e) {
-                // Fallback if COMPANY column is unavailable for any reason.
-                $topDealersRaw = DB::select(
-                    'SELECT u."USERID", u."EMAIL", \'\' AS "COMPANY", \'\' AS "POSTCODE", \'\' AS "CITY"
-                     FROM "USERS" u
-                     WHERE UPPER(TRIM(u."SYSTEMROLE")) LIKE \'%DEALER%\''
-                );
+                try {
+                    $topDealersRaw = DB::select(
+                        'SELECT u."USERID", u."EMAIL", u."COMPANY" AS "COMPANY", \'\' AS "ALIAS", u."POSTCODE" AS "POSTCODE", u."CITY" AS "CITY"
+                         FROM "USERS" u
+                         WHERE UPPER(TRIM(u."SYSTEMROLE")) LIKE \'%DEALER%\''
+                    );
+                } catch (\Throwable $e) {
+                    $topDealersRaw = DB::select(
+                        'SELECT u."USERID", u."EMAIL", \'\' AS "COMPANY", \'\' AS "ALIAS", \'\' AS "POSTCODE", \'\' AS "CITY"
+                         FROM "USERS" u
+                         WHERE UPPER(TRIM(u."SYSTEMROLE")) LIKE \'%DEALER%\''
+                    );
+                }
             }
 
             $dealerStats = collect($topDealersRaw)->map(function ($d) {
@@ -410,6 +417,12 @@ class AdminController extends Controller
                 $ongoing = (int) ($ongoingRow->c ?? $ongoingRow->C ?? current((array) $ongoingRow) ?? 0);
                 $conversion = $leads > 0 ? ($closed / $leads) : 0;
                 $company = trim((string) ($d->COMPANY ?? ''));
+                $alias = trim((string) ($d->ALIAS ?? ''));
+                $email = trim((string) ($d->EMAIL ?? ''));
+                $dealerName = $company !== '' ? $company : ($alias !== '' ? $alias : ($email !== '' ? $email : $userId));
+                if (strcasecmp($company, 'E Stream Sdn Bhd') === 0 && $alias !== '') {
+                    $dealerName = $company . '-' . $alias;
+                }
 
                 // Avg. Closing Time: average(Completed status CREATIONDATE − Pending status CREATIONDATE) per LEADID for this dealer.
                 $avgClosingSeconds = null;
@@ -465,8 +478,7 @@ class AdminController extends Controller
                 $city = trim((string) ($d->CITY ?? ''));
                 $location = trim(trim($postcode . ' ' . $city));
             return [
-                    // Per requirement: show company column for dealers.
-                    'dealer_name' => $company,
+                    'dealer_name' => $dealerName,
                     'location' => $location,
                 'total_leads' => $leads,
                     'ongoing_count' => $ongoing,
@@ -1265,7 +1277,7 @@ class AdminController extends Controller
 
         try {
             DB::beginTransaction();
-            // Keep legacy DB context for compatibility; app also writes the assignment activity row explicitly.
+            // Keep DB context so database-side assignment logic/triggers can use the assigner id.
             if ($fromUserId !== '') {
                 DB::statement(
                     "SELECT RDB\$SET_CONTEXT('USER_SESSION', 'ASSIGNER', ?) FROM RDB\$DATABASE",
@@ -1297,19 +1309,6 @@ class AdminController extends Controller
 
                 return back()->with('error', 'This inquiry was updated by another user. Please sync and try again.');
             }
-            DB::insert(
-                'INSERT INTO "LEAD_ACT" (
-                    "LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS"
-                ) VALUES (NEXT VALUE FOR GEN_LEAD_ACTID,?,?,CURRENT_TIMESTAMP,?,?,?,?)',
-                [
-                    $leadId,
-                    $fromUserId !== '' ? $fromUserId : null,
-                    'Lead Assigned',
-                    'Lead Assigned by ' . ($fromUserId !== '' ? $fromUserId : 'System') . ' to ' . $assignedTo,
-                    null,
-                    'Pending',
-                ]
-            );
             DB::commit();
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -2914,11 +2913,7 @@ class AdminController extends Controller
             'FollowUp' => $percentChange($activityStatus['FollowUp'] ?? 0, $lastMonthActivity['FollowUp'] ?? 0),
             'Demo' => $percentChange($activityStatus['Demo'] ?? 0, $lastMonthActivity['Demo'] ?? 0),
             'Confirmed' => $percentChange($activityStatus['Confirmed'] ?? 0, $lastMonthActivity['Confirmed'] ?? 0),
-            'Completed' => $percentChange($activityStatus['Completed'] ?? 0, $lastMonthActivity['Completed'] ?? 0),
-            'CompletedPendingReward' => $percentChange(
-                ($activityStatus['Completed'] ?? 0) + ($payoutStatus['Pending'] ?? 0),
-                ($lastMonthActivity['Completed'] ?? 0) + ($lastMonthPayout['Pending'] ?? 0)
-            ),
+            'Completed' => $percentChange($leadStatus['Closed'] ?? 0, $lastMonthLeadStatus['Closed'] ?? 0),
             'Rewarded' => $percentChange($activityStatus['reward'] ?? 0, $lastMonthActivity['reward'] ?? 0),
         ];
 

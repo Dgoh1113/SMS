@@ -883,7 +883,10 @@ class DealerController extends Controller
             return response()->json(['activities' => []], 200);
         }
 
-        $lead = DB::selectOne('SELECT "LEADID" FROM "LEAD" WHERE "LEADID" = ? AND "ASSIGNED_TO" = ?', [$leadId, $dealerId]);
+        $lead = DB::selectOne(
+            'SELECT "LEADID", "REFERRALCODE" FROM "LEAD" WHERE "LEADID" = ? AND "ASSIGNED_TO" = ?',
+            [$leadId, $dealerId]
+        );
         if (!$lead) {
             return response()->json(['activities' => []], 200);
         }
@@ -1132,7 +1135,10 @@ class DealerController extends Controller
         if (!$dealerId) {
             return response('', 404);
         }
-        $lead = DB::selectOne('SELECT "LEADID" FROM "LEAD" WHERE "LEADID" = ? AND "ASSIGNED_TO" = ?', [$leadId, $dealerId]);
+        $lead = DB::selectOne(
+            'SELECT "LEADID", "REFERRALCODE" FROM "LEAD" WHERE "LEADID" = ? AND "ASSIGNED_TO" = ?',
+            [$leadId, $dealerId]
+        );
         if (!$lead) {
             return response('', 404);
         }
@@ -1261,12 +1267,27 @@ class DealerController extends Controller
             }
         }
 
+        try {
+            $newCreationDate = Carbon::parse($creationDate);
+            if ($newCreationDate->gt(now())) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid date/time. It cannot be in the future.',
+                ], 422);
+            }
+        } catch (\Throwable $e) {
+            // If parsing fails here, continue with the existing validation flow.
+        }
+
         $dealerId = $request->session()->get('user_id');
         if (!$dealerId) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
-        $lead = DB::selectOne('SELECT "LEADID" FROM "LEAD" WHERE "LEADID" = ? AND "ASSIGNED_TO" = ?', [$leadId, $dealerId]);
+        $lead = DB::selectOne(
+            'SELECT "LEADID", "REFERRALCODE" FROM "LEAD" WHERE "LEADID" = ? AND "ASSIGNED_TO" = ?',
+            [$leadId, $dealerId]
+        );
         if (!$lead) {
             return response()->json(['success' => false, 'message' => 'Lead not found or not assigned to you'], 404);
         }
@@ -1277,6 +1298,12 @@ class DealerController extends Controller
             ], 422);
         }
         $statusDb = $this->mapStatusToDb($status);
+        if (strtoupper($statusDb) === 'REWARDED' && !$request->hasFile('attachments')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please upload at least one attachment for REWARDED status.',
+            ], 422);
+        }
 
         $lastAct = DB::selectOne(
             'SELECT FIRST 1 la."STATUS", la."CREATIONDATE"

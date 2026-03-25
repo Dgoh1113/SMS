@@ -2,7 +2,7 @@
 @section('title', 'Report - Dealer Revenue Production')
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/shared/reports-tabs.css') }}?v=20260324-9">
-    <link rel="stylesheet" href="{{ asset('css/report_dealer_revenue_production.css') }}?v=20260324-1">
+    <link rel="stylesheet" href="{{ asset('css/report_dealer_revenue_production.css') }}?v=20260325-3">
 @endpush
 @section('content')
 <div class="rrp-page">
@@ -178,6 +178,9 @@
             const volume = @json($chartVolume);
             const closed = @json($chartClosed);
             const rewarded = @json($chartRewarded);
+            const isMobile = window.matchMedia('(max-width: 768px)').matches;
+            const chartFontSize = isMobile ? 10 : 12;
+            const chartBarThickness = isMobile ? 16 : undefined;
 
             // Keep grouped bars consistent and readable.
             const data = {
@@ -190,6 +193,7 @@
                         borderColor: 'rgba(67, 56, 202, 1)',
                         borderWidth: 1.2,
                         borderRadius: 8,
+                        maxBarThickness: chartBarThickness,
                         barPercentage: 0.85,
                         categoryPercentage: 0.9,
                     },
@@ -200,6 +204,7 @@
                         borderColor: 'rgba(202, 138, 4, 1)',
                         borderWidth: 1.2,
                         borderRadius: 8,
+                        maxBarThickness: chartBarThickness,
                         barPercentage: 0.85,
                         categoryPercentage: 0.9,
                     },
@@ -210,6 +215,7 @@
                         borderColor: 'rgba(21, 128, 61, 1)',
                         borderWidth: 1.2,
                         borderRadius: 8,
+                        maxBarThickness: chartBarThickness,
                         barPercentage: 0.85,
                         categoryPercentage: 0.9,
                     }
@@ -230,6 +236,7 @@
                                 color: '#475569',
                                 usePointStyle: true,
                                 boxWidth: 8,
+                                font: { size: chartFontSize }
                             }
                         },
                         title: {
@@ -247,7 +254,12 @@
                     scales: {
                         x: {
                             grid: { display: false },
-                            ticks: { color: '#475569' },
+                            ticks: {
+                                color: '#475569',
+                                font: { size: chartFontSize },
+                                maxRotation: isMobile ? 40 : 0,
+                                minRotation: isMobile ? 40 : 0,
+                            },
                         },
                         y: {
                             beginAtZero: true,
@@ -255,12 +267,13 @@
                             ticks: {
                                 precision: 0,
                                 color: '#64748b',
+                                font: { size: chartFontSize },
                             },
                             title: {
                                 display: true,
                                 text: 'Number of inquiries',
                                 color: '#64748b',
-                                font: { size: 11, weight: '700' }
+                                font: { size: isMobile ? 10 : 11, weight: '700' }
                             }
                         },
                     },

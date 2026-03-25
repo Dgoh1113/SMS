@@ -344,3 +344,111 @@
   .rrp-panel-header { flex-direction: column; align-items: flex-start; }
   .rrp-chart-wrap { height: 234px; }
 }
+
+@media (max-width: 768px) {
+  .rrp-page {
+    padding: 0 12px 18px;
+  }
+
+  .rrp-filter-row {
+    justify-content: flex-start;
+    margin-bottom: 14px;
+  }
+
+  .rrp-filter-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  .rrp-filter-select,
+  .rrp-filter-check,
+  .rrp-filter-apply {
+    width: 100%;
+    min-width: 0;
+    height: 36px;
+    box-sizing: border-box;
+  }
+
+  .rrp-filter-check {
+    padding: 0 10px;
+  }
+
+  .rrp-filter-apply {
+    grid-column: 1 / -1;
+  }
+
+  .rrp-top-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .rrp-metric-card {
+    padding: 12px;
+  }
+
+  .rrp-metric-value {
+    font-size: clamp(18px, 7vw, 22px);
+    word-break: break-word;
+  }
+
+  .rrp-panel-header {
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .rrp-panel-body {
+    padding: 12px;
+  }
+
+  .rrp-legend {
+    flex-wrap: wrap;
+    gap: 8px 12px;
+  }
+
+  .rrp-chart-wrap {
+    height: 220px;
+  }
+
+  .rrp-panel .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .rrp-table {
+    min-width: 640px;
+  }
+}
+
+@media (max-width: 480px) {
+  .rrp-page {
+    padding: 0 10px 16px;
+  }
+
+  .rrp-filter-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rrp-filter-select,
+  .rrp-filter-check,
+  .rrp-filter-apply {
+    font-size: 13px;
+  }
+
+  .rrp-panel-title {
+    font-size: 15px;
+  }
+
+  .rrp-panel-subtitle,
+  .rrp-metric-sub,
+  .rrp-legend {
+    font-size: 11px;
+  }
+
+  .rrp-chart-wrap {
+    height: 190px;
+  }
+}

@@ -43,6 +43,7 @@
   justify-content: flex-end;
   gap: 12px;
   margin-bottom: 14px;
+  flex-wrap: wrap;
 }
 
 .history-checkbox-filter {
@@ -50,16 +51,61 @@
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  border: 1px solid #d8d5ff;
+  min-height: 39px;
+  border: 1px solid #e9dfff;
   border-radius: 12px;
-  background: #ffffff;
-  color: #5a5f7a;
+  background: #f3ebff;
+  color: #7f5af0;
   font-size: 13px;
   font-weight: 600;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
 }
 
 .history-checkbox-filter input[type="checkbox"] {
   width: 15px;
   height: 15px;
-  accent-color: #6c5ce7;
+  accent-color: #7f5af0;
+}
+
+.history-checkbox-filter:hover,
+.history-checkbox-filter:focus-within {
+  background: #e9dfff;
+  border-color: #ddccff;
+  color: #6d28d9;
+}
+
+.history-checkbox-filter input[type="checkbox"]:checked + span {
+  color: #6d28d9;
+}
+
+.history-toolbar .inquiries-btn {
+  min-height: 39px;
+  padding: 8px 12px;
+  border: 1px solid #e9dfff;
+  border-radius: 12px;
+  background: #f3ebff;
+  color: #7f5af0;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.history-toolbar .inquiries-btn:hover,
+.history-toolbar .inquiries-btn:focus-visible {
+  background: #e9dfff;
+  border-color: #ddccff;
+  color: #6d28d9;
+}
+
+@media (max-width: 768px) {
+  .history-toolbar {
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  .history-checkbox-filter {
+    width: auto;
+  }
 }

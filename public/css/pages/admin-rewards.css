@@ -7,13 +7,13 @@
 
 #completedTable.rewards-default-layout,
 #rewardedTable.rewards-default-layout {
-  width: 100%;
+  width: max-content;
   min-width: 100%;
 }
 
 #completedPanel .inquiries-table-scroll.rewards-default-layout,
 #rewardedPanel .inquiries-table-scroll.rewards-default-layout {
-  overflow-x: hidden;
+  overflow-x: auto;
 }
 
 #completedPanel .inquiries-table-wrap,
@@ -43,4 +43,168 @@
 #completedTable th.inquiries-col-action .inquiries-filter-clear,
 #rewardedTable th.inquiries-col-action .inquiries-filter-clear {
   white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .inquiries-page-wrap,
+  .inquiries-page-wrap .inquiries-tab-panel,
+  .inquiries-page-wrap .inquiries-tab-panel.active,
+  .inquiries-page-wrap .inquiries-mgmt-panel {
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .inquiries-page-wrap {
+    overflow-x: clip;
+  }
+
+  .inquiries-mgmt-top-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .inquiries-mgmt-summary,
+  .inquiries-mgmt-search {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .inquiries-summary-card {
+    max-width: none;
+    width: 100%;
+  }
+
+  .inquiries-mgmt-search {
+    min-height: auto;
+    padding: 14px 16px;
+  }
+
+  .inquiries-search-row {
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .inquiries-search-wrap {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .inquiries-page-wrap .inquiries-table-wrap,
+  .inquiries-page-wrap .inquiries-table-scroll,
+  .inquiries-page-wrap .inquiries-columns-dropdown {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .inquiries-page-wrap .inquiries-columns-menu {
+    right: 0;
+    left: auto;
+    width: min(320px, calc(100vw - 24px));
+    max-width: calc(100vw - 24px);
+    box-sizing: border-box;
+  }
+
+  .inquiries-search-btn {
+    padding: 10px 18px;
+    min-width: 104px;
+    border-radius: 10px;
+  }
+
+  .inquiries-search-row .inquiries-search-clear-btn {
+    min-width: 96px;
+    min-height: 42px;
+  }
+
+  .inquiries-page-wrap .inquiries-panel-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .inquiries-page-wrap .inquiries-panel-actions > .inquiries-btn,
+  .inquiries-page-wrap .inquiries-panel-actions > a.inquiries-btn,
+  .inquiries-page-wrap .inquiries-panel-actions > .inquiries-columns-dropdown {
+    flex: none;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .inquiries-page-wrap .inquiries-panel-actions > .inquiries-sync-btn,
+  .inquiries-page-wrap .inquiries-panel-actions > .inquiries-columns-dropdown > .inquiries-btn {
+    min-height: 44px;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #faf6ff 0%, #f3ebff 100%);
+    box-shadow: inset 0 0 0 1px rgba(127, 90, 240, 0.08);
+  }
+
+  .inquiries-page-wrap .inquiries-panel-actions > .inquiries-columns-dropdown > .inquiries-btn {
+    color: #6d28d9;
+  }
+
+  .inquiries-page-wrap .inquiries-panel-actions > .inquiries-sync-btn .inquiries-sync-icon {
+    flex: 0 0 auto;
+  }
+
+  #completedTable th.inquiries-col-action,
+  #completedTable td.inquiries-col-action,
+  #rewardedTable th.inquiries-col-action,
+  #rewardedTable td.inquiries-col-action {
+    z-index: 6;
+    width: 128px;
+    min-width: 128px;
+    max-width: 128px;
+    box-shadow: -8px 0 14px rgba(15, 23, 42, 0.08);
+    isolation: isolate;
+  }
+}
+
+@media (max-width: 480px) {
+  .inquiries-mgmt-top-row {
+    gap: 14px;
+  }
+
+  .inquiries-page-wrap .inquiries-columns-menu {
+    width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+  }
+
+  .inquiries-mgmt-search {
+    padding: 12px;
+  }
+
+  .inquiries-search-row {
+    flex-direction: column;
+  }
+
+  .inquiries-search-row .inquiries-search-clear-btn {
+    width: 100%;
+  }
+
+  .inquiries-page-wrap .inquiries-panel-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .inquiries-page-wrap .inquiries-panel-actions > .inquiries-sync-btn,
+  .inquiries-page-wrap .inquiries-panel-actions > .inquiries-columns-dropdown > .inquiries-btn {
+    font-size: 13px;
+  }
+
+  #completedTable th.inquiries-col-action,
+  #completedTable td.inquiries-col-action,
+  #rewardedTable th.inquiries-col-action,
+  #rewardedTable td.inquiries-col-action {
+    min-width: 128px;
+    width: 128px;
+    max-width: 128px;
+  }
 }

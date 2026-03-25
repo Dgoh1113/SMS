@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Dashboard - Admin')
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/pages/admin-dashboard.css') }}?v=20260324-9">
+    <link rel="stylesheet" href="{{ asset('css/pages/admin-dashboard.css') }}?v=20260325-14">
 @endpush
 @section('content')
 <section class="dashboard-metrics">
@@ -74,8 +74,8 @@
     <div class="dashboard-row">
         <div class="dashboard-panel dashboard-chart-panel">
             <div class="dashboard-panel-header">
-                <div class="dashboard-panel-title">
-                    Recent Referral Activity
+                <div class="dashboard-panel-title dashboard-chart-title">
+                    <span class="dashboard-chart-title-text">Recent Referral Activity</span>
                     <i class="bi bi-info-circle dashboard-info-icon"
                        title="Count of leads turning into Follow-Up status by dealer (weekly/monthly/yearly)."></i>
                 </div>
@@ -93,10 +93,10 @@
                 </div>
             </div>
         </div>
-        <div class="dashboard-panel dashboard-chart-panel">
+        <div class="dashboard-panel dashboard-chart-panel dashboard-chart-panel-closed">
             <div class="dashboard-panel-header">
-                <div class="dashboard-panel-title">
-                    Closed Case
+                <div class="dashboard-panel-title dashboard-chart-title">
+                    <span class="dashboard-chart-title-text">Closed Case</span>
                     <i class="bi bi-info-circle dashboard-info-icon"
                        title="Count of leads turned into closed cases grouped by creation date (week/month/year)."></i>
                 </div>

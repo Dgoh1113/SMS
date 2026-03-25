@@ -6800,3 +6800,332 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
     flex-direction: column;
   }
 }
+
+/* ===== Project Responsive Layer ===== */
+@media (max-width: 1280px) {
+  .dashboard-main-body {
+    padding: 20px 22px;
+  }
+
+  .dashboard-content {
+    padding: 24px 24px 28px;
+  }
+
+  .dashboard-panel {
+    padding: 14px;
+  }
+
+  .inquiries-page-wrap .inquiries-table-scroll,
+  #incomingPanel .inquiries-table-scroll,
+  #assignedPanel .inquiries-table-scroll,
+  #completedPanel .inquiries-table-scroll,
+  #rewardedPanel .inquiries-table-scroll,
+  .dealer-inquiries-panel .inquiries-table-scroll {
+    min-height: 400px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .dashboard-main-body {
+    padding: 18px 18px 20px;
+    gap: 16px;
+  }
+
+  .dashboard-content {
+    padding: 20px 18px 24px;
+    gap: 16px;
+  }
+
+  .dashboard-header,
+  .dashboard-panel-header,
+  .inquiries-panel-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .dashboard-header-actions,
+  .inquiries-panel-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .dashboard-notifications-menu {
+    width: min(320px, calc(100vw - 24px));
+  }
+
+  .top-right-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .dashboard-bottombar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .inquiries-columns-menu {
+    max-width: min(320px, calc(100vw - 32px));
+  }
+
+  .inquiries-assigned-pagination {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .inquiries-assigned-pagination-nav {
+    justify-content: flex-start;
+    max-width: none;
+    width: 100%;
+  }
+
+  .inquiries-page-wrap .inquiries-table-scroll,
+  #incomingPanel .inquiries-table-scroll,
+  #assignedPanel .inquiries-table-scroll,
+  #completedPanel .inquiries-table-scroll,
+  #rewardedPanel .inquiries-table-scroll,
+  .dealer-inquiries-panel .inquiries-table-scroll {
+    min-height: 360px;
+  }
+
+  .inquiry-modal {
+    max-height: calc(100vh - 24px);
+    width: calc(100vw - 24px);
+  }
+
+  .inquiries-msg-modal-window,
+  .inquiries-assign-window {
+    margin-top: 6vh;
+    max-height: calc(100vh - 32px);
+    width: min(960px, calc(100vw - 24px));
+  }
+
+  .inquiries-assign-body {
+    padding: 12px;
+  }
+
+  .inquiries-assign-row {
+    gap: 6px;
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-main-body {
+    padding: 14px 12px 18px;
+    gap: 14px;
+  }
+
+  .dashboard-content {
+    padding: 16px 12px 20px;
+    gap: 14px;
+  }
+
+  .dashboard-topbar {
+    padding: 10px 12px;
+  }
+
+  .dashboard-topbar-actions {
+    gap: 10px;
+  }
+
+  .top-right-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .dashboard-title {
+    font-size: 20px;
+  }
+
+  .dashboard-panel {
+    border-radius: 10px;
+    padding: 12px;
+  }
+
+  .dashboard-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .dashboard-metric-card {
+    min-width: 0;
+    overflow: hidden;
+    padding: 12px 12px 14px;
+  }
+
+  .dashboard-metric-label {
+    font-size: 12px;
+    line-height: 1.25;
+  }
+
+  .dashboard-metric-value-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .dashboard-metric-value {
+    font-size: clamp(18px, 6vw, 24px);
+    line-height: 1.1;
+    min-width: 0;
+  }
+
+  .dashboard-metric-pill {
+    max-width: 100%;
+    white-space: normal;
+    word-break: break-word;
+    line-height: 1.25;
+  }
+
+  .inquiries-panel-header {
+    padding: 14px 14px 12px;
+  }
+
+  .inquiries-panel-actions > .inquiries-btn,
+  .inquiries-panel-actions > a.inquiries-btn,
+  .inquiries-panel-actions > .inquiries-columns-dropdown {
+    flex: 1 1 calc(50% - 6px);
+  }
+
+  .inquiries-columns-dropdown > .inquiries-btn {
+    width: 100%;
+  }
+
+  .inquiries-columns-menu {
+    left: 0;
+    max-width: calc(100vw - 24px);
+    right: auto;
+    width: min(320px, calc(100vw - 24px));
+  }
+
+  .inquiries-btn {
+    font-size: 12px;
+    padding: 8px 14px;
+  }
+
+  .dashboard-row {
+    grid-template-columns: 1fr;
+  }
+
+  .inquiries-page-wrap .inquiries-table-scroll,
+  #incomingPanel .inquiries-table-scroll,
+  #assignedPanel .inquiries-table-scroll,
+  #completedPanel .inquiries-table-scroll,
+  #rewardedPanel .inquiries-table-scroll,
+  .dealer-inquiries-panel .inquiries-table-scroll {
+    min-height: 320px;
+  }
+
+  .inquiry-modal {
+    border-radius: 10px;
+    max-height: calc(100vh - 16px);
+    width: calc(100vw - 16px);
+  }
+
+  .inquiry-modal-header {
+    padding: 16px 16px 10px;
+  }
+
+  .inquiry-modal-body {
+    padding: 16px;
+  }
+
+  .inquiry-modal-footer {
+    padding: 12px 16px 16px;
+  }
+
+  .inquiry-step {
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+
+  .inquiry-connector {
+    margin: 0 2px;
+    min-width: 10px;
+  }
+
+  .inquiries-msg-modal-window,
+  .inquiries-assign-window {
+    margin-top: 3vh;
+    max-height: calc(100vh - 16px);
+    width: calc(100vw - 16px);
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-main-body {
+    padding: 12px 10px 16px;
+  }
+
+  .dashboard-content {
+    padding: 14px 10px 18px;
+  }
+
+  .dashboard-topbar {
+    padding: 9px 10px;
+  }
+
+  .dashboard-topbar-actions {
+    gap: 8px;
+  }
+
+  .top-right-btn {
+    width: 38px;
+    height: 38px;
+  }
+
+  .dashboard-bottombar {
+    font-size: 11px;
+    padding: 10px 12px;
+  }
+
+  .dashboard-metrics {
+    gap: 8px;
+  }
+
+  .dashboard-metric-card {
+    padding: 10px 10px 12px;
+  }
+
+  .dashboard-metric-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 16px;
+    margin-bottom: 4px;
+  }
+
+  .dashboard-metric-pill {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+
+  .inquiries-panel-actions > .inquiries-btn,
+  .inquiries-panel-actions > a.inquiries-btn,
+  .inquiries-panel-actions > .inquiries-columns-dropdown {
+    flex: 1 1 100%;
+  }
+
+  .inquiries-assigned-pagination {
+    padding: 10px;
+  }
+
+  .inquiries-assigned-pagination-nav {
+    gap: 4px;
+  }
+
+  .inquiries-pagination-num {
+    min-width: 26px;
+    padding: 4px 7px;
+  }
+
+  .inquiry-modal-title {
+    font-size: 16px;
+  }
+
+  .inquiry-modal-subtitle {
+    font-size: 13px;
+  }
+}

@@ -27,14 +27,18 @@
             default:                    $statusClass = 'inquiries-status-new'; break;
         }
         $statusDisplay = $rawStatus === '' ? '-' : (in_array($rawStatus, ['FOLLOWUP', 'FOLLOW UP'], true) ? 'Follow Up' : $rawStatus);
-        $customerName = trim(($r->COMPANYNAME ?? '') . ' ' . ($r->CONTACTNAME ?? '')) ?: '-';
+        $companyName = trim((string) ($r->COMPANYNAME ?? ''));
+        $contactName = trim((string) ($r->CONTACTNAME ?? ''));
+        $customerName = $companyName !== '' && $contactName !== ''
+            ? ($companyName . '-' . $contactName)
+            : ($companyName !== '' ? $companyName : ($contactName !== '' ? $contactName : '-'));
         $addr1 = trim((string) ($r->ADDRESS1 ?? ''));
         $addr2 = trim((string) ($r->ADDRESS2 ?? ''));
         $addressDisplay = trim($addr1 . ' ' . $addr2) ?: '-';
         $rowPage = (int) floor(($loop->index ?? 0) / 10) + 1;
         $isFocusLead = (int) ($focusLeadId ?? 0) > 0 && (int) ($r->LEADID ?? 0) === (int) ($focusLeadId ?? 0);
     @endphp
-    <tr class="inquiry-row{{ $isFocusLead ? ' inquiry-row--notif-highlight' : '' }}" data-lead-id="{{ $r->LEADID }}" data-search="{{ strtolower(trim(($r->COMPANYNAME ?? '') . ' ' . ($r->CONTACTNAME ?? '') . ' ' . ($r->LEADID ?? ''))) }}" data-page="{{ $rowPage }}">
+    <tr class="inquiry-row{{ $isFocusLead ? ' inquiry-row--notif-highlight' : '' }}" data-lead-id="{{ $r->LEADID }}" data-search="{{ strtolower(trim($companyName . ' ' . $contactName . ' ' . ($r->LEADID ?? ''))) }}" data-page="{{ $rowPage }}">
         <td data-col="inquiryid">#SQL-{{ $r->LEADID }}</td>
         <td data-col="date">{{ $r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '-' }}</td>
         <td data-col="customer">

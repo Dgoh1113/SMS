@@ -2,7 +2,7 @@
 @section('title', 'My Inquiries – SQL LMS Dealer Console')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/pages/dealer-inquiries.css') }}?v=20260324-14">
+    <link rel="stylesheet" href="{{ asset('css/pages/dealer-inquiries.css') }}?v=20260325-19">
 @endpush
 
 @section('content')
@@ -200,16 +200,24 @@ document.addEventListener('DOMContentLoaded', function() {
     var colsAll = document.getElementById('dealerInquiryColumnsAll');
     var colsNone = document.getElementById('dealerInquiryColumnsNone');
     var colsReset = document.getElementById('dealerInquiryColumnsReset');
-    var storageKey = 'dealer_inquiries_visible_cols_v8';
-    var legacyStorageKey = 'dealer_inquiries_visible_cols_v7';
-    var olderLegacyStorageKey = 'dealer_inquiries_visible_cols_v6';
-    var oldestLegacyStorageKey = 'dealer_inquiries_visible_cols_v5';
-    // Default columns follow admin incoming inquiries table, but message → assignby + status
+    var storageKey = 'dealer_inquiries_visible_cols_v10';
+    var legacyStorageKey = 'dealer_inquiries_visible_cols_v9';
+    var legacyMobileStorageKey = 'dealer_inquiries_visible_cols_mobile_v1';
+    var olderLegacyStorageKey = 'dealer_inquiries_visible_cols_v8';
+    var oldestLegacyStorageKey = 'dealer_inquiries_visible_cols_v7';
+    var oldestLegacyStorageKeyV6 = 'dealer_inquiries_visible_cols_v6';
+    var oldestLegacyStorageKeyV5 = 'dealer_inquiries_visible_cols_v5';
+    // Dealer defaults should stay the same on desktop and mobile.
     var legacyDefaultCols = ['inquiryid','date','customer','email','postcode','city','products','assignby','status'];
     var olderLegacyDefaultCols = ['inquiryid','date','customer','postcode','city','businessnature','products','assignby','status'];
     var previousDefaultCols = ['inquiryid','date','customer','email','postcode','city','products','status'];
+    var compactMobileLegacyCols = ['inquiryid','date','customer'];
     var defaultCols = ['inquiryid','date','customer','email','postcode','city','products','assigndate','status'];
     var allCols = ['inquiryid','date','customer','email','postcode','city','address','contactno','businessnature','users','existingsw','demomode','products','assigndate','completiondate','payoutsdate','message','referralcode','attachment','assignby','status'];
+
+    function getDefaultColsForViewport() {
+        return defaultCols.slice();
+    }
 
     var statusCheckbox = colsMenu ? colsMenu.querySelector('input[type="checkbox"][data-col="status"]') : null;
     if (statusCheckbox) {
@@ -231,7 +239,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function getSelectedColsFromMenu() {
-        if (!colsMenu) return defaultCols.slice();
+        if (!colsMenu) return getDefaultColsForViewport();
         var cols = [];
         colsMenu.querySelectorAll('input[type="checkbox"][data-col]').forEach(function(cb) {
             if (cb.checked) cols.push(cb.getAttribute('data-col'));
@@ -284,8 +292,11 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             var raw = localStorage.getItem(storageKey);
             if (!raw) raw = localStorage.getItem(legacyStorageKey);
+            if (!raw) raw = localStorage.getItem(legacyMobileStorageKey);
             if (!raw) raw = localStorage.getItem(olderLegacyStorageKey);
             if (!raw) raw = localStorage.getItem(oldestLegacyStorageKey);
+            if (!raw) raw = localStorage.getItem(oldestLegacyStorageKeyV6);
+            if (!raw) raw = localStorage.getItem(oldestLegacyStorageKeyV5);
             if (!raw) return null;
             var parsed = JSON.parse(raw);
             if (!Array.isArray(parsed)) return null;
@@ -299,16 +310,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 })) ||
                 (parsed.length === previousDefaultCols.length && parsed.every(function(col, index) {
                     return col === previousDefaultCols[index];
+                })) ||
+                (parsed.length === compactMobileLegacyCols.length && parsed.every(function(col, index) {
+                    return col === compactMobileLegacyCols[index];
+                })) ||
+                (parsed.length === defaultCols.length && parsed.every(function(col, index) {
+                    return col === defaultCols[index];
                 }));
-            var migrated = isLegacyDefault ? defaultCols.slice() : parsed.filter(function(col) {
+            var migrated = isLegacyDefault ? getDefaultColsForViewport() : parsed.filter(function(col) {
                 return allCols.indexOf(col) !== -1;
             });
 
             try {
                 localStorage.setItem(storageKey, JSON.stringify(migrated));
                 localStorage.removeItem(legacyStorageKey);
+                localStorage.removeItem(legacyMobileStorageKey);
                 localStorage.removeItem(olderLegacyStorageKey);
                 localStorage.removeItem(oldestLegacyStorageKey);
+                localStorage.removeItem(oldestLegacyStorageKeyV6);
+                localStorage.removeItem(oldestLegacyStorageKeyV5);
             } catch (e) {}
 
             return migrated;
@@ -475,7 +495,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // init columns
-    var initialCols = loadCols() || defaultCols.slice();
+    var initialCols = loadCols() || getDefaultColsForViewport();
     applyVisibleCols(initialCols);
 
     if (colsBtn && colsMenu) {
@@ -510,8 +530,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     if (colsReset) {
         colsReset.addEventListener('click', function() {
-            applyVisibleCols(defaultCols.slice());
-            saveCols(defaultCols.slice());
+            var resetCols = getDefaultColsForViewport();
+            applyVisibleCols(resetCols);
+            saveCols(resetCols);
         });
     }
 
@@ -552,6 +573,13 @@ document.addEventListener('DOMContentLoaded', function() {
             if (scrollWrap) {
                 scrollWrap.classList.toggle('inquiries-table-scroll-empty', visibleDataCount === 0);
                 scrollWrap.classList.remove('inquiries-table-scroll-short');
+            }
+
+            if (window.innerWidth && window.innerWidth <= 768) {
+                if (scrollWrap) {
+                    scrollWrap.classList.toggle('inquiries-table-scroll-short', visibleDataCount > 0 && visibleDataCount < perPage);
+                }
+                return;
             }
 
             if (visibleDataCount > 0 && visibleDataCount < perPage) {
@@ -681,7 +709,7 @@ document.addEventListener('DOMContentLoaded', function() {
             normalizeDealerTableStructure();
             // Re-apply filters and column visibility after replacing rows
             applyDealerGridFilters();
-            var currentCols = loadCols() || defaultCols.slice();
+            var currentCols = loadCols() || getDefaultColsForViewport();
             applyVisibleCols(currentCols);
             initDealerPagination();
         }).catch(function() {
@@ -742,7 +770,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <span class="inquiry-field-label" id="inquiryDateLabel">FOLLOW-UP DATE</span>
                         <div class="inquiry-field-input-wrap">
                             <i class="bi bi-calendar3"></i>
-                            <input type="date" class="inquiry-field-input" id="inquiryFollowupDate">
+                            <input type="text" class="inquiry-field-input" id="inquiryFollowupDate" inputmode="numeric" placeholder="dd/mm/yyyy" autocomplete="off">
                         </div>
                     </label>
                     <label class="inquiry-field">
@@ -961,11 +989,37 @@ document.addEventListener('DOMContentLoaded', function() {
         dateEl.min = latestMinDate;
 
         // Time constraint only matters when the selected date equals the min date.
-        var curDate = (dateEl.value || '').trim();
+        var curDate = getFollowupDateIso();
+        var rawDate = (dateEl.value || '').trim();
+        if (rawDate !== '' && curDate === '') {
+            dateEl.setCustomValidity('Use dd/mm/yyyy');
+            timeEl.min = '';
+            return;
+        }
+        if (curDate !== '' && latestMinDate && curDate < latestMinDate) {
+            dateEl.setCustomValidity('Date must be on or after ' + formatIsoDateForDisplay(latestMinDate));
+        } else {
+            dateEl.setCustomValidity('');
+        }
+        var todayIso = getTodayIsoDate();
+        if (curDate !== '' && curDate > todayIso) {
+            dateEl.setCustomValidity('Date cannot be in the future.');
+        }
         if (curDate === latestMinDate && latestMinTime) {
             timeEl.min = latestMinTime;
         } else {
             timeEl.min = '';
+        }
+        if (curDate === todayIso) {
+            timeEl.max = getCurrentLocalTime();
+        } else {
+            timeEl.max = '';
+        }
+        var currentTime = (timeEl.value || '').trim();
+        if (curDate === todayIso && currentTime !== '' && currentTime > getCurrentLocalTime()) {
+            timeEl.setCustomValidity('Time cannot be in the future.');
+        } else {
+            timeEl.setCustomValidity('');
         }
     }
 
@@ -1015,7 +1069,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         var dateEl = document.getElementById('inquiryFollowupDate');
         var timeEl = document.getElementById('inquiryFollowupTime');
-        var hasDate = !!(dateEl && dateEl.value && dateEl.value.trim());
+        var hasDate = !!getFollowupDateIso();
         var hasTime = !!(timeEl && timeEl.value && timeEl.value.trim());
         var canUse = hasDate; // time is optional; defaults to 09:00 in click handler
         btn.disabled = !canUse;
@@ -1087,7 +1141,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         var d = new Date(activity.created_at);
-        if (dateEl) dateEl.value = isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
+        if (dateEl) dateEl.value = isNaN(d.getTime()) ? '' : formatIsoDateForDisplay(d.toISOString().slice(0, 10));
         if (timeEl) timeEl.value = isNaN(d.getTime()) ? '' : String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
         if (remarkEl) remarkEl.value = activity.description || '';
 
@@ -1286,7 +1340,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     var dateEl = document.getElementById('inquiryFollowupDate');
                     var timeEl = document.getElementById('inquiryFollowupTime');
                     var remarkEl = document.getElementById('inquiryRemark');
-                    if (dateEl && details.date) dateEl.value = details.date;
+                    if (dateEl && details.date) dateEl.value = formatIsoDateForDisplay(details.date);
                     if (timeEl && details.time) timeEl.value = details.time;
                     if (remarkEl && details.description) remarkEl.value = details.description;
                     setFieldsReadOnly(true);
@@ -1426,9 +1480,57 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function getDefaultDate() {
+    function formatIsoDateForDisplay(value) {
+        var raw = String(value || '').trim();
+        if (!raw) return '';
+        var isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (isoMatch) {
+            return isoMatch[3] + '/' + isoMatch[2] + '/' + isoMatch[1];
+        }
+        var parsed = new Date(raw);
+        if (isNaN(parsed.getTime())) return '';
+        return String(parsed.getDate()).padStart(2, '0') + '/' + String(parsed.getMonth() + 1).padStart(2, '0') + '/' + parsed.getFullYear();
+    }
+
+    function normalizeFollowupDateInputValue(value) {
+        var digits = String(value || '').replace(/\D/g, '').slice(0, 8);
+        var parts = [];
+        if (digits.length > 0) parts.push(digits.slice(0, 2));
+        if (digits.length > 2) parts.push(digits.slice(2, 4));
+        if (digits.length > 4) parts.push(digits.slice(4, 8));
+        return parts.join('/');
+    }
+
+    function getFollowupDateIso() {
+        var dateEl = document.getElementById('inquiryFollowupDate');
+        var raw = dateEl ? String(dateEl.value || '').trim() : '';
+        if (!raw) return '';
+        if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+        var match = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        if (!match) return '';
+        var day = parseInt(match[1], 10);
+        var month = parseInt(match[2], 10);
+        var year = parseInt(match[3], 10);
+        var parsed = new Date(year, month - 1, day);
+        if (parsed.getFullYear() !== year || parsed.getMonth() !== month - 1 || parsed.getDate() !== day) {
+            return '';
+        }
+        return year + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+    }
+
+    function getTodayIsoDate() {
         var d = new Date();
         return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    function getCurrentLocalTime() {
+        var d = new Date();
+        return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    }
+
+    function getDefaultDate() {
+        var d = new Date();
+        return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
     }
     function getDefaultTime() {
         var d = new Date();
@@ -1726,9 +1828,24 @@ document.addEventListener('DOMContentLoaded', function() {
             var dateEl = document.getElementById('inquiryFollowupDate');
             var timeEl = document.getElementById('inquiryFollowupTime');
             var remarkEl = document.getElementById('inquiryRemark');
-            var dateStr = dateEl ? dateEl.value : '';
+            var dateStr = getFollowupDateIso();
             var timeStr = timeEl ? timeEl.value : '';
             var remark = remarkEl ? remarkEl.value.trim() : '';
+            if (dateEl && (dateEl.value || '').trim() !== '' && dateStr === '') {
+                showDealerInquiryToast('Please use dd/mm/yyyy for the date.');
+                dateEl.focus();
+                return;
+            }
+            if (dateStr !== '' && dateStr > getTodayIsoDate()) {
+                showDealerInquiryToast('Date cannot be in the future.');
+                dateEl.focus();
+                return;
+            }
+            if (dateStr === getTodayIsoDate() && timeEl && timeStr && timeStr > getCurrentLocalTime()) {
+                showDealerInquiryToast('Time cannot be in the future.');
+                timeEl.focus();
+                return;
+            }
             var title = 'Demo: #SQL-' + currentLeadId + ' - ' + currentCustomer;
             var details = 'Inquiry #SQL-' + currentLeadId + '\nCustomer: ' + currentCustomer + (remark ? '\n\n' + remark : '');
             var startDate, endDate;
@@ -1754,9 +1871,27 @@ document.addEventListener('DOMContentLoaded', function() {
     // Keep Add Calendar enabled/disabled in sync with date/time inputs.
     var followupDateEl = document.getElementById('inquiryFollowupDate');
     var followupTimeEl = document.getElementById('inquiryFollowupTime');
-    if (followupDateEl) followupDateEl.addEventListener('input', toggleAddCalendarButton);
+    if (followupDateEl) followupDateEl.addEventListener('input', function() {
+        followupDateEl.value = normalizeFollowupDateInputValue(followupDateEl.value);
+        toggleAddCalendarButton();
+    });
     if (followupTimeEl) followupTimeEl.addEventListener('input', toggleAddCalendarButton);
     if (followupDateEl) followupDateEl.addEventListener('input', setDateTimeMinConstraints);
+    if (followupDateEl) followupDateEl.addEventListener('blur', function() {
+        var iso = getFollowupDateIso();
+        var raw = (followupDateEl.value || '').trim();
+        if (raw === '') {
+            followupDateEl.setCustomValidity('');
+            return;
+        }
+        if (iso === '') {
+            followupDateEl.setCustomValidity('Use dd/mm/yyyy');
+            followupDateEl.reportValidity();
+            return;
+        }
+        followupDateEl.value = formatIsoDateForDisplay(iso);
+        setDateTimeMinConstraints();
+    });
     if (followupTimeEl) followupTimeEl.addEventListener('input', setDateTimeMinConstraints);
     function showDealerInquiryToast(message) {
         var id = 'dealer-inquiry-action-toast';
@@ -1797,13 +1932,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
         }
+        if (toStatus === 'REWARDED' && attachmentFiles.length === 0) {
+            showDealerInquiryToast('Please upload at least one attachment for REWARDED status.');
+            if (attachmentInput) attachmentInput.focus();
+            return;
+        }
         var leadId = currentLeadId;
         var remarkEl = document.getElementById('inquiryRemark');
         var dateEl = document.getElementById('inquiryFollowupDate');
         var timeEl = document.getElementById('inquiryFollowupTime');
         var remark = remarkEl ? remarkEl.value.trim() : '';
-        var activityDate = dateEl ? dateEl.value.trim() : '';
+        var activityDate = getFollowupDateIso();
         var activityTime = timeEl ? timeEl.value.trim() : '';
+        if (dateEl && (dateEl.value || '').trim() !== '' && activityDate === '') {
+            showDealerInquiryToast('Please use dd/mm/yyyy for the date.');
+            dateEl.focus();
+            return;
+        }
+        if (activityDate !== '' && activityDate > getTodayIsoDate()) {
+            showDealerInquiryToast('Date cannot be in the future.');
+            dateEl.focus();
+            return;
+        }
+        if (activityDate === getTodayIsoDate() && activityTime !== '' && activityTime > getCurrentLocalTime()) {
+            showDealerInquiryToast('Time cannot be in the future.');
+            timeEl.focus();
+            return;
+        }
         var products = [];
         if (toStatus === 'COMPLETED') {
             document.querySelectorAll('.inquiry-product-checkbox:checked').forEach(function(cb) {

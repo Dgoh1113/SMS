@@ -2,7 +2,7 @@
 @section('title', 'Report - Dealer Sales Overtime')
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/shared/reports-tabs.css') }}?v=20260324-9">
-    <link rel="stylesheet" href="{{ asset('css/report_dealer_sales_overtime.css') }}?v=20260324-1">
+    <link rel="stylesheet" href="{{ asset('css/report_dealer_sales_overtime.css') }}?v=20260325-3">
     <link rel="stylesheet" href="{{ asset('css/pages/admin-reports-v2.css') }}?v=20260324-9">
 @endpush
 @section('content')
@@ -295,6 +295,9 @@
             const BAR_CLOSED_HOVER = 'rgba(22, 163, 74, 1)';
             const BAR_RED_BORDER = 'rgba(127, 29, 29, 1)';
             const BAR_CLOSED_BORDER = 'rgba(20, 83, 45, 1)';
+            const isMobile = window.matchMedia('(max-width: 768px)').matches;
+            const chartLabelFontSize = isMobile ? 8 : 10;
+            const chartBarThickness = isMobile ? 22 : 40;
 
             if (window.Chart && typeof window.ChartDataLabels !== 'undefined') {
                 window.Chart.register(window.ChartDataLabels);
@@ -319,8 +322,8 @@
                         borderColor: Array.from({ length: rowCount }, () => BAR_RED_BORDER),
                         borderWidth: 1.2,
                         borderRadius: 8,
-                        barThickness: 40,
-                        maxBarThickness: 40
+                        barThickness: chartBarThickness,
+                        maxBarThickness: chartBarThickness
                     },
                     {
                         label: 'Closed',
@@ -331,8 +334,8 @@
                         borderColor: Array.from({ length: rowCount }, () => BAR_CLOSED_BORDER),
                         borderWidth: 1.2,
                         borderRadius: 8,
-                        barThickness: 40,
-                        maxBarThickness:40
+                        barThickness: chartBarThickness,
+                        maxBarThickness: chartBarThickness
                     }
                 ]
             };
@@ -395,7 +398,7 @@
                                 // Only show percentages inside the bars
                                 pct: {
                                     color: '#ffffff',
-                                    font: { size: 10, weight: '700' },
+                                    font: { size: chartLabelFontSize, weight: '700' },
                                     formatter: function(_value, ctx) {
                                         const i = ctx.dataIndex;
                                         return ctx.dataset.label === 'Failed' ? `${failedPct[i]}%` : `${closedPct[i]}%`;
@@ -422,13 +425,14 @@
                             ticks: {
                                 stepSize: 20,
                                 color: '#475569',
+                                font: { size: chartLabelFontSize },
                                 callback: function(v) { return Math.abs(v); }
                             },
                             title: {
                                 display: true,
                                 text: 'Percentage of cases',
                                 color: '#64748b',
-                                font: { size: 10, weight: '700' }
+                                font: { size: chartLabelFontSize, weight: '700' }
                             }
                         },
                         // Left Sidebar Alignment (Failed Names)
@@ -438,7 +442,7 @@
                             ticks: {
                                 autoSkip: false,
                                 color: '#7f1d1d',
-                                font: { size: 10, weight: '700' },
+                                font: { size: chartLabelFontSize, weight: '700' },
                                 callback: function(value, index) {
                                     const name = failedName[index] ?? '—';
                                     return name.length > 15 ? name.substring(0, 15) + '…' : name;
@@ -452,7 +456,7 @@
                             ticks: {
                                 autoSkip: false,
                                 color: '#166534',
-                                font: { size: 10, weight: '700' },
+                                font: { size: chartLabelFontSize, weight: '700' },
                                 callback: function(value, index) {
                                     const name = closedName[index] ?? '—';
                                     return name.length > 15 ? name.substring(0, 15) + '…' : name;
@@ -466,9 +470,8 @@
             const divergeEl = document.getElementById('top10FailedClosedChart');
             if (divergeEl && window.Chart && rowCount > 0) {
                 // Make chart height dynamic based on number of dealers and bar size.
-                // Approximate one "row" as barThickness (18) + gap (~8px).
-                const perRow = 92;         // row height + gap (px)
-                const minRows = 4;         // keep at least a reasonable height when few dealers
+                const perRow = isMobile ? 52 : 92;
+                const minRows = isMobile ? 1 : 4;
                 const rowsForHeight = Math.max(rowCount, minRows);
                 divergeEl.height = perRow * rowsForHeight;
                 new Chart(divergeEl.getContext('2d'), config);

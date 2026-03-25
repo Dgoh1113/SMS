@@ -2,7 +2,7 @@
 @section('title', 'Report - Monthly Performance Analytics')
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/shared/reports-tabs.css') }}?v=20260324-9">
-    <link rel="stylesheet" href="{{ asset('css/report_monthly_performance_analytics.css') }}?v=20260324-2">
+    <link rel="stylesheet" href="{{ asset('css/report_monthly_performance_analytics.css') }}?v=20260325-4">
 @endpush
 @section('content')
 <div class="reports-page">
@@ -81,11 +81,11 @@
         ['key' => 'Demo', 'label' => 'DEMO', 'value' => $activityStatus['Demo'] ?? 0, 'dealer' => true],
         ['key' => 'Confirmed', 'label' => 'CONFIRMED', 'value' => $activityStatus['Confirmed'] ?? 0, 'dealer' => true],
         [
-            'key' => 'CompletedPendingReward',
+            'key' => 'Completed',
             'label' => 'COMPLETED',
-            'value' => ($activityStatus['Completed'] ?? 0) + ($payoutStatus['Pending'] ?? 0),
+            'value' => $leadStatus['Closed'] ?? 0,
             'link' => route('admin.rewards', ['tab' => 'completed']),
-            'link_aria' => 'View payouts pending reward'
+            'link_aria' => 'View completed cases'
         ],
         [
             'key' => 'Rewarded',
@@ -104,7 +104,7 @@
         ['label' => 'FollowUp', 'value' => (int) ($activityStatus['FollowUp'] ?? 0), 'color' => '#f59e0b'],
         ['label' => 'Demo', 'value' => (int) ($activityStatus['Demo'] ?? 0), 'color' => '#eab308'],
         ['label' => 'Confirmed', 'value' => (int) ($activityStatus['Confirmed'] ?? 0), 'color' => '#84cc16'],
-        ['label' => 'Completed', 'value' => (int) (($activityStatus['Completed'] ?? 0) + ($payoutStatus['Pending'] ?? 0)), 'color' => '#22c55e'],
+        ['label' => 'Completed', 'value' => (int) ($leadStatus['Closed'] ?? 0), 'color' => '#22c55e'],
         ['label' => 'Rewarded', 'value' => (int) ($activityStatus['reward'] ?? 0), 'color' => '#15803d'],
     ];
     $totalStatus = max(array_sum(array_column($statusReportData, 'value')), 1);

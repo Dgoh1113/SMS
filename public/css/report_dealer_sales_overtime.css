@@ -604,3 +604,128 @@ a.rv2-page-btn:focus-visible {
   .rv2-pagination-pages { flex: 1 1 auto; justify-content: center; }
   .rv2-page-btn-nav { min-width: 82px; }
 }
+
+@media (max-width: 768px) {
+  .rv2-page {
+    padding: 0 12px 18px;
+    font-size: 100%;
+  }
+
+  .rv2-filtered-layer-head {
+    padding: 10px 12px;
+    justify-content: stretch;
+  }
+
+  .rv2-filters,
+  .rv2-filters-form {
+    width: 100%;
+  }
+
+  .rv2-filters {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .rv2-filters-form {
+    margin-left: 0;
+    justify-content: stretch;
+  }
+
+  .rv2-filter {
+    width: 100%;
+    min-width: 0;
+    padding: 8px 9px;
+    box-sizing: border-box;
+  }
+
+  .rv2-filter-apply {
+    width: auto;
+  }
+
+  .rv2-filter-btn {
+    width: auto;
+    min-height: 34px;
+    min-width: 110px;
+  }
+
+  .rv2-date-range {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+
+  .rv2-date-range span {
+    width: auto;
+    color: #64748b;
+    font-size: 11px;
+  }
+
+  .rv2-panel-head,
+  .rv2-bar-chart-title-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .rv2-panel-head {
+    gap: 6px;
+  }
+
+  .rv2-section-title-prominent {
+    font-size: 15px;
+  }
+
+  .rv2-badge-danger {
+    align-self: flex-start;
+  }
+
+  .rv2-chart-wrap,
+  .rv2-bar-chart-wrap,
+  .rv2-bar-chart-wrap-full {
+    padding: 6px;
+    min-height: 154px;
+  }
+
+  .rv2-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .rv2-table {
+    min-width: 640px;
+  }
+
+  .rv2-table thead th,
+  .rv2-table tbody td {
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .rv2-page {
+    padding: 0 10px 18px;
+  }
+
+  .rv2-filtered-layer-head {
+    padding: 9px 10px;
+  }
+
+  .rv2-panel-head,
+  .rv2-panel-body {
+    padding: 10px;
+  }
+
+  .rv2-section-title-prominent {
+    font-size: 14px;
+  }
+
+  .rv2-bar-chart-title {
+    font-size: 11px;
+  }
+
+  .rv2-chart-wrap,
+  .rv2-bar-chart-wrap,
+  .rv2-bar-chart-wrap-full {
+    min-height: 142px;
+  }
+}

@@ -2,7 +2,7 @@
 @section('title', 'Dashboard – SQL LMS Dealer Console')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/pages/dealer-dashboard.css') }}?v=20260324-16">
+    <link rel="stylesheet" href="{{ asset('css/pages/dealer-dashboard.css') }}?v=20260325-17">
 @endpush
 
 @section('content')
@@ -233,28 +233,73 @@
 <script>
 // Toggle Right Panel Logic
 (function() {
+    var STORAGE_KEY = 'dealer.rightPanel.hidden';
+    var MOBILE_MEDIA_QUERY = '(max-width: 768px)';
     var toggleBtn = document.getElementById('toggleRightPanelBtn');
     var mainContainer = document.getElementById('dealerMainDashboard');
     
     if (!toggleBtn || !mainContainer) return;
 
-    // Apply saved state on load
-    if (localStorage.getItem('dealer.rightPanel.hidden') === 'true') {
-        mainContainer.classList.add('is-right-panel-hidden');
+    function isMobileView() {
+        return window.matchMedia(MOBILE_MEDIA_QUERY).matches;
     }
 
-    toggleBtn.addEventListener('click', function() {
-        mainContainer.classList.toggle('is-right-panel-hidden');
-        var isHidden = mainContainer.classList.contains('is-right-panel-hidden');
-        localStorage.setItem('dealer.rightPanel.hidden', isHidden);
-        
-        // Trigger chart resize after CSS transition finishes
+    function resizeClosedChartAfterToggle() {
         setTimeout(function() {
             if (typeof closedChart !== 'undefined' && closedChart !== null) {
                 closedChart.resize();
             }
         }, 300);
+    }
+
+    function setRightPanelHidden(isHidden) {
+        mainContainer.classList.toggle('is-right-panel-hidden', !!isHidden);
+    }
+
+    var savedDesktopState = null;
+    try {
+        savedDesktopState = localStorage.getItem(STORAGE_KEY);
+    } catch (error) {
+        savedDesktopState = null;
+    }
+
+    function applyInitialPanelState() {
+        if (isMobileView()) {
+            setRightPanelHidden(true);
+            return;
+        }
+
+        setRightPanelHidden(savedDesktopState === 'true');
+    }
+
+    applyInitialPanelState();
+
+    toggleBtn.addEventListener('click', function() {
+        var isHidden = !mainContainer.classList.contains('is-right-panel-hidden');
+        setRightPanelHidden(isHidden);
+
+        if (!isMobileView()) {
+            savedDesktopState = isHidden ? 'true' : 'false';
+            try {
+                localStorage.setItem(STORAGE_KEY, savedDesktopState);
+            } catch (error) {}
+        }
+
+        resizeClosedChartAfterToggle();
     });
+
+    var mobileMedia = window.matchMedia(MOBILE_MEDIA_QUERY);
+    if (typeof mobileMedia.addEventListener === 'function') {
+        mobileMedia.addEventListener('change', function() {
+            applyInitialPanelState();
+            resizeClosedChartAfterToggle();
+        });
+    } else if (typeof mobileMedia.addListener === 'function') {
+        mobileMedia.addListener(function() {
+            applyInitialPanelState();
+            resizeClosedChartAfterToggle();
+        });
+    }
 })();
 
 // Chart Logic

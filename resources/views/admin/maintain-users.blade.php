@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Maintain Users')
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/pages/admin-maintain-users.css') }}?v=20260324-9">
+    <link rel="stylesheet" href="{{ asset('css/pages/admin-maintain-users.css') }}?v=20260325-13">
 @endpush
 
 @section('content')
@@ -30,6 +30,12 @@
         @if (count($users) === 0)
             <div class="maintain-users-empty">No users found.</div>
         @else
+            @php
+                $maintainUsersTotal = count($users);
+                $maintainUsersPerPage = 10;
+                $maintainUsersLastPage = $maintainUsersTotal > 0 ? (int) ceil($maintainUsersTotal / $maintainUsersPerPage) : 1;
+                $maintainUsersTo = $maintainUsersTotal === 0 ? 0 : min($maintainUsersPerPage, $maintainUsersTotal);
+            @endphp
             <div class="dashboard-table-wrapper">
             <table class="dashboard-table maintain-users-table" id="maintainUsersTable">
                 <thead>
@@ -100,6 +106,22 @@
                 @include('admin.partials.maintain_users_rows', ['users' => $users])
                 </tbody>
             </table>
+            </div>
+            <div class="inquiries-assigned-pagination maintain-users-pagination" id="maintainUsersPagination"
+                 data-total="{{ $maintainUsersTotal }}"
+                 data-per-page="{{ $maintainUsersPerPage }}"
+                 data-current-page="1"
+                 data-last-page="{{ $maintainUsersLastPage }}">
+                <span class="inquiries-assigned-pagination-info">
+                    Showing {{ $maintainUsersTotal === 0 ? 0 : 1 }} to {{ $maintainUsersTo }} of {{ $maintainUsersTotal }} entries (Page 1)
+                </span>
+                <div class="inquiries-assigned-pagination-nav">
+                    <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" data-page="first">First</button>
+                    <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" data-page="prev">Previous</button>
+                    <span class="inquiries-assigned-page-numbers" id="maintainUsersPageNumbers"></span>
+                    <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" data-page="next">Next</button>
+                    <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" data-page="last">Last</button>
+                </div>
             </div>
         @endif
     </div>
@@ -463,6 +485,7 @@
             const editDealerFieldsSection = document.getElementById('maintainUsersEditDealerFields');
             const table = document.getElementById('maintainUsersTable');
             const tableBody = document.getElementById('maintainUsersTableBody');
+            const pagination = document.getElementById('maintainUsersPagination');
             const syncUrl = '{{ route('admin.maintain-users') }}';
 
             function formatRoleLabel(role) {
@@ -592,8 +615,155 @@
             updateLocationPresetVisuals();
             syncAddRoleState();
 
+            window.maintainUsersPaginationState = window.maintainUsersPaginationState || { currentPage: 1, perPage: 10 };
+
+            function initMaintainUsersPagination() {
+                if (!table || !pagination) return;
+
+                const infoEl = pagination.querySelector('.inquiries-assigned-pagination-info');
+                const pageNumbersEl = document.getElementById('maintainUsersPageNumbers');
+                const controls = pagination.querySelectorAll('.inquiries-pagination-btn');
+                const perPage = parseInt(pagination.getAttribute('data-per-page') || '10', 10);
+                window.maintainUsersPaginationState.perPage = perPage;
+
+                function getAllRows() {
+                    return Array.prototype.slice.call(table.querySelectorAll('tbody .maintain-users-row'));
+                }
+
+                function getMatchingRows() {
+                    return getAllRows().filter(function (row) {
+                        if (!row.dataset.filterMatch) row.dataset.filterMatch = '1';
+                        return row.dataset.filterMatch !== '0';
+                    });
+                }
+
+                function clearPlaceholderRows() {
+                    Array.prototype.slice.call(table.querySelectorAll('tbody tr.maintain-users-placeholder-row')).forEach(function (row) {
+                        row.remove();
+                    });
+                }
+
+                function ensureFixedHeight(visibleCount) {
+                    const tbody = table.querySelector('tbody');
+                    if (!tbody) return;
+                    clearPlaceholderRows();
+
+                    if (visibleCount > 0 && visibleCount < perPage) {
+                        const sampleRow = tbody.querySelector('tr.maintain-users-row');
+                        const tableWrap = table.closest('.maintain-users-table-wrap');
+                        const rowHeightAdjust = tableWrap
+                            ? (parseFloat(getComputedStyle(tableWrap).getPropertyValue('--maintain-users-placeholder-row-adjust')) || 0)
+                            : 0;
+                        let rowHeight = sampleRow
+                            ? Math.ceil(sampleRow.getBoundingClientRect().height + rowHeightAdjust)
+                            : Math.ceil(52 + rowHeightAdjust);
+                        if (!rowHeight || rowHeight < 40) rowHeight = Math.ceil(52 + rowHeightAdjust);
+
+                        const headerCount = table.querySelectorAll('thead tr:first-child th').length || 1;
+                        for (let i = visibleCount; i < perPage; i++) {
+                            const row = document.createElement('tr');
+                            row.className = 'maintain-users-placeholder-row';
+                            row.setAttribute('aria-hidden', 'true');
+
+                            const cell = document.createElement('td');
+                            cell.className = 'maintain-users-placeholder-cell';
+                            cell.colSpan = headerCount;
+                            cell.style.height = rowHeight + 'px';
+
+                            row.appendChild(cell);
+                            tbody.appendChild(row);
+                        }
+                    }
+                }
+
+                function buildPageNumbers(currentPage, lastPage) {
+                    if (!pageNumbersEl) return;
+                    pageNumbersEl.innerHTML = '';
+                    for (let p = 1; p <= lastPage; p++) {
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'inquiries-pagination-num' + (p === currentPage ? ' inquiries-pagination-num-active' : '');
+                        btn.setAttribute('data-page', String(p));
+                        btn.textContent = String(p);
+                        btn.addEventListener('click', function () {
+                            window.maintainUsersGoToPage(p);
+                        });
+                        pageNumbersEl.appendChild(btn);
+                    }
+                }
+
+                function renderPage(page) {
+                    const matchingRows = getMatchingRows();
+                    const total = matchingRows.length;
+                    const lastPage = total > 0 ? Math.ceil(total / perPage) : 1;
+                    const safePage = Math.min(Math.max(parseInt(page || 1, 10), 1), lastPage);
+                    const start = total === 0 ? 0 : (safePage - 1) * perPage;
+                    const end = total === 0 ? 0 : Math.min(start + perPage, total);
+
+                    pagination.setAttribute('data-total', String(total));
+                    pagination.setAttribute('data-current-page', String(safePage));
+                    pagination.setAttribute('data-last-page', String(lastPage));
+                    window.maintainUsersPaginationState.currentPage = safePage;
+
+                    getAllRows().forEach(function (row) {
+                        row.style.display = 'none';
+                    });
+
+                    matchingRows.slice(start, end).forEach(function (row) {
+                        row.style.display = '';
+                    });
+
+                    ensureFixedHeight(end - start);
+
+                    if (infoEl) {
+                        const fromText = total === 0 ? 0 : start + 1;
+                        infoEl.textContent = 'Showing ' + fromText + ' to ' + end + ' of ' + total + ' entries (Page ' + safePage + ')';
+                    }
+
+                    buildPageNumbers(safePage, lastPage);
+
+                    controls.forEach(function (btn) {
+                        const action = btn.getAttribute('data-page');
+                        let disabled = false;
+                        if (total === 0) {
+                            disabled = true;
+                        } else if (action === 'first' || action === 'prev') {
+                            disabled = safePage <= 1;
+                        } else if (action === 'next' || action === 'last') {
+                            disabled = safePage >= lastPage;
+                        }
+                        btn.disabled = disabled;
+                    });
+                }
+
+                window.maintainUsersGoToPage = function (page) {
+                    const action = String(page || '').toLowerCase();
+                    const currentPage = window.maintainUsersPaginationState.currentPage || 1;
+                    const lastPage = parseInt(pagination.getAttribute('data-last-page') || '1', 10);
+                    let targetPage = currentPage;
+
+                    if (action === 'first') targetPage = 1;
+                    else if (action === 'prev') targetPage = currentPage - 1;
+                    else if (action === 'next') targetPage = currentPage + 1;
+                    else if (action === 'last') targetPage = lastPage;
+                    else targetPage = parseInt(page || '1', 10);
+
+                    renderPage(targetPage);
+                };
+
+                controls.forEach(function (btn) {
+                    if (btn.getAttribute('data-pagination-bound') === '1') return;
+                    btn.setAttribute('data-pagination-bound', '1');
+                    btn.addEventListener('click', function () {
+                        window.maintainUsersGoToPage(btn.getAttribute('data-page') || '1');
+                    });
+                });
+
+                renderPage(window.maintainUsersPaginationState.currentPage || 1);
+            }
+
             // Live search: top search box + per-column filters (all apply as you type)
-            function applyTableFilter() {
+            function applyTableFilter(resetPage) {
                 if (!table) return;
                 const filters = {};
                 table.querySelectorAll('thead .inquiries-grid-filter').forEach(function (inp) {
@@ -611,12 +781,18 @@
                             break;
                         }
                     }
-                    row.style.display = colMatch ? '' : 'none';
+                    row.dataset.filterMatch = colMatch ? '1' : '0';
                 });
+                initMaintainUsersPagination();
+                if (window.maintainUsersGoToPage) {
+                    window.maintainUsersGoToPage(resetPage ? 1 : (window.maintainUsersPaginationState.currentPage || 1));
+                }
             }
             if (table) {
                 table.querySelectorAll('thead .inquiries-grid-filter').forEach(function (inp) {
-                    inp.addEventListener('input', applyTableFilter);
+                    inp.addEventListener('input', function () {
+                        applyTableFilter(true);
+                    });
                 });
             }
 
@@ -628,9 +804,12 @@
                             inp.value = '';
                         });
                     }
-                    applyTableFilter();
+                    applyTableFilter(true);
                 });
             }
+
+            initMaintainUsersPagination();
+            applyTableFilter(false);
 
             const successFlash = document.querySelector('.maintain-users-success');
             if (successFlash) {

@@ -1,12 +1,13 @@
 @extends('layouts.app')
 @section('title', 'History - Admin')
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/pages/admin-history.css') }}?v=20260324-9">
+    <link rel="stylesheet" href="{{ asset('css/pages/admin-history.css') }}?v=20260325-13">
 @endpush
 @section('content')
 <section class="dashboard-panel dashboard-table-panel">
     <div class="dashboard-panel-body">
         <div class="history-toolbar">
+            <button type="button" class="inquiries-btn inquiries-btn-secondary" id="historyClearFilters">Clear filters</button>
             <label class="history-checkbox-filter" for="historySystemMarkedFailOnly">
                 <input type="checkbox" id="historySystemMarkedFailOnly">
                 <span>System Marked Fail</span>
@@ -70,6 +71,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var table = document.getElementById('historyTable');
     if (!table) return;
     var systemMarkedFailOnly = document.getElementById('historySystemMarkedFailOnly');
+
     function applyTableFilter() {
         var searchInput = document.getElementById('historySearchInput');
         var q = (searchInput && searchInput.value) ? searchInput.value.toLowerCase().trim() : '';
@@ -100,6 +102,18 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     if (systemMarkedFailOnly) {
         systemMarkedFailOnly.addEventListener('change', applyTableFilter);
+    }
+
+    var clearFiltersBtn = document.getElementById('historyClearFilters');
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', function() {
+            if (searchInput) searchInput.value = '';
+            table.querySelectorAll('thead .inquiries-grid-filter').forEach(function(inp) {
+                inp.value = '';
+            });
+            if (systemMarkedFailOnly) systemMarkedFailOnly.checked = false;
+            applyTableFilter();
+        });
     }
 
     (function initMessageModal() {

@@ -9,7 +9,7 @@
     <link rel="shortcut icon" href="{{ asset('sql-logo.png') }}?v=20260318">
     <link rel="apple-touch-icon" href="{{ asset('sql-logo.png') }}?v=20260318">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=20260324-33">
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=20260325-35">
     <script>
         // Apply sidebar state ASAP (prevents flicker on page navigation)
         (function () {

@@ -2,15 +2,15 @@
 @php $isEdit = isset($inquiry); $inquiry = $inquiry ?? null; @endphp
 @section('title', $isEdit ? 'Edit inquiry – Admin' : 'Add new inquiry – Admin')
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/pages/admin-inquiries.css') }}?v=20260324-9">
+    <link rel="stylesheet" href="{{ asset('css/pages/admin-inquiries.css') }}?v=20260325-18">
 @endpush
 @section('content')
-<header class="dashboard-header">
-    <div>
+<header class="dashboard-header inquiry-create-header">
+    <div class="inquiry-create-header-main">
         <h1 class="dashboard-title">{{ $isEdit ? 'Edit inquiry' : 'Add new inquiry' }}</h1>
         <p class="dashboard-subtitle">{{ $isEdit ? 'Update lead #SQL-' . ($inquiry->LEADID ?? '') : 'Create a new lead' }}</p>
     </div>
-    <a href="{{ route('admin.inquiries') }}" class="dashboard-panel-link">← Back to leads</a>
+    <a href="{{ route('admin.inquiries') }}" class="dashboard-panel-link inquiry-create-back-link">&larr; Back to leads</a>
 </header>
 
 <section class="dashboard-panel dashboard-table-panel inquiry-create-panel">
@@ -137,7 +137,7 @@
                         <input type="hidden" name="DEMOMODE" id="demoModeInput" value="{{ $demoOld }}">
                     </label>
                 </div>
-                <label class="inquiry-form-label inquiry-form-full inquiry-form-products">
+                <div class="inquiry-form-label inquiry-form-full inquiry-form-products">
                     <span class="inquiry-form-label-title">Product interested <span class="required">*</span></span>
                     <div class="inquiry-form-checkboxes @error('product_interested') inquiry-input-error @enderror" role="group" aria-required="true">
                         @php
@@ -157,7 +157,7 @@
                     @error('product_interested')
                         <div class="inquiry-field-error">Please select at least one product.</div>
                     @enderror
-                </label>
+                </div>
                 <label class="inquiry-form-label inquiry-form-full">
                     Referral code
                     <input type="text" name="REFERRALCODE" value="{{ old('REFERRALCODE', $inquiry->REFERRALCODE ?? '') }}" maxlength="100" class="inquiry-form-input">
