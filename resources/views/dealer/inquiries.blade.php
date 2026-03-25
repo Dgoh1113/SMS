@@ -2,7 +2,7 @@
 @section('title', 'My Inquiries – SQL LMS Dealer Console')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/pages/dealer-inquiries.css') }}?v=20260325-19">
+    <link rel="stylesheet" href="{{ asset('css/pages/dealer-inquiries.css') }}?v=20260325-21">
 @endpush
 
 @section('content')

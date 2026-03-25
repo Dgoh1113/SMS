@@ -73,7 +73,7 @@
   }
 
   .dealer-inquiries-panel .inquiries-table-scroll.inquiries-table-scroll-short {
-    min-height: 260px !important;
+    min-height: 320px !important;
   }
 
   .dealer-inquiries-panel .inquiries-table-scroll.inquiries-table-scroll-empty {
@@ -81,7 +81,46 @@
   }
 
   .dealer-inquiries-panel .inquiries-assigned-pagination {
-    margin-top: 10px;
+    margin-top: 14px;
+    padding: 14px 16px 16px;
+    border-radius: 14px;
+    gap: 10px;
+    min-height: 92px;
+  }
+
+  .dealer-inquiries-panel .inquiries-assigned-pagination-info {
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .dealer-inquiries-panel .inquiries-assigned-pagination-nav {
+    width: 100%;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .dealer-inquiries-panel .inquiries-assigned-page-numbers {
+    justify-content: center;
+  }
+
+  .dealer-inquiries-panel .inquiries-pagination-btn,
+  .dealer-inquiries-panel .inquiries-pagination-num {
+    min-height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .dealer-inquiries-panel .inquiries-pagination-btn {
+    padding-left: 12px;
+    padding-right: 12px;
+    border-radius: 10px;
+  }
+
+  .dealer-inquiries-panel .inquiries-pagination-num {
+    min-width: 34px;
+    padding: 4px 9px;
+    border-radius: 10px;
   }
 
   #inquiryUpdateModal .inquiry-modal-footer {
@@ -94,10 +133,48 @@
     position: sticky;
     right: 0;
     z-index: 6;
-    min-width: 118px;
-    width: 118px;
-    max-width: 118px;
+    min-width: 108px;
+    width: 108px;
+    max-width: 108px;
     box-shadow: -8px 0 14px rgba(15, 23, 42, 0.08);
+  }
+
+  #dealerInquiriesTable th,
+  #dealerInquiriesTable td {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  #dealerInquiriesTable th[data-col="inquiryid"],
+  #dealerInquiriesTable td[data-col="inquiryid"] {
+    max-width: 96px;
+  }
+
+  #dealerInquiriesTable th[data-col="date"],
+  #dealerInquiriesTable td[data-col="date"] {
+    max-width: 92px;
+  }
+
+  #dealerInquiriesTable th[data-col="date"] .inquiries-grid-filter {
+    max-width: 92px;
+  }
+
+  #dealerInquiriesTable th[data-col="customer"],
+  #dealerInquiriesTable td[data-col="customer"] {
+    min-width: 120px;
+    max-width: 120px;
+  }
+
+  #dealerInquiriesTable td[data-col="customer"] > span {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  #dealerInquiriesTable .inquiries-filter-clear {
+    padding: 6px 8px;
+    font-size: 12px;
   }
 
   #dealerInquiriesTable th.inquiries-col-action {
