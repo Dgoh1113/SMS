@@ -17,7 +17,7 @@
   box-sizing: border-box;
 }
 th{
-  background-color: #ddd6fe;  ;
+  background-color: #ddd6fe;
   color: #4c1d95;
   font-weight: 600;
   padding: 8px 10px;
@@ -1338,8 +1338,6 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
   overflow-y: auto;
 }
 
-}
-
 .sidebar-section {
   font-size: 14px;
   font-weight: 400;
@@ -2144,11 +2142,6 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
 
 .dashboard-panel-link:hover {
   text-decoration: underline;
-}
-
-
-  min-height: 200px;
-  position: relative;
 }
 
 .dashboard-panel-caption {
