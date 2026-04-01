@@ -1572,6 +1572,21 @@ button.dealer-pagination-btn:disabled {
   outline-offset: -2px;
 }
 
+@media (min-width: 769px) and (max-height: 860px) {
+  .dealer-dashboard-main-right {
+    grid-template-rows: auto auto;
+    align-content: start;
+  }
+
+  .dealer-closed-case-panel {
+    min-height: 300px;
+  }
+
+  .dealer-alert-panel {
+    min-height: 360px;
+  }
+}
+
 @media (max-width: 768px) {
   .dealer-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));

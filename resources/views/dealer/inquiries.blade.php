@@ -2,7 +2,7 @@
 @section('title', 'My Inquiries – SQL LMS Dealer Console')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/pages/dealer-inquiries.css') }}?v=20260327-02">
+    <link rel="stylesheet" href="{{ asset('css/pages/dealer-inquiries.css') }}?v=20260401-17">
 @endpush
 
 @section('content')
@@ -115,26 +115,6 @@
             </div>
         </div>
     </section>
-</div>
-
-{{-- View Failed Message Modal --}}
-<div class="inquiry-modal-overlay" id="inquiryViewModal" aria-hidden="true">
-    <div class="inquiry-modal inquiry-modal--view" role="dialog" aria-labelledby="inquiryViewModalTitle">
-        <div class="inquiry-modal-header">
-            <h2 id="inquiryViewModalTitle" class="inquiry-modal-title">Failed Inquiry</h2>
-            <p class="inquiry-modal-subtitle" id="inquiryViewModalSubtitle">Inquiry ID: #SQL-0 • —</p>
-            <button type="button" class="inquiry-modal-close" id="inquiryViewModalClose" aria-label="Close"><i class="bi bi-x-lg"></i></button>
-        </div>
-        <div class="inquiry-modal-body">
-            <div class="inquiry-view-message">
-                <span class="inquiry-field-label">MESSAGE</span>
-                <div class="inquiry-view-message-content" id="inquiryViewMessageContent">—</div>
-            </div>
-        </div>
-        <div class="inquiry-modal-footer">
-            <button type="button" class="inquiry-btn inquiry-btn-cancel" id="inquiryViewModalCloseBtn">Close</button>
-        </div>
-    </div>
 </div>
 
 @push('scripts')
@@ -662,6 +642,14 @@ function initDealerInquiriesPage() {
             clearDealerInquiryPlaceholderRows();
         }
 
+        function shouldCompactDealerPaginationLayout() {
+            return window.matchMedia('(max-width: 1366px), (max-height: 900px)').matches;
+        }
+
+        function getDealerPaginationTargetRows() {
+            return shouldCompactDealerPaginationLayout() ? Math.min(perPage, 7) : perPage;
+        }
+
         function ensureFixedHeight(visibleDataCount) {
             var tbody = table.querySelector('tbody');
             if (!tbody) return;
@@ -669,13 +657,14 @@ function initDealerInquiriesPage() {
             var allRows = getAllRows();
             var allowZeroFill = allRows.length > 0;
             var useShortHeight = (visibleDataCount > 0 && visibleDataCount < perPage) || (visibleDataCount === 0 && allowZeroFill);
+            var targetRows = getDealerPaginationTargetRows();
 
-            if (visibleDataCount < perPage && (visibleDataCount > 0 || allowZeroFill)) {
+            if (visibleDataCount < targetRows && (visibleDataCount > 0 || allowZeroFill)) {
                 var visibleHeaderCount = Array.prototype.slice.call(table.querySelectorAll('thead tr:first-child th')).filter(function(cell) {
                     return cell.style.display !== 'none' && window.getComputedStyle(cell).display !== 'none';
                 }).length || 1;
 
-                for (var i = visibleDataCount; i < perPage; i++) {
+                for (var i = visibleDataCount; i < targetRows; i++) {
                     var row = document.createElement('tr');
                     row.className = 'inquiries-placeholder-row';
                     row.setAttribute('aria-hidden', 'true');
@@ -775,6 +764,15 @@ function initDealerInquiriesPage() {
             };
         });
 
+        if (!window.__dealerInquiryPaginationResizeBound) {
+            window.addEventListener('resize', function() {
+                if (typeof window.dealerApplyPagination === 'function') {
+                    window.dealerApplyPagination();
+                }
+            });
+            window.__dealerInquiryPaginationResizeBound = true;
+        }
+
         window.dealerApplyPagination();
     }
 
@@ -815,6 +813,13 @@ if (document.readyState === 'loading') {
                     <div class="inquiry-step inquiry-step--green" data-step="REWARDED" data-color="green"><span>REWARDED</span></div>
                 </div>
             </div>
+            <div class="inquiry-view-message inquiry-latest-failed-notice" id="inquiryLatestFailedNotice" hidden>
+                <div class="inquiry-latest-failed-head">
+                    <span class="inquiry-field-label">LATEST STATUS IS</span>
+                    <span class="inquiry-latest-failed-badge">FAILED</span>
+                </div>
+                <div class="inquiry-view-message-content" id="inquiryLatestFailedMessage">—</div>
+            </div>
             <div class="inquiry-followup">
                 <div class="inquiry-followup-header">
                     <i class="bi bi-calendar3"></i>
@@ -825,7 +830,7 @@ if (document.readyState === 'loading') {
                         <span class="inquiry-field-label" id="inquiryDateLabel">FOLLOW-UP DATE</span>
                         <div class="inquiry-field-input-wrap">
                             <i class="bi bi-calendar3"></i>
-                            <input type="text" class="inquiry-field-input" id="inquiryFollowupDate" inputmode="numeric" placeholder="dd/mm/yyyy" autocomplete="off">
+                            <input type="date" class="inquiry-field-input" id="inquiryFollowupDate">
                         </div>
                     </label>
                     <label class="inquiry-field">
@@ -920,7 +925,8 @@ if (document.readyState === 'loading') {
         'PENDING': 'PENDING', 'FOLLOW UP': 'FOLLOW UP', 'FOLLOWUP': 'FOLLOW UP',
         'DEMO': 'DEMO', 'CONFIRMED': 'CONFIRMED', 'CASE CONFIRMED': 'CONFIRMED',
         'COMPLETED': 'COMPLETED', 'CASE COMPLETED': 'COMPLETED',
-        'REWARD': 'REWARDED', 'REWARDED': 'REWARDED', 'REWARD DISTRIBUTED': 'REWARDED'
+        'REWARD': 'REWARDED', 'REWARDED': 'REWARDED', 'REWARD DISTRIBUTED': 'REWARDED',
+        'FAILED': 'FAILED'
     };
 
     var currentLeadId = '';
@@ -933,6 +939,7 @@ if (document.readyState === 'loading') {
     var latestMinDate = '';
     var latestMinTime = '';
     var currentReferralCode = '';
+    var latestStatusRaw = '';
 
     function hasReferralCode(value) {
         var normalized = String(value || '').trim();
@@ -947,8 +954,56 @@ if (document.readyState === 'loading') {
             case 'CONFIRMED': return 'Confirmed';
             case 'COMPLETED': return 'Completed';
             case 'REWARDED': return 'Rewarded';
+            case 'FAILED': return 'Failed';
             default: return String(status || '').trim();
         }
+    }
+
+    function normalizeStatus(status) {
+        var key = (status || '').toString().toUpperCase().trim().replace(/\s+/g, ' ');
+        return statusMap[key] || key || 'PENDING';
+    }
+
+    function findLatestFailedActivity() {
+        for (var i = 0; i < cachedActivities.length; i++) {
+            var activity = cachedActivities[i];
+            if (activity && activity.type === 'activity' && normalizeStatus(activity.status) === 'FAILED') {
+                return activity;
+            }
+        }
+        return null;
+    }
+
+    function getDisplayProgressionStatus(latestStatus) {
+        var normalizedLatest = normalizeStatus(latestStatus);
+        if (normalizedLatest !== 'FAILED' && statusOrder.indexOf(normalizedLatest) >= 0) {
+            return normalizedLatest;
+        }
+
+        for (var i = 0; i < cachedActivities.length; i++) {
+            var normalized = normalizeStatus(cachedActivities[i] && cachedActivities[i].status);
+            if (normalized !== 'FAILED' && statusOrder.indexOf(normalized) >= 0) {
+                return normalized;
+            }
+        }
+
+        return 'PENDING';
+    }
+
+    function renderLatestFailedNotice(activity) {
+        var noticeEl = document.getElementById('inquiryLatestFailedNotice');
+        var messageEl = document.getElementById('inquiryLatestFailedMessage');
+        if (!noticeEl || !messageEl) return;
+
+        var shouldShow = normalizeStatus(latestStatusRaw) === 'FAILED' && !!activity;
+        noticeEl.hidden = !shouldShow;
+        if (!shouldShow) {
+            messageEl.textContent = '—';
+            return;
+        }
+
+        var message = String(activity.description || '').trim();
+        messageEl.textContent = message !== '' ? message : 'No failed message available.';
     }
 
     function canSelectFutureStatus(fromStatus, toStatus) {
@@ -1023,59 +1078,67 @@ if (document.readyState === 'loading') {
         });
     }
 
-    function setDateTimeMinConstraints() {
+    function validateFollowupDateTime() {
         var dateEl = document.getElementById('inquiryFollowupDate');
         var timeEl = document.getElementById('inquiryFollowupTime');
-        if (!dateEl || !timeEl) return;
+        var activityTime = timeEl ? (timeEl.value || '').trim() : '';
+        var activityDate = getFollowupDateIso();
+        var rawDate = dateEl ? (dateEl.value || '').trim() : '';
 
-        // Only enforce min constraints while EDITING (not viewing).
-        if (viewMode) {
-            dateEl.min = '';
-            timeEl.min = '';
-            return;
-        }
-
-        if (!latestMinDate) {
-            dateEl.min = '';
-            timeEl.min = '';
-            return;
-        }
-
-        dateEl.min = latestMinDate;
-
-        // Time constraint only matters when the selected date equals the min date.
-        var curDate = getFollowupDateIso();
-        var rawDate = (dateEl.value || '').trim();
-        if (rawDate !== '' && curDate === '') {
-            dateEl.setCustomValidity('Use dd/mm/yyyy');
-            timeEl.min = '';
-            return;
-        }
-        if (curDate !== '' && latestMinDate && curDate < latestMinDate) {
-            dateEl.setCustomValidity('Date must be on or after ' + formatIsoDateForDisplay(latestMinDate));
-        } else {
+        if (dateEl) {
             dateEl.setCustomValidity('');
         }
-        var todayIso = getTodayIsoDate();
-        if (curDate !== '' && curDate > todayIso) {
-            dateEl.setCustomValidity('Date cannot be in the future.');
-        }
-        if (curDate === latestMinDate && latestMinTime) {
-            timeEl.min = latestMinTime;
-        } else {
-            timeEl.min = '';
-        }
-        if (curDate === todayIso) {
-            timeEl.max = getCurrentLocalTime();
-        } else {
-            timeEl.max = '';
-        }
-        var currentTime = (timeEl.value || '').trim();
-        if (curDate === todayIso && currentTime !== '' && currentTime > getCurrentLocalTime()) {
-            timeEl.setCustomValidity('Time cannot be in the future.');
-        } else {
+        if (timeEl) {
             timeEl.setCustomValidity('');
         }
+
+        if (dateEl && (hasInvalidFollowupDateInput() || (rawDate !== '' && activityDate === ''))) {
+            return {
+                valid: false,
+                field: dateEl,
+                message: 'Please choose a valid date.'
+            };
+        }
+
+        if (activityDate !== '' && latestMinDate && activityDate < latestMinDate) {
+            return {
+                valid: false,
+                field: dateEl,
+                message: 'The date cannot be earlier than last activity'
+            };
+        }
+
+        if (activityDate !== '' && activityDate > getTodayIsoDate()) {
+            return {
+                valid: false,
+                field: dateEl,
+                message: 'The date cannot be future date'
+            };
+        }
+
+        if (activityDate !== '' && activityDate === latestMinDate && latestMinTime && activityTime !== '' && activityTime < latestMinTime) {
+            return {
+                valid: false,
+                field: timeEl,
+                message: 'Time must be on or after ' + latestMinTime + '.'
+            };
+        }
+
+        if (activityDate === getTodayIsoDate() && activityTime !== '' && activityTime > getCurrentLocalTime()) {
+            return {
+                valid: false,
+                field: timeEl,
+                message: 'Time cannot be in the future.'
+            };
+        }
+
+        return {
+            valid: true,
+            field: null,
+            message: '',
+            activityDate: activityDate,
+            activityTime: activityTime
+        };
     }
 
     function hasActivityForStatus(statusOrderName) {
@@ -1083,10 +1146,7 @@ if (document.readyState === 'loading') {
     }
 
     function setProgression(currentStatus) {
-        var key = (currentStatus || '').toString().toUpperCase().trim();
-        // Normalize common DB/API variants (e.g. "FollowUp" -> "FOLLOWUP")
-        key = key.replace(/\s+/g, ' ');
-        var normalized = statusMap[key] || 'PENDING';
+        var normalized = normalizeStatus(currentStatus);
         var idx = statusOrder.indexOf(normalized);
         if (idx < 0) idx = 0;
         currentStatusIdx = idx;
@@ -1176,8 +1236,8 @@ if (document.readyState === 'loading') {
         var stepName = statusOrder[stepIdx];
         if (stepIdx > currentStatusIdx) return stepName;
         var act = findActivityForStatus(stepName);
-        if (act && act.status) return (act.status || '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') || stepName;
-        if (stepIdx === currentStatusIdx) return 'Current';
+        if (act && act.status) return String(act.status || '').toUpperCase().replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') || stepName;
+        if (stepIdx === currentStatusIdx) return 'CURRENT';
         return stepName;
     }
 
@@ -1196,7 +1256,7 @@ if (document.readyState === 'loading') {
             return;
         }
         var d = new Date(activity.created_at);
-        if (dateEl) dateEl.value = isNaN(d.getTime()) ? '' : formatIsoDateForDisplay(d.toISOString().slice(0, 10));
+        if (dateEl) dateEl.value = isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
         if (timeEl) timeEl.value = isNaN(d.getTime()) ? '' : String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
         if (remarkEl) remarkEl.value = activity.description || '';
 
@@ -1332,15 +1392,17 @@ if (document.readyState === 'loading') {
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 cachedActivities = data.activities || [];
+                latestStatusRaw = normalizeStatus(data && data.latest_status);
                 renderActivity(cachedActivities);
                 refreshStepLabels();
+                renderLatestFailedNotice(findLatestFailedActivity());
 
                 // Re-compute the latest status from DB activities (by created_at) to keep UI in sync
                 // with whatever Firebird considers the latest row.
                 if (!userPickedStep) {
                     // Prefer server-computed latest (based on CREATIONDATE + LEAD_ACTID).
                     if (data && data.latest_status) {
-                        setProgression(data.latest_status);
+                        setProgression(getDisplayProgressionStatus(data.latest_status));
                     }
 
                     // If opened from the edit icon, auto-select the NEXT status for editing.
@@ -1349,7 +1411,7 @@ if (document.readyState === 'loading') {
                         // (setProgression chooses next step when viewMode=false)
                         viewMode = false;
                         if (data && data.latest_status) {
-                            setProgression(data.latest_status);
+                            setProgression(getDisplayProgressionStatus(data.latest_status));
                         }
                         setFieldsReadOnly(false);
                         setRemarkPlaceholder(statusOrder[selectedStatusIdx]);
@@ -1367,8 +1429,6 @@ if (document.readyState === 'loading') {
                     }
                 }
 
-                // Min-date validation for the calendar picker (disable wrong dates).
-                // Use server-provided latest_created_at (based on LEAD_ACT.CREATIONDATE).
                 latestMinDate = '';
                 latestMinTime = '';
                 if (data && data.latest_created_at) {
@@ -1378,7 +1438,6 @@ if (document.readyState === 'loading') {
                         latestMinTime = String(dmin.getHours()).padStart(2, '0') + ':' + String(dmin.getMinutes()).padStart(2, '0');
                     }
                 }
-                setDateTimeMinConstraints();
 
                 // In view mode, always populate the selected (submitted) status from DB.
                 // Submitted statuses are view-only (read-only fields).
@@ -1395,13 +1454,15 @@ if (document.readyState === 'loading') {
                     var dateEl = document.getElementById('inquiryFollowupDate');
                     var timeEl = document.getElementById('inquiryFollowupTime');
                     var remarkEl = document.getElementById('inquiryRemark');
-                    if (dateEl && details.date) dateEl.value = formatIsoDateForDisplay(details.date);
+                    if (dateEl && details.date) dateEl.value = details.date;
                     if (timeEl && details.time) timeEl.value = details.time;
                     if (remarkEl && details.description) remarkEl.value = details.description;
                     setFieldsReadOnly(true);
                 }
             })
             .catch(function() {
+                latestStatusRaw = '';
+                renderLatestFailedNotice(null);
                 renderActivity([]);
             });
     }
@@ -1547,13 +1608,9 @@ if (document.readyState === 'loading') {
         return String(parsed.getDate()).padStart(2, '0') + '/' + String(parsed.getMonth() + 1).padStart(2, '0') + '/' + parsed.getFullYear();
     }
 
-    function normalizeFollowupDateInputValue(value) {
-        var digits = String(value || '').replace(/\D/g, '').slice(0, 8);
-        var parts = [];
-        if (digits.length > 0) parts.push(digits.slice(0, 2));
-        if (digits.length > 2) parts.push(digits.slice(2, 4));
-        if (digits.length > 4) parts.push(digits.slice(4, 8));
-        return parts.join('/');
+    function hasInvalidFollowupDateInput() {
+        var dateEl = document.getElementById('inquiryFollowupDate');
+        return !!(dateEl && dateEl.validity && dateEl.validity.badInput);
     }
 
     function getFollowupDateIso() {
@@ -1561,16 +1618,7 @@ if (document.readyState === 'loading') {
         var raw = dateEl ? String(dateEl.value || '').trim() : '';
         if (!raw) return '';
         if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
-        var match = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-        if (!match) return '';
-        var day = parseInt(match[1], 10);
-        var month = parseInt(match[2], 10);
-        var year = parseInt(match[3], 10);
-        var parsed = new Date(year, month - 1, day);
-        if (parsed.getFullYear() !== year || parsed.getMonth() !== month - 1 || parsed.getDate() !== day) {
-            return '';
-        }
-        return year + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+        return '';
     }
 
     function getTodayIsoDate() {
@@ -1584,8 +1632,7 @@ if (document.readyState === 'loading') {
     }
 
     function getDefaultDate() {
-        var d = new Date();
-        return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
+        return getTodayIsoDate();
     }
     function getDefaultTime() {
         var d = new Date();
@@ -1600,6 +1647,9 @@ if (document.readyState === 'loading') {
         currentCustomer = customer || '—';
         userPickedStep = false;
         openStartNext = !!startNext;
+        cachedActivities = [];
+        latestStatusRaw = normalizeStatus(status);
+        renderLatestFailedNotice(null);
         // Default: show the LAST submitted status details from DB (read-only).
         // Dealer must click the next step to create a new update.
         viewMode = true;
@@ -1659,7 +1709,6 @@ if (document.readyState === 'loading') {
                 if (dateEl) dateEl.value = getDefaultDate();
                 if (timeEl) timeEl.value = getDefaultTime();
                 setFieldsReadOnly(false);
-                setDateTimeMinConstraints();
                 setRemarkPlaceholder(statusOrder[stepIdx]);
                 setDateTimeLabels(statusOrder[stepIdx]);
             }
@@ -1670,11 +1719,6 @@ if (document.readyState === 'loading') {
         });
     }
 
-    var viewModal = document.getElementById('inquiryViewModal');
-    var viewSubtitle = document.getElementById('inquiryViewModalSubtitle');
-    var viewContent = document.getElementById('inquiryViewMessageContent');
-    var viewCloseBtn = document.getElementById('inquiryViewModalClose');
-    var viewCloseBtnFooter = document.getElementById('inquiryViewModalCloseBtn');
     var currentUpdateButtonEl = null;
     var notificationFocusLeadId = null;
 
@@ -1822,45 +1866,16 @@ if (document.readyState === 'loading') {
         var viewBtnEl = e.target.closest('.inquiries-view-btn');
         if (viewBtnEl) {
             e.preventDefault();
-            var leadId = viewBtnEl.dataset.leadId;
-            var customer = viewBtnEl.dataset.customer || '—';
-            if (viewSubtitle) viewSubtitle.textContent = 'Inquiry ID: #SQL-' + leadId + ' • ' + customer;
-            if (viewContent) viewContent.textContent = 'Loading...';
-            viewModal.setAttribute('aria-hidden', 'false');
-            viewModal.classList.add('inquiry-modal-open');
-            document.body.style.overflow = 'hidden';
-            fetch('{{ url("/dealer/inquiries") }}/' + leadId + '/failed-description', {
-                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
-            })
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                if (viewContent) viewContent.textContent = (data.description || '').trim() || '—';
-            })
-            .catch(function() {
-                if (viewContent) viewContent.textContent = '—';
-            });
+            currentUpdateButtonEl = null;
+            openModal(
+                viewBtnEl.dataset.leadId,
+                viewBtnEl.dataset.customer,
+                viewBtnEl.dataset.status || 'FAILED',
+                false,
+                viewBtnEl.dataset.referralCode
+            );
         }
     });
-    function closeViewModal() {
-        viewModal.setAttribute('aria-hidden', 'true');
-        viewModal.classList.remove('inquiry-modal-open');
-        document.body.style.overflow = '';
-        if (notificationFocusLeadId && table) {
-            var highlightedRow = table.querySelector('tr.inquiry-row[data-lead-id="' + notificationFocusLeadId + '"]');
-            if (highlightedRow) {
-                highlightedRow.classList.remove('inquiry-row--notif-highlight');
-                void highlightedRow.offsetWidth;
-                highlightedRow.classList.add('inquiry-row--notif-highlight');
-                try { highlightedRow.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
-            }
-        }
-    }
-    if (viewCloseBtn) viewCloseBtn.addEventListener('click', closeViewModal);
-    if (viewCloseBtnFooter) viewCloseBtnFooter.addEventListener('click', closeViewModal);
-    viewModal.addEventListener('click', function(e) {
-        if (e.target === viewModal) closeViewModal();
-    });
-
     [closeBtn, cancelBtn].forEach(function(btn) {
         if (btn) btn.addEventListener('click', closeModal);
     });
@@ -1871,8 +1886,7 @@ if (document.readyState === 'loading') {
 
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
-            if (viewModal && viewModal.classList.contains('inquiry-modal-open')) closeViewModal();
-            else if (modal.classList.contains('inquiry-modal-open')) closeModal();
+            if (modal.classList.contains('inquiry-modal-open')) closeModal();
         }
     });
 
@@ -1886,8 +1900,8 @@ if (document.readyState === 'loading') {
             var dateStr = getFollowupDateIso();
             var timeStr = timeEl ? timeEl.value : '';
             var remark = remarkEl ? remarkEl.value.trim() : '';
-            if (dateEl && (dateEl.value || '').trim() !== '' && dateStr === '') {
-                showDealerInquiryToast('Please use dd/mm/yyyy for the date.');
+            if (dateEl && (hasInvalidFollowupDateInput() || ((dateEl.value || '').trim() !== '' && dateStr === ''))) {
+                showDealerInquiryToast('Please choose a valid date.');
                 dateEl.focus();
                 return;
             }
@@ -1927,27 +1941,16 @@ if (document.readyState === 'loading') {
     var followupDateEl = document.getElementById('inquiryFollowupDate');
     var followupTimeEl = document.getElementById('inquiryFollowupTime');
     if (followupDateEl) followupDateEl.addEventListener('input', function() {
-        followupDateEl.value = normalizeFollowupDateInputValue(followupDateEl.value);
+        followupDateEl.setCustomValidity('');
         toggleAddCalendarButton();
     });
     if (followupTimeEl) followupTimeEl.addEventListener('input', toggleAddCalendarButton);
-    if (followupDateEl) followupDateEl.addEventListener('input', setDateTimeMinConstraints);
     if (followupDateEl) followupDateEl.addEventListener('blur', function() {
-        var iso = getFollowupDateIso();
-        var raw = (followupDateEl.value || '').trim();
-        if (raw === '') {
-            followupDateEl.setCustomValidity('');
-            return;
-        }
-        if (iso === '') {
-            followupDateEl.setCustomValidity('Use dd/mm/yyyy');
-            followupDateEl.reportValidity();
-            return;
-        }
-        followupDateEl.value = formatIsoDateForDisplay(iso);
-        setDateTimeMinConstraints();
+        followupDateEl.setCustomValidity('');
     });
-    if (followupTimeEl) followupTimeEl.addEventListener('input', setDateTimeMinConstraints);
+    if (followupTimeEl) followupTimeEl.addEventListener('input', function() {
+        followupTimeEl.setCustomValidity('');
+    });
     function showDealerInquiryToast(message) {
         var id = 'dealer-inquiry-action-toast';
         var el = document.getElementById(id);
@@ -1994,26 +1997,17 @@ if (document.readyState === 'loading') {
         }
         var leadId = currentLeadId;
         var remarkEl = document.getElementById('inquiryRemark');
-        var dateEl = document.getElementById('inquiryFollowupDate');
-        var timeEl = document.getElementById('inquiryFollowupTime');
         var remark = remarkEl ? remarkEl.value.trim() : '';
-        var activityDate = getFollowupDateIso();
-        var activityTime = timeEl ? timeEl.value.trim() : '';
-        if (dateEl && (dateEl.value || '').trim() !== '' && activityDate === '') {
-            showDealerInquiryToast('Please use dd/mm/yyyy for the date.');
-            dateEl.focus();
+        var validation = validateFollowupDateTime();
+        if (!validation.valid) {
+            showDealerInquiryToast(validation.message);
+            if (validation.field) {
+                validation.field.focus();
+            }
             return;
         }
-        if (activityDate !== '' && activityDate > getTodayIsoDate()) {
-            showDealerInquiryToast('Date cannot be in the future.');
-            dateEl.focus();
-            return;
-        }
-        if (activityDate === getTodayIsoDate() && activityTime !== '' && activityTime > getCurrentLocalTime()) {
-            showDealerInquiryToast('Time cannot be in the future.');
-            timeEl.focus();
-            return;
-        }
+        var activityDate = validation.activityDate;
+        var activityTime = validation.activityTime;
         var products = [];
         if (toStatus === 'COMPLETED') {
             document.querySelectorAll('.inquiry-product-checkbox:checked').forEach(function(cb) {

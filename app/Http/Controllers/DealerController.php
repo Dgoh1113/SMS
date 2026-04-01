@@ -819,71 +819,6 @@ class DealerController extends Controller
         ]);
     }
 
-    public function inquiryFailedDescription(Request $request, int $leadId): JsonResponse
-    {
-        $dealerId = $request->session()->get('user_id');
-        if (!$dealerId) {
-            return response()->json(['description' => ''], 200);
-        }
-        $lead = DB::selectOne('SELECT "LEADID", "REFERRALCODE" FROM "LEAD" WHERE "LEADID" = ? AND "ASSIGNED_TO" = ?', [$leadId, $dealerId]);
-        if (!$lead) {
-            return response()->json(['description' => ''], 404);
-        }
-        $row = DB::selectOne(
-            'SELECT FIRST 1 la."DESCRIPTION" FROM "LEAD_ACT" la
-             WHERE la."LEADID" = ? AND UPPER(TRIM(COALESCE(la."STATUS", \'\'))) = \'FAILED\'
-             ORDER BY la."CREATIONDATE" DESC',
-            [$leadId]
-        );
-        $description = trim($row->DESCRIPTION ?? '');
-
-        // Replace raw USERIDs like "U001" in the failed message with friendly names (SYSTEMROLE-ALIAS),
-        // so it reads "Status changed to Failed by Admin- Wei Jian" instead of by U001.
-        if ($description !== '') {
-            try {
-                preg_match_all('/\b[Uu]\d{3,}\b/', $description, $matches);
-                $ids = array_values(array_unique(array_filter($matches[0] ?? [])));
-                if (!empty($ids)) {
-                    $placeholders = implode(',', array_fill(0, count($ids), '?'));
-                    $users = DB::select(
-                        'SELECT "USERID","SYSTEMROLE","ALIAS","COMPANY","EMAIL"
-                         FROM "USERS"
-                         WHERE CAST("USERID" AS VARCHAR(50)) IN (' . $placeholders . ')',
-                        $ids
-                    );
-                    $map = [];
-                    foreach ($users as $u) {
-                        $uid = trim((string) ($u->USERID ?? ''));
-                        if ($uid === '') {
-                            continue;
-                        }
-                        $role = trim((string) ($u->SYSTEMROLE ?? ''));
-                        $alias = trim((string) ($u->ALIAS ?? ''));
-                        $company = trim((string) ($u->COMPANY ?? ''));
-                        $email = trim((string) ($u->EMAIL ?? ''));
-                        $fallback = $email !== '' ? $email : $uid;
-                        if ($role !== '' && $alias !== '') {
-                            $map[$uid] = $role . '- ' . $alias;
-                        } elseif ($role !== '') {
-                            $map[$uid] = $role . '- ' . ($company !== '' ? $company : $fallback);
-                        } elseif ($alias !== '') {
-                            $map[$uid] = $alias;
-                        } else {
-                            $map[$uid] = $fallback;
-                        }
-                    }
-                    foreach ($map as $uid => $label) {
-                        $description = str_replace($uid, $label, $description);
-                    }
-                }
-            } catch (\Throwable $e) {
-                // If name resolution fails, fall back to original description
-            }
-        }
-
-        return response()->json(['description' => $description]);
-    }
-
     public function inquiryActivity(Request $request, int $leadId): JsonResponse
     {
         $dealerId = $request->session()->get('user_id');
@@ -1834,7 +1769,7 @@ class DealerController extends Controller
                          ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC),
                        "CURRENTSTATUS",
                        \'Pending\'
-                   ))) = \'PENDING\'',
+                   ))) NOT IN (\'COMPLETED\', \'CASE COMPLETED\', \'FAILED\', \'REWARDED\', \'REWARD\', \'REWARD DISTRIBUTED\')',
                 [$dealerId]
             );
             $counts['inquiries'] = (int) ($inquiryRow->CNT ?? $inquiryRow->cnt ?? current((array) $inquiryRow) ?? 0);
@@ -1919,7 +1854,7 @@ class DealerController extends Controller
         'COMPLETED' => 'COMPLETED', 'Completed' => 'COMPLETED', 'CASE COMPLETED' => 'COMPLETED',
         'REWARDED' => 'REWARDED', 'Rewarded' => 'REWARDED', 'REWARD' => 'REWARDED', 'REWARD DISTRIBUTED' => 'REWARDED', 'Reward Distributed' => 'REWARDED',
     ];
-    $buildStatusCounts = function (Carbon $rangeStart, Carbon $rangeEnd) use ($dealerId, $statusMap) {
+    $buildStatusCounts = function (?Carbon $rangeStart = null, ?Carbon $rangeEnd = null) use ($dealerId, $statusMap) {
         $counts = [
             'PENDING' => 0,
             'FOLLOW UP' => 0,
@@ -1932,8 +1867,7 @@ class DealerController extends Controller
             return $counts;
         }
 
-        $rows = DB::select(
-            'SELECT l."LEADID",
+        $query = 'SELECT l."LEADID",
                 COALESCE(
                     (SELECT FIRST 1 la."STATUS"
                        FROM "LEAD_ACT" la
@@ -1943,9 +1877,16 @@ class DealerController extends Controller
                     \'Pending\'
                 ) AS "LATEST_STATUS"
             FROM "LEAD" l
-            WHERE l."ASSIGNED_TO" = ? AND l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?',
-            [$dealerId, $rangeStart->format('Y-m-d H:i:s'), $rangeEnd->format('Y-m-d H:i:s')]
-        );
+            WHERE l."ASSIGNED_TO" = ?';
+        $bindings = [$dealerId];
+
+        if ($rangeStart && $rangeEnd) {
+            $query .= ' AND l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?';
+            $bindings[] = $rangeStart->format('Y-m-d H:i:s');
+            $bindings[] = $rangeEnd->format('Y-m-d H:i:s');
+        }
+
+        $rows = DB::select($query, $bindings);
 
         foreach ($rows as $row) {
             $raw = trim($row->LATEST_STATUS ?? '');
@@ -1964,7 +1905,7 @@ class DealerController extends Controller
     };
 
     $metricStatusCounts = $dealerId
-        ? $buildStatusCounts(Carbon::now()->startOfMonth(), Carbon::now()->endOfDay())
+        ? $buildStatusCounts()
         : [
             'PENDING' => 0,
             'FOLLOW UP' => 0,

@@ -220,6 +220,102 @@
   }
 }
 
+@media (min-width: 769px) and (max-width: 1366px), (min-width: 769px) and (max-height: 900px) {
+  .dashboard-main-body {
+    padding: 10px 12px 12px;
+    gap: 8px;
+  }
+
+  .dashboard-content.inquiries-page-wrap {
+    padding: 8px 10px 12px;
+    gap: 6px;
+  }
+
+  .dealer-console-tabs {
+    margin-bottom: 4px;
+  }
+
+  .dealer-console-tab {
+    min-height: 36px;
+    padding: 6px 12px 10px;
+  }
+
+  #completedPanel {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+  }
+
+  #completedPanel > .dealer-payouts-panel.inquiries-mgmt-panel,
+  #rewardedPanel > .dealer-payouts-panel.inquiries-mgmt-panel {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .dealer-payouts-panel {
+    min-height: clamp(500px, calc(100vh - 180px), 580px);
+    height: auto;
+    margin-bottom: 6px;
+  }
+
+  .dealer-payouts-panel .inquiries-panel-header {
+    padding: 8px 12px;
+    gap: 6px;
+  }
+
+  #completedPanel > .dealer-payouts-panel.inquiries-mgmt-panel > .inquiries-table-wrap,
+  #rewardedPanel > .dealer-payouts-panel.inquiries-mgmt-panel > .inquiries-table-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .dealer-payouts-panel .inquiries-table-scroll {
+    flex: 1 1 auto;
+    min-height: clamp(360px, calc(100vh - 320px), 440px) !important;
+    height: auto;
+    max-height: none;
+  }
+
+  .dealer-payouts-panel .inquiries-table-scroll.inquiries-table-scroll-empty {
+    flex: 1 1 auto;
+    min-height: clamp(360px, calc(100vh - 320px), 440px) !important;
+    height: auto;
+    max-height: none;
+  }
+
+  .dealer-payouts-panel .inquiries-table-scroll.inquiries-table-scroll-short {
+    flex: 1 1 auto;
+    min-height: clamp(360px, calc(100vh - 320px), 440px) !important;
+    height: auto;
+    max-height: none;
+  }
+
+  .dealer-payouts-panel .inquiries-table thead .inquiries-header-row th {
+    padding-top: 5px;
+    padding-bottom: 5px;
+  }
+
+  .dealer-payouts-panel .inquiries-table th,
+  .dealer-payouts-panel .inquiries-table td {
+    padding-top: 7px;
+    padding-bottom: 7px;
+    font-size: 12px;
+  }
+
+  .dealer-payouts-panel .inquiries-header-cell .inquiries-grid-filter,
+  .dealer-payouts-panel .inquiries-header-cell .inquiries-grid-filter-select {
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+
+  .dealer-payouts-panel .inquiries-assigned-pagination {
+    margin-top: auto;
+    flex-shrink: 0;
+    min-height: 40px;
+    padding: 8px 10px;
+  }
+}
+
 #completedTable,
 #rewardedTable {
   width: max-content;

@@ -186,6 +186,54 @@
         }, 3000);
     }
 
+    function enforceFourDigitYearOnDateInput(field) {
+        if (!field || field.type !== 'date') {
+            return;
+        }
+
+        if (!field.hasAttribute('min')) {
+            field.setAttribute('min', '1000-01-01');
+        }
+
+        if (!field.hasAttribute('max')) {
+            field.setAttribute('max', '9999-12-31');
+        }
+
+        if (!field.value) {
+            return;
+        }
+
+        var segments = String(field.value).split('-');
+        if (segments.length !== 3) {
+            return;
+        }
+
+        var year = String(segments[0] || '');
+        if (year.length <= 4) {
+            return;
+        }
+
+        field.value = year.slice(0, 4) + '-' + String(segments[1] || '') + '-' + String(segments[2] || '');
+    }
+
+    function initSharedDateInputGuards(root) {
+        var scope = root && root.querySelectorAll ? root : document;
+        scope.querySelectorAll('input[type="date"]').forEach(function(field) {
+            enforceFourDigitYearOnDateInput(field);
+        });
+    }
+
+    initSharedDateInputGuards(document);
+
+    ['focusin', 'input', 'change', 'blur'].forEach(function(eventName) {
+        document.addEventListener(eventName, function(e) {
+            var target = e.target;
+            if (target && target.matches && target.matches('input[type="date"]')) {
+                enforceFourDigitYearOnDateInput(target);
+            }
+        }, true);
+    });
+
     function setPasskeyModalOpen(open) {
         if (!passkeyModal) return;
         passkeyModal.hidden = !open;
@@ -659,6 +707,20 @@
             applyColumnsTypeahead(menu, '');
         }
 
+        function closeColumnsMenu(menu) {
+            if (!menu) return;
+            menu.hidden = true;
+
+            var dropdown = menu.closest('.inquiries-columns-dropdown');
+            var button = dropdown ? dropdown.querySelector('button[aria-haspopup="true"]') : null;
+            if (button) {
+                button.setAttribute('aria-expanded', 'false');
+                if (typeof button.focus === 'function') {
+                    button.focus();
+                }
+            }
+        }
+
         function getOpenColumnsMenus() {
             return Array.prototype.filter.call(
                 document.querySelectorAll('.inquiries-columns-menu'),
@@ -694,9 +756,7 @@
 
                 window.setTimeout(function() {
                     resetColumnsSearch(menu);
-                    if (menu._columnsSearchInput && typeof menu._columnsSearchInput.focus === 'function') {
-                        menu._columnsSearchInput.focus();
-                    }
+                    closeColumnsMenu(menu);
                 }, 0);
             });
         });

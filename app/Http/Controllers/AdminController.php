@@ -873,22 +873,12 @@ class AdminController extends Controller
             // fall back to raw ids
         }
         $totalNewInquiries = count($unassigned);
-        // Total Ongoing: assigned leads where LEAD.CURRENTSTATUS = 'Ongoing'
+        // Assigned badge count: assigned inquiries whose latest status is not closed/rewarded/failed.
         $totalOngoing = 0;
-        try {
-            $ongoingRow = DB::selectOne(
-                'SELECT COUNT(*) AS cnt FROM "LEAD"
-                 WHERE "ASSIGNED_TO" IS NOT NULL AND TRIM(CAST("ASSIGNED_TO" AS VARCHAR(50))) <> \'\'
-                 AND UPPER(TRIM("CURRENTSTATUS")) = \'ONGOING\''
-            );
-            $totalOngoing = (int) ($ongoingRow->cnt ?? $ongoingRow->CNT ?? 0);
-        } catch (\Throwable $e) {
-            // fallback: count from assigned array by status
-            foreach ($assigned as $r) {
-                $status = strtoupper(trim((string)($r->CURRENTSTATUS ?? '')));
-                if ($status === 'ONGOING') {
-                    $totalOngoing++;
-                }
+        foreach ($assigned as $r) {
+            $status = strtoupper(trim((string) ($r->CURRENTSTATUS ?? '')));
+            if (!in_array($status, ['COMPLETED', 'CASE COMPLETED', 'FAILED', 'REWARDED', 'REWARD', 'REWARD DISTRIBUTED'], true)) {
+                $totalOngoing++;
             }
         }
         $productLabels = [
@@ -2293,125 +2283,6 @@ class AdminController extends Controller
             return null;
         };
 
-        $metricDate = Carbon::create((int) $now->format('Y'), (int) $now->format('n'), 1, 0, 0, 0);
-        $metricPrevDate = (clone $metricDate)->subMonth();
-        $metricMonth = (int) $metricDate->format('n');
-        $metricYear = (int) $metricDate->format('Y');
-        $metricPrevMonth = (int) $metricPrevDate->format('n');
-        $metricPrevYear = (int) $metricPrevDate->format('Y');
-
-        // Top metric cards stay live for the current month and do not follow the report filters.
-        $metricLeadStatusRows = DB::select(
-            'SELECT l."CURRENTSTATUS" AS status, COUNT(*) AS c
-             FROM "LEAD" l
-             WHERE EXTRACT(YEAR FROM l."CREATEDAT") = ? AND EXTRACT(MONTH FROM l."CREATEDAT") = ?
-             GROUP BY l."CURRENTSTATUS"',
-            [$metricYear, $metricMonth]
-        );
-        $metricLeadStatus = [
-            'Open' => 0,
-            'Ongoing' => 0,
-            'Closed' => 0,
-            'Failed' => 0,
-        ];
-        foreach ($metricLeadStatusRows as $row) {
-            $key = (string) $get($row, 'status');
-            if (isset($metricLeadStatus[$key])) {
-                $metricLeadStatus[$key] = (int) $get($row, 'c');
-            }
-        }
-
-        $metricLastMonthLeadStatusRows = DB::select(
-            'SELECT l."CURRENTSTATUS" AS status, COUNT(*) AS c
-             FROM "LEAD" l
-             WHERE EXTRACT(YEAR FROM l."CREATEDAT") = ? AND EXTRACT(MONTH FROM l."CREATEDAT") = ?
-             GROUP BY l."CURRENTSTATUS"',
-            [$metricPrevYear, $metricPrevMonth]
-        );
-        $metricLastMonthLeadStatus = [
-            'Open' => 0,
-            'Ongoing' => 0,
-            'Closed' => 0,
-            'Failed' => 0,
-        ];
-        foreach ($metricLastMonthLeadStatusRows as $row) {
-            $key = (string) $get($row, 'status');
-            if (isset($metricLastMonthLeadStatus[$key])) {
-                $metricLastMonthLeadStatus[$key] = (int) $get($row, 'c');
-            }
-        }
-
-        $metricUnassignedCount = $metricLeadStatus['Open'] ?? 0;
-        $metricLastMonthUnassignedCount = $metricLastMonthLeadStatus['Open'] ?? 0;
-
-        $metricActivityRows = DB::select(
-            'SELECT a."STATUS" AS status, COUNT(*) AS c
-             FROM "LEAD_ACT" a
-             JOIN (
-                 SELECT "LEADID", MAX("CREATIONDATE") AS max_created
-                 FROM "LEAD_ACT"
-                 WHERE EXTRACT(YEAR FROM "CREATIONDATE") = ? AND EXTRACT(MONTH FROM "CREATIONDATE") = ?
-                 GROUP BY "LEADID"
-             ) m ON m."LEADID" = a."LEADID" AND m.max_created = a."CREATIONDATE"
-             JOIN "LEAD" l ON l."LEADID" = a."LEADID"
-             WHERE 1 = 1
-             GROUP BY a."STATUS"',
-            [$metricYear, $metricMonth]
-        );
-        $metricActivityStatus = [
-            'Created' => 0,
-            'Pending' => 0,
-            'FollowUp' => 0,
-            'Demo' => 0,
-            'Confirmed' => 0,
-            'Completed' => 0,
-            'Failed' => 0,
-            'reward' => 0,
-        ];
-        foreach ($metricActivityRows as $row) {
-            $key = (string) $get($row, 'status');
-            if ($key === 'Rewarded') {
-                $key = 'reward';
-            }
-            if (isset($metricActivityStatus[$key])) {
-                $metricActivityStatus[$key] = (int) $get($row, 'c');
-            }
-        }
-
-        $metricLastMonthActivityRows = DB::select(
-            'SELECT a."STATUS" AS status, COUNT(*) AS c
-             FROM "LEAD_ACT" a
-             JOIN (
-                 SELECT "LEADID", MAX("CREATIONDATE") AS max_created
-                 FROM "LEAD_ACT"
-                 WHERE EXTRACT(YEAR FROM "CREATIONDATE") = ? AND EXTRACT(MONTH FROM "CREATIONDATE") = ?
-                 GROUP BY "LEADID"
-             ) m ON m."LEADID" = a."LEADID" AND m.max_created = a."CREATIONDATE"
-             JOIN "LEAD" l ON l."LEADID" = a."LEADID"
-             WHERE 1 = 1
-             GROUP BY a."STATUS"',
-            [$metricPrevYear, $metricPrevMonth]
-        );
-        $metricLastMonthActivity = [
-            'Created' => 0,
-            'Pending' => 0,
-            'FollowUp' => 0,
-            'Demo' => 0,
-            'Confirmed' => 0,
-            'Completed' => 0,
-            'Failed' => 0,
-            'reward' => 0,
-        ];
-        foreach ($metricLastMonthActivityRows as $row) {
-            $key = (string) $get($row, 'status');
-            if ($key === 'Rewarded') {
-                $key = 'reward';
-            }
-            if (isset($metricLastMonthActivity[$key])) {
-                $metricLastMonthActivity[$key] = (int) $get($row, 'c');
-            }
-        }
-
         // Lead status summary
         $leadStatusRows = DB::select(
             'SELECT l."CURRENTSTATUS" AS status, COUNT(*) AS c
@@ -2622,13 +2493,13 @@ class AdminController extends Controller
             return (int) round(($current - $lastMonth) / $lastMonth * 100);
         };
         $metricPercent = [
-            'unassigned' => $percentChange($metricUnassignedCount, $metricLastMonthUnassignedCount),
-            'Pending' => $percentChange($metricActivityStatus['Pending'] ?? 0, $metricLastMonthActivity['Pending'] ?? 0),
-            'FollowUp' => $percentChange($metricActivityStatus['FollowUp'] ?? 0, $metricLastMonthActivity['FollowUp'] ?? 0),
-            'Demo' => $percentChange($metricActivityStatus['Demo'] ?? 0, $metricLastMonthActivity['Demo'] ?? 0),
-            'Confirmed' => $percentChange($metricActivityStatus['Confirmed'] ?? 0, $metricLastMonthActivity['Confirmed'] ?? 0),
-            'Completed' => $percentChange($metricLeadStatus['Closed'] ?? 0, $metricLastMonthLeadStatus['Closed'] ?? 0),
-            'Rewarded' => $percentChange($metricActivityStatus['reward'] ?? 0, $metricLastMonthActivity['reward'] ?? 0),
+            'unassigned' => $percentChange($unassignedCount, $lastMonthUnassignedCount),
+            'Pending' => $percentChange($activityStatus['Pending'] ?? 0, $lastMonthActivity['Pending'] ?? 0),
+            'FollowUp' => $percentChange($activityStatus['FollowUp'] ?? 0, $lastMonthActivity['FollowUp'] ?? 0),
+            'Demo' => $percentChange($activityStatus['Demo'] ?? 0, $lastMonthActivity['Demo'] ?? 0),
+            'Confirmed' => $percentChange($activityStatus['Confirmed'] ?? 0, $lastMonthActivity['Confirmed'] ?? 0),
+            'Completed' => $percentChange($leadStatus['Closed'] ?? 0, $lastMonthLeadStatus['Closed'] ?? 0),
+            'Rewarded' => $percentChange($activityStatus['reward'] ?? 0, $lastMonthActivity['reward'] ?? 0),
         ];
 
         // Product Conversion Rate (from LEAD_ACT.DEALTPRODUCT) for current month
@@ -2684,9 +2555,9 @@ class AdminController extends Controller
             'leadStatus' => $leadStatus,
             'unassignedLeads' => (int) $unassignedCount,
             'activityStatus' => $activityStatus,
-            'metricLeadStatus' => $metricLeadStatus,
-            'metricUnassignedLeads' => (int) $metricUnassignedCount,
-            'metricActivityStatus' => $metricActivityStatus,
+            'metricLeadStatus' => $leadStatus,
+            'metricUnassignedLeads' => (int) $unassignedCount,
+            'metricActivityStatus' => $activityStatus,
             'payoutStatus' => $payoutStatus,
             'metricPercent' => $metricPercent,
             'inquiryTrend' => $inquiryTrend,

@@ -404,6 +404,43 @@
     $hasInquiryTrendData = $totalInquiry > 0;
 @endphp
 
+<div class="reports-period-row">
+    <form method="get" class="reports-period-form reports-period-form-compact">
+        @php
+            $months = [
+                1 => 'January', 2 => 'February', 3 => 'March', 4 => 'April',
+                5 => 'May', 6 => 'June', 7 => 'July', 8 => 'August',
+                9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December',
+            ];
+        @endphp
+        <select name="month" class="reports-period-select">
+            @foreach ($months as $m => $label)
+                <option value="{{ $m }}" {{ (int) ($selectedMonth ?? now()->format('n')) === (int) $m ? 'selected' : '' }}>
+                    {{ $label }}
+                </option>
+            @endforeach
+        </select>
+        <select name="year" class="reports-period-select">
+            @foreach (($yearOptions ?? []) as $y)
+                <option value="{{ $y }}" {{ (int) ($selectedYear ?? now()->format('Y')) === (int) $y ? 'selected' : '' }}>
+                    {{ $y }}
+                </option>
+            @endforeach
+        </select>
+        <label class="reports-period-check">
+            <input type="hidden" name="include_dealer" value="0">
+            <input type="checkbox" name="include_dealer" value="1" {{ !empty($includeDealer) ? 'checked' : '' }}>
+            Dealer
+        </label>
+        <label class="reports-period-check">
+            <input type="hidden" name="include_estream" value="0">
+            <input type="checkbox" name="include_estream" value="1" {{ !empty($includeEstream) ? 'checked' : '' }}>
+            E Stream
+        </label>
+        <button type="submit" class="reports-period-apply">Apply</button>
+    </form>
+</div>
+
 <section class="dashboard-metrics-grid">
     @foreach ($metricCards as $card)
     @php
@@ -447,43 +484,6 @@
     @endif
     @endforeach
 </section>
-
-<div class="reports-period-row">
-    <form method="get" class="reports-period-form reports-period-form-compact">
-        @php
-            $months = [
-                1 => 'January', 2 => 'February', 3 => 'March', 4 => 'April',
-                5 => 'May', 6 => 'June', 7 => 'July', 8 => 'August',
-                9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December',
-            ];
-        @endphp
-        <select name="month" class="reports-period-select">
-            @foreach ($months as $m => $label)
-                <option value="{{ $m }}" {{ (int) ($selectedMonth ?? now()->format('n')) === (int) $m ? 'selected' : '' }}>
-                    {{ $label }}
-                </option>
-            @endforeach
-        </select>
-        <select name="year" class="reports-period-select">
-            @foreach (($yearOptions ?? []) as $y)
-                <option value="{{ $y }}" {{ (int) ($selectedYear ?? now()->format('Y')) === (int) $y ? 'selected' : '' }}>
-                    {{ $y }}
-                </option>
-            @endforeach
-        </select>
-        <label class="reports-period-check">
-            <input type="hidden" name="include_dealer" value="0">
-            <input type="checkbox" name="include_dealer" value="1" {{ !empty($includeDealer) ? 'checked' : '' }}>
-            Dealer
-        </label>
-        <label class="reports-period-check">
-            <input type="hidden" name="include_estream" value="0">
-            <input type="checkbox" name="include_estream" value="1" {{ !empty($includeEstream) ? 'checked' : '' }}>
-            E Stream
-        </label>
-        <button type="submit" class="reports-period-apply">Apply</button>
-    </form>
-</div>
 
 <section class="dashboard-panels-two-column">
     <section class="dashboard-panel reports-inquiry-section">

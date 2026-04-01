@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Pending Payouts - SQL LMS Dealer Console')
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/pages/dealer-payouts.css') }}?v=20260327-04">
+    <link rel="stylesheet" href="{{ asset('css/pages/dealer-payouts.css') }}?v=20260401-17">
 @endpush
 @section('content')
 @php
@@ -92,8 +92,10 @@
                 <tbody>
                     @include('dealer.partials.payouts_completed_rows', ['completed' => $completed, 'productLabels' => $productLabels, 'productNames' => $productNames])
                     @php
-                        $completedVisibleRows = max($completedTotal, 1);
-                        $completedPlaceholderRows = max(0, $completedPerPage - $completedVisibleRows);
+                        $completedVisibleRows = $completedTotal;
+                        $completedPlaceholderRows = $completedVisibleRows > 0
+                            ? max(0, $completedPerPage - $completedVisibleRows)
+                            : 0;
                     @endphp
                     @for ($i = 0; $i < $completedPlaceholderRows; $i++)
                         <tr class="inquiries-placeholder-row" aria-hidden="true">
@@ -533,20 +535,18 @@ function initDealerPendingPayoutsPage() {
         if (tbody) tbody.style.minHeight = '';
         if (!scrollWrap) return;
         var allRows = Array.prototype.slice.call(table.querySelectorAll('tbody tr.payouts-row'));
-        var emptyStateRow = tbody ? tbody.querySelector('tr.inquiries-empty-row') : null;
-        var fillerBaseCount = visibleDataCount;
-        if (visibleDataCount === 0 && emptyStateRow) {
-            fillerBaseCount = 1;
-        }
-        var allowZeroFill = allRows.length > 0 || !!emptyStateRow;
-        var useShortHeight = allowZeroFill && fillerBaseCount < perPage;
+        var allowZeroFill = allRows.length > 0;
+        var useShortHeight = (visibleDataCount > 0 && visibleDataCount < perPage) || (visibleDataCount === 0 && allowZeroFill);
+        var targetRows = window.matchMedia('(max-width: 1366px), (max-height: 900px)').matches
+            ? Math.min(perPage, 6)
+            : perPage;
 
-        if (tbody && fillerBaseCount < perPage && allowZeroFill) {
+        if (tbody && visibleDataCount < targetRows && (visibleDataCount > 0 || allowZeroFill)) {
             var visibleHeaderCount = Array.prototype.slice.call(table.querySelectorAll('thead tr:first-child th')).filter(function(cell) {
                 return cell.style.display !== 'none' && window.getComputedStyle(cell).display !== 'none';
             }).length || 1;
 
-            for (var i = fillerBaseCount; i < perPage; i++) {
+            for (var i = visibleDataCount; i < targetRows; i++) {
                 var row = document.createElement('tr');
                 row.className = 'inquiries-placeholder-row';
                 row.setAttribute('aria-hidden', 'true');
@@ -765,6 +765,14 @@ function initDealerPendingPayoutsPage() {
             else if (type === 'last') goToCompletedPage(currentLastPage);
         };
     });
+
+    if (!window.__dealerPayoutPaginationResizeBound) {
+        window.addEventListener('resize', function() {
+            applyCompletedPagination();
+            applyRewardedPagination();
+        });
+        window.__dealerPayoutPaginationResizeBound = true;
+    }
     var completedClearFilters = document.getElementById('completedClearFilters');
     if (completedClearFilters) {
         completedClearFilters.addEventListener('click', function() {
