@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', 'History - Admin')
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/pages/admin-history.css') }}?v=20260327-01">
+    <link rel="stylesheet" href="{{ asset('css/pages/admin-history.css') }}?v=20260402-01">
 @endpush
 @section('content')
 <section class="dashboard-panel dashboard-table-panel">
@@ -29,7 +29,7 @@
                     </label>
                     <button type="submit" class="inquiries-btn inquiries-btn-secondary history-apply-btn">Apply</button>
                 </div>
-                <div class="history-date-summary">
+                <div class="history-date-summary" id="historyDateSummary" @if($dateRange === 'custom') hidden @endif>
                     <span><strong>Start:</strong> {{ $filterStartDate }}</span>
                     <span><strong>End:</strong> {{ $filterEndDate }}</span>
                 </div>
@@ -103,6 +103,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var dateFilterForm = document.getElementById('historyDateFilterForm');
     var dateRangeSelect = document.getElementById('historyDateRange');
     var customRange = document.getElementById('historyCustomRange');
+    var dateSummary = document.getElementById('historyDateSummary');
     var startDateField = document.getElementById('historyStartDate');
     var endDateField = document.getElementById('historyEndDate');
 
@@ -110,6 +111,9 @@ document.addEventListener('DOMContentLoaded', function() {
         var isCustom = !!(dateRangeSelect && dateRangeSelect.value === 'custom');
         if (customRange) {
             customRange.hidden = !isCustom;
+        }
+        if (dateSummary) {
+            dateSummary.hidden = isCustom;
         }
         if (startDateField) {
             startDateField.required = isCustom;

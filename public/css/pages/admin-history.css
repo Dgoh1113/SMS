@@ -103,6 +103,10 @@
   color: #6b7280;
 }
 
+.history-date-summary[hidden] {
+  display: none;
+}
+
 .history-date-summary strong {
   color: #4c1d95;
 }

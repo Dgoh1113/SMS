@@ -15,6 +15,7 @@
         </div>
         <button type="button" class="dashboard-sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">
             <span class="dashboard-sidebar-toggle-inner"></span>
+            <i class="bi bi-chevron-left dashboard-sidebar-toggle-arrow" aria-hidden="true"></i>
         </button>
     </div>
     <nav class="dashboard-nav">

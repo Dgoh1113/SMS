@@ -1161,18 +1161,6 @@ class DealerController extends Controller
             }
         }
 
-        try {
-            $newCreationDate = Carbon::parse($creationDate);
-            if ($newCreationDate->gt(now())) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid date/time. It cannot be in the future.',
-                ], 422);
-            }
-        } catch (\Throwable $e) {
-            // If parsing fails here, continue with the existing validation flow.
-        }
-
         $dealerId = $request->session()->get('user_id');
         if (!$dealerId) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
@@ -1904,16 +1892,6 @@ class DealerController extends Controller
         return $counts;
     };
 
-    $metricStatusCounts = $dealerId
-        ? $buildStatusCounts()
-        : [
-            'PENDING' => 0,
-            'FOLLOW UP' => 0,
-            'DEMO' => 0,
-            'CONFIRMED' => 0,
-            'COMPLETED' => 0,
-            'REWARDED' => 0,
-        ];
     $statusCounts = [
         'PENDING' => 0,
         'FOLLOW UP' => 0,
@@ -2001,7 +1979,6 @@ class DealerController extends Controller
 
     return view('dealer.reports', [
         'currentPage' => 'reports',
-        'metricStatusCounts' => $metricStatusCounts,
         'statusCounts' => $statusCounts,
         'totalInquiry' => $totalInquiry,
         'inquiryTrendData' => $inquiryTrendData,

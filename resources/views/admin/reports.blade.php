@@ -1,8 +1,8 @@
 @extends('layouts.app')
 @section('title', 'Report - Monthly Performance Analytics')
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/shared/reports-tabs.css') }}?v=20260324-9">
-    <link rel="stylesheet" href="{{ asset('css/report_monthly_performance_analytics.css') }}?v=20260325-4">
+    <link rel="stylesheet" href="{{ asset('css/shared/reports-tabs.css') }}?v=20260402-8">
+    <link rel="stylesheet" href="{{ asset('css/report_monthly_performance_analytics.css') }}?v=20260402-15">
     <style>
         .reports-page .dashboard-panels-two-column {
             display: grid;
@@ -325,17 +325,24 @@
 <div class="reports-page">
 <div class="reports-page-layout">
 <header class="dashboard-header">
+    @php
+        $reportTabQuery = [];
+        $currentReportScope = trim((string) ($selectedReportScope ?? request('report_scope', '')));
+        if ($currentReportScope !== '') {
+            $reportTabQuery['report_scope'] = $currentReportScope;
+        }
+    @endphp
     <div class="reports-tabs-row">
         <nav class="reports-tabs-nav" aria-label="Report views">
-            <a href="{{ route('admin.reports') }}"
+            <a href="{{ route('admin.reports', $reportTabQuery) }}"
                class="reports-tab-link {{ request()->routeIs('admin.reports') ? 'is-active' : '' }}">
                 Monthly Performance
             </a>
-            <a href="{{ route('admin.reports.v2') }}"
+            <a href="{{ route('admin.reports.v2', $reportTabQuery) }}"
                class="reports-tab-link {{ request()->routeIs('admin.reports.v2') ? 'is-active' : '' }}">
                 Dealer Sales Overtime
             </a>
-            <a href="{{ route('admin.reports.revenue') }}"
+            <a href="{{ route('admin.reports.revenue', $reportTabQuery) }}"
                class="reports-tab-link {{ request()->routeIs('admin.reports.revenue') ? 'is-active' : '' }}">
                 Dealer Revenue Production
             </a>
@@ -405,6 +412,13 @@
 @endphp
 
 <div class="reports-period-row">
+    @php
+        $clearMonthlyFiltersUrl = route('admin.reports', [
+            'month' => (int) now()->format('n'),
+            'year' => (int) now()->format('Y'),
+            'report_scope' => 'all',
+        ]);
+    @endphp
     <form method="get" class="reports-period-form reports-period-form-compact">
         @php
             $months = [
@@ -413,31 +427,30 @@
                 9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December',
             ];
         @endphp
-        <select name="month" class="reports-period-select">
+        <select name="month" class="reports-period-select reports-period-select--month" aria-label="Select month">
             @foreach ($months as $m => $label)
                 <option value="{{ $m }}" {{ (int) ($selectedMonth ?? now()->format('n')) === (int) $m ? 'selected' : '' }}>
                     {{ $label }}
                 </option>
             @endforeach
         </select>
-        <select name="year" class="reports-period-select">
+        <select name="year" class="reports-period-select reports-period-select--year" aria-label="Select year">
             @foreach (($yearOptions ?? []) as $y)
                 <option value="{{ $y }}" {{ (int) ($selectedYear ?? now()->format('Y')) === (int) $y ? 'selected' : '' }}>
                     {{ $y }}
                 </option>
             @endforeach
         </select>
-        <label class="reports-period-check">
-            <input type="hidden" name="include_dealer" value="0">
-            <input type="checkbox" name="include_dealer" value="1" {{ !empty($includeDealer) ? 'checked' : '' }}>
-            Dealer
-        </label>
-        <label class="reports-period-check">
-            <input type="hidden" name="include_estream" value="0">
-            <input type="checkbox" name="include_estream" value="1" {{ !empty($includeEstream) ? 'checked' : '' }}>
-            E Stream
-        </label>
-        <button type="submit" class="reports-period-apply">Apply</button>
+        @include('admin.partials.report_scope_picker', [
+            'options' => $reportScopeOptions ?? [],
+            'selected' => $selectedReportScope ?? 'all',
+        ])
+        @include('admin.partials.report_filter_actions', [
+            'clearUrl' => $clearMonthlyFiltersUrl,
+            'wrapperClass' => 'reports-period-actions report-filter-actions',
+            'applyClass' => 'report-filter-apply',
+            'clearClass' => 'report-filter-clear',
+        ])
     </form>
 </div>
 

@@ -1,22 +1,29 @@
 @extends('layouts.app')
 @section('title', 'Report - Dealer Revenue Production')
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/shared/reports-tabs.css') }}?v=20260324-9">
-    <link rel="stylesheet" href="{{ asset('css/report_dealer_revenue_production.css') }}?v=20260325-3">
+    <link rel="stylesheet" href="{{ asset('css/shared/reports-tabs.css') }}?v=20260402-8">
+    <link rel="stylesheet" href="{{ asset('css/report_dealer_revenue_production.css') }}?v=20260402-2">
 @endpush
 @section('content')
 <div class="rrp-page">
+    @php
+        $reportTabQuery = [];
+        $currentReportScope = trim((string) ($selectedReportScope ?? request('report_scope', '')));
+        if ($currentReportScope !== '') {
+            $reportTabQuery['report_scope'] = $currentReportScope;
+        }
+    @endphp
     <div class="reports-tabs-row rrp-tabs-row">
         <nav class="reports-tabs-nav" aria-label="Report views">
-            <a href="{{ route('admin.reports') }}"
+            <a href="{{ route('admin.reports', $reportTabQuery) }}"
                class="reports-tab-link {{ request()->routeIs('admin.reports') ? 'is-active' : '' }}">
                 Monthly Performance
             </a>
-            <a href="{{ route('admin.reports.v2') }}"
+            <a href="{{ route('admin.reports.v2', $reportTabQuery) }}"
                class="reports-tab-link {{ request()->routeIs('admin.reports.v2') ? 'is-active' : '' }}">
                 Dealer Sales Overtime
             </a>
-            <a href="{{ route('admin.reports.revenue') }}"
+            <a href="{{ route('admin.reports.revenue', $reportTabQuery) }}"
                class="reports-tab-link {{ request()->routeIs('admin.reports.revenue') ? 'is-active' : '' }}">
                 Dealer Revenue Production
             </a>
@@ -24,6 +31,14 @@
     </div>
 
     <div class="rrp-filter-row">
+        @php
+            $currentQuarter = 'Q' . (int) ceil(((int) now()->format('n')) / 3);
+            $clearRevenueFiltersUrl = route('admin.reports.revenue', [
+                'quarter' => $currentQuarter,
+                'year' => (int) now()->format('Y'),
+                'report_scope' => 'all',
+            ]);
+        @endphp
         <form method="GET" class="rrp-filter-form">
             <select name="quarter" class="rrp-filter-select">
                 @foreach (['Q1', 'Q2', 'Q3', 'Q4'] as $q)
@@ -35,17 +50,16 @@
                     <option value="{{ $y }}" {{ (int) ($selectedYear ?? now()->format('Y')) === (int) $y ? 'selected' : '' }}>{{ $y }}</option>
                 @endforeach
             </select>
-            <label class="rrp-filter-check">
-                <input type="hidden" name="include_dealer" value="0">
-                <input type="checkbox" name="include_dealer" value="1" {{ !empty($includeDealer) ? 'checked' : '' }}>
-                Dealer
-            </label>
-            <label class="rrp-filter-check">
-                <input type="hidden" name="include_estream" value="0">
-                <input type="checkbox" name="include_estream" value="1" {{ !empty($includeEstream) ? 'checked' : '' }}>
-                E Stream
-            </label>
-            <button type="submit" class="rrp-filter-apply">Apply</button>
+            @include('admin.partials.report_scope_picker', [
+                'options' => $reportScopeOptions ?? [],
+                'selected' => $selectedReportScope ?? 'all',
+            ])
+            @include('admin.partials.report_filter_actions', [
+                'clearUrl' => $clearRevenueFiltersUrl,
+                'wrapperClass' => 'rrp-filter-actions report-filter-actions',
+                'applyClass' => 'report-filter-apply',
+                'clearClass' => 'report-filter-clear',
+            ])
         </form>
     </div>
 

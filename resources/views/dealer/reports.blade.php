@@ -50,40 +50,6 @@
 @endpush
 @section('content')
 <div class="dashboard-content reports-page dealer-reports-page">
-    {{-- Metric Cards --}}
-    <section class="reports-metrics">
-        <div class="reports-metric-card">
-            <div class="reports-metric-icon reports-metric-icon-pending"><i class="bi bi-file-earmark"></i></div>
-            <div class="reports-metric-value">{{ $metricStatusCounts['PENDING'] ?? 0 }}</div>
-            <div class="reports-metric-label">PENDING</div>
-        </div>
-        <div class="reports-metric-card">
-            <div class="reports-metric-icon reports-metric-icon-followup"><i class="bi bi-calendar-event"></i></div>
-            <div class="reports-metric-value">{{ $metricStatusCounts['FOLLOW UP'] ?? 0 }}</div>
-            <div class="reports-metric-label">FOLLOW UP</div>
-        </div>
-        <div class="reports-metric-card">
-            <div class="reports-metric-icon reports-metric-icon-demo"><i class="bi bi-person-video2"></i></div>
-            <div class="reports-metric-value">{{ $metricStatusCounts['DEMO'] ?? 0 }}</div>
-            <div class="reports-metric-label">DEMO</div>
-        </div>
-        <div class="reports-metric-card">
-            <div class="reports-metric-icon reports-metric-icon-confirmed"><i class="bi bi-check-circle"></i></div>
-            <div class="reports-metric-value">{{ $metricStatusCounts['CONFIRMED'] ?? 0 }}</div>
-            <div class="reports-metric-label">CONFIRMED</div>
-        </div>
-        <div class="reports-metric-card">
-            <div class="reports-metric-icon reports-metric-icon-completed"><i class="bi bi-box-seam"></i></div>
-            <div class="reports-metric-value">{{ $metricStatusCounts['COMPLETED'] ?? 0 }}</div>
-            <div class="reports-metric-label">COMPLETED</div>
-        </div>
-        <div class="reports-metric-card">
-            <div class="reports-metric-icon reports-metric-icon-reward"><i class="bi bi-gift"></i></div>
-            <div class="reports-metric-value">{{ $metricStatusCounts['REWARDED'] ?? 0 }}</div>
-            <div class="reports-metric-label">REWARDED</div>
-        </div>
-    </section>
-
     <header class="reports-header reports-header--dealer">
         <div class="reports-header-actions">
             <form method="get" action="{{ route('dealer.reports') }}" class="reports-period-form reports-period-form-compact reports-period-form--dealer" id="reportsPeriodForm">
@@ -101,6 +67,40 @@
             </form>
         </div>
     </header>
+
+    {{-- Metric Cards --}}
+    <section class="reports-metrics">
+        <div class="reports-metric-card">
+            <div class="reports-metric-icon reports-metric-icon-pending"><i class="bi bi-file-earmark"></i></div>
+            <div class="reports-metric-value">{{ $statusCounts['PENDING'] ?? 0 }}</div>
+            <div class="reports-metric-label">PENDING</div>
+        </div>
+        <div class="reports-metric-card">
+            <div class="reports-metric-icon reports-metric-icon-followup"><i class="bi bi-calendar-event"></i></div>
+            <div class="reports-metric-value">{{ $statusCounts['FOLLOW UP'] ?? 0 }}</div>
+            <div class="reports-metric-label">FOLLOW UP</div>
+        </div>
+        <div class="reports-metric-card">
+            <div class="reports-metric-icon reports-metric-icon-demo"><i class="bi bi-person-video2"></i></div>
+            <div class="reports-metric-value">{{ $statusCounts['DEMO'] ?? 0 }}</div>
+            <div class="reports-metric-label">DEMO</div>
+        </div>
+        <div class="reports-metric-card">
+            <div class="reports-metric-icon reports-metric-icon-confirmed"><i class="bi bi-check-circle"></i></div>
+            <div class="reports-metric-value">{{ $statusCounts['CONFIRMED'] ?? 0 }}</div>
+            <div class="reports-metric-label">CONFIRMED</div>
+        </div>
+        <div class="reports-metric-card">
+            <div class="reports-metric-icon reports-metric-icon-completed"><i class="bi bi-box-seam"></i></div>
+            <div class="reports-metric-value">{{ $statusCounts['COMPLETED'] ?? 0 }}</div>
+            <div class="reports-metric-label">COMPLETED</div>
+        </div>
+        <div class="reports-metric-card">
+            <div class="reports-metric-icon reports-metric-icon-reward"><i class="bi bi-gift"></i></div>
+            <div class="reports-metric-value">{{ $statusCounts['REWARDED'] ?? 0 }}</div>
+            <div class="reports-metric-label">REWARDED</div>
+        </div>
+    </section>
 
     @php
         $statusReportData = [

@@ -1,24 +1,31 @@
 @extends('layouts.app')
 @section('title', 'Report - Dealer Sales Overtime')
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/shared/reports-tabs.css') }}?v=20260324-9">
-    <link rel="stylesheet" href="{{ asset('css/report_dealer_sales_overtime.css') }}?v=20260325-3">
+    <link rel="stylesheet" href="{{ asset('css/shared/reports-tabs.css') }}?v=20260402-8">
+    <link rel="stylesheet" href="{{ asset('css/report_dealer_sales_overtime.css') }}?v=20260402-2">
     <link rel="stylesheet" href="{{ asset('css/pages/admin-reports-v2.css') }}?v=20260324-9">
 @endpush
 @section('content')
 <div class="rv2-page">
     <header class="rv2-header">
+        @php
+            $reportTabQuery = [];
+            $currentReportScope = trim((string) ($selectedReportScope ?? request('report_scope', '')));
+            if ($currentReportScope !== '') {
+                $reportTabQuery['report_scope'] = $currentReportScope;
+            }
+        @endphp
         <div class="reports-tabs-row">
             <nav class="reports-tabs-nav" aria-label="Report views">
-                <a href="{{ route('admin.reports') }}"
+                <a href="{{ route('admin.reports', $reportTabQuery) }}"
                    class="reports-tab-link {{ request()->routeIs('admin.reports') ? 'is-active' : '' }}">
                     Monthly Performance
                 </a>
-                <a href="{{ route('admin.reports.v2') }}"
+                <a href="{{ route('admin.reports.v2', $reportTabQuery) }}"
                    class="reports-tab-link {{ request()->routeIs('admin.reports.v2') ? 'is-active' : '' }}">
                     Dealer Sales Overtime
                 </a>
-                <a href="{{ route('admin.reports.revenue') }}"
+                <a href="{{ route('admin.reports.revenue', $reportTabQuery) }}"
                    class="reports-tab-link {{ request()->routeIs('admin.reports.revenue') ? 'is-active' : '' }}">
                     Dealer Revenue Production
                 </a>
@@ -28,9 +35,16 @@
 
     <div class="rv2-filtered-layer">
         <div class="rv2-filtered-layer-head">
+            @php
+                $clearSalesOvertimeFiltersUrl = route('admin.reports.v2', [
+                    'days' => 90,
+                    'compare_days' => 30,
+                    'report_scope' => 'all',
+                ]);
+            @endphp
             <form method="GET" class="rv2-filters rv2-filters-form">
                 @foreach(request()->query() as $key => $val)
-                    @if($key !== 'days' && $key !== 'compare_days' && $key !== 'page' && $key !== 'primary_from' && $key !== 'primary_to' && $key !== 'compare_from' && $key !== 'compare_to' && $key !== 'include_dealer' && $key !== 'include_estream')
+                    @if($key !== 'days' && $key !== 'compare_days' && $key !== 'page' && $key !== 'primary_from' && $key !== 'primary_to' && $key !== 'compare_from' && $key !== 'compare_to' && $key !== 'include_dealer' && $key !== 'include_estream' && $key !== 'report_scope')
                         <input type="hidden" name="{{ $key }}" value="{{ $val }}">
                     @endif
                 @endforeach
@@ -64,8 +78,20 @@
                         <input type="date" name="compare_to" value="{{ request('compare_to') }}">
                     </div>
                 </div>
+                <div class="rv2-filter">
+                    <div class="rv2-filter-label">DEALER SCOPE</div>
+                    @include('admin.partials.report_scope_picker', [
+                        'options' => $reportScopeOptions ?? [],
+                        'selected' => $selectedReportScope ?? 'all',
+                    ])
+                </div>
                 <div class="rv2-filter rv2-filter-apply">
-                    <button type="submit" class="rv2-filter-btn">Apply</button>
+                    @include('admin.partials.report_filter_actions', [
+                        'clearUrl' => $clearSalesOvertimeFiltersUrl,
+                        'wrapperClass' => 'rv2-filter-actions report-filter-actions',
+                        'applyClass' => 'report-filter-apply',
+                        'clearClass' => 'report-filter-clear',
+                    ])
                 </div>
             </form>
         </div>

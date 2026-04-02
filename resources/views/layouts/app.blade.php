@@ -9,7 +9,7 @@
     <link rel="shortcut icon" href="{{ asset('sql-logo.png') }}?v=20260318">
     <link rel="apple-touch-icon" href="{{ asset('sql-logo.png') }}?v=20260318">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=20260326-03">
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=20260402-04">
     <script src="{{ asset('js/passkey-registration.js') }}"></script>
     <script>
         // Apply sidebar state ASAP (prevents flicker on page navigation)
@@ -103,13 +103,13 @@
                 <h3 class="dashboard-passkey-quick-title" id="profilePasskeyQuickTitle">Register passkey</h3>
                 <p class="dashboard-passkey-quick-subtitle">Choose where to save your new passkey.</p>
                 <div class="dashboard-passkey-quick-actions">
-                    <button type="button" class="login-primary-btn" id="profilePasskeyDeviceBtn" style="margin-top: 0;">
-                        <i class="bi bi-laptop" aria-hidden="true"></i>
-                        <span>Register On This Device</span>
-                    </button>
-                    <button type="button" class="login-passkey-btn" id="profilePasskeyPhoneBtn">
+                    <button type="button" class="login-primary-btn" id="profilePasskeyPhoneBtn" style="margin-top: 0;">
                         <i class="bi bi-phone" aria-hidden="true"></i>
                         <span>Use Phone / Scan QR</span>
+                    </button>
+                    <button type="button" class="login-passkey-btn" id="profilePasskeyDeviceBtn">
+                        <i class="bi bi-laptop" aria-hidden="true"></i>
+                        <span>Register On This Device</span>
                     </button>
                 </div>
                 <div class="dashboard-passkey-quick-status" id="profilePasskeyQuickStatus" hidden></div>
@@ -826,17 +826,13 @@
     })();
 
     // Shared idle handling:
-    // 1) refresh the current page every 1 minute if there has been no user activity
-    // 2) still enforce client-side logout after the configured session lifetime
+    // enforce client-side logout after the configured session lifetime
     var isLoggedIn = {{ session()->has('user_role') ? 'true' : 'false' }};
     if (isLoggedIn) {
         var lifetimeMinutes = {{ (int) config('session.lifetime', 120) }};
         var maxIdleMs = Math.max(1, lifetimeMinutes) * 60 * 1000;
-        var autoRefreshMs = 1 * 60 * 1000;
         var storagePrefix = 'dashboard-idle.{{ session()->getId() }}.';
         var activityKey = storagePrefix + 'last-activity';
-        var idleRefreshKey = storagePrefix + 'last-refresh';
-        var refreshTimer = null;
 
         function readStoredTime(key) {
             try {
@@ -863,54 +859,14 @@
         var lastActivity = readStoredTime(activityKey) || Date.now();
         writeStoredTime(activityKey, lastActivity);
 
-        function getLastIdleRefresh() {
-            return readStoredTime(idleRefreshKey);
-        }
-
-        function getRefreshReferenceTime() {
-            return Math.max(lastActivity, getLastIdleRefresh());
-        }
-
-        function clearRefreshTimer() {
-            if (refreshTimer) {
-                window.clearTimeout(refreshTimer);
-                refreshTimer = null;
-            }
-        }
-
-        function scheduleIdleRefresh() {
-            clearRefreshTimer();
-            var elapsed = Date.now() - getRefreshReferenceTime();
-            var waitMs = Math.max(1000, autoRefreshMs - elapsed);
-            refreshTimer = window.setTimeout(function() {
-                var idleSinceRefreshPoint = Date.now() - getRefreshReferenceTime();
-                if (idleSinceRefreshPoint >= autoRefreshMs) {
-                    writeStoredTime(idleRefreshKey, Date.now());
-                    window.location.reload();
-                    return;
-                }
-                scheduleIdleRefresh();
-            }, waitMs);
-        }
-
         function bump() {
             lastActivity = Date.now();
             writeStoredTime(activityKey, lastActivity);
-            removeStoredTime(idleRefreshKey);
-            scheduleIdleRefresh();
         }
 
         ['mousemove','mousedown','keydown','scroll','touchstart','click'].forEach(function(evt) {
             document.addEventListener(evt, bump, { passive: true });
         });
-
-        document.addEventListener('visibilitychange', function() {
-            if (!document.hidden) {
-                scheduleIdleRefresh();
-            }
-        });
-
-        scheduleIdleRefresh();
 
         setInterval(function() {
             var storedActivity = readStoredTime(activityKey);
@@ -919,7 +875,6 @@
             }
 
             if ((Date.now() - lastActivity) > maxIdleMs) {
-                clearRefreshTimer();
                 // Best-effort logout, then go to login.
                 var token = (document.querySelector('meta[name="csrf-token"]') || {}).content;
                 if (token) {

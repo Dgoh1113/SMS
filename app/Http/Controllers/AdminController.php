@@ -80,6 +80,102 @@ class AdminController extends Controller
         }, $rows);
     }
 
+    private function loadInquiryPostcodeCityLookup(): array
+    {
+        static $lookup = null;
+
+        if (is_array($lookup)) {
+            return $lookup;
+        }
+
+        $lookup = [];
+        $path = base_path('malaysia-postcodes.json');
+        if (!is_file($path)) {
+            return $lookup;
+        }
+
+        try {
+            $decoded = json_decode((string) file_get_contents($path), true);
+        } catch (\Throwable $e) {
+            return $lookup;
+        }
+
+        if (!is_array($decoded) || !isset($decoded['state']) || !is_array($decoded['state'])) {
+            return $lookup;
+        }
+
+        foreach ($decoded['state'] as $state) {
+            if (!is_array($state)) {
+                continue;
+            }
+
+            foreach (($state['city'] ?? []) as $city) {
+                if (!is_array($city)) {
+                    continue;
+                }
+
+                $cityName = trim((string) ($city['name'] ?? ''));
+                if ($cityName === '') {
+                    continue;
+                }
+
+                foreach (($city['postcode'] ?? []) as $postcode) {
+                    $normalizedPostcode = preg_replace('/\D+/', '', (string) $postcode);
+                    if ($normalizedPostcode === null || strlen($normalizedPostcode) !== 5 || isset($lookup[$normalizedPostcode])) {
+                        continue;
+                    }
+
+                    $lookup[$normalizedPostcode] = $cityName;
+                }
+            }
+        }
+
+        return $lookup;
+    }
+
+    private function inquiryFormViewData(?object $inquiry = null): array
+    {
+        $dealers = [];
+        try {
+            $dealers = DB::select(
+                'SELECT "USERID", "COMPANY", "EMAIL" FROM "USERS" WHERE UPPER(TRIM("SYSTEMROLE")) LIKE \'%DEALER%\' ORDER BY "COMPANY"'
+            );
+        } catch (\Throwable $e) {
+            try {
+                $dealers = DB::select(
+                    'SELECT "USERID", "EMAIL" FROM "USERS" WHERE UPPER(TRIM("SYSTEMROLE")) LIKE \'%DEALER%\' ORDER BY "USERID"'
+                );
+            } catch (\Throwable $e2) {
+                // leave empty
+            }
+        }
+
+        $data = [
+            'dealers' => $dealers,
+            'productInterestedList' => [
+                1 => 'SQL Account',
+                2 => 'SQL Payroll',
+                3 => 'SQL Production',
+                4 => 'Mobile Sales',
+                5 => 'SQL Ecommerce',
+                6 => 'SQL EBI Wellness POS',
+                7 => 'SQL X Suduai',
+                8 => 'SQL X-Store',
+                9 => 'SQL Vision',
+                10 => 'SQL HRMS',
+                11 => 'Others',
+            ],
+            'postcodeCityLookup' => $this->loadInquiryPostcodeCityLookup(),
+            'currentPage' => 'inquiries',
+        ];
+
+        if ($inquiry !== null) {
+            $data['inquiry'] = $inquiry;
+        }
+
+        return $data;
+    }
+
     private function latestAssignmentUserMap(array $leadIds): array
     {
         $leadIds = array_values(array_unique(array_filter(array_map('intval', $leadIds), static fn ($id) => $id > 0)));
@@ -1608,38 +1704,7 @@ class AdminController extends Controller
 
     public function createInquiry(): View
     {
-        $dealers = [];
-        try {
-            $dealers = DB::select(
-                'SELECT "USERID", "COMPANY", "EMAIL" FROM "USERS" WHERE UPPER(TRIM("SYSTEMROLE")) LIKE \'%DEALER%\' ORDER BY "COMPANY"'
-            );
-        } catch (\Throwable $e) {
-            try {
-                $dealers = DB::select(
-                    'SELECT "USERID", "EMAIL" FROM "USERS" WHERE UPPER(TRIM("SYSTEMROLE")) LIKE \'%DEALER%\' ORDER BY "USERID"'
-                );
-            } catch (\Throwable $e2) {
-                // leave empty
-            }
-        }
-        $productInterestedList = [
-            1 => 'SQL Account',
-            2 => 'SQL Payroll',
-            3 => 'SQL Production',
-            4 => 'Mobile Sales',
-            5 => 'SQL Ecommerce',
-            6 => 'SQL EBI Wellness POS',
-            7 => 'SQL X Suduai',
-            8 => 'SQL X-Store',
-            9 => 'SQL Vision',
-            10 => 'SQL HRMS',
-            11 => 'Others',
-        ];
-        return view('admin.inquiries-create', [
-            'dealers' => $dealers,
-            'productInterestedList' => $productInterestedList,
-            'currentPage' => 'inquiries',
-        ]);
+        return view('admin.inquiries-create', $this->inquiryFormViewData());
     }
 
     public function editInquiry(int $leadId): View|RedirectResponse
@@ -1652,7 +1717,8 @@ class AdminController extends Controller
         $row = DB::selectOne(
             'SELECT "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL",
                 "ADDRESS1","ADDRESS2","CITY","POSTCODE","BUSINESSNATURE","USERCOUNT",
-                "EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION","REFERRALCODE"
+                "EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION","REFERRALCODE",
+                COALESCE("LASTMODIFIED", "CREATEDAT") AS "SNAPSHOT_MODIFIED_AT"
              FROM "LEAD" WHERE "LEADID" = ?',
             [$leadId]
         );
@@ -1660,39 +1726,7 @@ class AdminController extends Controller
             return redirect()->route('admin.inquiries')->with('error', 'Lead not found.');
         }
 
-        $dealers = [];
-        try {
-            $dealers = DB::select(
-                'SELECT "USERID", "COMPANY", "EMAIL" FROM "USERS" WHERE UPPER(TRIM("SYSTEMROLE")) LIKE \'%DEALER%\' ORDER BY "COMPANY"'
-            );
-        } catch (\Throwable $e) {
-            try {
-                $dealers = DB::select(
-                    'SELECT "USERID", "EMAIL" FROM "USERS" WHERE UPPER(TRIM("SYSTEMROLE")) LIKE \'%DEALER%\' ORDER BY "USERID"'
-                );
-            } catch (\Throwable $e2) {
-            }
-        }
-        $productInterestedList = [
-            1 => 'SQL Account',
-            2 => 'SQL Payroll',
-            3 => 'SQL Production',
-            4 => 'Mobile Sales',
-            5 => 'SQL Ecommerce',
-            6 => 'SQL EBI Wellness POS',
-            7 => 'SQL X Suduai',
-            8 => 'SQL X-Store',
-            9 => 'SQL Vision',
-            10 => 'SQL HRMS',
-            11 => 'Others',
-        ];
-
-        return view('admin.inquiries-create', [
-            'dealers' => $dealers,
-            'productInterestedList' => $productInterestedList,
-            'currentPage' => 'inquiries',
-            'inquiry' => $row,
-        ]);
+        return view('admin.inquiries-create', $this->inquiryFormViewData($row));
     }
 
     public function storeInquiry(Request $request): RedirectResponse
@@ -1858,6 +1892,7 @@ class AdminController extends Controller
                 'product_interested.*' => 'integer|in:1,2,3,4,5,6,7,8,9,10,11',
                 'DESCRIPTION' => 'nullable|string|max:4000',
                 'REFERRALCODE' => 'nullable|string|max:100',
+                'INQUIRY_SNAPSHOT_AT' => 'nullable|string|max:50',
             ],
             [
                 'CONTACTNO.min'          => 'Invalid Contact Number.',
@@ -1875,6 +1910,15 @@ class AdminController extends Controller
         $exists = DB::selectOne('SELECT "LEADID" FROM "LEAD" WHERE "LEADID" = ?', [$leadId]);
         if (!$exists) {
             return redirect()->route('admin.inquiries')->with('error', 'Lead not found.');
+        }
+
+        $snapshotMessage = $this->inquiryEditSnapshotMessage($leadId, $request->input('INQUIRY_SNAPSHOT_AT'));
+        if ($snapshotMessage !== null) {
+            if ($snapshotMessage === 'Lead not found.') {
+                return redirect()->route('admin.inquiries')->with('error', $snapshotMessage);
+            }
+
+            return redirect()->route('admin.inquiries.edit', $leadId)->with('error', $snapshotMessage);
         }
 
         $staleMessage = $this->incomingInquiryStaleMessage($leadId);
@@ -2219,14 +2263,177 @@ class AdminController extends Controller
         }
     }
 
-    public function reports(): View
+    private function adminReportEstreamCompany(): string
+    {
+        return 'E STREAM SDN BHD';
+    }
+
+    private function adminReportScopeOptions(): array
+    {
+        static $options = null;
+
+        if (is_array($options)) {
+            return $options;
+        }
+
+        $options = [
+            'all' => 'All',
+            'all_dealers' => 'All Dealers (No E Stream)',
+            'estream' => 'All E Stream',
+        ];
+
+        try {
+            $dealerRows = DB::select(
+                'SELECT DISTINCT u."USERID", u."COMPANY", u."ALIAS", u."EMAIL"
+                 FROM "USERS" u
+                 WHERE EXISTS (
+                     SELECT 1
+                     FROM "LEAD" l
+                     WHERE TRIM(CAST(l."ASSIGNED_TO" AS VARCHAR(50))) = TRIM(CAST(u."USERID" AS VARCHAR(50)))
+                 )
+                 ORDER BY UPPER(TRIM(COALESCE("COMPANY", \'\'))),
+                          UPPER(TRIM(COALESCE("ALIAS", \'\'))),
+                          UPPER(TRIM(COALESCE("EMAIL", \'\'))),
+                          "USERID"'
+            );
+        } catch (\Throwable $e) {
+            return $options;
+        }
+
+        foreach ($dealerRows as $dealerRow) {
+            $dealerId = trim((string) ($dealerRow->USERID ?? ''));
+            if ($dealerId === '') {
+                continue;
+            }
+
+            $company = trim((string) ($dealerRow->COMPANY ?? ''));
+            $alias = trim((string) ($dealerRow->ALIAS ?? ''));
+            $email = trim((string) ($dealerRow->EMAIL ?? ''));
+
+            if ($company !== '' && $alias !== '') {
+                $label = $company . ' - ' . $alias;
+            } elseif ($company !== '') {
+                $label = $company;
+            } elseif ($alias !== '') {
+                $label = $alias;
+            } elseif ($email !== '') {
+                $label = $email;
+            } else {
+                $label = $dealerId;
+            }
+
+            $options['dealer:' . $dealerId] = $label;
+        }
+
+        return $options;
+    }
+
+    private function resolveAdminReportScope(Request $request): string
+    {
+        $selectedScope = trim((string) $request->query('report_scope', ''));
+        if ($selectedScope === '') {
+            $selectedScope = 'all';
+        }
+
+        $options = $this->adminReportScopeOptions();
+
+        return array_key_exists($selectedScope, $options) ? $selectedScope : 'all';
+    }
+
+    private function buildAdminReportScopeSql(
+        string $selectedScope,
+        string $ownerColumnSql,
+        string $companyColumnSql,
+        bool $includeUnassignedForDealers = false
+    ): array {
+        $estreamCompany = $this->adminReportEstreamCompany();
+
+        if ($selectedScope === 'all') {
+            return ['', []];
+        }
+
+        if ($selectedScope === 'all_dealers') {
+            if ($includeUnassignedForDealers) {
+                return [
+                    ' AND (' . $ownerColumnSql . ' IS NULL OR UPPER(TRIM(COALESCE(' . $companyColumnSql . ', \'\'))) <> ?)',
+                    [$estreamCompany],
+                ];
+            }
+
+            return [
+                ' AND UPPER(TRIM(COALESCE(' . $companyColumnSql . ', \'\'))) <> ?',
+                [$estreamCompany],
+            ];
+        }
+
+        if ($selectedScope === 'estream') {
+            return [
+                ' AND UPPER(TRIM(COALESCE(' . $companyColumnSql . ', \'\'))) = ?',
+                [$estreamCompany],
+            ];
+        }
+
+        if (str_starts_with($selectedScope, 'dealer:')) {
+            $dealerId = trim(substr($selectedScope, 7));
+
+            return $dealerId === ''
+                ? [' AND 1 = 0', []]
+                : [' AND TRIM(CAST(' . $ownerColumnSql . ' AS VARCHAR(50))) = ?', [$dealerId]];
+        }
+
+        return [' AND 1 = 0', []];
+    }
+
+    private function buildAdminReportExistsScopeSql(string $selectedScope, string $ownerColumnSql): array
+    {
+        $estreamCompany = $this->adminReportEstreamCompany();
+
+        if ($selectedScope === 'all') {
+            return ['', []];
+        }
+
+        if ($selectedScope === 'all_dealers') {
+            return [
+                ' AND EXISTS (
+                    SELECT 1
+                    FROM "USERS" ux
+                    WHERE ux."USERID" = ' . $ownerColumnSql . '
+                      AND UPPER(TRIM(COALESCE(ux."COMPANY", \'\'))) <> ?
+                )',
+                [$estreamCompany],
+            ];
+        }
+
+        if ($selectedScope === 'estream') {
+            return [
+                ' AND EXISTS (
+                    SELECT 1
+                    FROM "USERS" ux
+                    WHERE ux."USERID" = ' . $ownerColumnSql . '
+                      AND UPPER(TRIM(COALESCE(ux."COMPANY", \'\'))) = ?
+                )',
+                [$estreamCompany],
+            ];
+        }
+
+        if (str_starts_with($selectedScope, 'dealer:')) {
+            $dealerId = trim(substr($selectedScope, 7));
+
+            return $dealerId === ''
+                ? [' AND 1 = 0', []]
+                : [' AND TRIM(CAST(' . $ownerColumnSql . ' AS VARCHAR(50))) = ?', [$dealerId]];
+        }
+
+        return [' AND 1 = 0', []];
+    }
+
+    public function reports(Request $request): View
     {
         $now = now();
-        $year = (int) request()->query('year', (int) $now->format('Y'));
-        $month = (int) request()->query('month', (int) $now->format('n'));
-        $includeDealer = (string) request()->query('include_dealer', '1') === '1';
-        $includeEstream = (string) request()->query('include_estream', '') === '1';
-        $estreamCompany = 'E STREAM SDN BHD';
+        $year = (int) $request->query('year', (int) $now->format('Y'));
+        $month = (int) $request->query('month', (int) $now->format('n'));
+        $selectedReportScope = $this->resolveAdminReportScope($request);
+        $reportScopeOptions = $this->adminReportScopeOptions();
         if ($year < 2000 || $year > 2100) {
             $year = (int) $now->format('Y');
         }
@@ -2242,27 +2449,17 @@ class AdminController extends Controller
         $prevMonth = (int) $prevDate->format('n');
         $prevYear = (int) $prevDate->format('Y');
 
-        $leadScopeSql = '';
-        $leadScopeBindings = [];
-        $payoutScopeSql = '';
-        $payoutScopeBindings = [];
-        if ($includeDealer && !$includeEstream) {
-            // Dealer only: exclude E Stream rows.
-            $leadScopeSql = ' AND (l."ASSIGNED_TO" IS NULL OR UPPER(TRIM(COALESCE(u."COMPANY", \'\'))) <> ?)';
-            $leadScopeBindings[] = $estreamCompany;
-            $payoutScopeSql = ' AND UPPER(TRIM(COALESCE(u."COMPANY", \'\'))) <> ?';
-            $payoutScopeBindings[] = $estreamCompany;
-        } elseif (!$includeDealer && $includeEstream) {
-            // E Stream only.
-            $leadScopeSql = ' AND UPPER(TRIM(COALESCE(u."COMPANY", \'\'))) = ?';
-            $leadScopeBindings[] = $estreamCompany;
-            $payoutScopeSql = ' AND UPPER(TRIM(COALESCE(u."COMPANY", \'\'))) = ?';
-            $payoutScopeBindings[] = $estreamCompany;
-        } elseif (!$includeDealer && !$includeEstream) {
-            // Nothing selected.
-            $leadScopeSql = ' AND 1 = 0';
-            $payoutScopeSql = ' AND 1 = 0';
-        }
+        [$leadScopeSql, $leadScopeBindings] = $this->buildAdminReportScopeSql(
+            $selectedReportScope,
+            'l."ASSIGNED_TO"',
+            'u."COMPANY"',
+            true
+        );
+        [$payoutScopeSql, $payoutScopeBindings] = $this->buildAdminReportScopeSql(
+            $selectedReportScope,
+            'p."USERID"',
+            'u."COMPANY"'
+        );
 
         $get = function ($row, string $name) {
             if (is_array($row)) {
@@ -2565,14 +2762,14 @@ class AdminController extends Controller
             'selectedYear' => $selectedYear,
             'selectedMonthName' => $selectedMonthName,
             'selectedDaysInMonth' => $selectedDaysInMonth,
-            'includeDealer' => $includeDealer,
-            'includeEstream' => $includeEstream,
+            'selectedReportScope' => $selectedReportScope,
+            'reportScopeOptions' => $reportScopeOptions,
             'monthOptions' => range(1, 12),
             'yearOptions' => range(((int) $now->format('Y')) - 4, ((int) $now->format('Y'))),
         ]);
     }
 
-    public function reportsV2(\Illuminate\Http\Request $request): View
+    public function reportsV2(Request $request): View
     {
         $daysParam = $request->query('days', '90');
         $compareDaysParam = $request->query('compare_days', '30');
@@ -2580,11 +2777,12 @@ class AdminController extends Controller
         $primaryTo = trim((string) $request->query('primary_to', ''));
         $compareFrom = trim((string) $request->query('compare_from', ''));
         $compareTo = trim((string) $request->query('compare_to', ''));
-        $estreamCompany = 'E STREAM SDN BHD';
-
-        // Dealer Sales Overtime should show dealer data only (exclude E Stream).
-        $dealerScopeSql = ' AND EXISTS (SELECT 1 FROM "USERS" ux WHERE ux."USERID" = l."ASSIGNED_TO" AND UPPER(TRIM(COALESCE(ux."COMPANY", \'\'))) <> ?)';
-        $dealerScopeBindings = [$estreamCompany];
+        $selectedReportScope = $this->resolveAdminReportScope($request);
+        $reportScopeOptions = $this->adminReportScopeOptions();
+        [$dealerScopeSql, $dealerScopeBindings] = $this->buildAdminReportExistsScopeSql(
+            $selectedReportScope,
+            'l."ASSIGNED_TO"'
+        );
 
         $useCustomPrimary = $primaryFrom !== '' && $primaryTo !== '';
         $useCustomCompare = $compareFrom !== '' && $compareTo !== '';
@@ -3001,6 +3199,8 @@ class AdminController extends Controller
 
         return view('admin.reports_v2', [
             'currentPage' => 'reports',
+            'selectedReportScope' => $selectedReportScope,
+            'reportScopeOptions' => $reportScopeOptions,
             'topVariance' => $variance,
             'highestClosed' => $highestClosed,
             'highestRejected' => $highestRejected,
@@ -3042,24 +3242,8 @@ class AdminController extends Controller
     {
         $quarter = strtoupper((string) $request->query('quarter', ''));
         $year = (int) $request->query('year', (int) now()->format('Y'));
-        $includeDealer = (string) $request->query('include_dealer', '1') === '1';
-        $includeEstream = (string) $request->query('include_estream', '') === '1';
-        $estreamCompany = 'E STREAM SDN BHD';
-
-        $companyScopeSql = '';
-        $companyScopeBindings = [];
-        if ($includeDealer && !$includeEstream) {
-            // Dealer only: exclude E Stream company rows.
-            $companyScopeSql = ' AND UPPER(TRIM(COALESCE(u."COMPANY", \'\'))) <> ?';
-            $companyScopeBindings[] = $estreamCompany;
-        } elseif (!$includeDealer && $includeEstream) {
-            // E Stream only.
-            $companyScopeSql = ' AND UPPER(TRIM(COALESCE(u."COMPANY", \'\'))) = ?';
-            $companyScopeBindings[] = $estreamCompany;
-        } elseif (!$includeDealer && !$includeEstream) {
-            // Nothing selected -> intentionally show no rows.
-            $companyScopeSql = ' AND 1 = 0';
-        }
+        $selectedReportScope = $this->resolveAdminReportScope($request);
+        $reportScopeOptions = $this->adminReportScopeOptions();
 
         if (!in_array($quarter, ['Q1', 'Q2', 'Q3', 'Q4'], true)) {
             $m = (int) now()->format('n');
@@ -3096,6 +3280,16 @@ class AdminController extends Controller
             }
             return $fallbackId !== '' ? $fallbackId : '-';
         };
+        [$leadScopeSql, $leadScopeBindings] = $this->buildAdminReportScopeSql(
+            $selectedReportScope,
+            'l."ASSIGNED_TO"',
+            'u."COMPANY"'
+        );
+        [$productScopeSql, $productScopeBindings] = $this->buildAdminReportScopeSql(
+            $selectedReportScope,
+            'a."USERID"',
+            'u."COMPANY"'
+        );
 
         // Dealer performance: total/closed/failed from LEAD; rewarded from LEAD_ACT (STATUS = Rewarded)
         $rowsSql = 'SELECT u."USERID" AS dealer_id,
@@ -3115,11 +3309,11 @@ class AdminController extends Controller
                WHERE l."ASSIGNED_TO" IS NOT NULL
                 AND l."CREATEDAT" >= ?
                 AND l."CREATEDAT" <= ?
-                ' . $companyScopeSql . '
+                ' . $leadScopeSql . '
               GROUP BY u."USERID", u."EMAIL", u."COMPANY", u."ALIAS"
               ORDER BY total_leads DESC';
         $rowsBindings = ['Closed', 'Failed', $startStr, $endStr, 'REWARDED', $startStr, $endStr];
-        $rowsBindings = array_merge($rowsBindings, $companyScopeBindings);
+        $rowsBindings = array_merge($rowsBindings, $leadScopeBindings);
         $rows = DB::select($rowsSql, $rowsBindings);
 
         $dealers = [];
@@ -3174,9 +3368,9 @@ class AdminController extends Controller
                AND UPPER(TRIM(COALESCE(a."STATUS", \'\'))) = ?
                AND a."CREATIONDATE" >= ?
                AND a."CREATIONDATE" <= ?
-               ' . $companyScopeSql;
+               ' . $productScopeSql;
         $topProductBindings = ['COMPLETED', $startStr, $endStr];
-        $topProductBindings = array_merge($topProductBindings, $companyScopeBindings);
+        $topProductBindings = array_merge($topProductBindings, $productScopeBindings);
         $topProductRows = DB::select($topProductSql, $topProductBindings);
         $topProductByDealer = [];
         foreach ($topProductRows as $r) {
@@ -3211,13 +3405,6 @@ class AdminController extends Controller
             }
             $topProductByDealer[$id]['converted_products'] += $count;
         }
-        $topProductDealer = null;
-        foreach ($topProductByDealer as $row) {
-            if ($topProductDealer === null || (int) $row['converted_products'] > (int) $topProductDealer['converted_products']) {
-                $topProductDealer = $row;
-            }
-        }
-
         foreach ($dealers as &$dealerRow) {
             $did = trim((string) ($dealerRow['dealer_id'] ?? ''));
             $dealerRow['converted_products'] = (int) (($topProductByDealer[$did]['converted_products'] ?? 0));
@@ -3237,6 +3424,20 @@ class AdminController extends Controller
         });
         $avgRejection = $totalLeads > 0 ? $weightedRejection / $totalLeads : 0.0;
 
+        $topProductDealer = null;
+        foreach ($dealers as $dealerRow) {
+            if ((int) ($dealerRow['converted_products'] ?? 0) <= 0) {
+                continue;
+            }
+
+            $topProductDealer = [
+                'dealer_id' => $dealerRow['dealer_id'] ?? '',
+                'name' => $dealerRow['name'] ?? '-',
+                'converted_products' => (int) ($dealerRow['converted_products'] ?? 0),
+            ];
+            break;
+        }
+
         // Chart: top 5 dealers by product conversion ranking.
         $chartDealers = array_slice($dealers, 0, 5);
         $chartLabels = array_column($chartDealers, 'name');
@@ -3251,8 +3452,8 @@ class AdminController extends Controller
             'currentPage' => 'reports',
             'selectedQuarter' => $quarter,
             'selectedYear' => $year,
-            'includeDealer' => $includeDealer,
-            'includeEstream' => $includeEstream,
+            'selectedReportScope' => $selectedReportScope,
+            'reportScopeOptions' => $reportScopeOptions,
             'yearOptions' => range(((int) now()->format('Y')) - 4, ((int) now()->format('Y'))),
             'totalVolume' => $totalVolume,
             'avgRejectionRate' => $avgRejection,
@@ -3372,6 +3573,51 @@ class AdminController extends Controller
     {
         if (strtolower((string) $request->session()->get('user_role')) === 'manager') {
             return redirect()->route('admin.dashboard')->with('error', 'You do not have permission to access Maintain Users.');
+        }
+
+        return null;
+    }
+
+    private function normalizeInquirySnapshotValue(mixed $value): ?string
+    {
+        if ($value instanceof \DateTimeInterface) {
+            return Carbon::instance($value)->format('Y-m-d H:i:s');
+        }
+
+        $value = trim((string) $value);
+        if ($value === '') {
+            return null;
+        }
+
+        try {
+            return Carbon::parse($value)->format('Y-m-d H:i:s');
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    private function inquiryEditSnapshotMessage(int $leadId, mixed $submittedSnapshot): ?string
+    {
+        $row = DB::selectOne(
+            'SELECT COALESCE("LASTMODIFIED", "CREATEDAT") AS "SNAPSHOT_MODIFIED_AT"
+             FROM "LEAD"
+             WHERE "LEADID" = ?',
+            [$leadId]
+        );
+
+        if (!$row) {
+            return 'Lead not found.';
+        }
+
+        $currentSnapshot = $this->normalizeInquirySnapshotValue($row->SNAPSHOT_MODIFIED_AT ?? $row->snapshot_modified_at ?? null);
+        $submittedSnapshot = $this->normalizeInquirySnapshotValue($submittedSnapshot);
+
+        if ($currentSnapshot === null || $submittedSnapshot === null) {
+            return 'This inquiry has newer changes. Please refresh and try again.';
+        }
+
+        if ($currentSnapshot !== $submittedSnapshot) {
+            return 'This inquiry was updated by another admin. Please refresh and try again.';
         }
 
         return null;

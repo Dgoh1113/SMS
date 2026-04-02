@@ -451,9 +451,6 @@
     <div class="dashboard-panel-body inquiry-create-body">
         <div class="inquiry-create-layout">
             <div class="inquiry-create-main">
-                @if (session('error'))
-                    <div class="login-message login-error" style="margin-bottom: 1rem;">{{ session('error') }}</div>
-                @endif
                 {{-- Duplicate company confirmation modal --}}
                 @if (session('duplicate_warning'))
                     <div class="inquiry-dup-modal" id="dupModal" role="dialog" aria-modal="true" aria-labelledby="dupModalTitle" hidden>
@@ -479,6 +476,7 @@
                     @csrf
                     @if ($isEdit)
                         @method('PUT')
+                        <input type="hidden" name="INQUIRY_SNAPSHOT_AT" value="{{ $inquiry->SNAPSHOT_MODIFIED_AT ?? $inquiry->snapshot_modified_at ?? '' }}">
                     @endif
             <div class="inquiry-form-grid form-grid" id="inquiryFormGrid">
                 <label class="inquiry-form-label inquiry-company-field company-name">
@@ -569,7 +567,7 @@
                 <div class="inquiry-postcode-city-row post-code">
                     <label class="inquiry-postcode-mini-field" for="postcodeInput">
                         <span class="inquiry-form-label-title">Post code <span class="required">*</span></span>
-                        <input type="text" id="postcodeInput" name="POSTCODE" value="{{ old('POSTCODE', $inquiry->POSTCODE ?? '') }}" required maxlength="5" class="inquiry-form-input @error('POSTCODE') inquiry-input-error @enderror">
+                        <input type="text" id="postcodeInput" name="POSTCODE" value="{{ old('POSTCODE', $inquiry->POSTCODE ?? '') }}" required maxlength="5" inputmode="numeric" autocomplete="postal-code" class="inquiry-form-input @error('POSTCODE') inquiry-input-error @enderror">
                         @error('POSTCODE')
                             <div class="inquiry-field-error">{{ $message }}</div>
                         @enderror
@@ -578,7 +576,7 @@
                 <div class="inquiry-postcode-city-row city">
                     <label class="inquiry-city-mini-field" for="cityInput">
                         <span class="inquiry-form-label-title">City <span class="required">*</span></span>
-                        <input type="text" id="cityInput" name="CITY" value="{{ old('CITY', $inquiry->CITY ?? '') }}" required maxlength="100" class="inquiry-form-input">
+                        <input type="text" id="cityInput" name="CITY" value="{{ old('CITY', $inquiry->CITY ?? '') }}" required maxlength="100" autocomplete="address-level2" class="inquiry-form-input">
                     </label>
                 </div>
                 <div class="inquiry-form-label inquiry-form-products inquiry-products-field product-interested">
@@ -629,6 +627,51 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    var postcodeInput = document.getElementById('postcodeInput');
+    var cityInput = document.getElementById('cityInput');
+    var postcodeCityLookup = @json($postcodeCityLookup ?? []);
+    var lastAutoFilledCity = '';
+
+    function normalizePostcodeValue(value) {
+        return String(value || '').replace(/\D+/g, '').slice(0, 5);
+    }
+
+    function syncCityFromPostcode() {
+        if (!postcodeInput || !cityInput) return;
+
+        var normalizedPostcode = normalizePostcodeValue(postcodeInput.value);
+        if (postcodeInput.value !== normalizedPostcode) {
+            postcodeInput.value = normalizedPostcode;
+        }
+
+        if (normalizedPostcode.length !== 5) {
+            if (lastAutoFilledCity && cityInput.value === lastAutoFilledCity) {
+                cityInput.value = '';
+            }
+            lastAutoFilledCity = '';
+            return;
+        }
+
+        var matchedCity = postcodeCityLookup[normalizedPostcode] || '';
+        if (!matchedCity) {
+            if (lastAutoFilledCity && cityInput.value === lastAutoFilledCity) {
+                cityInput.value = '';
+            }
+            lastAutoFilledCity = '';
+            return;
+        }
+
+        if (cityInput.value.trim() === '' || cityInput.value === lastAutoFilledCity) {
+            cityInput.value = matchedCity;
+            lastAutoFilledCity = matchedCity;
+            return;
+        }
+
+        if (cityInput.value.trim().toLowerCase() === matchedCity.toLowerCase()) {
+            lastAutoFilledCity = cityInput.value;
+        }
+    }
+
     // Demo mode toggle (Zoom / On-site)
     var toggle = document.querySelector('.inquiry-toggle[data-toggle="demomode"]');
     var hidden = document.getElementById('demoModeInput');
@@ -755,6 +798,13 @@ document.addEventListener('DOMContentLoaded', function () {
             var expanded = address2ToggleBtn.getAttribute('aria-expanded') === 'true';
             setAddress2Expanded(!expanded);
         });
+    }
+
+    if (postcodeInput && cityInput) {
+        postcodeInput.addEventListener('input', syncCityFromPostcode);
+        postcodeInput.addEventListener('change', syncCityFromPostcode);
+        postcodeInput.addEventListener('blur', syncCityFromPostcode);
+        syncCityFromPostcode();
     }
 
     function scheduleCompanyLookup() {

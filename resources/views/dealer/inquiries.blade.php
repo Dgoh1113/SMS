@@ -1054,13 +1054,15 @@ if (document.readyState === 'loading') {
     function refreshProgressionState() {
         if (!progressionSteps) return;
         var currentStatus = statusOrder[currentStatusIdx] || 'PENDING';
+        var highlightNewStatus = !viewMode && selectedStatusIdx > currentStatusIdx;
         progressionSteps.querySelectorAll('.inquiry-step').forEach(function(step, i) {
-            step.classList.remove('inquiry-step--done', 'inquiry-step--active', 'inquiry-step--selected', 'inquiry-step--clickable', 'inquiry-step--no-click', 'inquiry-step--viewable');
+            step.classList.remove('inquiry-step--done', 'inquiry-step--active', 'inquiry-step--selected', 'inquiry-step--clickable', 'inquiry-step--no-click', 'inquiry-step--viewable', 'inquiry-step--past-muted');
             var label = getStepDisplayLabel(i);
             var displayText = label || step.dataset.step;
             var isDone = i <= currentStatusIdx;
             if (isDone) {
                 step.classList.add('inquiry-step--done', 'inquiry-step--viewable');
+                if (highlightNewStatus) step.classList.add('inquiry-step--past-muted');
                 if (i === selectedStatusIdx && viewMode) step.classList.add('inquiry-step--selected');
                 step.innerHTML = '<i class="bi bi-check"></i><span>' + displayText + '</span>';
                 return;
@@ -1104,31 +1106,7 @@ if (document.readyState === 'loading') {
             return {
                 valid: false,
                 field: dateEl,
-                message: 'The date cannot be earlier than last activity'
-            };
-        }
-
-        if (activityDate !== '' && activityDate > getTodayIsoDate()) {
-            return {
-                valid: false,
-                field: dateEl,
-                message: 'The date cannot be future date'
-            };
-        }
-
-        if (activityDate !== '' && activityDate === latestMinDate && latestMinTime && activityTime !== '' && activityTime < latestMinTime) {
-            return {
-                valid: false,
-                field: timeEl,
-                message: 'Time must be on or after ' + latestMinTime + '.'
-            };
-        }
-
-        if (activityDate === getTodayIsoDate() && activityTime !== '' && activityTime > getCurrentLocalTime()) {
-            return {
-                valid: false,
-                field: timeEl,
-                message: 'Time cannot be in the future.'
+                message: 'Date cannot before previous activity'
             };
         }
 
@@ -1905,14 +1883,9 @@ if (document.readyState === 'loading') {
                 dateEl.focus();
                 return;
             }
-            if (dateStr !== '' && dateStr > getTodayIsoDate()) {
-                showDealerInquiryToast('Date cannot be in the future.');
+            if (dateStr !== '' && latestMinDate && dateStr < latestMinDate) {
+                showDealerInquiryToast('Date cannot before previous activity');
                 dateEl.focus();
-                return;
-            }
-            if (dateStr === getTodayIsoDate() && timeEl && timeStr && timeStr > getCurrentLocalTime()) {
-                showDealerInquiryToast('Time cannot be in the future.');
-                timeEl.focus();
                 return;
             }
             var title = 'Demo: #SQL-' + currentLeadId + ' - ' + currentCustomer;

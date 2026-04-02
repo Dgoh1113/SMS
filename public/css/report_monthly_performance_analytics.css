@@ -42,19 +42,39 @@
   margin: 0 0 18px;
 }
 .reports-period-form-compact {
-  display: inline-flex;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: 120px 104px minmax(220px, 320px) auto;
+  gap: 10px;
   align-items: center;
-  flex-wrap: wrap;
+  width: min(100%, 760px);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  --report-scope-picker-height: 42px;
+  --report-scope-picker-width: 100%;
+  --report-filter-radius: 12px;
+  --report-filter-actions-gap: 10px;
+  --report-filter-apply-height: 42px;
+  --report-filter-apply-padding: 0 16px;
+  --report-filter-apply-font-size: 13px;
+  --report-filter-clear-height: 39px;
+  --report-filter-clear-padding: 0 13px;
+  --report-filter-clear-font-size: 12px;
+}
+.reports-period-actions {
+  justify-content: flex-start;
 }
 .reports-period-select {
-  height: 34px;
-  min-width: 100px;
-  padding: 6px 10px;
+  height: 42px;
+  min-width: 0;
+  padding: 0 12px;
   border: 1px solid #d6d9e8;
-  border-radius: 9px;
+  border-radius: 12px;
   background: #ffffff;
-  font-size: 12px;
+  box-sizing: border-box;
+  font-size: 13px;
   font-weight: 700;
   color: #1f2937;
   transition: border-color 0.16s ease, box-shadow 0.16s ease;
@@ -65,11 +85,23 @@
   border-color: #8b5cf6;
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.14);
 }
-.reports-period-form-compact .reports-period-select[name="month"] {
-  min-width: 100px;
+.reports-period-form-compact .reports-period-select--month { width: 120px; }
+.reports-period-form-compact .reports-period-select--year { width: 104px; }
+.reports-period-form-compact .report-scope-field {
+  display: flex;
+  height: 42px;
+  min-width: 0;
+  width: 100%;
 }
-.reports-period-form-compact .reports-period-select[name="year"] {
-  min-width: 100px;
+.reports-period-form-compact .report-scope-field .report-scope-ts-wrapper {
+  height: 42px;
+  width: 100%;
+  min-width: 0;
+}
+.reports-period-form-compact .report-scope-field .report-scope-ts-wrapper.single .ts-control,
+.reports-period-form-compact .report-scope-field .report-scope-ts-wrapper.single.input-active .ts-control {
+  height: 42px;
+  min-height: 42px;
 }
 .reports-period-check {
   height: 34px;
@@ -91,22 +123,6 @@
   margin: 0;
   accent-color: #6d4ad9;
 }
-.reports-period-apply {
-  height: 34px;
-  padding: 0 14px;
-  border: 1px solid #6d4ad9;
-  border-radius: 9px;
-  background: linear-gradient(135deg, #7c5bff 0%, #6d4ad9 100%);
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: filter 0.16s ease;
-}
-.reports-period-apply:hover {
-  filter: brightness(1.03);
-}
-
 /* Title dropdown (light purple) */
 .reports-title-dropdown { position: relative; display: inline-flex; }
 .reports-title-hover {
@@ -245,7 +261,7 @@
 .reports-page .dashboard-metrics-grid { font-size: 1rem; }
 .reports-page .dashboard-metrics-grid .dashboard-metric-label {
   font-size: 13px;
-  color: #9ca3af;
+  color: #111111;
   margin-bottom: 4px;
   text-transform: none;
   font-weight: 400;
@@ -637,13 +653,6 @@
   border-radius: 50%;
 }
 
-.reports-page .reports-period-form-compact {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
 .reports-page .report-metric-link:hover,
 .reports-page .report-metric-link:focus-visible {
   text-decoration: none;
@@ -656,10 +665,6 @@
 
 .reports-page .reports-period-select,
 .reports-page .reports-period-check,
-.reports-page .reports-period-apply {
-  font-size: 13px;
-}
-
 .reports-page .dashboard-metrics-grid .dashboard-metric-label {
   font-size: 14px;
 }
@@ -766,11 +771,15 @@
     width: 100%;
     gap: 10px;
     align-items: stretch;
+    padding: 0;
   }
 
   .reports-period-select,
+  .report-scope-field,
+  .report-scope-field .report-scope-ts-wrapper,
   .reports-period-check,
-  .reports-period-apply {
+  .reports-period-actions .report-filter-clear,
+  .reports-period-actions .report-filter-apply {
     width: 100%;
     min-width: 0;
     height: 42px;
@@ -783,8 +792,11 @@
     padding: 0 12px;
   }
 
-  .reports-period-apply {
+  .reports-period-actions {
     grid-column: 1 / -1;
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
   }
 
   .reports-page .dashboard-metrics-grid {
