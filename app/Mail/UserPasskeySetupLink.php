@@ -8,21 +8,21 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class UserPasswordResetLink extends Mailable
+class UserPasskeySetupLink extends Mailable
 {
     use Queueable, SerializesModels;
 
     public function __construct(
         public string $toEmail,
         public string $recipientName,
-        public string $resetUrl,
+        public string $setupUrl,
         public string $systemName,
-        public string $subjectLine = 'Reset your SQL SMS password',
-        public string $introLine = 'We received a request to reset your password.',
-        public string $instructionLine = 'Click the link below to set a new password:',
-        public string $buttonLabel = 'Reset password',
-        public string $expiryLine = 'This link will expire in 15 minutes.',
-        public string $ignoreLine = 'If you did not request this, please ignore this email.'
+        public string $subjectLine = 'Set up your SQL SMS passkey',
+        public string $introLine = 'Your SQL SMS account is ready.',
+        public string $instructionLine = 'Click the link below to start setting up your passkey:',
+        public string $buttonLabel = 'Set up passkey',
+        public string $expiryLine = 'This link will expire in 24 hours.',
+        public string $ignoreLine = ''
     ) {}
 
     public function envelope(): Envelope
@@ -36,7 +36,7 @@ class UserPasswordResetLink extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.user_password_reset_link',
+            view: 'emails.user_passkey_setup_link',
         );
     }
 }

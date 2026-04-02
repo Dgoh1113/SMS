@@ -6,7 +6,7 @@ use App\Http\Controllers\Concerns\ResolvesInquiryAttachments;
 use App\Http\Controllers\Concerns\UsesSetupLinkStore;
 use App\Mail\InquiryAssignedToDealer;
 use App\Mail\PayoutCompletedNotification;
-use App\Mail\UserPasswordResetLink;
+use App\Mail\UserPasskeySetupLink;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
@@ -3812,10 +3812,10 @@ class AdminController extends Controller
             $systemName = 'SQL SMS';
         }
 
-        Mail::to($email)->send(new UserPasswordResetLink(
+        Mail::to($email)->send(new UserPasskeySetupLink(
             toEmail: $email,
             recipientName: $recipientName,
-            resetUrl: route('passkey.setup.form', ['token' => $token]),
+            setupUrl: route('passkey.setup.form', ['token' => $token]),
             systemName: $systemName,
             subjectLine: 'Set up your SQL SMS passkey',
             introLine: $introLine ?? 'Your SQL SMS account is ready.',

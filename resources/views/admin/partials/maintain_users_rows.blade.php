@@ -44,13 +44,13 @@
         <td data-col="company">{{ $u['COMPANY'] ?: '-' }}</td>
         <td data-col="passkey">
             @if (!($u['HAS_LOGGED_IN'] ?? false) && ($u['PASSKEY_SETUP_LINK_SENT'] ?? false) && !($u['PASSKEY_SETUP_LINK_EXPIRED'] ?? false))
-                <span class="maintain-users-pill-password sent">Link sent</span>
+                <span class="maintain-users-pill-passkey sent">Link sent</span>
             @elseif (!($u['HAS_LOGGED_IN'] ?? false) && ($u['PASSKEY_SETUP_LINK_EXPIRED'] ?? false))
-                <span class="maintain-users-pill-password expired">Link expired</span>
+                <span class="maintain-users-pill-passkey expired">Link expired</span>
             @elseif (!($u['HAS_LOGGED_IN'] ?? false))
-                <span class="maintain-users-pill-password empty">Ready to send</span>
+                <span class="maintain-users-pill-passkey empty">Ready to send</span>
             @else
-                <span class="maintain-users-pill-password set">Protected</span>
+                <span class="maintain-users-pill-passkey set">Protected</span>
             @endif
         </td>
         <td data-col="active">

@@ -16,7 +16,7 @@ class ApiController extends Controller
     public function login(Request $request): JsonResponse
     {
         return response()->json([
-            'error' => 'Password-based API login has been removed. Use the web app passkey flow instead.',
+            'error' => 'API login is not available. Use the web app passkey flow instead.',
         ], 410);
     }
 

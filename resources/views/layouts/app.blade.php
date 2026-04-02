@@ -740,7 +740,7 @@
             if (tagName !== 'INPUT') return false;
 
             var inputType = String(target.type || '').toLowerCase();
-            return ['text', 'search', 'email', 'number', 'password', 'tel', 'url'].indexOf(inputType) !== -1;
+            return ['text', 'search', 'email', 'number', 'tel', 'url'].indexOf(inputType) !== -1;
         }
 
         Array.prototype.forEach.call(document.querySelectorAll('.inquiries-columns-menu'), function(menu) {

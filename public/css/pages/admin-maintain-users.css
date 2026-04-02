@@ -222,7 +222,7 @@
   color: #dc2626;
 }
 
-.maintain-users-pill-password {
+.maintain-users-pill-passkey {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -235,25 +235,25 @@
   letter-spacing: 0.02em;
 }
 
-.maintain-users-pill-password.set {
+.maintain-users-pill-passkey.set {
   border-color: rgba(165, 180, 252, 0.65);
   background: rgba(79, 70, 229, 0.1);
   color: #4f46e5;
 }
 
-.maintain-users-pill-password.empty {
+.maintain-users-pill-passkey.empty {
   border-color: rgba(203, 213, 225, 0.72);
   background: rgba(148, 163, 184, 0.12);
   color: #64748b;
 }
 
-.maintain-users-pill-password.sent {
+.maintain-users-pill-passkey.sent {
   border-color: rgba(125, 211, 252, 0.72);
   background: rgba(14, 165, 233, 0.1);
   color: #0369a1;
 }
 
-.maintain-users-pill-password.expired {
+.maintain-users-pill-passkey.expired {
   border-color: rgba(253, 186, 116, 0.72);
   background: rgba(249, 115, 22, 0.12);
   color: #c2410c;

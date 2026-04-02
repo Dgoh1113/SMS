@@ -6,9 +6,9 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
-class MaintainUserTemporaryPasswordStore
+class UserSetupLinkStore
 {
-    private const STORAGE_PATH = 'private/maintain-user-temp-passwords.json';
+    private const STORAGE_PATH = 'private/user-setup-links.json';
 
     public function allSetupLinks(): array
     {
@@ -41,8 +41,8 @@ class MaintainUserTemporaryPasswordStore
             }
 
             $links[(string) $userId] = [
-                'created_at' => isset($record['setup_token_created_at']) ? (string) $record['setup_token_created_at'] : null,
-                'emailed_at' => isset($record['setup_token_emailed_at']) ? (string) $record['setup_token_emailed_at'] : null,
+                'created_at' => isset($record['setup_token_created_at']) ? (string) ($record['setup_token_created_at']) : null,
+                'emailed_at' => isset($record['setup_token_emailed_at']) ? (string) ($record['setup_token_emailed_at']) : null,
                 'expires_at' => $expiresAt,
             ];
         }
@@ -198,8 +198,10 @@ class MaintainUserTemporaryPasswordStore
 
     private function write(array $records): void
     {
+        $disk = Storage::disk('local');
+
         ksort($records);
-        Storage::disk('local')->put(
+        $disk->put(
             self::STORAGE_PATH,
             json_encode($records, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
         );

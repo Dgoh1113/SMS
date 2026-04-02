@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Password Link</title>
+    <title>Passkey Setup Link</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.5; color: #333; margin: 0; padding: 0; background: #f5f5f5; }
         .wrapper { max-width: 560px; margin: 0 auto; padding: 24px; }
@@ -21,7 +21,7 @@
             <p>{{ $instructionLine }}</p>
             <p>
                 <a
-                    href="{{ $resetUrl }}"
+                    href="{{ $setupUrl }}"
                     class="btn"
                     style="display:inline-block;padding:12px 22px;background:#4f46e5;color:#ffffff !important;text-decoration:none;border-radius:8px;font-weight:700;margin:8px 0 12px;"
                 >{{ $buttonLabel }}</a>

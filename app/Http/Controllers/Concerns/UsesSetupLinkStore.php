@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers\Concerns;
 
-use App\Support\MaintainUserTemporaryPasswordStore;
+use App\Support\UserSetupLinkStore;
 
 trait UsesSetupLinkStore
 {
-    protected function setupLinkStore(): MaintainUserTemporaryPasswordStore
+    protected function setupLinkStore(): UserSetupLinkStore
     {
-        return app(MaintainUserTemporaryPasswordStore::class);
+        return app(UserSetupLinkStore::class);
     }
 }

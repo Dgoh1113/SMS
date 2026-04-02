@@ -11,15 +11,8 @@ Route::get('/', fn () => redirect()->route('login'));
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-Route::post('/password/forgot', [AuthController::class, 'handleLegacyPasswordPost'])->name('password.forgot');
 
 Route::get('/passkey/setup', [AuthController::class, 'showPasskeySetupForm'])->name('passkey.setup.form');
-Route::get('/password/set', [AuthController::class, 'showSetPasswordForm']);
-Route::post('/password/set', [AuthController::class, 'setPassword'])->name('password.set.submit');
-Route::get('/password/force-change', [AuthController::class, 'showLegacyPasswordPage'])->name('password.force-change.form');
-Route::post('/password/force-change', [AuthController::class, 'handleLegacyPasswordPost'])->name('password.force-change.submit');
-Route::get('/password/reset/{userid}', [AuthController::class, 'showLegacyPasswordPage'])->name('password.reset.form');
-Route::post('/password/reset/{userid}', [AuthController::class, 'handleLegacyPasswordPost'])->name('password.reset.submit');
 
 Route::get('/passkey/auth/options', [PasskeyController::class, 'authOptions'])->name('passkey.auth.options');
 Route::post('/passkey/auth/verify', [PasskeyController::class, 'authVerify'])->name('passkey.auth.verify');

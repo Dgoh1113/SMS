@@ -16,12 +16,7 @@ class AuthController extends Controller
 
     public function showLoginForm(Request $request): View|RedirectResponse
     {
-        // Clean up any legacy password-flow state whenever the login page loads.
         $request->session()->forget([
-            'pending_force_password_change_user_id',
-            'pending_force_password_change_email',
-            'pending_force_password_change_role',
-            'pending_force_password_change_alias',
             'login_fail_counts',
         ]);
 
@@ -45,12 +40,7 @@ class AuthController extends Controller
 
     public function login(Request $request): RedirectResponse
     {
-        return $this->passwordAuthDisabledRedirect();
-    }
-
-    public function handleLegacyPasswordPost(Request $request, ?string $userid = null): RedirectResponse
-    {
-        return $this->passwordAuthDisabledRedirect();
+        return $this->passkeyOnlyLoginRedirect();
     }
 
     public function showPasskeySetupForm(Request $request): View|RedirectResponse
@@ -58,7 +48,7 @@ class AuthController extends Controller
         $token = trim((string) $request->query('token', ''));
         $userId = $this->setupLinkStore()->resolveSetupToken($token);
         if ($token === '' || $userId === null) {
-            return $this->invalidSetPasswordLinkView('Invalid or expired passkey setup link.');
+            return $this->invalidPasskeySetupLinkView('Invalid or expired passkey setup link.');
         }
 
         $row = DB::selectOne(
@@ -67,7 +57,7 @@ class AuthController extends Controller
         );
         if (!$row || !$row->ISACTIVE) {
             $this->setupLinkStore()->forgetSetupToken($userId);
-            return $this->invalidSetPasswordLinkView('This passkey setup link is no longer valid.');
+            return $this->invalidPasskeySetupLinkView('This passkey setup link is no longer valid.');
         }
 
         $role = $this->systemRoleToSessionRole((string) ($row->SYSTEMROLE ?? ''));
@@ -80,10 +70,6 @@ class AuthController extends Controller
             'url.intended',
             'show_register_passkey',
             'last_activity_ts',
-            'pending_force_password_change_user_id',
-            'pending_force_password_change_email',
-            'pending_force_password_change_role',
-            'pending_force_password_change_alias',
         ]);
         $request->session()->regenerate();
         $request->session()->regenerateToken();
@@ -98,18 +84,6 @@ class AuthController extends Controller
         return redirect()->route('login')->with('success', 'Set up your passkey to finish activating this account.');
     }
 
-    public function showSetPasswordForm(Request $request): View|RedirectResponse
-    {
-        return $this->showPasskeySetupForm($request);
-    }
-
-    public function setPassword(Request $request): View|RedirectResponse
-    {
-        return $this->invalidSetPasswordLinkView(
-            'Password creation from invite links has been removed. Please use the latest account setup email to register your passkey.'
-        );
-    }
-
     public function logout(Request $request): RedirectResponse
     {
         $request->session()->invalidate();
@@ -117,16 +91,9 @@ class AuthController extends Controller
         return redirect('/login');
     }
 
-    public function showLegacyPasswordPage(Request $request, ?string $userid = null): View
+    private function invalidPasskeySetupLinkView(string $message): View
     {
-        return $this->disabledPasswordAuthView(
-            'Password reset is no longer available. Please sign in with your passkey or request a new passkey setup link.'
-        );
-    }
-
-    private function invalidSetPasswordLinkView(string $message): View
-    {
-        return view('auth.reset-password-invalid', [
+        return view('auth.passkey-message', [
             'message' => $message,
             'pageTitle' => 'Passkey Setup Link Invalid - SQL Sales Management System',
             'subtitle' => 'Set Up Passkey',
@@ -134,21 +101,11 @@ class AuthController extends Controller
         ]);
     }
 
-    private function disabledPasswordAuthView(string $message): View
-    {
-        return view('auth.reset-password-invalid', [
-            'message' => $message,
-            'pageTitle' => 'Passkey Required - SQL Sales Management System',
-            'subtitle' => 'Passkey Sign-In',
-            'helperText' => 'Use Login with passkey, or ask an admin to send you a new passkey setup link.',
-        ]);
-    }
-
-    private function passwordAuthDisabledRedirect(): RedirectResponse
+    private function passkeyOnlyLoginRedirect(): RedirectResponse
     {
         return redirect()->route('login')->with(
             'error',
-            'Password sign-in has been removed. Use Login with passkey or request a new passkey setup link.'
+            'This project uses passkey sign-in only. Use Login with passkey or request a new passkey setup link.'
         );
     }
 
