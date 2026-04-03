@@ -62,28 +62,28 @@
             <table class="inquiries-table" id="dealerInquiriesTable">
                 <thead>
                     <tr class="inquiries-header-row">
-                        <th data-col="inquiryid" class="inquiries-header-cell"><span class="inquiries-header-label">INQUIRY ID</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="inquiryid"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="date" class="inquiries-header-cell"><span class="inquiries-header-label">INQUIRY DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="date"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="customer" class="inquiries-header-cell"><span class="inquiries-header-label">CUSTOMER NAME</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="customer"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="email" class="inquiries-header-cell"><span class="inquiries-header-label">EMAIL</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="email"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="postcode" class="inquiries-header-cell"><span class="inquiries-header-label">POSTCODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="postcode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="city" class="inquiries-header-cell"><span class="inquiries-header-label">CITY</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="city"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="address" class="inquiries-header-cell"><span class="inquiries-header-label">ADDRESS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="address"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="contactno" class="inquiries-header-cell"><span class="inquiries-header-label">CONTACT NO</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="contactno"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="businessnature" class="inquiries-header-cell"><span class="inquiries-header-label">BUSINESS NATURE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="businessnature"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="users" class="inquiries-header-cell"><span class="inquiries-header-label">USERS</span><span class="inquiries-filter-wrap dealer-operator-search-wrap"><span class="dealer-operator-search-box"><button type="button" class="dealer-operator-btn" data-col="users" data-op="=" aria-haspopup="true" aria-expanded="false" title="Filter operator">=</button><div class="dealer-operator-dropdown" hidden><button type="button" data-op="=">= Equals</button><button type="button" data-op="!=">!= Does not equal</button><button type="button" data-op="<">&lt; Less than</button><button type="button" data-op="<=">&lt;= Less than or equal to</button><button type="button" data-op=">">&gt; Greater than</button><button type="button" data-op=">=">&gt;= Greater than or equal to</button></div><input type="text" class="inquiries-grid-filter" data-col="users" placeholder="0"></span></span></th>
-                        <th data-col="existingsw" class="inquiries-header-cell"><span class="inquiries-header-label">EXISTING SW</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="existingsw"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="demomode" class="inquiries-header-cell"><span class="inquiries-header-label">DEMO MODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="demomode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="products" class="inquiries-header-cell"><span class="inquiries-header-label">PRODUCTS</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="products"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="assigndate" class="inquiries-header-cell"><span class="inquiries-header-label">ASSIGN DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="assigndate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="completiondate" class="inquiries-header-cell"><span class="inquiries-header-label">COMPLETION DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="completiondate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="payoutsdate" class="inquiries-header-cell"><span class="inquiries-header-label">PAYOUTS DATE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="payoutsdate"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="message" class="inquiries-header-cell"><span class="inquiries-header-label">MESSAGE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="message"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="referralcode" class="inquiries-header-cell"><span class="inquiries-header-label">REFERRAL CODE</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="referralcode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="attachment" class="inquiries-header-cell"><span class="inquiries-header-label">ATTACHMENT</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="attachment"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="assignby" class="inquiries-header-cell"><span class="inquiries-header-label">ASSIGN BY</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="assignby"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
-                        <th data-col="status" class="inquiries-header-cell"><span class="inquiries-header-label">STATUS</span><span class="inquiries-filter-wrap"><select class="inquiries-grid-filter inquiries-grid-filter-select" data-col="status"><option value="">All</option>@foreach($statusFilterOptions as $statusOption)<option value="{{ $statusOption }}">{{ $statusOption }}</option>@endforeach</select></span></th>
-                        <th class="inquiries-col-action inquiries-header-cell"><span class="inquiries-header-label">ACTION</span><button type="button" class="inquiries-filter-clear" id="dealerInquiryClearFilters">Clear filters</button></th>
+                        <x-tables.text-filter-header col="inquiryid" label="INQUIRY ID" />
+                        <x-tables.text-filter-header col="date" label="INQUIRY DATE" />
+                        <x-tables.text-filter-header col="customer" label="CUSTOMER NAME" />
+                        <x-tables.text-filter-header col="email" label="EMAIL" />
+                        <x-tables.text-filter-header col="postcode" label="POSTCODE" />
+                        <x-tables.text-filter-header col="city" label="CITY" />
+                        <x-tables.text-filter-header col="address" label="ADDRESS" />
+                        <x-tables.text-filter-header col="contactno" label="CONTACT NO" />
+                        <x-tables.text-filter-header col="businessnature" label="BUSINESS NATURE" />
+                        <x-tables.operator-filter-header col="users" label="USERS" />
+                        <x-tables.text-filter-header col="existingsw" label="EXISTING SW" />
+                        <x-tables.text-filter-header col="demomode" label="DEMO MODE" />
+                        <x-tables.text-filter-header col="products" label="PRODUCTS" />
+                        <x-tables.text-filter-header col="assigndate" label="ASSIGN DATE" />
+                        <x-tables.text-filter-header col="completiondate" label="COMPLETION DATE" />
+                        <x-tables.text-filter-header col="payoutsdate" label="PAYOUTS DATE" />
+                        <x-tables.text-filter-header col="message" label="MESSAGE" />
+                        <x-tables.text-filter-header col="referralcode" label="REFERRAL CODE" />
+                        <x-tables.text-filter-header col="attachment" label="ATTACHMENT" />
+                        <x-tables.text-filter-header col="assignby" label="ASSIGN BY" />
+                        <x-tables.select-filter-header col="status" label="STATUS" :options="$statusFilterOptions" />
+                        <x-tables.clear-filter-header button-id="dealerInquiryClearFilters" />
                     </tr>
                 </thead>
                 <tbody>
