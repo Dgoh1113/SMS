@@ -982,6 +982,7 @@ class DealerController extends Controller
             $activities[] = [
                 'type' => 'activity',
                 'user' => $userDisplay,
+                'user_id' => trim((string) ($r->USERID ?? '')),
                 'subject' => trim($r->SUBJECT ?? ''),
                 'description' => $description,
                 'status' => $status,

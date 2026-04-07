@@ -193,6 +193,21 @@
   flex-wrap: wrap;
 }
 
+#inquiryUpdateModal .inquiry-latest-failed-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #111827;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+#inquiryUpdateModal .inquiry-latest-failed-title i {
+  color: #111827;
+  font-size: 18px;
+}
+
 #inquiryUpdateModal .inquiry-latest-failed-badge {
   display: inline-flex;
   align-items: center;
@@ -224,6 +239,12 @@
   color: #111827;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+#inquiryUpdateModal .inquiry-latest-failed-meta {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #6b7280;
 }
 
 @media (min-width: 1025px) and (max-height: 1020px) {

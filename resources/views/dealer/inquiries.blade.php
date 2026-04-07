@@ -2,7 +2,7 @@
 @section('title', 'My Inquiries – SQL LMS Dealer Console')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/pages/dealer-inquiries.css') }}?v=20260407-01">
+    <link rel="stylesheet" href="{{ asset('css/pages/dealer-inquiries.css') }}?v=20260407-02">
 @endpush
 
 @section('content')
@@ -817,17 +817,20 @@ if (document.readyState === 'loading') {
             </div>
             <div class="inquiry-view-message inquiry-latest-failed-notice" id="inquiryLatestFailedNotice" hidden>
                 <div class="inquiry-latest-failed-head">
-                    <span class="inquiry-field-label">LATEST STATUS IS</span>
-                    <span class="inquiry-latest-failed-badge">FAILED</span>
+                    <div class="inquiry-latest-failed-title">
+                        <i class="bi bi-x-circle-fill"></i>
+                        <span>Lead Marked as Failed</span>
+                    </div>
                 </div>
                 <div class="inquiry-latest-failed-grid">
                     <div class="inquiry-latest-failed-block">
-                        <span class="inquiry-field-label">Failure Reason</span>
+                        <span class="inquiry-field-label">Reason</span>
                         <div class="inquiry-latest-failed-value" id="inquiryLatestFailedReason">—</div>
                     </div>
+                    <div class="inquiry-latest-failed-meta" id="inquiryLatestFailedMeta">—</div>
                 </div>
             </div>
-            <div class="inquiry-followup">
+            <div class="inquiry-followup" id="inquiryFollowupSection">
                 <div class="inquiry-followup-header">
                     <i class="bi bi-calendar3"></i>
                     <span>Update Details</span>
@@ -1014,20 +1017,13 @@ if (document.readyState === 'loading') {
         return 'PENDING';
     }
 
-    function renderLatestFailedNotice(activity) {
-        var noticeEl = document.getElementById('inquiryLatestFailedNotice');
-        var reasonEl = document.getElementById('inquiryLatestFailedReason');
-        if (!noticeEl || !reasonEl) return;
-
-        var shouldShow = normalizeStatus(latestStatusRaw) === 'FAILED' && !!activity;
-        noticeEl.hidden = !shouldShow;
-        if (!shouldShow) {
-            reasonEl.textContent = '—';
-            return;
-        }
-
-        var parsed = parseFailedDescription(activity.description || '');
-        reasonEl.textContent = parsed.reason || 'No failure reason recorded.';
+    function stripFailedStatusPrefix(text) {
+        return String(text || '')
+            .replace(/^status changed to failed by\b.*?[.:]\s*/i, '')
+            .replace(/^failed by\b.*?[.:]\s*/i, '')
+            .replace(/^status changed to failed by\b\s*/i, '')
+            .replace(/^failed by\b\s*/i, '')
+            .trim();
     }
 
     function parseFailedDescription(description) {
@@ -1056,24 +1052,74 @@ if (document.readyState === 'loading') {
                 return;
             }
             if (lower.indexOf('status changed to failed by ') === 0) {
-                var legacyText = text.replace(/^status changed to failed by [^.]+\.\s*/i, '').trim();
+                var legacyText = stripFailedStatusPrefix(text);
                 if (legacyText !== '') {
                     parsed.reason = legacyText;
                 }
                 return;
             }
             if (parsed.reason === '') {
-                parsed.reason = text;
+                parsed.reason = stripFailedStatusPrefix(text);
                 return;
             }
             parsed.detail += (parsed.detail ? '\n' : '') + text;
         });
 
         if (parsed.reason === '') {
-            parsed.reason = raw;
+            parsed.reason = stripFailedStatusPrefix(raw);
         }
 
         return parsed;
+    }
+
+    function prettifyFailedReason(reason) {
+        var text = stripFailedStatusPrefix(reason).replace(/\s+/g, ' ');
+        if (!text) return '';
+        return text;
+    }
+
+    function formatFailedDateTime(value) {
+        var date = new Date(value);
+        if (isNaN(date.getTime())) return '';
+
+        var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return date.getDate() + ' ' + months[date.getMonth()] + ' ' + date.getFullYear() + ', ' +
+            String(date.getHours()).padStart(2, '0') + ':' + String(date.getMinutes()).padStart(2, '0');
+    }
+
+    function buildFailedMeta(activity) {
+        var parts = [];
+        var failedOn = formatFailedDateTime(activity && activity.created_at);
+        var updatedBy = String((activity && (activity.user_id || activity.user)) || '').trim();
+
+        if (failedOn) {
+            parts.push(failedOn);
+        }
+
+        if (updatedBy) {
+            parts.push('Updated by ' + updatedBy);
+        }
+
+        return parts.join(' • ') || 'No failed activity details recorded.';
+    }
+
+    function renderLatestFailedNotice(activity) {
+        var noticeEl = document.getElementById('inquiryLatestFailedNotice');
+        var reasonEl = document.getElementById('inquiryLatestFailedReason');
+        var metaEl = document.getElementById('inquiryLatestFailedMeta');
+        if (!noticeEl || !reasonEl || !metaEl) return;
+
+        var shouldShow = normalizeStatus(latestStatusRaw) === 'FAILED' && !!activity;
+        noticeEl.hidden = !shouldShow;
+        if (!shouldShow) {
+            reasonEl.textContent = '—';
+            metaEl.textContent = '—';
+            return;
+        }
+
+        var parsed = parseFailedDescription(activity.description || '');
+        reasonEl.textContent = prettifyFailedReason(parsed.reason || 'No failure reason recorded.');
+        metaEl.textContent = buildFailedMeta(activity);
     }
 
     function getProgressionStep(stepName) {
@@ -1278,6 +1324,7 @@ if (document.readyState === 'loading') {
         toggleAddCalendarButton();
         toggleProductChecklist();
         toggleUpdateButton();
+        toggleFailedSummaryMode();
     }
 
     function setRemarkPlaceholder(status) {
@@ -1296,6 +1343,12 @@ if (document.readyState === 'loading') {
     function toggleAddCalendarButton() {
         var btn = document.getElementById('inquiryModalAddCalendar');
         if (!btn) return;
+        if (isFailedLatestStatus()) {
+            btn.style.display = 'none';
+            btn.disabled = true;
+            btn.classList.add('inquiry-btn-update--disabled');
+            return;
+        }
         var isDemo = getSelectedStatusName() === 'DEMO';
         btn.style.display = isDemo ? '' : 'none';
         if (!isDemo) return;
@@ -1307,6 +1360,17 @@ if (document.readyState === 'loading') {
         var canUse = hasDate; // time is optional; defaults to 09:00 in click handler
         btn.disabled = !canUse;
         btn.classList.toggle('inquiry-btn-update--disabled', !canUse);
+    }
+
+    function toggleFailedSummaryMode() {
+        var followupSection = document.getElementById('inquiryFollowupSection');
+        var shouldCompact = isFailedLatestStatus();
+        if (followupSection) {
+            followupSection.hidden = shouldCompact;
+        }
+        if (updateBtn) {
+            updateBtn.hidden = shouldCompact;
+        }
     }
 
     function toggleProductChecklist() {
