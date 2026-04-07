@@ -33,11 +33,54 @@ Artisan::command('leads:auto-fail', function () {
         [$cutoff->format('Y-m-d H:i:s')]
     );
 
+    $leadIds = [];
+    foreach ($rows as $r) {
+        $leadId = (int) ($r->LEADID ?? 0);
+        if ($leadId > 0) {
+            $leadIds[] = $leadId;
+        }
+    }
+
+    $assignmentUserMap = [];
+    if (!empty($leadIds)) {
+        $placeholders = implode(',', array_fill(0, count($leadIds), '?'));
+        $assignmentRows = DB::select(
+            'SELECT "LEADID", "LEAD_ACTID", "USERID", "DESCRIPTION"
+             FROM "LEAD_ACT"
+             WHERE "LEADID" IN (' . $placeholders . ')
+               AND (
+                   UPPER(TRIM(COALESCE("SUBJECT", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
+                   OR UPPER(TRIM(COALESCE("DESCRIPTION", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
+               )
+             ORDER BY "LEADID" ASC, "CREATIONDATE" DESC, "LEAD_ACTID" DESC',
+            $leadIds
+        );
+
+        foreach ($assignmentRows as $row) {
+            $leadId = (int) ($row->LEADID ?? 0);
+            if ($leadId <= 0 || array_key_exists($leadId, $assignmentUserMap)) {
+                continue;
+            }
+
+            $userId = trim((string) ($row->USERID ?? ''));
+            if ($userId === '') {
+                $desc = trim((string) ($row->DESCRIPTION ?? ''));
+                if ($desc !== '' && preg_match('/Lead Assigned by\s+(\S+)\s+to\s+(\S+)/i', $desc, $m)) {
+                    $userId = trim((string) ($m[1] ?? ''));
+                }
+            }
+
+            if ($userId !== '') {
+                $assignmentUserMap[$leadId] = $userId;
+            }
+        }
+    }
+
     $count = 0;
     foreach ($rows as $r) {
         $leadId = (int) ($r->LEADID ?? 0);
         $latestStatus = strtoupper(trim((string) ($r->LATEST_STATUS ?? 'PENDING')));
-        $activityUserId = trim((string) ($r->ASSIGNED_TO ?? ''));
+        $activityUserId = trim((string) ($assignmentUserMap[$leadId] ?? ($r->ASSIGNED_TO ?? '')));
         if ($leadId <= 0) {
             continue;
         }
@@ -45,7 +88,7 @@ Artisan::command('leads:auto-fail', function () {
             continue;
         }
         if ($activityUserId === '') {
-            $this->error('Failed to auto-fail lead ' . $leadId . ': no ASSIGNED_TO user available for LEAD_ACT log.');
+            $this->error('Failed to auto-fail lead ' . $leadId . ': no assigner or assigned user available for LEAD_ACT log.');
             continue;
         }
 
