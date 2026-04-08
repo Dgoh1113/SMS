@@ -43,8 +43,6 @@
 
         .inquiry-create-panel .dashboard-panel-body.inquiry-create-body {
             padding: 18px 22px !important;
-            container-type: inline-size;
-            container-name: inquiry-form-shell;
         }
 
         .dashboard-root.inquiry-create-scroll {
@@ -55,16 +53,24 @@
         .dashboard-root.inquiry-create-scroll .dashboard-main {
             height: auto !important;
             min-height: 100vh !important;
-            overflow-y: visible !important;
-            overflow-x: clip !important;
+            overflow: visible !important;
         }
 
         .dashboard-root.inquiry-create-scroll .dashboard-main-body {
-            flex: 0 0 auto !important;
-            min-height: calc(100vh - 72px) !important;
-            overflow-y: visible !important;
-            overflow-x: clip !important;
-            padding-bottom: 28px !important;
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            overflow: visible !important;
+            padding-bottom: 24px !important;
+        }
+
+        .dashboard-root.inquiry-create-scroll .dashboard-bottombar {
+            margin-top: auto !important;
+        }
+
+        .dashboard-root.inquiry-create-scroll .dashboard-sidebar {
+            align-self: stretch !important;
+            min-height: 100vh !important;
+            height: auto !important;
         }
 
         .inquiry-create-layout {
@@ -404,6 +410,81 @@
             margin-top: 8px;
         }
 
+        .inquiry-create-panel.inquiry-create-panel--phone-stack .inquiry-create-layout {
+            flex-direction: column !important;
+            gap: 14px !important;
+        }
+
+        .inquiry-create-panel.inquiry-create-panel--phone-stack .inquiry-create-main,
+        .inquiry-create-panel.inquiry-create-panel--phone-stack .inquiry-create-fox {
+            width: 100% !important;
+            min-width: 0 !important;
+        }
+
+        .inquiry-create-panel.inquiry-create-panel--phone-stack .inquiry-create-fox {
+            display: none !important;
+        }
+
+        .inquiry-create-panel #inquiryFormGrid.is-phone-stack {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) !important;
+            gap: 12px !important;
+            width: 100% !important;
+        }
+
+        .inquiry-create-panel #inquiryFormGrid.is-phone-stack > * {
+            grid-column: 1 / -1 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+        }
+
+        .inquiry-create-panel #inquiryFormGrid.is-phone-stack .inquiry-form-label-title {
+            font-size: 13px;
+            white-space: normal !important;
+        }
+
+        .inquiry-create-panel #inquiryFormGrid.is-phone-stack .inquiry-company-wrapper {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) !important;
+            gap: 8px;
+            width: 100% !important;
+        }
+
+        .inquiry-create-panel #inquiryFormGrid.is-phone-stack .inquiry-company-copy-btn:not([hidden]) {
+            width: 100%;
+        }
+
+        .inquiry-create-panel #inquiryFormGrid.is-phone-stack .inquiry-toggle {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            width: 100% !important;
+            max-width: 100% !important;
+            height: auto;
+        }
+
+        .inquiry-create-panel #inquiryFormGrid.is-phone-stack .inquiry-toggle-option {
+            min-width: 0;
+            padding: 8px 10px;
+            white-space: normal;
+        }
+
+        .inquiry-create-panel #inquiryFormGrid.is-phone-stack .inquiry-form-checkboxes {
+            grid-template-columns: 1fr !important;
+            gap: 8px !important;
+        }
+
+        .inquiry-create-panel #inquiryFormGrid.is-phone-stack > .inquiry-actions-field {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .inquiry-create-panel #inquiryFormGrid.is-phone-stack > .inquiry-actions-field .login-primary-btn,
+        .inquiry-create-panel #inquiryFormGrid.is-phone-stack > .inquiry-actions-field .inquiry-form-cancel {
+            width: 100%;
+            text-align: center;
+        }
+
         @media (min-width: 860px) {
             .inquiry-create-panel #inquiryFormGrid > .inquiry-actions-field {
                 width: calc(100% + 152px);
@@ -413,7 +494,7 @@
             }
         }
 
-        @media (max-width: 1260px), (max-height: 860px) {
+        @media (max-width: 768px) {
             .dashboard-root:has(.inquiry-create-panel) .dashboard-main {
                 height: auto !important;
                 min-height: 100vh !important;
@@ -506,7 +587,7 @@
             text-decoration: none;
         }
 
-        @media (max-width: 1100px) {
+        @media (max-width: 768px) {
             .inquiry-create-panel {
                 max-width: none;
                 margin: 12px;
@@ -524,13 +605,29 @@
                 padding: 18px !important;
             }
 
+            .inquiry-create-panel .inquiry-create-layout {
+                flex-direction: column !important;
+                gap: 14px !important;
+            }
+
+            .inquiry-create-panel .inquiry-create-main,
+            .inquiry-create-panel .inquiry-create-fox {
+                width: 100% !important;
+                min-width: 0 !important;
+            }
+
             .inquiry-create-panel #inquiryFormGrid {
-                grid-template-columns: 1fr !important;
+                display: grid !important;
+                grid-template-columns: minmax(0, 1fr) !important;
                 gap: 12px !important;
+                width: 100% !important;
             }
 
             .inquiry-create-panel #inquiryFormGrid > * {
                 grid-column: 1 / -1 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                min-width: 0 !important;
             }
 
             .inquiry-create-panel .inquiry-create-fox {
@@ -553,7 +650,7 @@
             }
         }
 
-        @media (max-width: 1100px) {
+        @media (max-width: 768px) {
             .inquiry-create-panel--new {
                 margin: 8px 0 16px;
                 border-radius: 14px;
@@ -571,6 +668,7 @@
 
             .inquiry-create-panel--new #inquiryFormGrid > * {
                 grid-column: 1 / -1 !important;
+                width: 100% !important;
                 min-width: 0 !important;
                 max-width: 100% !important;
             }
@@ -615,210 +713,6 @@
             }
         }
 
-        @container inquiry-form-shell (max-width: 1020px) {
-            .inquiry-create-panel--new .inquiry-create-layout {
-                flex-direction: column !important;
-                gap: 14px !important;
-            }
-
-            .inquiry-create-panel--new .inquiry-create-main,
-            .inquiry-create-panel--new .inquiry-create-fox {
-                width: 100% !important;
-                min-width: 0 !important;
-            }
-
-            .inquiry-create-panel--new .inquiry-create-fox {
-                display: none !important;
-            }
-
-            .inquiry-create-panel--new #inquiryFormGrid {
-                grid-template-columns: minmax(0, 1fr) !important;
-                gap: 12px !important;
-                width: 100% !important;
-            }
-
-            .inquiry-create-panel--new #inquiryFormGrid > * {
-                grid-column: 1 / -1 !important;
-                min-width: 0 !important;
-                max-width: 100% !important;
-            }
-
-            .inquiry-create-panel--new #inquiryFormGrid .inquiry-form-label,
-            .inquiry-create-panel--new #inquiryFormGrid .inquiry-address2-inner,
-            .inquiry-create-panel--new #inquiryFormGrid .inquiry-postcode-mini-field,
-            .inquiry-create-panel--new #inquiryFormGrid .inquiry-city-mini-field {
-                gap: 6px !important;
-            }
-
-            .inquiry-create-panel--new #inquiryFormGrid .inquiry-form-label-title {
-                font-size: 14px !important;
-                line-height: 1.25 !important;
-                white-space: normal !important;
-            }
-
-            .inquiry-create-panel--new #inquiryFormGrid .inquiry-form-input {
-                min-height: 42px;
-                height: 42px;
-                padding: 9px 12px;
-                font-size: 15px;
-            }
-
-            .inquiry-create-panel--new #inquiryFormGrid textarea.inquiry-form-input {
-                min-height: 104px !important;
-                height: auto !important;
-            }
-
-            .inquiry-create-panel--new #inquiryFormGrid .inquiry-company-wrapper {
-                display: grid;
-                grid-template-columns: minmax(0, 1fr);
-                gap: 8px;
-                width: 100%;
-            }
-
-            .inquiry-create-panel--new #inquiryFormGrid .inquiry-company-copy-btn:not([hidden]) {
-                width: 100%;
-            }
-
-            .inquiry-create-panel--new #inquiryFormGrid .inquiry-toggle {
-                display: grid !important;
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                width: 100% !important;
-                max-width: 100% !important;
-                height: auto;
-            }
-
-            .inquiry-create-panel--new #inquiryFormGrid .inquiry-toggle-option {
-                min-width: 0;
-                min-height: 38px;
-                padding: 8px 10px;
-                white-space: normal;
-                text-align: center;
-            }
-
-            .inquiry-create-panel--new #inquiryFormGrid .inquiry-form-checkboxes {
-                grid-template-columns: 1fr !important;
-                gap: 8px !important;
-            }
-
-            .inquiry-create-panel--new #inquiryFormGrid > .inquiry-actions-field {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 10px;
-                margin-top: 4px;
-            }
-
-            .inquiry-create-panel--new #inquiryFormGrid > .inquiry-actions-field .login-primary-btn,
-            .inquiry-create-panel--new #inquiryFormGrid > .inquiry-actions-field .inquiry-form-cancel {
-                width: 100%;
-                text-align: center;
-            }
-        }
-
-        .inquiry-create-panel.is-mobile-stack {
-            margin: 8px 0 16px;
-            border-radius: 14px;
-        }
-
-        .inquiry-create-panel.is-mobile-stack .dashboard-panel-body.inquiry-create-body {
-            padding: 16px 14px 18px !important;
-        }
-
-        .inquiry-create-panel.is-mobile-stack .inquiry-create-layout {
-            flex-direction: column !important;
-            gap: 14px !important;
-        }
-
-        .inquiry-create-panel.is-mobile-stack .inquiry-create-main,
-        .inquiry-create-panel.is-mobile-stack .inquiry-create-fox {
-            width: 100% !important;
-            min-width: 0 !important;
-        }
-
-        .inquiry-create-panel.is-mobile-stack .inquiry-create-fox {
-            display: none !important;
-        }
-
-        .inquiry-create-panel.is-mobile-stack #inquiryFormGrid {
-            grid-template-columns: minmax(0, 1fr) !important;
-            gap: 12px !important;
-            width: 100% !important;
-        }
-
-        .inquiry-create-panel.is-mobile-stack #inquiryFormGrid > * {
-            grid-column: 1 / -1 !important;
-            min-width: 0 !important;
-            max-width: 100% !important;
-        }
-
-        .inquiry-create-panel.is-mobile-stack #inquiryFormGrid .inquiry-form-label,
-        .inquiry-create-panel.is-mobile-stack #inquiryFormGrid .inquiry-address2-inner,
-        .inquiry-create-panel.is-mobile-stack #inquiryFormGrid .inquiry-postcode-mini-field,
-        .inquiry-create-panel.is-mobile-stack #inquiryFormGrid .inquiry-city-mini-field {
-            gap: 6px !important;
-        }
-
-        .inquiry-create-panel.is-mobile-stack #inquiryFormGrid .inquiry-form-label-title {
-            font-size: 14px !important;
-            line-height: 1.25 !important;
-            white-space: normal !important;
-        }
-
-        .inquiry-create-panel.is-mobile-stack #inquiryFormGrid .inquiry-form-input {
-            min-height: 42px;
-            height: 42px;
-            padding: 9px 12px;
-            font-size: 15px;
-        }
-
-        .inquiry-create-panel.is-mobile-stack #inquiryFormGrid textarea.inquiry-form-input {
-            min-height: 104px !important;
-            height: auto !important;
-        }
-
-        .inquiry-create-panel.is-mobile-stack #inquiryFormGrid .inquiry-company-wrapper {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr);
-            gap: 8px;
-            width: 100%;
-        }
-
-        .inquiry-create-panel.is-mobile-stack #inquiryFormGrid .inquiry-company-copy-btn:not([hidden]) {
-            width: 100%;
-        }
-
-        .inquiry-create-panel.is-mobile-stack #inquiryFormGrid .inquiry-toggle {
-            display: grid !important;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            width: 100% !important;
-            max-width: 100% !important;
-            height: auto;
-        }
-
-        .inquiry-create-panel.is-mobile-stack #inquiryFormGrid .inquiry-toggle-option {
-            min-width: 0;
-            min-height: 38px;
-            padding: 8px 10px;
-            white-space: normal;
-            text-align: center;
-        }
-
-        .inquiry-create-panel.is-mobile-stack #inquiryFormGrid .inquiry-form-checkboxes {
-            grid-template-columns: 1fr !important;
-            gap: 8px !important;
-        }
-
-        .inquiry-create-panel.is-mobile-stack #inquiryFormGrid > .inquiry-actions-field {
-            flex-direction: column;
-            align-items: stretch;
-            gap: 10px;
-            margin-top: 4px;
-        }
-
-        .inquiry-create-panel.is-mobile-stack #inquiryFormGrid > .inquiry-actions-field .login-primary-btn,
-        .inquiry-create-panel.is-mobile-stack #inquiryFormGrid > .inquiry-actions-field .inquiry-form-cancel {
-            width: 100%;
-            text-align: center;
-        }
     </style>
 @endpush
 @section('content')
@@ -1016,26 +910,11 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     var inquiryPanel = document.querySelector('.inquiry-create-panel');
-    var inquiryPanelBody = inquiryPanel ? inquiryPanel.querySelector('.dashboard-panel-body.inquiry-create-body') : null;
     var dashboardRoot = document.getElementById('dashboardRoot');
 
     if (dashboardRoot && inquiryPanel) {
         dashboardRoot.classList.add('inquiry-create-scroll');
     }
-
-    function syncInquiryMobileStack() {
-        if (!inquiryPanel || !inquiryPanelBody) return;
-
-        var bodyWidth = Math.round(inquiryPanelBody.getBoundingClientRect().width || 0);
-        var viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
-        var shouldStack = viewportWidth <= 1100 || bodyWidth <= 880;
-
-        inquiryPanel.classList.toggle('is-mobile-stack', shouldStack);
-    }
-
-    syncInquiryMobileStack();
-    window.addEventListener('resize', syncInquiryMobileStack);
-    window.addEventListener('orientationchange', syncInquiryMobileStack);
 
     var postcodeInput = document.getElementById('postcodeInput');
     var cityInput = document.getElementById('cityInput');
@@ -1155,10 +1034,26 @@ document.addEventListener('DOMContentLoaded', function () {
     var lookupTimer = null;
     var lookupUrl = "{{ route('admin.inquiries.company-lookup') }}";
 
+    var inquiryPanelBody = document.querySelector('.inquiry-create-panel .dashboard-panel-body.inquiry-create-body');
     var inquiryFormGrid = document.getElementById('inquiryFormGrid');
     var address2ToggleBtn = document.getElementById('address2ToggleBtn');
     var address2FieldWrap = document.getElementById('address2FieldWrap');
     var address2Input = document.getElementById('address2Input');
+
+    function syncPhoneStackMode() {
+        if (!inquiryPanel || !inquiryPanelBody || !inquiryFormGrid) return;
+
+        var viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+        var panelWidth = inquiryPanelBody.getBoundingClientRect().width || inquiryPanelBody.clientWidth || 0;
+        var shouldPhoneStack = panelWidth > 0 && panelWidth <= 560 && viewportWidth <= 1024;
+
+        inquiryPanel.classList.toggle('inquiry-create-panel--phone-stack', shouldPhoneStack);
+        inquiryFormGrid.classList.toggle('is-phone-stack', shouldPhoneStack);
+    }
+
+    syncPhoneStackMode();
+    window.addEventListener('resize', syncPhoneStackMode);
+    window.addEventListener('orientationchange', syncPhoneStackMode);
 
     function setAddress2Expanded(expanded) {
         if (!address2ToggleBtn || !address2FieldWrap) return;
