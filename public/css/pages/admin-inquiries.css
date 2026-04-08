@@ -5,11 +5,30 @@
 }
 
 .inquiries-page-wrap .inquiries-table .inquiries-placeholder-cell {
-  height: 57px;
+  height: 46px;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  line-height: 0;
+}
+
+.inquiries-page-wrap .inquiries-table .inquiries-placeholder-row td {
+  background: #ffffff !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
 }
 
 .inquiries-page-wrap #allPanel .inquiries-table-scroll {
   overflow-x: auto;
+}
+
+.inquiries-page-wrap .inquiries-table-wrap.inquiries-table-wrap-filled .inquiries-table-scroll {
+  min-height: 0 !important;
+  height: auto !important;
+}
+
+.inquiries-page-wrap .inquiries-table-wrap.inquiries-table-wrap-filled .inquiries-assigned-pagination {
+  margin-top: 0 !important;
 }
 
 .inquiries-page-wrap #allTable {
@@ -327,27 +346,144 @@
 }
 
 @media (min-width: 1280px) and (min-height: 900px) {
-  #incomingPanel > .inquiries-mgmt-panel {
+  #incomingPanel > .inquiries-mgmt-panel,
+  #assignedPanel > .inquiries-mgmt-panel,
+  #allPanel > .inquiries-mgmt-panel {
     display: flex;
     flex-direction: column;
   }
 
-  #incomingPanel > .inquiries-mgmt-panel > .inquiries-table-wrap {
-    flex: 1 1 auto;
+  #incomingPanel > .inquiries-mgmt-panel > .inquiries-table-wrap,
+  #assignedPanel > .inquiries-mgmt-panel > .inquiries-table-wrap,
+  #allPanel > .inquiries-mgmt-panel > .inquiries-table-wrap {
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 auto;
+    height: clamp(620px, calc(100vh - 180px), 760px);
+    min-height: clamp(620px, calc(100vh - 180px), 760px);
+  }
+
+  #incomingPanel > .inquiries-mgmt-panel > .inquiries-table-wrap.inquiries-table-wrap-filled,
+  #assignedPanel > .inquiries-mgmt-panel > .inquiries-table-wrap.inquiries-table-wrap-filled,
+  #allPanel > .inquiries-mgmt-panel > .inquiries-table-wrap.inquiries-table-wrap-filled {
+    height: auto;
     min-height: 0;
   }
 
-  #incomingPanel .inquiries-table-scroll.inquiries-table-scroll-empty {
-    min-height: clamp(420px, calc(100vh - 280px), 620px) !important;
+  #incomingPanel .inquiries-table-scroll,
+  #assignedPanel .inquiries-table-scroll,
+  #allPanel .inquiries-table-scroll {
+    flex: 1 1 auto;
+    height: auto !important;
+    min-height: 0 !important;
   }
 
-  #incomingPanel .inquiries-table-scroll.inquiries-table-scroll-short {
-    min-height: clamp(440px, calc(100vh - 300px), 620px) !important;
+  #incomingPanel > .inquiries-mgmt-panel > .inquiries-table-wrap.inquiries-table-wrap-filled .inquiries-table-scroll,
+  #assignedPanel > .inquiries-mgmt-panel > .inquiries-table-wrap.inquiries-table-wrap-filled .inquiries-table-scroll,
+  #allPanel > .inquiries-mgmt-panel > .inquiries-table-wrap.inquiries-table-wrap-filled .inquiries-table-scroll {
+    flex: 0 0 auto;
   }
 
-  #incomingPanel .inquiries-assigned-pagination {
+  #incomingPanel .inquiries-assigned-pagination,
+  #assignedPanel .inquiries-assigned-pagination,
+  #allPanel .inquiries-assigned-pagination {
     margin-top: auto;
     flex-shrink: 0;
+  }
+
+  #incomingPanel > .inquiries-mgmt-panel > .inquiries-table-wrap.inquiries-table-wrap-filled .inquiries-assigned-pagination,
+  #assignedPanel > .inquiries-mgmt-panel > .inquiries-table-wrap.inquiries-table-wrap-filled .inquiries-assigned-pagination,
+  #allPanel > .inquiries-mgmt-panel > .inquiries-table-wrap.inquiries-table-wrap-filled .inquiries-assigned-pagination {
+    margin-top: 0;
+  }
+}
+
+@media (min-width: 1280px) and (max-height: 899px) {
+  #incomingPanel > .inquiries-mgmt-panel > .inquiries-table-wrap:not(.inquiries-table-wrap-filled) {
+    height: clamp(320px, calc(100vh - 330px), 460px);
+    min-height: clamp(320px, calc(100vh - 330px), 460px);
+  }
+
+  .inquiries-page-wrap > .inquiries-tabs {
+    margin-bottom: 6px;
+  }
+
+  .inquiries-panel-header {
+    padding: 7px 11px;
+  }
+
+  .inquiries-page-wrap .inquiries-table .inquiries-placeholder-cell {
+    height: 34px;
+  }
+
+  .inquiries-table thead .inquiries-header-row th {
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+
+  .inquiries-table th,
+  .inquiries-table td {
+    padding-top: 3px;
+    padding-bottom: 3px;
+    font-size: 10.5px;
+  }
+
+  .inquiries-header-cell .inquiries-grid-filter,
+  .inquiries-header-cell .inquiries-grid-filter-all,
+  .inquiries-header-cell .inquiries-grid-filter-assigned,
+  .inquiries-header-cell .inquiries-grid-filter-select,
+  .inquiries-header-cell .dealer-grid-filter {
+    min-height: 28px;
+    height: 28px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+
+  .inquiries-page-wrap .inquiries-status,
+  .inquiries-page-wrap .inquiries-pill {
+    padding: 2px 7px;
+    font-size: 10px;
+  }
+
+  .inquiries-page-wrap .inquiries-action-cell > * + * {
+    margin-left: 4px;
+  }
+
+  .inquiries-page-wrap .inquiries-action-cell .inquiries-view-status-btn,
+  .inquiries-page-wrap .inquiries-action-cell .inquiries-mark-failed-btn,
+  .inquiries-page-wrap .inquiries-action-cell .rewards-email-btn,
+  .inquiries-page-wrap .inquiries-action-cell .inquiries-incoming-assign-btn,
+  .inquiries-page-wrap .inquiries-action-cell .inquiries-edit-inquiry-btn,
+  .inquiries-page-wrap .inquiries-action-cell .inquiries-delete-inquiry-btn {
+    min-width: 30px;
+    padding: 3px;
+    border-radius: 6px;
+  }
+
+  .inquiries-page-wrap .inquiries-action-cell .inquiries-view-status-btn .bi,
+  .inquiries-page-wrap .inquiries-action-cell .inquiries-mark-failed-btn .bi,
+  .inquiries-page-wrap .inquiries-action-cell .rewards-email-btn .bi,
+  .inquiries-page-wrap .inquiries-action-cell .inquiries-incoming-assign-btn .bi,
+  .inquiries-page-wrap .inquiries-action-cell .inquiries-edit-inquiry-btn .bi,
+  .inquiries-page-wrap .inquiries-action-cell .inquiries-delete-inquiry-btn .bi {
+    font-size: 1.05rem;
+  }
+
+  .inquiries-page-wrap .inquiries-assigned-pagination {
+    min-height: 34px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+  }
+
+  .inquiries-page-wrap .inquiries-table-scroll,
+  #incomingPanel .inquiries-table-scroll,
+  #assignedPanel .inquiries-table-scroll,
+  #allPanel .inquiries-table-scroll {
+    min-height: 360px;
+  }
+
+  #incomingPanel .inquiries-table-scroll:not(.inquiries-table-scroll--no-x) {
+    min-height: 320px;
   }
 }
 

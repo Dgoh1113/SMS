@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Inquiries Management – Admin')
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/pages/admin-inquiries.css') }}?v=20260402-43">
+    <link rel="stylesheet" href="{{ asset('css/pages/admin-inquiries.css') }}?v=20260408-17">
 @endpush
 @section('content')
 @php
@@ -1872,6 +1872,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    function shouldUseInquiryPlaceholderRows() {
+        var viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+        var viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+        return !(viewportWidth >= 1280 && viewportHeight <= 899);
+    }
+
     function getInquiryVisibleColumnCount(table) {
         if (!table) return 1;
         var headerRow = table.querySelector('thead tr.inquiries-header-row');
@@ -1886,28 +1892,223 @@ document.addEventListener('DOMContentLoaded', function() {
         return Math.max(count, 1);
     }
 
+    function getInquiryMeasureWidth(table, fallbackTable) {
+        var primaryWidth = Math.round((table && table.getBoundingClientRect().width) || 0);
+        if (primaryWidth > 0) {
+            return primaryWidth;
+        }
+        var fallbackWidth = Math.round((fallbackTable && fallbackTable.getBoundingClientRect().width) || 0);
+        if (fallbackWidth > 0) {
+            return fallbackWidth;
+        }
+        return 1400;
+    }
+
+    function measureInquiryRowHeight(row, table, fallbackTable) {
+        if (!row) return 0;
+        var directHeight = Math.round(row.getBoundingClientRect().height || row.offsetHeight || 0);
+        if (directHeight > 0) {
+            return directHeight;
+        }
+
+        var host = document.createElement('div');
+        host.style.position = 'absolute';
+        host.style.left = '-10000px';
+        host.style.top = '0';
+        host.style.visibility = 'hidden';
+        host.style.pointerEvents = 'none';
+        host.style.width = getInquiryMeasureWidth(table, fallbackTable) + 'px';
+
+        var measureTable = document.createElement('table');
+        measureTable.className = table && table.className ? table.className : 'inquiries-table';
+        measureTable.style.width = '100%';
+
+        var measureBody = document.createElement('tbody');
+        var clone = row.cloneNode(true);
+        clone.style.display = '';
+        measureBody.appendChild(clone);
+        measureTable.appendChild(measureBody);
+        host.appendChild(measureTable);
+        document.body.appendChild(host);
+
+        var measuredHeight = Math.round(clone.getBoundingClientRect().height || clone.offsetHeight || 0);
+        host.remove();
+        return measuredHeight > 0 ? measuredHeight : 0;
+    }
+
+    function measureInquiryRowsBlockHeight(rows, table, fallbackTable) {
+        var filteredRows = Array.from(rows || []).filter(function(row) {
+            return !!row;
+        });
+        if (!filteredRows.length) return 0;
+
+        var firstRect = filteredRows[0].getBoundingClientRect();
+        var lastRect = filteredRows[filteredRows.length - 1].getBoundingClientRect();
+        var directHeight = Math.round((lastRect.bottom || 0) - (firstRect.top || 0));
+        if (directHeight > 0) {
+            return directHeight;
+        }
+
+        var host = document.createElement('div');
+        host.style.position = 'absolute';
+        host.style.left = '-10000px';
+        host.style.top = '0';
+        host.style.visibility = 'hidden';
+        host.style.pointerEvents = 'none';
+        host.style.width = getInquiryMeasureWidth(table, fallbackTable) + 'px';
+
+        var measureTable = document.createElement('table');
+        measureTable.className = table && table.className ? table.className : 'inquiries-table';
+        measureTable.style.width = '100%';
+
+        var measureBody = document.createElement('tbody');
+        filteredRows.forEach(function(row) {
+            var clone = row.cloneNode(true);
+            clone.style.display = '';
+            measureBody.appendChild(clone);
+        });
+        measureTable.appendChild(measureBody);
+        host.appendChild(measureTable);
+        document.body.appendChild(host);
+
+        var measuredHeight = Math.round(
+            measureBody.getBoundingClientRect().height ||
+            measureBody.offsetHeight ||
+            measureTable.getBoundingClientRect().height ||
+            measureTable.offsetHeight ||
+            0
+        );
+        host.remove();
+        return measuredHeight > 0 ? measuredHeight : 0;
+    }
+
+    function getInquiryVisibleRowsTotalHeight(tbody, table) {
+        if (!tbody) return 0;
+        var visibleRows = Array.from(tbody.querySelectorAll('tr.inquiry-row')).filter(function(row) {
+            return window.getComputedStyle(row).display !== 'none';
+        });
+        return measureInquiryRowsBlockHeight(visibleRows, table, table);
+    }
+
+    function getInquiryReferenceRowHeight(tbody, table) {
+        function measureFromBody(body, sourceTable) {
+            if (!body) return 0;
+            var visibleRow = Array.from(body.querySelectorAll('tr.inquiry-row')).find(function(row) {
+                return window.getComputedStyle(row).display !== 'none';
+            });
+            var referenceRow = visibleRow || body.querySelector('tr.inquiry-row');
+            if (!referenceRow) return 0;
+            return measureInquiryRowHeight(referenceRow, sourceTable || table, table);
+        }
+
+        var candidateSources = [];
+        var currentTableId = table && table.id ? table.id : '';
+        if (currentTableId !== 'assignedTable') {
+            var assignedTable = document.getElementById('assignedTable');
+            if (assignedTable) {
+                candidateSources.push({ body: assignedTable.querySelector('tbody'), table: assignedTable });
+            }
+        }
+        if (currentTableId !== 'allTable') {
+            var allTable = document.getElementById('allTable');
+            if (allTable) {
+                candidateSources.push({ body: allTable.querySelector('tbody'), table: allTable });
+            }
+        }
+        candidateSources.push({ body: tbody, table: table });
+
+        for (var i = 0; i < candidateSources.length; i += 1) {
+            var candidate = candidateSources[i];
+            var rowHeight = measureFromBody(candidate.body, candidate.table);
+            if (rowHeight > 0) {
+                return rowHeight;
+            }
+        }
+        return 0;
+    }
+
+    function getInquiryTargetBodyHeight(tbody, table, perPage) {
+        function measureBody(body, sourceTable) {
+            if (!body) return 0;
+            var rows = Array.from(body.querySelectorAll('tr.inquiry-row')).slice(0, perPage);
+            if (!rows.length) return 0;
+            return measureInquiryRowsBlockHeight(rows, sourceTable || table, table);
+        }
+
+        var candidateSources = [];
+        var currentTableId = table && table.id ? table.id : '';
+        if (currentTableId !== 'assignedTable') {
+            var assignedTable = document.getElementById('assignedTable');
+            if (assignedTable) {
+                candidateSources.push({ body: assignedTable.querySelector('tbody'), table: assignedTable });
+            }
+        }
+        if (currentTableId !== 'allTable') {
+            var allTable = document.getElementById('allTable');
+            if (allTable) {
+                candidateSources.push({ body: allTable.querySelector('tbody'), table: allTable });
+            }
+        }
+        candidateSources.push({ body: tbody, table: table });
+
+        for (var i = 0; i < candidateSources.length; i += 1) {
+            var candidate = candidateSources[i];
+            var bodyHeight = measureBody(candidate.body, candidate.table);
+            if (bodyHeight > 0) {
+                return bodyHeight;
+            }
+        }
+        return 0;
+    }
+
     function appendInquiryPlaceholderRows(table, tbody, visibleDataCount, perPage, allowZeroFill) {
-        if (!table || !tbody) return;
-        if (visibleDataCount >= perPage) return;
-        if (visibleDataCount <= 0 && !allowZeroFill) return;
+        if (!table || !tbody) return 0;
+        if (visibleDataCount >= perPage) return 0;
+        if (visibleDataCount <= 0 && !allowZeroFill) return 0;
         var missingCount = perPage - visibleDataCount;
         var colspan = getInquiryVisibleColumnCount(table);
+        var referenceRowHeight = getInquiryReferenceRowHeight(tbody, table);
+        var visibleRowsTotalHeight = getInquiryVisibleRowsTotalHeight(tbody, table);
+        var targetBodyHeight = getInquiryTargetBodyHeight(tbody, table, perPage);
+        if (targetBodyHeight <= 0 && referenceRowHeight > 0) {
+            targetBodyHeight = referenceRowHeight * perPage;
+        }
+        var placeholderRowHeight = referenceRowHeight;
+        if (targetBodyHeight > 0 && missingCount > 0) {
+            placeholderRowHeight = Math.max((targetBodyHeight - visibleRowsTotalHeight) / missingCount, 0);
+        }
         for (var i = 0; i < missingCount; i += 1) {
             var row = document.createElement('tr');
             row.className = 'inquiries-placeholder-row';
             var cell = document.createElement('td');
             cell.className = 'inquiries-placeholder-cell';
             cell.colSpan = colspan;
+            if (placeholderRowHeight > 0) {
+                row.style.height = placeholderRowHeight + 'px';
+                cell.style.height = placeholderRowHeight + 'px';
+                cell.style.minHeight = placeholderRowHeight + 'px';
+            }
             row.appendChild(cell);
             tbody.appendChild(row);
         }
+        return missingCount;
     }
 
     function updateInquiryTableHeightMode(scrollWrap, table, tbody, visibleDataCount, perPage, allowZeroFill) {
         clearInquiryPlaceholderRows(tbody);
-        appendInquiryPlaceholderRows(table, tbody, visibleDataCount, perPage, allowZeroFill);
+        var usePlaceholderRows = shouldUseInquiryPlaceholderRows();
+        var placeholderRowCount = 0;
+        if (usePlaceholderRows) {
+            placeholderRowCount = appendInquiryPlaceholderRows(table, tbody, visibleDataCount, perPage, allowZeroFill) || 0;
+        }
         if (!scrollWrap) return;
-        var useShortHeight = (visibleDataCount > 0 && visibleDataCount < perPage) || (visibleDataCount === 0 && allowZeroFill);
+        var tableWrap = scrollWrap.closest ? scrollWrap.closest('.inquiries-table-wrap') : null;
+        var visualRowCount = visibleDataCount + placeholderRowCount;
+        var isVisualFullPage = visualRowCount >= perPage;
+        var useShortHeight = !isVisualFullPage && ((visibleDataCount > 0 && visibleDataCount < perPage) || (visibleDataCount === 0 && allowZeroFill));
+        if (tableWrap) {
+            tableWrap.classList.toggle('inquiries-table-wrap-filled', isVisualFullPage || !usePlaceholderRows);
+        }
         scrollWrap.classList.toggle('inquiries-table-scroll-empty', visibleDataCount === 0 && !allowZeroFill);
         scrollWrap.classList.toggle('inquiries-table-scroll-short', useShortHeight);
     }
@@ -2365,9 +2566,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     })();
 
-    (function initAllPagination() {
-        var paginationEl = document.getElementById('allPagination');
-        if (!paginationEl) return;
+      (function initAllPagination() {
+          var paginationEl = document.getElementById('allPagination');
+          if (!paginationEl) return;
         var infoEl = document.getElementById('allPaginationInfo');
         var firstBtn = document.getElementById('allPaginationFirst');
         var prevBtn = document.getElementById('allPaginationPrev');
@@ -2460,8 +2661,70 @@ document.addEventListener('DOMContentLoaded', function() {
                     applyAllPage(p);
                 }
             });
-        }
-    })();
-});
-</script>
-@endsection
+          }
+      })();
+
+      function syncAllInquiryPaginations() {
+          if (typeof window.refreshAssignedPagination === 'function') {
+              window.refreshAssignedPagination();
+          }
+          if (typeof window.refreshAllPagination === 'function') {
+              window.refreshAllPagination();
+          }
+          if (typeof window.refreshIncomingPagination === 'function') {
+              window.refreshIncomingPagination();
+          }
+      }
+
+      var inquiryPaginationSyncTimers = [];
+      function clearInquiryPaginationSyncTimers() {
+          inquiryPaginationSyncTimers.forEach(function(timer) {
+              clearTimeout(timer);
+          });
+          inquiryPaginationSyncTimers = [];
+      }
+
+      function scheduleInquiryPaginationSync() {
+          clearInquiryPaginationSyncTimers();
+          requestAnimationFrame(syncAllInquiryPaginations);
+          inquiryPaginationSyncTimers.push(setTimeout(function() {
+              requestAnimationFrame(syncAllInquiryPaginations);
+          }, 120));
+          inquiryPaginationSyncTimers.push(setTimeout(function() {
+              requestAnimationFrame(syncAllInquiryPaginations);
+          }, 320));
+      }
+
+      requestAnimationFrame(function() {
+          requestAnimationFrame(scheduleInquiryPaginationSync);
+      });
+
+      window.addEventListener('load', function() {
+          scheduleInquiryPaginationSync();
+      }, { once: true });
+
+      if (document.fonts && document.fonts.ready && typeof document.fonts.ready.then === 'function') {
+          document.fonts.ready.then(function() {
+              scheduleInquiryPaginationSync();
+          }).catch(function() {});
+      }
+
+      if (window.MutationObserver) {
+          var inquiryThemeObserver = new MutationObserver(function(mutations) {
+              var shouldSync = mutations.some(function(mutation) {
+                  return mutation.type === 'attributes' &&
+                      mutation.attributeName &&
+                      (mutation.attributeName === 'class' || mutation.attributeName === 'data-theme');
+              });
+              if (shouldSync) {
+                  scheduleInquiryPaginationSync();
+              }
+          });
+          inquiryThemeObserver.observe(document.documentElement, {
+              attributes: true,
+              attributeFilter: ['class', 'data-theme']
+          });
+      }
+  });
+  </script>
+  @endsection

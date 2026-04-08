@@ -8,8 +8,17 @@
     <link rel="icon" type="image/png" href="{{ asset('sql-logo.png') }}?v=20260318">
     <link rel="shortcut icon" href="{{ asset('sql-logo.png') }}?v=20260318">
     <link rel="apple-touch-icon" href="{{ asset('sql-logo.png') }}?v=20260318">
+    <script>
+        (function () {
+            try {
+                if (localStorage.getItem('sqlsms-theme') === 'dark') {
+                    document.documentElement.classList.add('theme-dark');
+                }
+            } catch (e) {}
+        })();
+    </script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-<link rel="stylesheet" href="{{ asset('css/app.css') }}?v=20260403-02">
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=20260408-14">
     <script src="{{ asset('js/passkey-registration.js') }}"></script>
     <script>
         // Apply sidebar state ASAP (prevents flicker on page navigation)
@@ -42,7 +51,13 @@
                 <span class="dashboard-topbar-toggle-inner"></span>
             </button>
             <div class="dashboard-topbar-actions">
-                <a href="#" class="dashboard-icon-btn top-right-btn" type="button" title="Bookmark"><img src="{{ asset('Guide.ico') }}" alt="Bookmark" class="dashboard-icon-img"></a>
+                <a href="#" class="dashboard-icon-btn top-right-btn dashboard-bookmark-btn" type="button" title="Bookmark" aria-label="Bookmark">
+                    <img src="{{ asset('Guide.ico') }}" alt="Bookmark" class="dashboard-bookmark-img-light" aria-hidden="true">
+                    <i class="bi bi-bookmark-star-fill dashboard-bookmark-icon-dark" aria-hidden="true"></i>
+                </a>
+                <button type="button" class="dashboard-icon-btn top-right-btn dashboard-theme-toggle" data-theme-toggle aria-label="Enable dark mode" title="Enable dark mode">
+                    <i class="bi bi-moon-fill" data-theme-icon aria-hidden="true"></i>
+                </button>
                 @if (session('user_role') === 'dealer')
                     <div class="dashboard-notifications">
                         <button type="button" class="dashboard-icon-btn top-right-btn" id="dealerNotificationsTrigger" aria-expanded="false" aria-haspopup="true" title="Notifications">
@@ -131,6 +146,77 @@
         </footer>
     </main>
 </div>
+
+<script>
+(function () {
+    var THEME_KEY = 'sqlsms-theme';
+
+    function getStoredTheme() {
+        try {
+            return localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light';
+        } catch (e) {
+            return 'light';
+        }
+    }
+
+    function isDarkTheme() {
+        return document.documentElement.classList.contains('theme-dark');
+    }
+
+    function updateThemeToggle(button) {
+        if (!button) return;
+
+        var dark = isDarkTheme();
+        var icon = button.querySelector('[data-theme-icon]');
+        button.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+        button.setAttribute('title', dark ? 'Switch to light mode' : 'Switch to dark mode');
+        button.setAttribute('data-theme-state', dark ? 'dark' : 'light');
+
+        if (icon) {
+            icon.classList.remove('bi-moon-fill', 'bi-brightness-high-fill');
+            icon.classList.add(dark ? 'bi-brightness-high-fill' : 'bi-moon-fill');
+        }
+    }
+
+    function syncThemeToggles() {
+        document.querySelectorAll('[data-theme-toggle]').forEach(updateThemeToggle);
+    }
+
+    function applyTheme(theme) {
+        var dark = theme === 'dark';
+        document.documentElement.classList.toggle('theme-dark', dark);
+        document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+        syncThemeToggles();
+    }
+
+    function toggleTheme() {
+        var nextTheme = isDarkTheme() ? 'light' : 'dark';
+        try {
+            localStorage.setItem(THEME_KEY, nextTheme);
+        } catch (e) {}
+        applyTheme(nextTheme);
+    }
+
+    document.querySelectorAll('[data-theme-toggle]').forEach(function (button) {
+        if (button.dataset.themeBound === '1') {
+            updateThemeToggle(button);
+            return;
+        }
+
+        button.dataset.themeBound = '1';
+        updateThemeToggle(button);
+        button.addEventListener('click', toggleTheme);
+    });
+
+    window.addEventListener('storage', function (event) {
+        if (event.key === THEME_KEY) {
+            applyTheme(getStoredTheme());
+        }
+    });
+
+    applyTheme(getStoredTheme());
+})();
+</script>
 
 @push('scripts')
 <script>
@@ -897,4 +983,3 @@
 @stack('scripts')
 </body>
 </html>
-

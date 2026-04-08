@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Dashboard - Admin')
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/pages/admin-dashboard.css') }}?v=20260406-01">
+    <link rel="stylesheet" href="{{ asset('css/pages/admin-dashboard.css') }}?v=20260408-04">
 @endpush
 @section('content')
 <div class="admin-dashboard-page">
@@ -213,7 +213,115 @@ document.addEventListener('DOMContentLoaded', function() {
     let closedChart = null;
     let referralChart = null;
 
+    function isDarkTheme() {
+        return document.documentElement.classList.contains('theme-dark');
+    }
+
+    function getDashboardChartPalette() {
+        if (isDarkTheme()) {
+            return {
+                tick: '#8ea2c8',
+                grid: 'rgba(90, 109, 149, 0.16)',
+                closedFill: 'rgba(124, 92, 255, 0.72)',
+                closedBorder: 'rgba(173, 157, 255, 0.96)',
+                referralFill: 'rgba(124, 92, 255, 0.18)',
+                referralBorder: 'rgba(179, 163, 255, 1)',
+                referralPoint: '#d7cbff',
+                tooltipBg: 'rgba(8, 17, 31, 0.94)',
+                tooltipBorder: 'rgba(155, 135, 255, 0.36)',
+                tooltipText: '#eef4ff',
+            };
+        }
+
+        return {
+            tick: '#6b7280',
+            grid: 'rgba(148, 163, 184, 0.18)',
+            closedFill: 'rgba(127, 90, 240, 0.6)',
+            closedBorder: 'rgba(127, 90, 240, 1)',
+            referralFill: 'rgba(127, 90, 240, 0.1)',
+            referralBorder: 'rgba(127, 90, 240, 1)',
+            referralPoint: 'rgba(127, 90, 240, 1)',
+            tooltipBg: 'rgba(17, 24, 39, 0.92)',
+            tooltipBorder: 'rgba(127, 90, 240, 0.18)',
+            tooltipText: '#ffffff',
+        };
+    }
+
+    function buildTooltipOptions(palette) {
+        return {
+            backgroundColor: palette.tooltipBg,
+            titleColor: palette.tooltipText,
+            bodyColor: palette.tooltipText,
+            borderColor: palette.tooltipBorder,
+            borderWidth: 1,
+            cornerRadius: 10,
+            padding: 10,
+            displayColors: false
+        };
+    }
+
+    function buildScaleOptions(palette) {
+        return {
+            x: {
+                ticks: {
+                    color: palette.tick,
+                    font: { size: 11 }
+                },
+                grid: {
+                    color: palette.grid,
+                    drawBorder: false
+                },
+                border: { display: false }
+            },
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    color: palette.tick,
+                    precision: 0,
+                    font: { size: 11 }
+                },
+                grid: {
+                    color: palette.grid,
+                    drawBorder: false
+                },
+                border: { display: false }
+            }
+        };
+    }
+
+    function applyDashboardChartTheme() {
+        const palette = getDashboardChartPalette();
+
+        if (closedChart) {
+            const closedDataset = closedChart.data.datasets[0];
+            closedDataset.backgroundColor = palette.closedFill;
+            closedDataset.borderColor = palette.closedBorder;
+            closedDataset.borderRadius = 10;
+            closedDataset.maxBarThickness = 42;
+            closedDataset.hoverBackgroundColor = palette.closedBorder;
+            closedChart.options.plugins.tooltip = buildTooltipOptions(palette);
+            closedChart.options.scales = buildScaleOptions(palette);
+            closedChart.update('none');
+        }
+
+        if (referralChart) {
+            const referralDataset = referralChart.data.datasets[0];
+            referralDataset.borderColor = palette.referralBorder;
+            referralDataset.backgroundColor = palette.referralFill;
+            referralDataset.pointBackgroundColor = palette.referralPoint;
+            referralDataset.pointBorderColor = palette.referralPoint;
+            referralDataset.pointHoverBackgroundColor = palette.tooltipText;
+            referralDataset.pointHoverBorderColor = palette.referralBorder;
+            referralDataset.pointRadius = 3;
+            referralDataset.pointHoverRadius = 5;
+            referralChart.options.plugins.tooltip = buildTooltipOptions(palette);
+            referralChart.options.scales = buildScaleOptions(palette);
+            referralChart.update('none');
+        }
+    }
+
     if (ctx1 && weekData) {
+        const palette = getDashboardChartPalette();
         closedChart = new Chart(ctx1, {
             type: 'bar',
             data: {
@@ -221,23 +329,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 datasets: [{
                     label: 'Closed',
                     data: weekData,
-                    backgroundColor: 'rgba(127, 90, 240, 0.6)',
-                    borderColor: 'rgba(127, 90, 240, 1)',
-                    borderWidth: 1
+                    backgroundColor: palette.closedFill,
+                    borderColor: palette.closedBorder,
+                    borderWidth: 1,
+                    borderRadius: 10,
+                    maxBarThickness: 42
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true }
-                }
+                plugins: {
+                    legend: { display: false },
+                    tooltip: buildTooltipOptions(palette)
+                },
+                scales: buildScaleOptions(palette)
             }
         });
     }
 
     if (ctx2 && referralWeekData) {
+        const palette = getDashboardChartPalette();
         referralChart = new Chart(ctx2, {
             type: 'line',
             data: {
@@ -245,19 +357,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 datasets: [{
                     label: 'Activity',
                     data: referralWeekData,
-                    borderColor: 'rgba(127, 90, 240, 1)',
-                    backgroundColor: 'rgba(127, 90, 240, 0.1)',
+                    borderColor: palette.referralBorder,
+                    backgroundColor: palette.referralFill,
                     fill: true,
-                    tension: 0.4
+                    tension: 0.4,
+                    pointBackgroundColor: palette.referralPoint,
+                    pointBorderColor: palette.referralPoint,
+                    pointRadius: 3,
+                    pointHoverRadius: 5
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true }
-                }
+                plugins: {
+                    legend: { display: false },
+                    tooltip: buildTooltipOptions(palette)
+                },
+                scales: buildScaleOptions(palette)
             }
         });
     }
@@ -285,6 +402,24 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    applyDashboardChartTheme();
+
+    if (window.MutationObserver) {
+        const themeObserver = new MutationObserver(function(mutations) {
+            for (const mutation of mutations) {
+                if (mutation.type === 'attributes') {
+                    applyDashboardChartTheme();
+                    break;
+                }
+            }
+        });
+
+        themeObserver.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['class', 'data-theme']
+        });
+    }
 });
 </script>
 @endpush
