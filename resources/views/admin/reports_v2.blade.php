@@ -1,8 +1,8 @@
 @extends('layouts.app')
 @section('title', 'Report - Dealer Sales Overtime')
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/shared/reports-tabs.css') }}?v=20260402-8">
-    <link rel="stylesheet" href="{{ asset('css/report_dealer_sales_overtime.css') }}?v=20260406-1">
+    <link rel="stylesheet" href="{{ asset('css/shared/reports-tabs.css') }}?v=20260409-1">
+    <link rel="stylesheet" href="{{ asset('css/report_dealer_sales_overtime.css') }}?v=20260409-1">
     <link rel="stylesheet" href="{{ asset('css/pages/admin-reports-v2.css') }}?v=20260324-9">
 @endpush
 @section('content')
@@ -321,9 +321,18 @@
             const BAR_CLOSED_HOVER = 'rgba(22, 163, 74, 1)';
             const BAR_RED_BORDER = 'rgba(127, 29, 29, 1)';
             const BAR_CLOSED_BORDER = 'rgba(20, 83, 45, 1)';
+            const isDarkTheme = document.documentElement.classList.contains('theme-dark');
             const isMobile = window.matchMedia('(max-width: 768px)').matches;
             const chartLabelFontSize = isMobile ? 8 : 10;
             const chartBarThickness = isMobile ? 22 : 40;
+            const neutralTickColor = isDarkTheme ? '#93a0bf' : '#475569';
+            const neutralTitleColor = isDarkTheme ? '#7f8caf' : '#64748b';
+            const failedAxisColor = isDarkTheme ? '#ff9b9b' : '#7f1d1d';
+            const closedAxisColor = isDarkTheme ? '#7be194' : '#166534';
+            const gridLineColor = isDarkTheme ? 'rgba(148, 163, 184, 0.12)' : 'rgba(148, 163, 184, 0.22)';
+            const zeroLineColor = isDarkTheme ? 'rgba(148, 163, 184, 0.26)' : 'rgba(51, 65, 85, 0.4)';
+            const failedBackdropColor = isDarkTheme ? 'rgba(239, 68, 68, 0.08)' : 'rgba(248, 113, 113, 0.06)';
+            const closedBackdropColor = isDarkTheme ? 'rgba(74, 222, 128, 0.08)' : 'rgba(74, 222, 128, 0.06)';
 
             if (window.Chart && typeof window.ChartDataLabels !== 'undefined') {
                 window.Chart.register(window.ChartDataLabels);
@@ -381,9 +390,9 @@
                     const ctx = chart.ctx;
 
                     ctx.save();
-                    ctx.fillStyle = 'rgba(248, 113, 113, 0.06)';
+                    ctx.fillStyle = failedBackdropColor;
                     ctx.fillRect(left, top, Math.max(0, zeroX - left), height);
-                    ctx.fillStyle = 'rgba(74, 222, 128, 0.06)';
+                    ctx.fillStyle = closedBackdropColor;
                     ctx.fillRect(zeroX, top, Math.max(0, right - zeroX), height);
                     ctx.restore();
                 }
@@ -459,6 +468,11 @@
                     plugins: {
                         legend: { display: false },
                         tooltip: {
+                            backgroundColor: isDarkTheme ? 'rgba(15, 23, 42, 0.96)' : 'rgba(15, 23, 42, 0.92)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#e5edf9',
+                            borderColor: isDarkTheme ? 'rgba(99, 113, 146, 0.45)' : 'rgba(148, 163, 184, 0.24)',
+                            borderWidth: 1,
                             callbacks: {
                                 label: function(ctx) {
                                     const pct = Math.abs(Number(ctx.raw) || 0);
@@ -491,7 +505,7 @@
                             max: 100,
                             grid: {
                                 color: function(ctx) {
-                                    return Number(ctx.tick?.value) === 0 ? 'rgba(51, 65, 85, 0.4)' : 'rgba(148, 163, 184, 0.22)';
+                                    return Number(ctx.tick?.value) === 0 ? zeroLineColor : gridLineColor;
                                 },
                                 lineWidth: function(ctx) {
                                     return Number(ctx.tick?.value) === 0 ? 1.2 : 1;
@@ -500,14 +514,14 @@
                             },
                             ticks: {
                                 stepSize: 20,
-                                color: '#475569',
+                                color: neutralTickColor,
                                 font: { size: chartLabelFontSize },
                                 callback: function(v) { return Math.abs(v); }
                             },
                             title: {
                                 display: true,
                                 text: 'Percentage of cases',
-                                color: '#64748b',
+                                color: neutralTitleColor,
                                 font: { size: chartLabelFontSize, weight: '700' }
                             }
                         },
@@ -517,7 +531,7 @@
                             grid: { display: false, drawBorder: false },
                             ticks: {
                                 autoSkip: false,
-                                color: '#7f1d1d',
+                                color: failedAxisColor,
                                 font: { size: chartLabelFontSize, weight: '700' },
                                 callback: function(value, index) {
                                     const name = failedName[index] ?? '—';
@@ -531,7 +545,7 @@
                             grid: { display: false, drawBorder: false },
                             ticks: {
                                 autoSkip: false,
-                                color: '#166534',
+                                color: closedAxisColor,
                                 font: { size: chartLabelFontSize, weight: '700' },
                                 callback: function(value, index) {
                                     const name = closedName[index] ?? '—';

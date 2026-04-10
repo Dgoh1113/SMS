@@ -106,7 +106,7 @@
                 <div class="dashboard-panel-title dashboard-chart-title">
                     <span class="dashboard-chart-title-text">Closed Case</span>
                     <i class="bi bi-info-circle dashboard-info-icon"
-                       title="Count of leads turned into closed cases grouped by creation date (week/month/year)."></i>
+                       title="Count of leads turned into close cases."></i>
                 </div>
             </div>
             <div class="dashboard-panel-body">

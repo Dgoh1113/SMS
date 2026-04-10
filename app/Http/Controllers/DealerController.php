@@ -117,31 +117,39 @@ class DealerController extends Controller
                 [$dealerId, 'ONGOING']
             );
             $activeInquiriesCount = (int) ($activeCountRow->CNT ?? 0);
-
-            // Total closed should only count leads whose latest status for this dealer
-            // is COMPLETED or REWARDED (and not later marked as FAILED).
-            $closedCountRow = DB::selectOne(
-                'SELECT COUNT(*) AS "CNT"
-                 FROM (
-                     SELECT DISTINCT la."LEADID",
-                         (
-                             SELECT FIRST 1 la2."STATUS"
-                             FROM "LEAD_ACT" la2
-                             WHERE la2."LEADID" = la."LEADID"
-                               AND la2."USERID" = la."USERID"
-                             ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC
-                         ) AS "LATEST_STATUS"
-                     FROM "LEAD_ACT" la
-                     WHERE la."USERID" = ?
-                 ) x
-                 WHERE UPPER(TRIM(COALESCE(x."LATEST_STATUS", \'\'))) IN (\'COMPLETED\', \'REWARDED\')',
-                [$dealerId]
-            );
-            $closedCount = (int) ($closedCountRow->CNT ?? 0);
+            $dealerClosedLeadStatus = 'CLOSED';
+            $dealerClosedLeadDateSql = 'COALESCE(l."LASTMODIFIED", l."CREATEDAT")';
 
             $countMetricRow = static function ($row): int {
                 return (int) ($row->CNT ?? $row->cnt ?? $row->C ?? $row->c ?? current((array) $row) ?? 0);
             };
+
+            $countClosedLeads = function (?string $start = null, ?string $end = null) use (
+                $dealerId,
+                $dealerClosedLeadStatus,
+                $dealerClosedLeadDateSql,
+                $countMetricRow
+            ): int {
+                $sql = 'SELECT COUNT(*) AS "CNT"
+                        FROM "LEAD" l
+                        WHERE l."ASSIGNED_TO" = ?
+                          AND UPPER(TRIM(COALESCE(l."CURRENTSTATUS", \'\'))) = ?';
+                $params = [$dealerId, $dealerClosedLeadStatus];
+
+                if ($start !== null && $end !== null) {
+                    $sql .= '
+                          AND ' . $dealerClosedLeadDateSql . ' >= ?
+                          AND ' . $dealerClosedLeadDateSql . ' <= ?';
+                    $params[] = $start;
+                    $params[] = $end;
+                }
+
+                return $countMetricRow(DB::selectOne($sql, $params));
+            };
+
+            // Total closed should follow the LEAD table directly for leads
+            // assigned to this dealer whose current status is Closed.
+            $closedCount = $countClosedLeads();
 
             $activeThisWeek = $activeInquiriesCount;
             $activeLastWeek = 0;
@@ -180,25 +188,15 @@ class DealerController extends Controller
 
                 $activeLastWeek = $countActiveSnapshot($endLastWeek->format('Y-m-d H:i:s'));
 
-                $closedThisWeekRow = DB::selectOne(
-                    'SELECT COUNT(DISTINCT "LEADID") AS "CNT"
-                     FROM "LEAD_ACT"
-                     WHERE "USERID" = ?
-                       AND UPPER(TRIM(COALESCE("STATUS", \'\'))) IN (\'COMPLETED\', \'REWARDED\', \'REWARD DISTRIBUTED\')
-                       AND "CREATIONDATE" >= ? AND "CREATIONDATE" <= ?',
-                    [$dealerId, $startThisWeek->format('Y-m-d H:i:s'), Carbon::now()->format('Y-m-d H:i:s')]
+                $closedThisWeek = $countClosedLeads(
+                    $startThisWeek->format('Y-m-d H:i:s'),
+                    Carbon::now()->format('Y-m-d H:i:s')
                 );
-                $closedThisWeek = $countMetricRow($closedThisWeekRow);
 
-                $closedLastWeekRow = DB::selectOne(
-                    'SELECT COUNT(DISTINCT "LEADID") AS "CNT"
-                     FROM "LEAD_ACT"
-                     WHERE "USERID" = ?
-                       AND UPPER(TRIM(COALESCE("STATUS", \'\'))) IN (\'COMPLETED\', \'REWARDED\', \'REWARD DISTRIBUTED\')
-                       AND "CREATIONDATE" >= ? AND "CREATIONDATE" <= ?',
-                    [$dealerId, $startLastWeek->format('Y-m-d H:i:s'), $endLastWeek->format('Y-m-d H:i:s')]
+                $closedLastWeek = $countClosedLeads(
+                    $startLastWeek->format('Y-m-d H:i:s'),
+                    $endLastWeek->format('Y-m-d H:i:s')
                 );
-                $closedLastWeek = $countMetricRow($closedLastWeekRow);
             } catch (\Throwable $e) {
                 $activeLastWeek = 0;
                 $closedThisWeek = 0;
@@ -324,13 +322,7 @@ class DealerController extends Controller
                 $startOfWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
                 for ($i = 0; $i < 7; $i++) {
                     $day = $startOfWeek->copy()->addDays($i)->format('Y-m-d');
-                    $r = DB::selectOne(
-                        'SELECT COUNT(*) AS c FROM "LEAD_ACT"
-                        WHERE "USERID" = ? AND UPPER(TRIM(COALESCE("STATUS", \'\'))) IN (\'COMPLETED\', \'REWARDED\')
-                        AND CAST("CREATIONDATE" AS DATE) = CAST(? AS DATE)',
-                        [$dealerId, $day]
-                    );
-                    $chartData[$i] = (int) ($r->c ?? $r->C ?? 0);
+                    $chartData[$i] = $countClosedLeads($day . ' 00:00:00', $day . ' 23:59:59');
                 }
             } catch (\Throwable $e) {
                 // keep zeros
@@ -342,13 +334,7 @@ class DealerController extends Controller
                 for ($i = 1; $i <= $daysInMonth; $i++) {
                     $chartMonthLabels[] = (string) $i;
                     $day = $start->copy()->day($i)->format('Y-m-d');
-                    $r = DB::selectOne(
-                        'SELECT COUNT(*) AS c FROM "LEAD_ACT"
-                        WHERE "USERID" = ? AND UPPER(TRIM(COALESCE("STATUS", \'\'))) IN (\'COMPLETED\', \'REWARDED\')
-                        AND CAST("CREATIONDATE" AS DATE) = CAST(? AS DATE)',
-                        [$dealerId, $day]
-                    );
-                    $chartMonthData[] = (int) ($r->c ?? $r->C ?? 0);
+                    $chartMonthData[] = $countClosedLeads($day . ' 00:00:00', $day . ' 23:59:59');
                 }
             } catch (\Throwable $e) {
                 $chartMonthLabels = range(1, 30);
@@ -360,13 +346,10 @@ class DealerController extends Controller
                 for ($m = 0; $m < 12; $m++) {
                     $monthStart = $yearStart->copy()->addMonths($m);
                     $monthEnd = $monthStart->copy()->endOfMonth();
-                    $r = DB::selectOne(
-                        'SELECT COUNT(*) AS c FROM "LEAD_ACT"
-                        WHERE "USERID" = ? AND UPPER(TRIM(COALESCE("STATUS", \'\'))) IN (\'COMPLETED\', \'REWARDED\')
-                        AND "CREATIONDATE" >= ? AND "CREATIONDATE" <= ?',
-                        [$dealerId, $monthStart->format('Y-m-d 00:00:00'), $monthEnd->format('Y-m-d 23:59:59')]
+                    $chartYearData[$m] = $countClosedLeads(
+                        $monthStart->format('Y-m-d 00:00:00'),
+                        $monthEnd->format('Y-m-d 23:59:59')
                     );
-                    $chartYearData[$m] = (int) ($r->c ?? $r->C ?? 0);
                 }
             } catch (\Throwable $e) {
                 $chartYearData = array_fill(0, 12, 0);
@@ -1214,7 +1197,10 @@ class DealerController extends Controller
             try {
                 $lastDt = Carbon::parse($lastCreationDate);
                 $newDt = Carbon::parse($creationDate);
-                if ($newDt->lt($lastDt)) {
+                $lastComparableDt = $lastDt->copy()->startOfMinute();
+                $newComparableDt = $newDt->copy()->startOfMinute();
+
+                if ($newComparableDt->lt($lastComparableDt)) {
                     return response()->json([
                         'success' => false,
                         'message' => 'Invalid date/time. It must be on/after the previous status time (' . $lastDt->format('Y-m-d H:i') . ').',

@@ -50,6 +50,8 @@ body {
   justify-content: space-between;
   color: var(--text-muted);
   font-size: 14px;
+  position: relative;
+  z-index: 1301;
 }
 
 .login-logo-text {
@@ -575,11 +577,12 @@ body {
 
 .login-splash {
   position: fixed;
-  inset: 0;
+  inset: 60px 0 0;
   z-index: 1200;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: calc(100vh - 60px);
   padding: 24px;
   background:
     radial-gradient(circle at top left, rgba(243, 232, 255, 0.96) 0, rgba(245, 244, 255, 0.98) 42%, rgba(249, 250, 251, 0.98) 100%);
@@ -2833,45 +2836,60 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
 /* Operator search box: one box with [operator btn][input][icon] + dropdown (Leads, Ongoing, Closed, Failed) */
 #dealersTable .dealer-operator-search-wrap {
   min-width: 0;
+  width: 100%;
+  max-width: 88px;
+  position: relative;
 }
 #dealersTable .dealer-operator-search-box {
   display: flex;
   align-items: center;
   min-width: 0;
+  width: 100%;
+  height: 28px;
+  min-height: 28px;
   border: 1px solid #ddd6fe;
-  border-radius: 6px;
+  border-radius: 5px;
   background: #fff;
   position: relative;
+  overflow: visible;
+  box-sizing: border-box;
 }
 #dealersTable .dealer-operator-search-box .dealer-operator-btn {
   flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
+  width: 28px;
+  height: 100%;
+  min-width: 28px;
   border: none;
   border-right: 1px solid #e5e7eb;
-  border-radius: 6px 0 0 6px;
-  background: #f9fafb;
-  color: #4c1d95;
-  font-size: 14px;
+  border-radius: 5px 0 0 5px;
+  background: linear-gradient(180deg, #faf6ff 0%, #f1e6ff 100%);
+  color: #6d28d9;
+  font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
 }
 #dealersTable .dealer-operator-search-box .dealer-operator-btn:hover {
-  background: #f0ebff;
+  background: linear-gradient(180deg, #f3e8ff 0%, #eadbff 100%);
   color: #5b21b6;
 }
 #dealersTable .dealer-operator-search-box .dealer-grid-filter {
   flex: 1;
   min-width: 0;
+  height: 100%;
   border: none;
   border-radius: 0;
-  padding: 6px 10px 6px 8px;
+  padding: 3px 6px;
   background: transparent;
+  font-size: 11px;
+  line-height: 1;
+  box-sizing: border-box;
 }
 #dealersTable .dealer-operator-search-box .dealer-grid-filter:focus {
   outline: none;
@@ -2909,8 +2927,16 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
 .inquiries-assign-dealers-table .dealer-operator-search-wrap {
   display: block;
   width: 100%;
-  max-width: 108px;
+  max-width: 88px;
   min-width: 0;
+  position: relative;
+}
+.inquiries-table .dealer-operator-search-wrap {
+  margin: 0 auto 0 0;
+}
+.inquiries-table th[data-col="users"] .dealer-operator-search-wrap {
+  position: relative;
+  top: -1px;
 }
 .inquiries-table .dealer-operator-search-box,
 .inquiries-assign-dealers-table .dealer-operator-search-box {
@@ -2918,10 +2944,10 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
   align-items: center;
   min-width: 0;
   width: 100%;
-  height: 29px;
-  min-height: 29px;
+  height: 28px;
+  min-height: 28px;
   border: 1px solid #ddd6fe;
-  border-radius: 6px;
+  border-radius: 5px;
   background: #fff;
   position: relative;
   overflow: visible;
@@ -2935,14 +2961,14 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
 .inquiries-table .dealer-operator-search-box .dealer-operator-btn,
 .inquiries-assign-dealers-table .dealer-operator-search-box .dealer-operator-btn {
   flex-shrink: 0;
-  width: 30px;
+  width: 28px;
   height: 100%;
-  min-width: 30px;
+  min-width: 28px;
   border: none;
   border-right: 1px solid #e5e7eb;
-  border-radius: 6px 0 0 6px;
-  background: #f9fafb;
-  color: #4c1d95;
+  border-radius: 5px 0 0 5px;
+  background: linear-gradient(180deg, #faf6ff 0%, #f1e6ff 100%);
+  color: #6d28d9;
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
@@ -2950,10 +2976,13 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
   align-items: center;
   justify-content: center;
   padding: 0;
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
 }
 .inquiries-table .dealer-operator-search-box .dealer-operator-btn:hover,
 .inquiries-assign-dealers-table .dealer-operator-search-box .dealer-operator-btn:hover {
-  background: #f0ebff;
+  background: linear-gradient(180deg, #f3e8ff 0%, #eadbff 100%);
   color: #5b21b6;
 }
 .inquiries-table .dealer-operator-search-box input,
@@ -2963,9 +2992,9 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
   height: 100%;
   border: none;
   border-radius: 0;
-  padding: 4px 7px;
+  padding: 3px 6px;
   background: transparent;
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1;
   box-sizing: border-box;
 }
@@ -3186,6 +3215,11 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
   box-shadow: none !important;
   padding: 0 !important;
 }
+
+.inquiries-table .inquiries-placeholder-row {
+  pointer-events: none;
+}
+
 .inquiries-table .inquiries-placeholder-row:hover td {
   background: transparent !important;
 }
@@ -3245,9 +3279,13 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
   padding: 8px 32px 8px 12px;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
-  background: #ede9fe;
+  background: linear-gradient(180deg, #ffffff 0%, #f9f7ff 100%);
   font-size: 12px;
   color: var(--text-main);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 2px rgba(109, 80, 242, 0.08);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
 }
 
 .inquiries-filter-input::placeholder {
@@ -4484,8 +4522,12 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
   font-size: 12px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  background: #fff;
+  background: linear-gradient(180deg, #ffffff 0%, #f9f7ff 100%);
   box-sizing: border-box;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 2px rgba(109, 80, 242, 0.08);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
 }
 
 .inquiries-grid-filter-wrap .inquiries-grid-filter-input::placeholder {
@@ -4515,13 +4557,17 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
   font-size: 12px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  background: #fff;
+  background: linear-gradient(180deg, #ffffff 0%, #f9f7ff 100%);
   color: #374151;
   cursor: pointer;
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%236b7280' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 8px center;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 2px rgba(109, 80, 242, 0.08);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
 }
 
 .inquiries-grid-filter-select:focus {
@@ -5481,7 +5527,7 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
 .inquiries-table.inquiries-table--fit th[data-col="businessnature"],
 .inquiries-table.inquiries-table--fit td[data-col="businessnature"] { width: 140px; }
 .inquiries-table.inquiries-table--fit th[data-col="users"],
-.inquiries-table.inquiries-table--fit td[data-col="users"] { width: 108px; }
+.inquiries-table.inquiries-table--fit td[data-col="users"] { width: 140px; }
 .inquiries-table.inquiries-table--fit th[data-col="products"],
 .inquiries-table.inquiries-table--fit td[data-col="products"] { width: 220px; }
 .inquiries-table.inquiries-table--fit th[data-col="assignby"],
@@ -5542,6 +5588,20 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
   display: block;
   position: relative;
   min-width: 0;
+  border: 1px solid #ddd6fe;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #ffffff 0%, #f9f7ff 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 2px rgba(109, 80, 242, 0.08);
+  overflow: hidden;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+.inquiries-header-cell .inquiries-filter-wrap:focus-within {
+  border-color: #7f5af0;
+  box-shadow:
+    0 0 0 2px rgba(127, 90, 240, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 .inquiries-header-cell .inquiries-grid-filter,
 .inquiries-header-cell .inquiries-grid-filter-all,
@@ -5552,10 +5612,13 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
   min-width: 50px;
   padding: 6px 28px 6px 8px;
   font-size: 12px;
-  border: 1px solid #ddd6fe;
-  border-radius: 6px;
-  background-color: #fff;
+  height: 100%;
+  border: none;
+  border-radius: 0;
+  background: transparent;
   color: #374151;
+  box-shadow: none;
+  box-sizing: border-box;
 }
 .inquiries-header-cell .inquiries-grid-filter:focus,
 .inquiries-header-cell .inquiries-grid-filter-all:focus,
@@ -5563,8 +5626,8 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
 .inquiries-header-cell .inquiries-grid-filter-select:focus,
 .inquiries-header-cell .dealer-grid-filter:focus {
   outline: none;
-  border-color: #7f5af0;
-  box-shadow: 0 0 0 2px rgba(127, 90, 240, 0.15);
+  border-color: transparent;
+  box-shadow: none;
 }
 .inquiries-header-cell .inquiries-filter-icon {
   position: absolute;
@@ -5691,9 +5754,9 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
 }
 #dealerInquiriesTable th[data-col="users"],
 #dealerInquiriesTable td[data-col="users"] {
-  width: 108px;
-  min-width: 108px;
-  max-width: 108px;
+  width: 140px;
+  min-width: 140px;
+  max-width: 140px;
   white-space: nowrap;
 }
 #dealerInquiriesTable th[data-col="demomode"],
@@ -5805,9 +5868,9 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
 #unassignedTable td[data-col="users"],
 #assignedTable th[data-col="users"],
 #assignedTable td[data-col="users"] {
-  width: 108px;
-  min-width: 108px;
-  max-width: 108px;
+  width: 140px;
+  min-width: 140px;
+  max-width: 140px;
   white-space: nowrap;
 }
 #unassignedTable th[data-col="demomode"],
@@ -7574,6 +7637,8 @@ html.theme-dark .inquiries-status-timeline-wrap .inquiry-activity-attachment-lin
 
 .dashboard-theme-toggle .bi {
   color: currentColor;
+  display: inline-block;
+  transform-origin: 50% 50%;
 }
 
 .login-theme-toggle {
@@ -7601,6 +7666,233 @@ html.theme-dark .inquiries-status-timeline-wrap .inquiry-activity-attachment-lin
 .login-theme-toggle .bi {
   font-size: 1rem;
   color: currentColor;
+  display: inline-block;
+  transform-origin: 50% 50%;
+}
+
+[data-theme-toggle].is-spinning [data-theme-icon] {
+  animation: sqlsms-theme-icon-spin 620ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes sqlsms-theme-icon-spin {
+  0% {
+    transform: rotate(0deg) scale(0.92);
+  }
+
+  55% {
+    transform: rotate(190deg) scale(1.06);
+  }
+
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+html {
+  view-transition-name: root;
+  --theme-origin-x: calc(100% - 72px);
+  --theme-origin-y: 36px;
+}
+
+html.theme-animating body,
+html.theme-animating .login-root,
+html.theme-animating .login-header,
+html.theme-animating .login-card,
+html.theme-animating .login-form-control,
+html.theme-animating .login-primary-btn,
+html.theme-animating .dashboard-root,
+html.theme-animating .dashboard-main,
+html.theme-animating .dashboard-main-body,
+html.theme-animating .dashboard-sidebar,
+html.theme-animating .dashboard-topbar,
+html.theme-animating .dashboard-bottombar,
+html.theme-animating .dashboard-panel,
+html.theme-animating .dashboard-table-panel,
+html.theme-animating .dashboard-panel-header,
+html.theme-animating .dashboard-panel-body,
+html.theme-animating .dashboard-profile-menu,
+html.theme-animating .dashboard-notifications-menu,
+html.theme-animating .dashboard-passkey-quick-card,
+html.theme-animating .dashboard-nav-item,
+html.theme-animating .dashboard-nav-group-title,
+html.theme-animating .dashboard-nav-icon,
+html.theme-animating .dashboard-icon-btn,
+html.theme-animating .dashboard-theme-toggle,
+html.theme-animating .dashboard-table,
+html.theme-animating .dashboard-table thead th,
+html.theme-animating .dashboard-table tbody td,
+html.theme-animating .dashboard-table tfoot td,
+html.theme-animating .dashboard-filter-input,
+html.theme-animating .dashboard-filter-select,
+html.theme-animating .inquiries-header-filter,
+html.theme-animating .inquiries-header-filter-input,
+html.theme-animating .inquiries-header-filter-select,
+html.theme-animating .inquiries-header-action-button,
+html.theme-animating .inquiries-header-clear-button,
+html.theme-animating .inquiries-operator-filter,
+html.theme-animating .inquiries-operator-filter-input,
+html.theme-animating .modal-panel,
+html.theme-animating .inquiry-modal,
+html.theme-animating .inquiries-msg-modal-window,
+html.theme-animating .inquiries-assign-window,
+html.theme-animating .dashboard-topbar-profile-trigger,
+html.theme-animating .dashboard-topbar-bell-btn,
+html.theme-animating .dashboard-topbar-bookmark-btn,
+html.theme-animating .dashboard-topbar-avatar,
+html.theme-animating .ts-control,
+html.theme-animating .ts-dropdown,
+html.theme-animating input,
+html.theme-animating select,
+html.theme-animating textarea,
+html.theme-animating button {
+  transition:
+    background-color 0.36s cubic-bezier(0.22, 1, 0.36, 1),
+    color 0.32s ease,
+    border-color 0.36s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.36s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.32s ease,
+    fill 0.32s ease,
+    stroke 0.32s ease;
+}
+
+html.theme-animating .login-root,
+html.theme-animating .dashboard-root,
+html.theme-animating .dashboard-main,
+html.theme-animating .dashboard-sidebar,
+html.theme-animating .dashboard-topbar,
+html.theme-animating .dashboard-panel,
+html.theme-animating .dashboard-profile-menu,
+html.theme-animating .dashboard-notifications-menu {
+  animation: theme-shell-soften 0.36s ease;
+}
+
+html.theme-animating [data-theme-toggle] {
+  animation: theme-toggle-pop 0.34s ease;
+}
+
+@keyframes theme-shell-soften {
+  0% {
+    opacity: 0.96;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes theme-toggle-pop {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(0.92) rotate(-120deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@supports (view-transition-name: root) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.24s;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  ::view-transition-old(root) {
+    animation-name: theme-root-fade-out;
+  }
+
+  ::view-transition-new(root) {
+    transform-origin: var(--theme-origin-x) var(--theme-origin-y);
+    animation-name: theme-root-radial-in;
+  }
+}
+
+@keyframes theme-root-fade-out {
+  from {
+    opacity: 1;
+    filter: blur(0);
+  }
+  to {
+    opacity: 0.94;
+    filter: blur(0.6px);
+  }
+}
+
+@keyframes theme-root-radial-in {
+  from {
+    opacity: 0.92;
+    clip-path: circle(0 at var(--theme-origin-x) var(--theme-origin-y));
+    filter: saturate(1.02);
+  }
+  to {
+    opacity: 1;
+    clip-path: circle(150% at var(--theme-origin-x) var(--theme-origin-y));
+    filter: saturate(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.theme-animating body,
+  html.theme-animating .login-root,
+  html.theme-animating .login-header,
+  html.theme-animating .login-card,
+  html.theme-animating .login-form-control,
+  html.theme-animating .login-primary-btn,
+  html.theme-animating .dashboard-root,
+  html.theme-animating .dashboard-main,
+  html.theme-animating .dashboard-main-body,
+  html.theme-animating .dashboard-sidebar,
+  html.theme-animating .dashboard-topbar,
+  html.theme-animating .dashboard-bottombar,
+  html.theme-animating .dashboard-panel,
+  html.theme-animating .dashboard-table-panel,
+  html.theme-animating .dashboard-panel-header,
+  html.theme-animating .dashboard-panel-body,
+  html.theme-animating .dashboard-profile-menu,
+  html.theme-animating .dashboard-notifications-menu,
+  html.theme-animating .dashboard-passkey-quick-card,
+  html.theme-animating .dashboard-nav-item,
+  html.theme-animating .dashboard-nav-group-title,
+  html.theme-animating .dashboard-nav-icon,
+  html.theme-animating .dashboard-icon-btn,
+  html.theme-animating .dashboard-theme-toggle,
+  html.theme-animating .dashboard-table,
+  html.theme-animating .dashboard-table thead th,
+  html.theme-animating .dashboard-table tbody td,
+  html.theme-animating .dashboard-table tfoot td,
+  html.theme-animating .dashboard-filter-input,
+  html.theme-animating .dashboard-filter-select,
+  html.theme-animating .inquiries-header-filter,
+  html.theme-animating .inquiries-header-filter-input,
+  html.theme-animating .inquiries-header-filter-select,
+  html.theme-animating .inquiries-header-action-button,
+  html.theme-animating .inquiries-header-clear-button,
+  html.theme-animating .inquiries-operator-filter,
+  html.theme-animating .inquiries-operator-filter-input,
+  html.theme-animating .modal-panel,
+  html.theme-animating .inquiry-modal,
+  html.theme-animating .inquiries-msg-modal-window,
+  html.theme-animating .inquiries-assign-window,
+  html.theme-animating .dashboard-topbar-profile-trigger,
+  html.theme-animating .dashboard-topbar-bell-btn,
+  html.theme-animating .dashboard-topbar-bookmark-btn,
+  html.theme-animating .dashboard-topbar-avatar,
+  html.theme-animating .ts-control,
+  html.theme-animating .ts-dropdown,
+  html.theme-animating input,
+  html.theme-animating select,
+  html.theme-animating textarea,
+  html.theme-animating button,
+  html.theme-animating [data-theme-toggle] {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
 }
 
 html.theme-dark {
@@ -7628,13 +7920,18 @@ html.theme-dark th {
 }
 
 html.theme-dark .login-root {
-  background: radial-gradient(circle at top left, #1c1534 0, #0b1020 42%, #09111b 100%);
+  background: #05070d;
   color: var(--text-main);
+}
+
+html.theme-dark .login-splash {
+  background:
+    radial-gradient(circle at top right, rgba(124, 92, 255, 0.08), transparent 26%),
+    linear-gradient(180deg, rgba(5, 7, 13, 0.985) 0%, rgba(4, 6, 11, 0.99) 100%);
 }
 
 html.theme-dark .login-header,
 html.theme-dark .login-card,
-html.theme-dark .login-splash-panel,
 html.theme-dark .dashboard-sidebar,
 html.theme-dark .dashboard-topbar,
 html.theme-dark .dashboard-panel,
@@ -7666,6 +7963,10 @@ html.theme-dark .dashboard-sidebar,
 html.theme-dark .dashboard-bottombar,
 html.theme-dark .login-header {
   box-shadow: 0 1px 0 rgba(148, 163, 184, 0.08);
+}
+
+html.theme-dark .login-header {
+  background: transparent !important;
 }
 
 html.theme-dark .dashboard-sidebar {
@@ -7882,6 +8183,106 @@ html.theme-dark .inquiry-modal-footer,
 html.theme-dark .modal-header {
   background: #10192b;
   border-color: #243041 !important;
+}
+
+html.theme-dark #inquiryUpdateModal .inquiry-followup-header,
+html.theme-dark #inquiryUpdateModal .inquiry-activity-title {
+  color: #f5f8ff;
+}
+
+html.theme-dark #inquiryUpdateModal .inquiry-followup-header i {
+  color: #93a7cb;
+}
+
+html.theme-dark #inquiryUpdateModal .inquiry-field-label {
+  color: #8ea2c8;
+}
+
+html.theme-dark #inquiryUpdateModal .inquiry-field-input-wrap,
+html.theme-dark #inquiryUpdateModal .inquiry-field-textarea {
+  background: linear-gradient(180deg, rgba(20, 31, 53, 0.98), rgba(14, 23, 41, 0.98));
+  border: 1px solid rgba(86, 104, 141, 0.34);
+  color: #eef4ff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 1px 0 rgba(0, 0, 0, 0.12);
+}
+
+html.theme-dark #inquiryUpdateModal .inquiry-field-input-wrap:hover,
+html.theme-dark #inquiryUpdateModal .inquiry-field-textarea:hover {
+  border-color: rgba(111, 132, 177, 0.44);
+}
+
+html.theme-dark #inquiryUpdateModal .inquiry-field-input-wrap:focus-within {
+  border-color: rgba(155, 135, 255, 0.85);
+  outline: 2px solid rgba(155, 135, 255, 0.16);
+}
+
+html.theme-dark #inquiryUpdateModal .inquiry-field-input,
+html.theme-dark #inquiryUpdateModal .inquiry-field-textarea {
+  color: #eef4ff;
+}
+
+html.theme-dark #inquiryUpdateModal .inquiry-field-input::placeholder,
+html.theme-dark #inquiryUpdateModal .inquiry-field-textarea::placeholder {
+  color: #90a2c5;
+}
+
+html.theme-dark #inquiryUpdateModal .inquiry-field-input-wrap i:first-child {
+  color: #93a7cb;
+}
+
+html.theme-dark #inquiryUpdateModal .inquiry-field-file {
+  color: #cad7f0;
+}
+
+html.theme-dark #inquiryUpdateModal .inquiry-field-file::file-selector-button {
+  padding: 6px 12px;
+  margin-right: 10px;
+  border: 1px solid rgba(112, 129, 167, 0.34);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(34, 48, 77, 0.98), rgba(24, 35, 59, 0.98));
+  color: #edf3ff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+html.theme-dark #inquiryUpdateModal .inquiry-field-file::file-selector-button:hover {
+  border-color: rgba(155, 135, 255, 0.42);
+  background: linear-gradient(180deg, rgba(47, 63, 99, 0.98), rgba(30, 43, 71, 0.98));
+}
+
+html.theme-dark #inquiryUpdateModal .inquiry-attachment-preview-item,
+html.theme-dark #inquiryUpdateModal .inquiry-activity-attachment-link {
+  border-color: rgba(86, 104, 141, 0.3);
+  background: rgba(18, 28, 47, 0.96);
+}
+
+html.theme-dark #inquiryUpdateModal .inquiry-activity {
+  border-top-color: rgba(86, 104, 141, 0.28);
+}
+
+html.theme-dark #inquiryUpdateModal .inquiry-activity-timeline::before {
+  background: rgba(90, 108, 145, 0.34);
+}
+
+html.theme-dark #inquiryUpdateModal .inquiry-activity-bullet {
+  background: #c7b8ff;
+  box-shadow: 0 0 0 3px rgba(124, 92, 255, 0.14);
+}
+
+html.theme-dark #inquiryUpdateModal .inquiry-activity-content {
+  color: #e7eefc;
+}
+
+html.theme-dark #inquiryUpdateModal .inquiry-activity-link {
+  color: #a996ff;
+}
+
+html.theme-dark #inquiryUpdateModal .inquiry-activity-desc,
+html.theme-dark #inquiryUpdateModal .inquiry-activity-time {
+  color: #93a7cb;
 }
 
 html.theme-dark .dashboard-profile-menu {
@@ -8186,6 +8587,21 @@ html.theme-dark .inquiries-btn-secondary:hover {
   background: rgba(124, 92, 255, 0.18);
 }
 
+html.theme-dark .inquiries-filter-clear {
+  color: #d7cbff;
+  background: linear-gradient(180deg, rgba(27, 39, 62, 0.98), rgba(18, 28, 46, 0.98));
+  border-color: rgba(120, 136, 174, 0.3);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 6px 12px rgba(2, 8, 23, 0.14);
+}
+
+html.theme-dark .inquiries-filter-clear:hover {
+  background: linear-gradient(180deg, rgba(37, 52, 82, 0.98), rgba(24, 36, 58, 0.98));
+  border-color: rgba(148, 163, 196, 0.38);
+  color: #f1ecff;
+}
+
 html.theme-dark .inquiries-btn-primary,
 html.theme-dark .inquiries-btn-assign,
 html.theme-dark .login-primary-btn {
@@ -8197,6 +8613,104 @@ html.theme-dark .inquiries-btn-primary:hover,
 html.theme-dark .inquiries-btn-assign:hover,
 html.theme-dark .login-primary-btn:hover {
   background: linear-gradient(135deg, #9879ff, #7552f1);
+}
+
+html.theme-dark .login-main-layout {
+  position: relative;
+}
+
+html.theme-dark .login-card {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top right, rgba(124, 92, 255, 0.14), transparent 28%),
+    radial-gradient(circle at bottom left, rgba(91, 140, 255, 0.08), transparent 24%),
+    linear-gradient(180deg, rgba(18, 27, 46, 0.98), rgba(12, 19, 33, 0.995)) !important;
+  border: 1px solid rgba(88, 104, 138, 0.26) !important;
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    inset 0 -1px 0 rgba(18, 28, 45, 0.82) !important;
+}
+
+html.theme-dark .login-card::before {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.045);
+  pointer-events: none;
+}
+
+html.theme-dark .login-card-passkey-login .login-logo {
+  margin-bottom: 2px;
+}
+
+html.theme-dark .login-subtitle {
+  color: #c3d0ea !important;
+  letter-spacing: 0.18em;
+}
+
+html.theme-dark .login-passkey-note {
+  max-width: 360px;
+  margin-left: auto;
+  margin-right: auto;
+  color: #94a8cb !important;
+}
+
+html.theme-dark .login-primary-btn {
+  box-shadow:
+    0 16px 30px rgba(90, 65, 208, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+html.theme-dark .login-primary-btn .bi {
+  color: #f4efff;
+}
+
+html.theme-dark .login-test-shortcuts {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: none;
+  position: relative;
+}
+
+html.theme-dark .login-test-shortcuts::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(116, 132, 170, 0.32), transparent);
+}
+
+html.theme-dark .login-test-shortcuts-title {
+  margin-bottom: 14px;
+  color: #7f91b7;
+  letter-spacing: 0.16em;
+}
+
+html.theme-dark .login-test-shortcuts-buttons {
+  gap: 12px;
+}
+
+html.theme-dark .login-test-shortcut-btn {
+  box-shadow:
+    0 14px 26px rgba(86, 59, 199, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+html.theme-dark .login-test-shortcut-btn-secondary {
+  background: linear-gradient(180deg, rgba(66, 74, 95, 0.98), rgba(84, 84, 84, 0.98));
+  color: #ffffff;
+  box-shadow:
+    0 10px 20px rgba(2, 8, 23, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+html.theme-dark .login-test-shortcut-btn-secondary:hover {
+  background: linear-gradient(180deg, rgba(82, 92, 118, 0.98), rgba(96, 96, 96, 0.98));
 }
 
 html.theme-dark .inquiries-columns-menu {
@@ -8297,11 +8811,9 @@ html.theme-dark .inquiries-header-cell .inquiries-grid-filter-all,
 html.theme-dark .inquiries-header-cell .inquiries-grid-filter-assigned,
 html.theme-dark .inquiries-header-cell .inquiries-grid-filter-select,
 html.theme-dark .inquiries-header-cell .dealer-grid-filter {
-  background: rgba(13, 22, 38, 0.96) !important;
-  border-color: rgba(92, 108, 142, 0.34) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.02),
-    inset 0 -1px 0 rgba(45, 59, 82, 0.48);
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 
 html.theme-dark .inquiries-header-cell .inquiries-grid-filter:focus,
@@ -8309,7 +8821,46 @@ html.theme-dark .inquiries-header-cell .inquiries-grid-filter-all:focus,
 html.theme-dark .inquiries-header-cell .inquiries-grid-filter-assigned:focus,
 html.theme-dark .inquiries-header-cell .inquiries-grid-filter-select:focus,
 html.theme-dark .inquiries-header-cell .dealer-grid-filter:focus {
+  border-color: transparent !important;
+}
+
+html.theme-dark .inquiries-header-cell .inquiries-filter-wrap {
+  background: linear-gradient(180deg, rgba(19, 29, 49, 0.98), rgba(11, 18, 31, 0.98)) !important;
+  border-color: rgba(118, 134, 171, 0.48) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 -1px 0 rgba(58, 74, 103, 0.72),
+    0 0 0 1px rgba(92, 108, 142, 0.14);
+}
+
+html.theme-dark .inquiries-header-cell .inquiries-filter-wrap:focus-within {
+  border-color: rgba(155, 135, 255, 0.72) !important;
+  box-shadow:
+    0 0 0 2px rgba(127, 90, 240, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 -1px 0 rgba(58, 74, 103, 0.72);
+}
+
+html.theme-dark .inquiries-filter-input,
+html.theme-dark .inquiries-grid-filter-wrap .inquiries-grid-filter-input,
+html.theme-dark .inquiries-grid-filter-select {
+  background: linear-gradient(180deg, rgba(19, 29, 49, 0.98), rgba(11, 18, 31, 0.98)) !important;
+  border-color: rgba(118, 134, 171, 0.48) !important;
+  color: var(--text-main) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 -1px 0 rgba(58, 74, 103, 0.72),
+    0 0 0 1px rgba(92, 108, 142, 0.14);
+}
+
+html.theme-dark .inquiries-filter-input:focus,
+html.theme-dark .inquiries-grid-filter-wrap .inquiries-grid-filter-input:focus,
+html.theme-dark .inquiries-grid-filter-select:focus {
   border-color: rgba(155, 135, 255, 0.7) !important;
+  box-shadow:
+    0 0 0 2px rgba(127, 90, 240, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 -1px 0 rgba(58, 74, 103, 0.72);
 }
 
 html.theme-dark .inquiries-table td.inquiries-col-action {
@@ -8378,18 +8929,18 @@ html.theme-dark .inquiries-table td[data-col="empty"] {
 }
 
 html.theme-dark .inquiries-table .inquiries-placeholder-row td {
-    background: rgba(12, 20, 35, 0.78) !important;
+    background: transparent !important;
     border-top: none !important;
     border-bottom: none !important;
     box-shadow: none !important;
 }
 
 html.theme-dark .inquiries-table tbody tr:nth-child(even).inquiries-placeholder-row td {
-    background: rgba(12, 20, 35, 0.78) !important;
+    background: transparent !important;
 }
 
 html.theme-dark .inquiries-table tbody tr:hover.inquiries-placeholder-row td {
-    background: rgba(12, 20, 35, 0.78) !important;
+    background: transparent !important;
 }
 
 html.theme-dark .inquiries-table-wrap:hover::-webkit-scrollbar-track,
@@ -8430,6 +8981,142 @@ html.theme-dark .inquiries-pagination-num-active {
   background: linear-gradient(135deg, rgba(124, 92, 255, 0.9), rgba(96, 72, 226, 0.96));
   border-color: rgba(173, 157, 255, 0.42);
   color: #ffffff;
+}
+
+html.theme-dark .dealers-panel-actions-right {
+  border-color: transparent;
+}
+
+html.theme-dark #dealersTable {
+  color: #edf3ff;
+}
+
+html.theme-dark #dealersTable thead th {
+  background: rgba(18, 29, 49, 0.96) !important;
+  color: #9fb4d8 !important;
+  border-bottom-color: rgba(96, 113, 150, 0.34) !important;
+  border-right: 1px solid rgba(82, 98, 132, 0.24);
+  box-shadow:
+    inset 0 -1px 0 rgba(96, 113, 150, 0.34),
+    inset -1px 0 0 rgba(54, 68, 95, 0.28);
+}
+
+html.theme-dark #dealersTable thead th:last-child,
+html.theme-dark #dealersTable tbody td:last-child {
+  border-right: none;
+}
+
+html.theme-dark #dealersTable td {
+  background: rgba(12, 20, 35, 0.82);
+  color: #edf3ff;
+  border-bottom-color: rgba(36, 48, 65, 0.96);
+  border-right: 1px solid rgba(79, 94, 126, 0.18);
+  box-shadow:
+    inset 0 -1px 0 rgba(28, 41, 63, 0.44),
+    inset -1px 0 0 rgba(31, 42, 61, 0.28);
+}
+
+html.theme-dark #dealersTable tbody tr:nth-child(even) td {
+  background: rgba(14, 23, 39, 0.9);
+}
+
+html.theme-dark #dealersTable tbody tr:hover,
+html.theme-dark #dealersTable tbody tr:hover td {
+  background: rgba(24, 37, 60, 0.95) !important;
+}
+
+html.theme-dark #dealersTable .inquiries-header-label {
+  color: #8fa5cf !important;
+}
+
+html.theme-dark #dealersTable .dealer-filter-input-wrap,
+html.theme-dark #dealersTable .dealer-operator-search-box {
+  background: linear-gradient(180deg, rgba(19, 29, 49, 0.98), rgba(11, 18, 31, 0.98)) !important;
+  border-color: rgba(118, 134, 171, 0.48) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 -1px 0 rgba(58, 74, 103, 0.72),
+    0 0 0 1px rgba(92, 108, 142, 0.14);
+}
+
+html.theme-dark #dealersTable .dealer-filter-input-wrap:focus-within,
+html.theme-dark #dealersTable .dealer-operator-search-box:focus-within {
+  border-color: rgba(155, 135, 255, 0.72) !important;
+  box-shadow:
+    0 0 0 2px rgba(127, 90, 240, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 -1px 0 rgba(58, 74, 103, 0.72);
+}
+
+html.theme-dark #dealersTable .dealer-filter-input-wrap .dealer-grid-filter,
+html.theme-dark #dealersTable .dealer-operator-search-box .dealer-grid-filter {
+  background: transparent !important;
+  color: #edf3ff !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+html.theme-dark #dealersTable .dealer-filter-input-wrap .dealer-grid-filter::placeholder,
+html.theme-dark #dealersTable .dealer-operator-search-box .dealer-grid-filter::placeholder {
+  color: #7f91b2 !important;
+}
+
+html.theme-dark #dealersTable .dealer-filter-input-wrap .inquiries-filter-icon {
+  color: #91a5ca;
+}
+
+html.theme-dark #dealersTable .dealer-operator-search-box .dealer-operator-btn {
+  background: linear-gradient(180deg, rgba(125, 83, 255, 0.26) 0%, rgba(98, 58, 221, 0.18) 100%);
+  border-right-color: rgba(174, 150, 255, 0.22);
+  color: #e7ddff;
+}
+
+html.theme-dark .inquiries-table .dealer-operator-search-box .dealer-operator-btn,
+html.theme-dark .inquiries-assign-dealers-table .dealer-operator-search-box .dealer-operator-btn {
+  background: linear-gradient(180deg, rgba(125, 83, 255, 0.26) 0%, rgba(98, 58, 221, 0.18) 100%);
+  border-right-color: rgba(174, 150, 255, 0.22);
+  color: #e7ddff;
+}
+
+html.theme-dark #dealersTable .dealer-operator-search-box .dealer-operator-btn:hover {
+  background: linear-gradient(180deg, rgba(141, 99, 255, 0.36) 0%, rgba(114, 74, 232, 0.28) 100%);
+  color: #ffffff;
+}
+
+html.theme-dark .inquiries-table .dealer-operator-search-box .dealer-operator-btn:hover,
+html.theme-dark .inquiries-assign-dealers-table .dealer-operator-search-box .dealer-operator-btn:hover {
+  background: linear-gradient(180deg, rgba(141, 99, 255, 0.36) 0%, rgba(114, 74, 232, 0.28) 100%);
+  color: #ffffff;
+}
+
+html.theme-dark #dealersTable .dealer-operator-search-box .dealer-operator-dropdown {
+  background: linear-gradient(180deg, rgba(14, 23, 40, 0.99), rgba(10, 18, 32, 0.99));
+  border-color: rgba(83, 99, 136, 0.28);
+  box-shadow: 0 24px 42px rgba(2, 8, 23, 0.48);
+}
+
+html.theme-dark #dealersTable .dealer-operator-search-box .dealer-operator-dropdown button {
+  color: #e4ecfb;
+}
+
+html.theme-dark #dealersTable .dealer-operator-search-box .dealer-operator-dropdown button:hover {
+  background: rgba(124, 92, 255, 0.1);
+  color: #f5f7ff;
+}
+
+html.theme-dark .dealer-conversion-high {
+  background: rgba(34, 197, 94, 0.18);
+  color: #9be6b1;
+}
+
+html.theme-dark .dealer-conversion-mid {
+  background: rgba(249, 115, 22, 0.16);
+  color: #ffc294;
+}
+
+html.theme-dark .dealer-conversion-low {
+  background: rgba(239, 68, 68, 0.16);
+  color: #ffb4b4;
 }
 
 html.theme-dark .inquiry-create-panel {

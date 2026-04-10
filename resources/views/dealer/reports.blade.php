@@ -37,6 +37,22 @@
     .dealer-reports-page .report-legend li { display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:0; }
     .dealer-reports-page .report-legend-color { width:10px; height:10px; border-radius:999px; flex-shrink:0; }
     .dealer-reports-page .report-legend-label { flex:1; color:#475569; } .dealer-reports-page .report-legend-value { font-weight:600; color:#0f172a; }
+    html.theme-dark .dealer-reports-page .reports-metric-card { border-color:#283451; background:linear-gradient(180deg,#181f34 0%,#11182b 100%); box-shadow:0 18px 36px rgba(2,6,23,.26); }
+    html.theme-dark .dealer-reports-page .reports-metric-icon-failed,
+    html.theme-dark .dealer-reports-page .reports-metric-icon-failed::before { background:linear-gradient(135deg,#f8fafc 0%,#dbe5f6 100%) !important; }
+    html.theme-dark .dealer-reports-page .reports-metric-icon-failed { color:#111827 !important; box-shadow:0 0 0 1px rgba(255,255,255,.18), 0 12px 24px rgba(2,6,23,.22) !important; }
+    html.theme-dark .dealer-reports-page .reports-metric-label { color:#a8b4d4; }
+    html.theme-dark .dealer-reports-page .reports-metric-value { color:#f8fbff; }
+    html.theme-dark .dealer-reports-page .reports-inquiry-section, html.theme-dark .dealer-reports-page .dealer-reports-status-section, html.theme-dark .dealer-reports-page .reports-product-section { border-color:#283451; background:linear-gradient(180deg,#181f34 0%,#11182b 100%); box-shadow:0 22px 40px rgba(2,6,23,.32); }
+    html.theme-dark .dealer-reports-page .reports-inquiry-heading .dashboard-panel-title, html.theme-dark .dealer-reports-page .reports-product-heading .dashboard-panel-title, html.theme-dark .dealer-reports-page .dealer-reports-status-heading .dashboard-panel-title, html.theme-dark .dealer-reports-page .reports-inquiry-chip-value, html.theme-dark .dealer-reports-page .report-donut-total, html.theme-dark .dealer-reports-page .report-legend-value { color:#f6f9ff; }
+    html.theme-dark .dealer-reports-page .reports-inquiry-subtitle, html.theme-dark .dealer-reports-page .reports-product-subtitle, html.theme-dark .dealer-reports-page .dealer-reports-status-subtitle, html.theme-dark .dealer-reports-page .reports-inquiry-chip-label, html.theme-dark .dealer-reports-page .dealer-reports-chart-fallback, html.theme-dark .dealer-reports-page .reports-product-chart-fallback, html.theme-dark .dealer-reports-page .dealer-reports-empty, html.theme-dark .dealer-reports-page .reports-product-empty, html.theme-dark .dealer-reports-page .report-donut-label, html.theme-dark .dealer-reports-page .report-legend-label { color:#8e9abc; }
+    html.theme-dark .dealer-reports-page .reports-inquiry-chip, html.theme-dark .dealer-reports-page .reports-product-scale-chip { border-color:#2f3b5a; background:rgba(16,23,39,.66); color:#c8d2eb; box-shadow:inset 0 1px 0 rgba(255,255,255,.03); }
+    html.theme-dark .dealer-reports-page .dealer-reports-card, html.theme-dark .dealer-reports-page .reports-product-card, html.theme-dark .dealer-reports-page .dealer-reports-status-card { border-color:#25314d; background:linear-gradient(180deg,rgba(27,35,57,.98) 0%,rgba(16,22,38,.98) 100%); box-shadow:inset 0 1px 0 rgba(255,255,255,.03); }
+    html.theme-dark .dealer-reports-page .dealer-reports-chart-wrapper, html.theme-dark .dealer-reports-page .reports-product-chart-wrapper { background:linear-gradient(180deg,#131b2f 0%,#0f1728 100%); border-color:#27334e; }
+    html.theme-dark .dealer-reports-page .reports-inquiry-section .dealer-reports-chart-wrapper { background:transparent; border-color:transparent; }
+    html.theme-dark .dealer-reports-page .report-donut { border-color:#27334e; box-shadow:0 14px 30px rgba(2,6,23,.24); }
+    html.theme-dark .dealer-reports-page .report-donut-center { background:linear-gradient(180deg,#131b2f 0%,#0f1728 100%); box-shadow:0 12px 28px rgba(2,6,23,.28); }
+    html.theme-dark .dealer-reports-page .report-legend-color--failed { background:#f8fafc !important; box-shadow:0 0 0 1px rgba(148,163,184,.4); }
     @media (max-width:1200px) { .dealer-reports-page .dashboard-panels-two-column { grid-template-columns:minmax(0,1fr); } }
     @media (max-width:768px) {
         .dealer-reports-page .reports-inquiry-section .dashboard-panel-header, .dealer-reports-page .dealer-reports-status-section .dashboard-panel-header, .dealer-reports-page .reports-product-section .dashboard-panel-header { padding:16px 16px 10px; flex-direction:column; align-items:flex-start; }
@@ -101,7 +117,7 @@
             <div class="reports-metric-label">REWARDED</div>
         </div>
         <div class="reports-metric-card">
-            <div class="reports-metric-icon reports-metric-icon-failed"><i class="bi bi-x-circle"></i></div>
+            <div class="reports-metric-icon reports-metric-icon-failed dealer-reports-failed-icon"><i class="bi bi-x-circle"></i></div>
             <div class="reports-metric-value">{{ $statusCounts['FAILED'] ?? 0 }}</div>
             <div class="reports-metric-label">FAILED</div>
         </div>
@@ -109,33 +125,38 @@
 
     @php
         $statusReportData = [
-            ['label' => 'Pending', 'value' => (int) ($statusCounts['PENDING'] ?? 0), 'color' => '#f97316'],
-            ['label' => 'Follow Up', 'value' => (int) ($statusCounts['FOLLOW UP'] ?? 0), 'color' => '#f59e0b'],
-            ['label' => 'Demo', 'value' => (int) ($statusCounts['DEMO'] ?? 0), 'color' => '#eab308'],
-            ['label' => 'Confirmed', 'value' => (int) ($statusCounts['CONFIRMED'] ?? 0), 'color' => '#84cc16'],
-            ['label' => 'Completed', 'value' => (int) ($statusCounts['COMPLETED'] ?? 0), 'color' => '#22c55e'],
-            ['label' => 'Rewarded', 'value' => (int) ($statusCounts['REWARDED'] ?? 0), 'color' => '#15803d'],
-            ['label' => 'Failed', 'value' => (int) ($statusCounts['FAILED'] ?? 0), 'color' => '#111827'],
+            ['label' => 'Pending', 'value' => (int) ($statusCounts['PENDING'] ?? 0), 'color' => '#f97316', 'dark_color' => '#f97316'],
+            ['label' => 'Follow Up', 'value' => (int) ($statusCounts['FOLLOW UP'] ?? 0), 'color' => '#f59e0b', 'dark_color' => '#f59e0b'],
+            ['label' => 'Demo', 'value' => (int) ($statusCounts['DEMO'] ?? 0), 'color' => '#eab308', 'dark_color' => '#eab308'],
+            ['label' => 'Confirmed', 'value' => (int) ($statusCounts['CONFIRMED'] ?? 0), 'color' => '#84cc16', 'dark_color' => '#84cc16'],
+            ['label' => 'Completed', 'value' => (int) ($statusCounts['COMPLETED'] ?? 0), 'color' => '#22c55e', 'dark_color' => '#22c55e'],
+            ['label' => 'Rewarded', 'value' => (int) ($statusCounts['REWARDED'] ?? 0), 'color' => '#15803d', 'dark_color' => '#15803d'],
+            ['label' => 'Failed', 'value' => (int) ($statusCounts['FAILED'] ?? 0), 'color' => '#111827', 'dark_color' => '#f8fafc'],
         ];
         $totalStatus = max(array_sum(array_column($statusReportData, 'value')), 1);
-        $statusSegments = [];
-        $statusOffset = 0;
-        foreach ($statusReportData as $item) {
-            $value = (int) ($item['value'] ?? 0);
-            if ($value <= 0) {
-                continue;
+        $buildStatusGradient = function (string $colorKey) use ($statusReportData, $totalStatus) {
+            $segments = [];
+            $offset = 0;
+            foreach ($statusReportData as $item) {
+                $value = (int) ($item['value'] ?? 0);
+                if ($value <= 0) {
+                    continue;
+                }
+                $percent = $value / $totalStatus * 100;
+                $segments[] = [
+                    'from' => $offset,
+                    'to' => $offset + $percent,
+                    'color' => $item[$colorKey] ?? $item['color'] ?? '#e5e7eb',
+                ];
+                $offset += $percent;
             }
-            $percent = $value / $totalStatus * 100;
-            $statusSegments[] = [
-                'from' => $statusOffset,
-                'to' => $statusOffset + $percent,
-                'color' => $item['color'] ?? '#e5e7eb',
-            ];
-            $statusOffset += $percent;
-        }
-        $statusGradient = collect($statusSegments)->map(function ($segment) {
-            return $segment['color'] . ' ' . $segment['from'] . '% ' . $segment['to'] . '%';
-        })->implode(', ');
+
+            return collect($segments)->map(function ($segment) {
+                return $segment['color'] . ' ' . $segment['from'] . '% ' . $segment['to'] . '%';
+            })->implode(', ');
+        };
+        $statusGradient = $buildStatusGradient('color');
+        $statusGradientDark = $buildStatusGradient('dark_color');
         $productNames = [
             1 => 'SQL Account',
             2 => 'SQL Payroll',
@@ -209,7 +230,10 @@
             <div class="dashboard-panel-body report-status-body">
                 <div class="dealer-reports-status-card">
                     <div class="report-donut-wrapper">
-                        <div class="report-donut" style="background: conic-gradient({{ $statusGradient ?: '#e5e7eb 0 100%' }});">
+                        <div class="report-donut"
+                             data-light-gradient="{{ $statusGradient ?: '#e5e7eb 0 100%' }}"
+                             data-dark-gradient="{{ $statusGradientDark ?: '#334155 0 100%' }}"
+                             style="background: conic-gradient({{ $statusGradient ?: '#e5e7eb 0 100%' }});">
                             <div class="report-donut-center">
                                 <div class="report-donut-total">{{ array_sum(array_column($statusReportData, 'value')) }}</div>
                                 <div class="report-donut-label">Activities</div>
@@ -220,7 +244,10 @@
                 <ul class="report-legend">
                     @foreach ($statusReportData as $item)
                         <li>
-                            <span class="report-legend-color" style="background-color: {{ $item['color'] ?? '#e5e7eb' }}"></span>
+                            <span class="report-legend-color{{ ($item['label'] ?? '') === 'Failed' ? ' report-legend-color--failed' : '' }}"
+                                  data-light-color="{{ $item['color'] ?? '#e5e7eb' }}"
+                                  data-dark-color="{{ $item['dark_color'] ?? ($item['color'] ?? '#e5e7eb') }}"
+                                  style="background-color: {{ $item['color'] ?? '#e5e7eb' }}"></span>
                             <span class="report-legend-label">{{ $item['label'] }}</span>
                             <span class="report-legend-value">{{ $item['value'] }}</span>
                         </li>
@@ -295,6 +322,54 @@ function initDealerReportsPage() {
         });
     }
 
+    function syncStatusReportTheme() {
+        var darkTheme = document.documentElement.classList.contains('theme-dark');
+        var donut = document.querySelector('.dealer-reports-page .report-donut');
+        var failedMetricIcon = document.querySelector('.dealer-reports-page .dealer-reports-failed-icon');
+        var defaultLightGradient = '#e5e7eb 0 100%';
+        var defaultDarkGradient = '#334155 0 100%';
+
+        if (donut) {
+            var gradient = donut.getAttribute(darkTheme ? 'data-dark-gradient' : 'data-light-gradient') || (darkTheme ? defaultDarkGradient : defaultLightGradient);
+            donut.style.background = 'conic-gradient(' + gradient + ')';
+        }
+
+        document.querySelectorAll('.dealer-reports-page .report-legend-color').forEach(function(node) {
+            var color = node.getAttribute(darkTheme ? 'data-dark-color' : 'data-light-color') || (darkTheme ? '#cbd5e1' : '#e5e7eb');
+            node.style.backgroundColor = color;
+            if (node.classList.contains('report-legend-color--failed')) {
+                node.style.boxShadow = darkTheme ? '0 0 0 1px rgba(148,163,184,.4)' : '';
+            } else {
+                node.style.boxShadow = '';
+            }
+        });
+
+        if (failedMetricIcon) {
+            if (darkTheme) {
+                failedMetricIcon.style.background = 'linear-gradient(135deg,#f8fafc 0%,#dbe5f6 100%)';
+                failedMetricIcon.style.color = '#111827';
+                failedMetricIcon.style.boxShadow = '0 0 0 1px rgba(255,255,255,.18), 0 12px 24px rgba(2,6,23,.22)';
+            } else {
+                failedMetricIcon.style.background = '';
+                failedMetricIcon.style.color = '';
+                failedMetricIcon.style.boxShadow = '';
+            }
+        }
+    }
+
+    syncStatusReportTheme();
+
+    if (!window.__dealerReportsThemeObserverBound) {
+        var dealerReportsThemeObserver = new MutationObserver(function() {
+            syncStatusReportTheme();
+        });
+        dealerReportsThemeObserver.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['class']
+        });
+        window.__dealerReportsThemeObserverBound = true;
+    }
+
     function showChartFallback(wrapper, fallback, message) {
         if (wrapper) wrapper.classList.add('is-error');
         if (fallback) fallback.textContent = message;
@@ -321,10 +396,13 @@ function initDealerReportsPage() {
             var inquiryValues = @json(array_values($inquiryTrendData ?? []));
             var reportPeriod = @json($period ?? 'month');
             var currentMonthName = @json(now()->format('F'));
-            var brandColor = '#7f5af0';
-            var columnColor = 'rgba(127, 90, 240, 0.32)';
-            var gridColor = 'rgba(148, 163, 184, 0.25)';
-            var axisColor = 'rgba(148, 163, 184, 0.28)';
+            var darkTheme = document.documentElement.classList.contains('theme-dark');
+            var brandColor = darkTheme ? '#b296ff' : '#7f5af0';
+            var columnColor = darkTheme ? 'rgba(178, 150, 255, 0.34)' : 'rgba(127, 90, 240, 0.32)';
+            var gridColor = darkTheme ? 'rgba(148, 163, 184, 0.16)' : 'rgba(148, 163, 184, 0.25)';
+            var axisColor = darkTheme ? 'rgba(148, 163, 184, 0.22)' : 'rgba(148, 163, 184, 0.28)';
+            var legendColor = darkTheme ? '#c8d2eb' : '#334155';
+            var tickColor = darkTheme ? '#9fb0d4' : '#8b95b5';
             var inquiryLabels = rawInquiryLabels.map(function(label) {
                 return String(label || '').trim();
             });
@@ -336,6 +414,8 @@ function initDealerReportsPage() {
                 return normalized;
             });
             var showAllDayTicks = reportPeriod === 'month';
+            var showAllMonthTicks = reportPeriod === 'year';
+            var showAllPeriodTicks = showAllDayTicks || showAllMonthTicks;
             var maxTickCount = inquiryLabels.length > 24 ? 11 : (inquiryLabels.length > 14 ? 9 : (inquiryLabels.length > 7 ? 7 : inquiryLabels.length));
             var tickStep = inquiryLabels.length > 24 ? 3 : (inquiryLabels.length > 14 ? 2 : 1);
             var maxInquiryValue = inquiryValues.length ? Math.max.apply(null, inquiryValues) : 0;
@@ -507,7 +587,7 @@ function initDealerReportsPage() {
                                 boxWidth: 9,
                                 boxHeight: 9,
                                 padding: 18,
-                                color: '#334155',
+                                color: legendColor,
                                 font: {
                                     size: 12,
                                     weight: '500'
@@ -550,17 +630,17 @@ function initDealerReportsPage() {
                                 color: axisColor
                             },
                             ticks: {
-                                color: '#8b95b5',
+                                color: tickColor,
                                 padding: 4,
                                 font: {
-                                    size: showAllDayTicks ? 8 : (inquiryLabels.length > 10 ? 10 : 11),
+                                    size: showAllDayTicks ? 8 : (showAllMonthTicks ? 10 : (inquiryLabels.length > 10 ? 10 : 11)),
                                     weight: '500'
                                 },
-                                autoSkip: !showAllDayTicks,
-                                maxTicksLimit: showAllDayTicks ? inquiryLabels.length : maxTickCount,
+                                autoSkip: !showAllPeriodTicks,
+                                maxTicksLimit: showAllPeriodTicks ? inquiryLabels.length : maxTickCount,
                                 callback: function(value, index) {
                                     var label = this.getLabelForValue(value);
-                                    if (showAllDayTicks) {
+                                    if (showAllPeriodTicks) {
                                         return label;
                                     }
                                     if (inquiryLabels.length <= maxTickCount) {
@@ -571,8 +651,8 @@ function initDealerReportsPage() {
                                     }
                                     return '';
                                 },
-                                maxRotation: showAllDayTicks ? 50 : (inquiryLabels.length > 7 ? 35 : 0),
-                                minRotation: showAllDayTicks ? 50 : (inquiryLabels.length > 7 ? 35 : 0)
+                                maxRotation: showAllDayTicks ? 50 : (showAllMonthTicks ? 0 : (inquiryLabels.length > 7 ? 35 : 0)),
+                                minRotation: showAllDayTicks ? 50 : (showAllMonthTicks ? 0 : (inquiryLabels.length > 7 ? 35 : 0))
                             }
                         },
                         y: {
@@ -588,7 +668,7 @@ function initDealerReportsPage() {
                                 display: false
                             },
                             ticks: {
-                                color: '#8b95b5',
+                                color: tickColor,
                                 padding: 6,
                                 font: {
                                     size: 10,
@@ -618,6 +698,7 @@ function initDealerReportsPage() {
 
         try {
             var rawProducts = @json($productConversionDisplay->values());
+            var darkTheme = document.documentElement.classList.contains('theme-dark');
             var products = rawProducts.map(function(item) {
                 return {
                     label: String(item.label || ''),
@@ -652,7 +733,7 @@ function initDealerReportsPage() {
                     var chartArea = chart.chartArea;
                     ctx.save();
                     ctx.font = '600 12px "Public Sans", sans-serif';
-                    ctx.fillStyle = '#475569';
+                    ctx.fillStyle = darkTheme ? '#c8d2eb' : '#475569';
                     ctx.textBaseline = 'middle';
 
                     meta.data.forEach(function(bar, index) {
@@ -746,7 +827,7 @@ function initDealerReportsPage() {
                             beginAtZero: true,
                             max: axisMax,
                             grid: {
-                                color: 'rgba(148, 163, 184, 0.10)',
+                                color: darkTheme ? 'rgba(148, 163, 184, 0.14)' : 'rgba(148, 163, 184, 0.10)',
                                 drawBorder: false,
                                 drawTicks: false
                             },
@@ -754,7 +835,7 @@ function initDealerReportsPage() {
                                 display: false
                             },
                             ticks: {
-                                color: '#94a3b8',
+                                color: darkTheme ? '#9fb0d4' : '#94a3b8',
                                 font: {
                                     size: 11,
                                     weight: '600'
@@ -775,7 +856,7 @@ function initDealerReportsPage() {
                             },
                             ticks: {
                                 padding: 12,
-                                color: '#0f172a',
+                                color: darkTheme ? '#eef2ff' : '#0f172a',
                                 font: {
                                     size: 12,
                                     weight: '600'

@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Inquiries Management – Admin')
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/pages/admin-inquiries.css') }}?v=20260408-17">
+    <link rel="stylesheet" href="{{ asset('css/pages/admin-inquiries.css') }}?v=20260410-24">
 @endpush
 @section('content')
 @php
@@ -11,6 +11,8 @@
     $assignedStatusFilterOptions = ['Followup', 'Demo', 'Confirmed', 'Completed', 'Rewarded', 'Failed'];
     $allStatusFilterOptions = ['Created', 'Pending', 'Followup', 'Demo', 'Confirmed', 'Completed', 'Rewarded', 'Failed'];
     $allInquiryCount = (int) ($allTotal ?? count($allRows ?? []));
+    $incomingTabTooltip = 'Total leads pending for distribution';
+    $assignedTabTooltip = 'Total active leads assigned to dealer';
 @endphp
 <div class="inquiries-page-wrap">
 @if($assignUndo)
@@ -45,10 +47,10 @@
 
 <div class="inquiries-tabs">
     <button type="button" class="inquiries-tab active" data-tab="incoming" aria-selected="true">
-        <span class="inquiries-tab-label">Incoming <span class="inquiries-tab-count" id="incomingTabCount">{{ number_format($totalNewInquiries ?? 0) }}</span></span>
+        <span class="inquiries-tab-label">Incoming <span class="inquiries-tab-count" id="incomingTabCount" data-tooltip="{{ $incomingTabTooltip }}" title="{{ $incomingTabTooltip }}" aria-label="Incoming count: {{ number_format($totalNewInquiries ?? 0) }}. {{ $incomingTabTooltip }}">{{ number_format($totalNewInquiries ?? 0) }}</span></span>
     </button>
     <button type="button" class="inquiries-tab" data-tab="assigned" aria-selected="false">
-        <span class="inquiries-tab-label">Assigned <span class="inquiries-tab-count" id="assignedTabCount">{{ number_format($totalOngoing ?? 0) }}</span></span>
+        <span class="inquiries-tab-label">Assigned <span class="inquiries-tab-count" id="assignedTabCount" data-tooltip="{{ $assignedTabTooltip }}" title="{{ $assignedTabTooltip }}" aria-label="Assigned count: {{ number_format($totalOngoing ?? 0) }}. {{ $assignedTabTooltip }}">{{ number_format($totalOngoing ?? 0) }}</span></span>
     </button>
     <button type="button" class="inquiries-tab" data-tab="all" aria-selected="false">
         <span class="inquiries-tab-label">All <span class="inquiries-tab-count" id="allTabCount">{{ number_format($allInquiryCount) }}</span></span>
@@ -2077,6 +2079,31 @@ document.addEventListener('DOMContentLoaded', function() {
         return missingCount;
     }
 
+    function setIncomingEmptyReserveHeight(tbody, table, perPage, enable) {
+        if (!tbody || !table || table.id !== 'unassignedTable') return;
+        var emptyCell = tbody.querySelector('td.inquiries-empty');
+        if (!emptyCell) return;
+
+        if (!enable) {
+            emptyCell.style.height = '';
+            emptyCell.style.minHeight = '';
+            return;
+        }
+
+        var targetBodyHeight = getInquiryTargetBodyHeight(tbody, table, perPage);
+        if (targetBodyHeight <= 0) {
+            var referenceRowHeight = getInquiryReferenceRowHeight(tbody, table);
+            if (referenceRowHeight > 0) {
+                targetBodyHeight = referenceRowHeight * perPage;
+            }
+        }
+
+        if (targetBodyHeight > 0) {
+            emptyCell.style.height = targetBodyHeight + 'px';
+            emptyCell.style.minHeight = targetBodyHeight + 'px';
+        }
+    }
+
     function updateInquiryTableHeightMode(scrollWrap, table, tbody, visibleDataCount, perPage, allowZeroFill) {
         clearInquiryPlaceholderRows(tbody);
         var usePlaceholderRows = shouldUseInquiryPlaceholderRows();
@@ -2088,12 +2115,15 @@ document.addEventListener('DOMContentLoaded', function() {
         var tableWrap = scrollWrap.closest ? scrollWrap.closest('.inquiries-table-wrap') : null;
         var visualRowCount = visibleDataCount + placeholderRowCount;
         var isVisualFullPage = visualRowCount >= perPage;
+        var isTrueEmptyState = visibleDataCount === 0 && !allowZeroFill;
+        var shouldReserveEmptyIncoming = isTrueEmptyState && table && table.id === 'unassignedTable';
+        setIncomingEmptyReserveHeight(tbody, table, perPage, shouldReserveEmptyIncoming);
         var useShortHeight = !isVisualFullPage && ((visibleDataCount > 0 && visibleDataCount < perPage) || (visibleDataCount === 0 && allowZeroFill));
         if (tableWrap) {
-            tableWrap.classList.toggle('inquiries-table-wrap-filled', isVisualFullPage || !usePlaceholderRows);
+            tableWrap.classList.toggle('inquiries-table-wrap-filled', isVisualFullPage || !usePlaceholderRows || shouldReserveEmptyIncoming);
         }
-        scrollWrap.classList.toggle('inquiries-table-scroll-empty', visibleDataCount === 0 && !allowZeroFill);
-        scrollWrap.classList.toggle('inquiries-table-scroll-short', useShortHeight);
+        scrollWrap.classList.toggle('inquiries-table-scroll-empty', isTrueEmptyState && !shouldReserveEmptyIncoming);
+        scrollWrap.classList.toggle('inquiries-table-scroll-short', useShortHeight && !shouldReserveEmptyIncoming);
     }
 
     function resetInquiryTableScroll(panelId) {

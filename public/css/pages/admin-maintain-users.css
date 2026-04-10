@@ -837,6 +837,285 @@
   box-shadow: none !important;
 }
 
+html.theme-dark .maintain-users-page {
+  color: #edf3ff;
+}
+
+html.theme-dark .maintain-users-table-wrap {
+  border-color: rgba(82, 98, 133, 0.28);
+  background: linear-gradient(180deg, rgba(15, 23, 40, 0.97), rgba(10, 17, 30, 0.98));
+  box-shadow:
+    0 24px 48px rgba(2, 8, 23, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+html.theme-dark .maintain-users-table-wrap .dashboard-table-wrapper {
+  background: linear-gradient(180deg, rgba(12, 20, 35, 0.92), rgba(9, 16, 29, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    inset 0 0 0 1px rgba(62, 77, 105, 0.2);
+}
+
+html.theme-dark .maintain-users-add-btn {
+  background: linear-gradient(135deg, #8a68ff, #6a45ef);
+  box-shadow: 0 14px 24px rgba(90, 65, 208, 0.3);
+}
+
+html.theme-dark .maintain-users-add-btn:hover {
+  background: linear-gradient(135deg, #9879ff, #7552f1);
+  box-shadow: 0 16px 28px rgba(90, 65, 208, 0.34);
+}
+
+html.theme-dark .maintain-users-batch-btn {
+  border-color: rgba(155, 135, 255, 0.22);
+  background: rgba(124, 92, 255, 0.12);
+  color: #ccbfff;
+}
+
+html.theme-dark .maintain-users-batch-btn:hover {
+  background: rgba(124, 92, 255, 0.18);
+}
+
+html.theme-dark .maintain-users-empty {
+  color: #8fa3c7;
+}
+
+html.theme-dark .maintain-users-table.dashboard-table {
+  background: transparent;
+  color: #edf3ff;
+}
+
+html.theme-dark .maintain-users-table.dashboard-table thead tr.inquiries-header-row th,
+html.theme-dark .maintain-users-table.dashboard-table thead th.maintain-users-col-action {
+  background: rgba(18, 29, 49, 0.96);
+  color: #9fb4d8;
+  border-bottom-color: rgba(96, 113, 150, 0.34);
+  border-right: 1px solid rgba(82, 98, 132, 0.24);
+  box-shadow:
+    inset 0 -1px 0 rgba(96, 113, 150, 0.34),
+    inset -1px 0 0 rgba(54, 68, 95, 0.28);
+}
+
+html.theme-dark .maintain-users-table.dashboard-table thead .inquiries-header-cell .inquiries-header-label {
+  color: #8fa5cf;
+}
+
+html.theme-dark .maintain-users-table.dashboard-table tbody td {
+  border-top: 1px solid rgba(54, 68, 95, 0.44);
+  border-bottom: none;
+  background: rgba(12, 20, 35, 0.82);
+  color: #edf3ff;
+  box-shadow: none;
+}
+
+html.theme-dark .maintain-users-table.dashboard-table tbody tr:nth-child(even) td {
+  background: rgba(14, 23, 39, 0.9);
+}
+
+html.theme-dark .maintain-users-table.dashboard-table th.maintain-users-col-action,
+html.theme-dark .maintain-users-table.dashboard-table td.maintain-users-col-action {
+  background: rgba(12, 20, 35, 0.96);
+  box-shadow:
+    -8px 0 12px rgba(2, 8, 23, 0.24),
+    inset 0 -1px 0 rgba(86, 101, 132, 0.24),
+    inset 1px 0 0 rgba(79, 94, 126, 0.18);
+}
+
+html.theme-dark .maintain-users-table.dashboard-table tbody tr:hover td,
+html.theme-dark .maintain-users-table.dashboard-table tbody tr:hover td.maintain-users-col-action {
+  background: rgba(24, 37, 60, 0.95);
+}
+
+html.theme-dark .maintain-users-table.dashboard-table tbody tr.maintain-users-placeholder-row td,
+html.theme-dark .maintain-users-table.dashboard-table tbody tr.maintain-users-placeholder-row:hover td {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+html.theme-dark .maintain-users-pill-role-admin {
+  background: rgba(239, 68, 68, 0.16);
+  color: #ffb4b4;
+}
+
+html.theme-dark .maintain-users-pill-role-manager {
+  background: rgba(59, 130, 246, 0.18);
+  color: #a8c8ff;
+}
+
+html.theme-dark .maintain-users-pill-role-dealer {
+  background: rgba(34, 197, 94, 0.16);
+  color: #9be6b1;
+}
+
+html.theme-dark .maintain-users-pill-active.yes {
+  background: rgba(34, 197, 94, 0.16);
+  color: #9be6b1;
+}
+
+html.theme-dark .maintain-users-pill-active.no {
+  background: rgba(239, 68, 68, 0.16);
+  color: #ffb4b4;
+}
+
+html.theme-dark .maintain-users-pill-passkey.set {
+  border-color: rgba(165, 180, 252, 0.4);
+  background: rgba(99, 102, 241, 0.18);
+  color: #bfc8ff;
+}
+
+html.theme-dark .maintain-users-pill-passkey.empty {
+  border-color: rgba(120, 138, 173, 0.32);
+  background: rgba(148, 163, 184, 0.12);
+  color: #c5d0e4;
+}
+
+html.theme-dark .maintain-users-pill-passkey.sent {
+  border-color: rgba(125, 211, 252, 0.38);
+  background: rgba(14, 165, 233, 0.14);
+  color: #9edcff;
+}
+
+html.theme-dark .maintain-users-pill-passkey.expired {
+  border-color: rgba(253, 186, 116, 0.36);
+  background: rgba(249, 115, 22, 0.16);
+  color: #ffc294;
+}
+
+html.theme-dark .maintain-users-edit-btn,
+html.theme-dark .maintain-users-temp-send-btn {
+  background: linear-gradient(180deg, rgba(24, 34, 54, 0.98), rgba(16, 24, 40, 0.98));
+  border: 1px solid rgba(80, 96, 129, 0.28);
+  color: #dbe6ff;
+  border-radius: 8px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 6px 14px rgba(2, 8, 23, 0.18);
+}
+
+html.theme-dark .maintain-users-edit-btn:hover,
+html.theme-dark .maintain-users-temp-send-btn:hover {
+  background: linear-gradient(180deg, rgba(34, 48, 74, 0.98), rgba(22, 33, 54, 0.98));
+  border-color: rgba(123, 144, 190, 0.34);
+  color: #f3f7ff;
+}
+
+html.theme-dark .maintain-users-pagination {
+  background: rgba(16, 25, 43, 0.88);
+  border-top-color: rgba(74, 88, 118, 0.18);
+}
+
+html.theme-dark .maintain-users-modal {
+  border-color: rgba(82, 98, 133, 0.28);
+  background: linear-gradient(180deg, rgba(15, 23, 40, 0.98), rgba(10, 17, 30, 0.99));
+  box-shadow:
+    0 28px 54px rgba(2, 8, 23, 0.44),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+html.theme-dark .maintain-users-modal-title {
+  color: #edf3ff;
+}
+
+html.theme-dark .maintain-users-modal-sub,
+html.theme-dark .maintain-users-batch-summary,
+html.theme-dark .maintain-users-temp-help,
+html.theme-dark .maintain-users-batch-item-meta,
+html.theme-dark .maintain-users-reset-option-text {
+  color: #b7c4dd;
+}
+
+html.theme-dark .maintain-users-field label {
+  color: #c9bfff;
+}
+
+html.theme-dark .maintain-users-field input,
+html.theme-dark .maintain-users-field select,
+html.theme-dark .maintain-users-readonly {
+  border-color: rgba(82, 98, 133, 0.42) !important;
+  background: linear-gradient(180deg, rgba(17, 27, 47, 0.96), rgba(12, 20, 35, 0.98)) !important;
+  color: #edf3ff !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    inset 0 -1px 0 rgba(25, 36, 56, 0.48);
+}
+
+html.theme-dark .maintain-users-field input:focus,
+html.theme-dark .maintain-users-field select:focus {
+  border-color: rgba(155, 135, 255, 0.7) !important;
+  box-shadow:
+    0 0 0 4px rgba(127, 90, 240, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+html.theme-dark .maintain-users-field input:disabled,
+html.theme-dark .maintain-users-field select:disabled {
+  background: rgba(24, 34, 54, 0.82) !important;
+  color: #7f91b2 !important;
+}
+
+html.theme-dark .maintain-users-dealer-section {
+  border-top-color: rgba(82, 98, 133, 0.24);
+}
+
+html.theme-dark .maintain-users-location-option,
+html.theme-dark .maintain-users-reset-option {
+  border-color: rgba(82, 98, 133, 0.28);
+  background: rgba(18, 29, 49, 0.76);
+  color: #c9d5ee;
+}
+
+html.theme-dark .maintain-users-location-option.is-active {
+  border-color: rgba(155, 135, 255, 0.34);
+  background: rgba(124, 92, 255, 0.14);
+  color: #e7dfff;
+}
+
+html.theme-dark .maintain-users-btn-secondary {
+  border-color: rgba(82, 98, 133, 0.32);
+  background: rgba(24, 34, 54, 0.94);
+  color: #dfe8ff;
+}
+
+html.theme-dark .maintain-users-btn-secondary:hover {
+  background: rgba(34, 48, 74, 0.94);
+}
+
+html.theme-dark .maintain-users-btn-soft {
+  border-color: rgba(155, 135, 255, 0.22);
+  background: rgba(124, 92, 255, 0.12);
+  color: #ccbfff;
+}
+
+html.theme-dark .maintain-users-btn-soft:hover {
+  background: rgba(124, 92, 255, 0.18);
+}
+
+html.theme-dark .maintain-users-btn-primary {
+  background: linear-gradient(135deg, #8a68ff, #6a45ef);
+  box-shadow: 0 14px 24px rgba(90, 65, 208, 0.3);
+}
+
+html.theme-dark .maintain-users-btn-primary:hover {
+  background: linear-gradient(135deg, #9879ff, #7552f1);
+}
+
+html.theme-dark .maintain-users-batch-list {
+  border-color: rgba(82, 98, 133, 0.28);
+  background: rgba(18, 29, 49, 0.78);
+}
+
+html.theme-dark .maintain-users-batch-item {
+  background: rgba(12, 20, 35, 0.92);
+}
+
+html.theme-dark .maintain-users-batch-item-name {
+  color: #edf3ff;
+}
+
+html.theme-dark .maintain-users-batch-toggle {
+  color: #c9bfff;
+}
+
 @media (max-width: 1440px) {
   .maintain-users-table-wrap {
     --maintain-users-placeholder-row-adjust: 1px;

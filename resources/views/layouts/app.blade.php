@@ -18,7 +18,7 @@
         })();
     </script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=20260408-20">
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=20260410-29">
     <script src="{{ asset('js/passkey-registration.js') }}"></script>
     <script>
         // Apply sidebar state ASAP (prevents flicker on page navigation)
@@ -188,19 +188,84 @@
         document.querySelectorAll('[data-theme-toggle]').forEach(updateThemeToggle);
     }
 
-    function applyTheme(theme) {
+    var themeAnimationTimer = null;
+    var themeToggleSpinTimer = null;
+
+    function shouldAnimateTheme() {
+        return !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    }
+
+    function runThemeAnimation() {
+        if (!shouldAnimateTheme()) {
+            return;
+        }
+
+        window.clearTimeout(themeAnimationTimer);
+        document.documentElement.classList.add('theme-animating');
+        themeAnimationTimer = window.setTimeout(function () {
+            document.documentElement.classList.remove('theme-animating');
+        }, 460);
+    }
+
+    function runThemeToggleSpin(sourceButton) {
+        if (!shouldAnimateTheme() || !sourceButton) {
+            return;
+        }
+
+        window.clearTimeout(themeToggleSpinTimer);
+        document.querySelectorAll('[data-theme-toggle].is-spinning').forEach(function (button) {
+            button.classList.remove('is-spinning');
+        });
+        sourceButton.classList.add('is-spinning');
+        themeToggleSpinTimer = window.setTimeout(function () {
+            sourceButton.classList.remove('is-spinning');
+        }, 640);
+    }
+
+    function primeThemeOrigin(sourceButton) {
+        if (!sourceButton || !sourceButton.getBoundingClientRect) {
+            return;
+        }
+
+        var rect = sourceButton.getBoundingClientRect();
+        document.documentElement.style.setProperty('--theme-origin-x', Math.round(rect.left + (rect.width / 2)) + 'px');
+        document.documentElement.style.setProperty('--theme-origin-y', Math.round(rect.top + (rect.height / 2)) + 'px');
+    }
+
+    function commitTheme(theme) {
         var dark = theme === 'dark';
         document.documentElement.classList.toggle('theme-dark', dark);
         document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
         syncThemeToggles();
     }
 
-    function toggleTheme() {
+    function applyTheme(theme, options) {
+        options = options || {};
+        
+
+        if (options.animate && shouldAnimateTheme() && typeof document.startViewTransition === 'function') {
+            document.startViewTransition(function () {
+                commitTheme(theme);
+            });
+            return;
+        }
+
+        if (options.animate) {
+            runThemeAnimation();
+        }
+
+        commitTheme(theme);
+    }
+
+    function toggleTheme(event) {
         var nextTheme = isDarkTheme() ? 'light' : 'dark';
+        var sourceButton = event && event.currentTarget ? event.currentTarget : null;
+        primeThemeOrigin(sourceButton);
+        runThemeToggleSpin(sourceButton);
         try {
             localStorage.setItem(THEME_KEY, nextTheme);
         } catch (e) {}
-        applyTheme(nextTheme);
+        applyTheme(nextTheme, { animate: true });
     }
 
     document.querySelectorAll('[data-theme-toggle]').forEach(function (button) {
@@ -216,7 +281,7 @@
 
     window.addEventListener('storage', function (event) {
         if (event.key === THEME_KEY) {
-            applyTheme(getStoredTheme());
+            applyTheme(getStoredTheme(), { animate: true });
         }
     });
 

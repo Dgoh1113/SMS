@@ -723,6 +723,111 @@
   font-size: 13px;
 }
 
+html.theme-dark .reports-page {
+  background: radial-gradient(circle at top, rgba(124, 91, 255, 0.08) 0%, rgba(13, 19, 35, 0) 28%), #0e1424;
+}
+
+html.theme-dark .reports-page .reports-period-select {
+  border-color: #33405e;
+  background: linear-gradient(180deg, #141d32 0%, #0f1728 100%);
+  color: #f3f6ff;
+}
+
+html.theme-dark .reports-page .reports-period-select:focus,
+html.theme-dark .reports-page .reports-period-select:focus-visible {
+  border-color: #7c5bff;
+  box-shadow: 0 0 0 3px rgba(124, 91, 255, 0.16);
+}
+
+html.theme-dark .reports-page .dashboard-metric-card {
+  background:
+    radial-gradient(circle at top right, var(--report-card-wash, rgba(124, 92, 246, 0.12)) 0%, rgba(14, 20, 36, 0) 40%),
+    linear-gradient(180deg, rgba(24, 32, 54, 0.98) 0%, rgba(16, 22, 38, 0.98) 100%) padding-box,
+    linear-gradient(
+      135deg,
+      rgba(124, 92, 246, 0.28) 0%,
+      rgba(44, 56, 88, 0.96) 44%,
+      rgba(88, 102, 145, 0.78) 100%
+    ) border-box;
+  box-shadow: 0 18px 34px rgba(2, 6, 23, 0.28), 0 14px 28px -22px var(--report-border-shadow, rgba(124, 92, 246, 0.24));
+}
+
+html.theme-dark .reports-page .dashboard-metric-card:hover {
+  border-color: transparent;
+  box-shadow: 0 22px 38px rgba(2, 6, 23, 0.34), 0 18px 30px -22px var(--report-border-shadow, rgba(124, 92, 246, 0.28));
+}
+
+html.theme-dark .reports-page .dashboard-metrics-grid .dashboard-metric-label {
+  color: #aeb9d6;
+}
+
+html.theme-dark .reports-page .dashboard-metrics-grid .dashboard-metric-value {
+  color: #f8fbff;
+}
+
+html.theme-dark .reports-page .dashboard-metric-dealer-tag {
+  color: #d7e0f8;
+  background: rgba(124, 91, 255, 0.16);
+  border: 1px solid rgba(124, 91, 255, 0.22);
+}
+
+html.theme-dark .reports-page .dashboard-metric-trend-same,
+html.theme-dark .reports-page .dashboard-panel-header .dashboard-panel-subtitle,
+html.theme-dark .reports-page .text-body,
+html.theme-dark .reports-page .report-donut-label {
+  color: #8f9ab8;
+}
+
+html.theme-dark .reports-page .report-metric-chevron {
+  background: linear-gradient(180deg, #1d2744 0%, #182038 100%);
+  color: #e8edff;
+}
+
+html.theme-dark .reports-page .text-heading,
+html.theme-dark .reports-page .report-donut-total {
+  color: #f8fbff;
+}
+
+html.theme-dark .reports-page .report-donut {
+  border-color: #2d3856;
+  box-shadow: 0 16px 30px rgba(2, 6, 23, 0.34);
+}
+
+html.theme-dark .reports-page .report-donut-center {
+  background: linear-gradient(180deg, #161d32 0%, #0f1628 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 12px 28px rgba(2, 6, 23, 0.32);
+}
+
+html.theme-dark .reports-page .inquiry-chart-panel,
+html.theme-dark .reports-page .reports-product-chart-wrapper {
+  background: linear-gradient(180deg, #161d32 0%, #11182a 100%);
+  box-shadow: 0 18px 34px rgba(2, 6, 23, 0.28);
+}
+
+html.theme-dark .reports-page .inquiry-filter-btn {
+  border-color: #34415f;
+  background: #182038;
+  color: #c8d2ed;
+  box-shadow: none;
+}
+
+html.theme-dark .reports-page .inquiry-filter-btn:hover {
+  background: rgba(124, 91, 255, 0.12);
+  color: #ffffff;
+  border-color: #516184;
+}
+
+html.theme-dark .reports-page .inquiry-filter-btn.active {
+  background: linear-gradient(135deg, #7c5bff 0%, #5b46d8 100%);
+  border-color: #7c5bff;
+  color: #ffffff;
+  box-shadow: 0 12px 20px rgba(91, 72, 219, 0.28);
+}
+
+html.theme-dark .reports-page .report-legend {
+  color: #d7dff6;
+}
+
 @media (max-width: 1024px) {
   .reports-page-layout {
     width: 100% !important;

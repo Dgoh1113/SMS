@@ -111,6 +111,69 @@
   color: #4c1d95;
 }
 
+html.theme-dark .history-date-range-field,
+html.theme-dark .history-date-input-field {
+  color: #d7c8ff;
+}
+
+html.theme-dark .history-date-range-field span,
+html.theme-dark .history-date-input-field span {
+  color: #bcaeff;
+}
+
+html.theme-dark .history-date-range-select,
+html.theme-dark .history-date-input-field input[type="date"] {
+  border-color: rgba(118, 134, 171, 0.48);
+  background: linear-gradient(180deg, rgba(19, 29, 49, 0.98), rgba(11, 18, 31, 0.98));
+  color: #edf3ff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 -1px 0 rgba(58, 74, 103, 0.72),
+    0 0 0 1px rgba(92, 108, 142, 0.14);
+}
+
+html.theme-dark .history-date-range-select:focus,
+html.theme-dark .history-date-input-field input[type="date"]:focus {
+  outline: none;
+  border-color: rgba(155, 135, 255, 0.72);
+  box-shadow:
+    0 0 0 2px rgba(127, 90, 240, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 -1px 0 rgba(58, 74, 103, 0.72);
+}
+
+html.theme-dark .history-date-summary {
+  color: #cbd7f0;
+}
+
+html.theme-dark .history-date-summary strong {
+  color: #bcaeff;
+}
+
+html.theme-dark .history-checkbox-filter {
+  border-color: rgba(118, 134, 171, 0.3);
+  background: linear-gradient(180deg, rgba(27, 39, 62, 0.98), rgba(18, 28, 46, 0.98));
+  color: #d7cbff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 6px 12px rgba(2, 8, 23, 0.14);
+}
+
+html.theme-dark .history-checkbox-filter input[type="checkbox"] {
+  accent-color: #8a68ff;
+}
+
+html.theme-dark .history-checkbox-filter:hover,
+html.theme-dark .history-checkbox-filter:focus-within {
+  background: linear-gradient(180deg, rgba(37, 52, 82, 0.98), rgba(24, 36, 58, 0.98));
+  border-color: rgba(148, 163, 196, 0.38);
+  color: #f1ecff;
+}
+
+html.theme-dark .history-checkbox-filter input[type="checkbox"]:checked + span {
+  color: #f1ecff;
+}
+
 .history-toolbar-actions {
   display: inline-flex;
   align-items: center;

@@ -1,8 +1,8 @@
 @extends('layouts.app')
 @section('title', 'Report - Monthly Performance Analytics')
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/shared/reports-tabs.css') }}?v=20260402-8">
-    <link rel="stylesheet" href="{{ asset('css/report_monthly_performance_analytics.css') }}?v=20260406-4">
+    <link rel="stylesheet" href="{{ asset('css/shared/reports-tabs.css') }}?v=20260409-1">
+    <link rel="stylesheet" href="{{ asset('css/report_monthly_performance_analytics.css') }}?v=20260409-1">
     <style>
         .reports-page .dashboard-panels-two-column {
             display: grid;
@@ -246,6 +246,70 @@
             display: flex;
             justify-content: center;
             width: 100%;
+        }
+
+        html.theme-dark .reports-page .reports-inquiry-section,
+        html.theme-dark .reports-page .reports-status-section,
+        html.theme-dark .reports-page .reports-product-section {
+            border-color: #283451;
+            background: linear-gradient(180deg, #181f34 0%, #11182b 100%);
+            box-shadow: 0 22px 40px rgba(2, 6, 23, 0.32);
+        }
+
+        html.theme-dark .reports-page .reports-inquiry-heading .dashboard-panel-title,
+        html.theme-dark .reports-page .reports-status-heading .dashboard-panel-title,
+        html.theme-dark .reports-page .reports-product-heading .dashboard-panel-title,
+        html.theme-dark .reports-page .reports-inquiry-chip-value {
+            color: #f6f9ff;
+        }
+
+        html.theme-dark .reports-inquiry-subtitle,
+        html.theme-dark .reports-status-subtitle,
+        html.theme-dark .reports-product-subtitle,
+        html.theme-dark .reports-inquiry-chip-label,
+        html.theme-dark .dealer-reports-chart-fallback,
+        html.theme-dark .reports-product-chart-fallback,
+        html.theme-dark .dealer-reports-empty,
+        html.theme-dark .reports-product-empty {
+            color: #8e9abc;
+        }
+
+        html.theme-dark .reports-inquiry-chip,
+        html.theme-dark .reports-product-scale-chip {
+            border-color: #2f3b5a;
+            background: rgba(16, 23, 39, 0.66);
+            color: #c8d2eb;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+        }
+
+        html.theme-dark .admin-inquiry-trend-legend-button {
+            color: #a6b3d3;
+        }
+
+        html.theme-dark .admin-inquiry-trend-legend-button:hover {
+            color: #ffffff;
+        }
+
+        html.theme-dark .admin-inquiry-trend-legend-button:focus-visible {
+            outline-color: rgba(124, 91, 255, 0.34);
+        }
+
+        html.theme-dark .dealer-reports-card,
+        html.theme-dark .dealer-reports-status-card,
+        html.theme-dark .reports-product-card {
+            border-color: #25314d;
+            background: linear-gradient(180deg, rgba(27, 35, 57, 0.98) 0%, rgba(16, 22, 38, 0.98) 100%);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+        }
+
+        html.theme-dark .dealer-reports-chart-wrapper,
+        html.theme-dark .reports-product-chart-wrapper {
+            background: linear-gradient(180deg, #131b2f 0%, #0f1728 100%);
+            border-color: #27334e;
+        }
+
+        html.theme-dark .reports-page .reports-inquiry-section .dealer-reports-chart-wrapper {
+            background: transparent;
         }
 
         .reports-product-scale {

@@ -1,8 +1,8 @@
 @extends('layouts.app')
 @section('title', 'Report - Dealer Revenue Production')
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/shared/reports-tabs.css') }}?v=20260402-8">
-    <link rel="stylesheet" href="{{ asset('css/report_dealer_revenue_production.css') }}?v=20260406-4">
+    <link rel="stylesheet" href="{{ asset('css/shared/reports-tabs.css') }}?v=20260409-1">
+    <link rel="stylesheet" href="{{ asset('css/report_dealer_revenue_production.css') }}?v=20260409-2">
 @endpush
 @section('content')
 <div class="rrp-page">
@@ -192,9 +192,14 @@
             const volume = @json($chartVolume);
             const closed = @json($chartClosed);
             const rewarded = @json($chartRewarded);
+            const isDarkTheme = document.documentElement.classList.contains('theme-dark');
             const isMobile = window.matchMedia('(max-width: 768px)').matches;
             const chartFontSize = isMobile ? 10 : 12;
             const chartBarThickness = isMobile ? 16 : undefined;
+            const legendColor = isDarkTheme ? '#a5b1cf' : '#475569';
+            const tickColor = isDarkTheme ? '#99a5c5' : '#475569';
+            const axisColor = isDarkTheme ? '#7f8caf' : '#64748b';
+            const gridColor = isDarkTheme ? 'rgba(148, 163, 184, 0.12)' : 'rgba(148, 163, 184, 0.25)';
 
             // Keep grouped bars consistent and readable.
             const data = {
@@ -247,7 +252,7 @@
                         legend: {
                             position: 'top',
                             labels: {
-                                color: '#475569',
+                                color: legendColor,
                                 usePointStyle: true,
                                 boxWidth: 8,
                                 font: { size: chartFontSize }
@@ -257,6 +262,11 @@
                             display: false,
                         },
                         tooltip: {
+                            backgroundColor: isDarkTheme ? 'rgba(15, 23, 42, 0.96)' : 'rgba(15, 23, 42, 0.92)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#e5edf9',
+                            borderColor: isDarkTheme ? 'rgba(99, 113, 146, 0.45)' : 'rgba(148, 163, 184, 0.24)',
+                            borderWidth: 1,
                             callbacks: {
                                 label: function(ctx) {
                                     const value = Number(ctx.parsed?.y ?? 0);
@@ -269,7 +279,7 @@
                         x: {
                             grid: { display: false },
                             ticks: {
-                                color: '#475569',
+                                color: tickColor,
                                 font: { size: chartFontSize },
                                 maxRotation: isMobile ? 40 : 0,
                                 minRotation: isMobile ? 40 : 0,
@@ -277,16 +287,16 @@
                         },
                         y: {
                             beginAtZero: true,
-                            grid: { color: 'rgba(148, 163, 184, 0.25)' },
+                            grid: { color: gridColor },
                             ticks: {
                                 precision: 0,
-                                color: '#64748b',
+                                color: axisColor,
                                 font: { size: chartFontSize },
                             },
                             title: {
                                 display: true,
                                 text: 'Number of inquiries',
-                                color: '#64748b',
+                                color: axisColor,
                                 font: { size: isMobile ? 10 : 11, weight: '700' }
                             }
                         },

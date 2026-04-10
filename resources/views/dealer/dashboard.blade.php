@@ -2,11 +2,11 @@
 @section('title', 'Dashboard – SQL LMS Dealer Console')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/pages/dealer-dashboard.css') }}?v=20260407-01">
+    <link rel="stylesheet" href="{{ asset('css/pages/dealer-dashboard.css') }}?v=20260410-04">
 @endpush
 
 @section('content')
-<div class="dashboard-content dealer-dashboard-content">
+<div class="dashboard-content dealer-dashboard-content dealer-dashboard-page">
     {{-- Summary Cards --}}
     <section class="dashboard-metrics dealer-metrics">
         <div class="dashboard-metric-card">
@@ -169,23 +169,36 @@
             </button>
         </div>
 
+        @php
+            $dealerClosedWeekData = $closedCaseChartData['chartData'] ?? [0, 0, 0, 0, 0, 0, 0];
+            $dealerClosedWeekHasData = collect($dealerClosedWeekData)->contains(function ($value) {
+                return (int) $value > 0;
+            });
+        @endphp
+
         <div class="dealer-dashboard-main-right" id="dealerRightPanel">
             <div class="dealer-panel dealer-closed-case-panel dashboard-chart-panel">
                 <div class="dashboard-panel-header">
                     <div class="dashboard-panel-title">
                         Closed Case
                         <i class="bi bi-info-circle dashboard-info-icon"
-                           title="Count of leads turned into closed cases grouped by creation date (week/month/year)."></i>
+                           title="Count of leads turned into close cases."></i>
                     </div>
                     <div class="dashboard-chart-tabs" id="dealerClosedCaseRangeTabs">
-                        <button type="button" class="dashboard-chart-tab active" data-range="week">Week</button>
-                        <button type="button" class="dashboard-chart-tab" data-range="month">Month</button>
-                        <button type="button" class="dashboard-chart-tab" data-range="year">Year</button>
+                        <button type="button" class="dashboard-chart-tab active" data-range="week" onclick="window.setDealerClosedCaseRange && window.setDealerClosedCaseRange('week')">Week</button>
+                        <button type="button" class="dashboard-chart-tab" data-range="month" onclick="window.setDealerClosedCaseRange && window.setDealerClosedCaseRange('month')">Month</button>
+                        <button type="button" class="dashboard-chart-tab" data-range="year" onclick="window.setDealerClosedCaseRange && window.setDealerClosedCaseRange('year')">Year</button>
                     </div>
                 </div>
                 <div class="dashboard-panel-body">
-                    <div class="dashboard-chart-container">
+                    <div class="dashboard-chart-container dealer-chart-shell{{ $dealerClosedWeekHasData ? '' : ' is-empty' }}" id="dealerClosedCaseChartShell">
                         <canvas id="dealerClosedCaseChart" height="200"></canvas>
+                        <div class="dealer-chart-empty-state" id="dealerClosedCaseEmpty"{{ $dealerClosedWeekHasData ? ' hidden' : '' }}>
+                            <span class="dealer-chart-empty-icon" aria-hidden="true"><i class="bi bi-bar-chart-line"></i></span>
+                            <span class="dealer-chart-empty-range" id="dealerClosedCaseEmptyRange">Week</span>
+                            <strong class="dealer-chart-empty-title" id="dealerClosedCaseEmptyTitle">No closed cases this week</strong>
+                            <span class="dealer-chart-empty-text" id="dealerClosedCaseEmptyText">Closed inquiries completed this week will appear here once there is activity.</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -228,7 +241,13 @@
                         </div>
                     @endforeach
                     @if(empty($highPriorityFollowups))
-                        <div class="dealer-alert-empty">No follow-ups due at the moment.</div>
+                        <div class="dealer-alert-empty">
+                            <div class="dealer-alert-empty-card">
+                                <span class="dealer-alert-empty-icon" aria-hidden="true"><i class="bi bi-check2-circle"></i></span>
+                                <strong class="dealer-alert-empty-title">No urgent follow-ups</strong>
+                                <span class="dealer-alert-empty-text">You're all caught up. Upcoming or overdue follow-ups will appear here automatically.</span>
+                            </div>
+                        </div>
                     @endif
                 </div>
             </div>
@@ -328,53 +347,341 @@
     var monthData = @json($closedMonthData);
     var yearLabels = @json($closedYearLabels);
     var yearData = @json($closedYearData);
+    var monthWeekRange = buildClosedCaseMonthRange(monthLabels, monthData);
 
     var ranges = {
         week: { labels: weekLabels, data: weekData },
-        month: { labels: monthLabels, data: monthData },
+        month: monthWeekRange,
         year: { labels: yearLabels, data: yearData }
     };
+    var activeClosedCaseRange = 'week';
+    var closedCaseRangeTabs = document.getElementById('dealerClosedCaseRangeTabs');
+    var closedCaseRangeButtons = closedCaseRangeTabs
+        ? Array.prototype.slice.call(closedCaseRangeTabs.querySelectorAll('.dashboard-chart-tab[data-range]'))
+        : [];
+    var closedChartShell = document.getElementById('dealerClosedCaseChartShell');
+    var closedChartEmpty = document.getElementById('dealerClosedCaseEmpty');
+    var closedChartEmptyRange = document.getElementById('dealerClosedCaseEmptyRange');
+    var closedChartEmptyTitle = document.getElementById('dealerClosedCaseEmptyTitle');
+    var closedChartEmptyText = document.getElementById('dealerClosedCaseEmptyText');
+    var emptyStateMeta = {
+        week: {
+            label: 'Week',
+            title: 'No closed cases this week',
+            text: 'Closed inquiries completed this week will appear here once there is activity.'
+        },
+        month: {
+            label: 'Month',
+            title: 'No closed cases this month',
+            text: 'Closed inquiries completed this month will appear here once there is activity.'
+        },
+        year: {
+            label: 'Year',
+            title: 'No closed cases this year',
+            text: 'Closed inquiries completed this year will appear here once there is activity.'
+        }
+    };
 
-    window.closedChart = null; // Made global so toggle function can resize it
-    if (ctx && weekData) {
-        window.closedChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: weekLabels,
-                datasets: [{
-                    label: 'Closed',
-                    data: weekData,
-                    backgroundColor: 'rgba(127, 90, 240, 0.6)',
-                    borderColor: 'rgba(127, 90, 240, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true }
-                }
-            }
+    function hasClosedCaseData(values) {
+        if (!values) {
+            return false;
+        }
+
+        var normalizedValues = Array.isArray(values)
+            ? values
+            : Object.keys(values).map(function(key) { return values[key]; });
+
+        return normalizedValues.some(function(value) {
+            return Number(value || 0) > 0;
         });
     }
 
-    document.querySelectorAll('#dealerClosedCaseRangeTabs .dashboard-chart-tab[data-range]').forEach(function(btn) {
-        btn.addEventListener('click', function() {
+    function buildClosedCaseMonthRange(labels, data) {
+        var bucketLabels = [];
+        var bucketData = [];
+        var bucketTooltips = [];
+        var startIndex = 0;
+
+        while (startIndex < labels.length) {
+            var endIndex = Math.min(startIndex + 6, labels.length - 1);
+            var weekNumber = bucketLabels.length + 1;
+            var rangeTotal = 0;
+
+            for (var i = startIndex; i <= endIndex; i++) {
+                rangeTotal += Number(data[i] || 0);
+            }
+
+            bucketLabels.push('Week ' + weekNumber);
+            bucketData.push(rangeTotal);
+            bucketTooltips.push('Days ' + labels[startIndex] + ' - ' + labels[endIndex]);
+
+            startIndex = endIndex + 1;
+        }
+
+        return {
+            labels: bucketLabels,
+            data: bucketData,
+            tooltipLabels: bucketTooltips
+        };
+    }
+
+    function getClosedCaseTickConfig(range, theme) {
+        var fontSize = 11;
+        var padding = 10;
+        var callback = null;
+        var fontWeight = '600';
+
+        if (range === 'year') {
+            fontSize = 11;
+            padding = 10;
+            callback = function(value) {
+                var label = this.getLabelForValue(value);
+                return typeof label === 'string' && label.length ? label.charAt(0) : label;
+            };
+        }
+
+        var config = {
+            color: theme.tick,
+            autoSkip: false,
+            maxRotation: 0,
+            minRotation: 0,
+            padding: padding,
+            crossAlign: 'far',
+            font: {
+                size: fontSize,
+                weight: fontWeight
+            }
+        };
+
+        if (callback) {
+            config.callback = callback;
+        }
+
+        return config;
+    }
+
+    function buildClosedCaseChartOptions(range) {
+        var theme = getClosedCaseTheme();
+        var scaleRange = range || activeClosedCaseRange || 'week';
+
+        return {
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: {
+                padding: {
+                    top: 4,
+                    bottom: scaleRange === 'month' ? 12 : 10
+                }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: theme.tooltipBg,
+                    titleColor: theme.tooltipTitle,
+                    bodyColor: theme.tooltipBody,
+                    cornerRadius: 10,
+                    padding: 10,
+                    callbacks: {
+                        title: function(items) {
+                            if (!items || !items.length) {
+                                return '';
+                            }
+
+                            var item = items[0];
+                            if (scaleRange === 'month') {
+                                return ranges.month.tooltipLabels[item.dataIndex] || ranges.month.labels[item.dataIndex];
+                            }
+
+                            return ranges[scaleRange].labels[item.dataIndex] || '';
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    offset: true,
+                    border: {
+                        display: true,
+                        color: theme.grid
+                    },
+                    grid: {
+                        display: false,
+                        drawBorder: false
+                    },
+                    ticks: getClosedCaseTickConfig(scaleRange, theme)
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: theme.grid,
+                        drawBorder: false,
+                        drawTicks: false
+                    },
+                    border: {
+                        display: false
+                    },
+                    ticks: {
+                        color: theme.tick,
+                        font: {
+                            size: 11,
+                            weight: '500'
+                        },
+                        precision: 0
+                    }
+                }
+            }
+        };
+    }
+
+    function renderClosedCaseChart(range) {
+        if (!ctx) return;
+        var activeRange = range && ranges[range] ? range : 'week';
+        var theme = getClosedCaseTheme();
+
+        if (window.closedChart) {
+            window.closedChart.destroy();
+            window.closedChart = null;
+        }
+
+        window.closedChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ranges[activeRange].labels,
+                datasets: [{
+                    label: 'Closed',
+                    data: ranges[activeRange].data,
+                    backgroundColor: theme.lineFill,
+                    borderColor: theme.lineBorder,
+                    borderWidth: 3,
+                    pointBackgroundColor: theme.pointFill,
+                    pointBorderColor: theme.pointBorder,
+                    pointBorderWidth: 2,
+                    pointRadius: activeRange === 'year' ? 3 : 4,
+                    pointHoverRadius: activeRange === 'year' ? 5 : 6,
+                    pointHitRadius: 16,
+                    fill: true,
+                    tension: 0.35,
+                    cubicInterpolationMode: 'monotone',
+                    spanGaps: true
+                }]
+            },
+            options: buildClosedCaseChartOptions(activeRange)
+        });
+    }
+
+    function syncClosedCaseEmptyState(range) {
+        var activeRange = range && ranges[range] ? range : 'week';
+        var isEmpty = !hasClosedCaseData(ranges[activeRange].data);
+        var meta = emptyStateMeta[activeRange] || emptyStateMeta.week;
+        if (closedChartShell) {
+            closedChartShell.classList.toggle('is-empty', isEmpty);
+        }
+        if (closedChartEmpty) {
+            closedChartEmpty.hidden = !isEmpty;
+        }
+        if (closedChartEmptyRange) {
+            closedChartEmptyRange.textContent = meta.label;
+        }
+        if (closedChartEmptyTitle) {
+            closedChartEmptyTitle.textContent = meta.title;
+        }
+        if (closedChartEmptyText) {
+            closedChartEmptyText.textContent = meta.text;
+        }
+    }
+
+    function setClosedCaseRange(range) {
+        if (!range || !ranges[range]) return;
+        activeClosedCaseRange = range;
+
+        if (closedCaseRangeButtons.length) {
+            closedCaseRangeButtons.forEach(function(b) {
+                var isActive = b.getAttribute('data-range') === range;
+                b.classList.toggle('active', isActive);
+                b.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+            });
+        }
+
+        renderClosedCaseChart(range);
+
+        syncClosedCaseEmptyState(range);
+    }
+
+    window.setDealerClosedCaseRange = setClosedCaseRange;
+
+    function getClosedCaseTheme() {
+        var dark = document.documentElement.classList.contains('theme-dark');
+        return dark ? {
+            lineFill: 'rgba(139, 92, 246, 0.14)',
+            lineBorder: 'rgba(191, 171, 255, 0.98)',
+            pointFill: 'rgba(191, 171, 255, 1)',
+            pointBorder: 'rgba(139, 92, 246, 0.95)',
+            tick: '#9fb4d8',
+            grid: 'rgba(148, 163, 184, 0.12)',
+            tooltipBg: 'rgba(10, 18, 32, 0.96)',
+            tooltipTitle: '#f8fafc',
+            tooltipBody: '#dbe6ff'
+        } : {
+            lineFill: 'rgba(127, 90, 240, 0.12)',
+            lineBorder: 'rgba(127, 90, 240, 0.96)',
+            pointFill: 'rgba(127, 90, 240, 1)',
+            pointBorder: 'rgba(238, 231, 255, 1)',
+            tick: '#64748b',
+            grid: 'rgba(148, 163, 184, 0.18)',
+            tooltipBg: 'rgba(15, 23, 42, 0.94)',
+            tooltipTitle: '#ffffff',
+            tooltipBody: '#ffffff'
+        };
+    }
+
+    function applyClosedChartTheme(range) {
+        renderClosedCaseChart(range || activeClosedCaseRange || 'week');
+    }
+
+    window.closedChart = null; // Made global so toggle function can resize it
+    if (ctx && weekData) {
+        renderClosedCaseChart('week');
+    }
+
+    setClosedCaseRange('week');
+
+    if (closedCaseRangeTabs) {
+        closedCaseRangeTabs.addEventListener('click', function(event) {
+            var btn = event.target.closest('.dashboard-chart-tab[data-range]');
+            if (!btn) return;
             var range = btn.getAttribute('data-range');
             if (!range || !ranges[range]) return;
+            setClosedCaseRange(range);
+        });
+    }
 
-            document.querySelectorAll('#dealerClosedCaseRangeTabs .dashboard-chart-tab[data-range]').forEach(function(b) { b.classList.remove('active'); });
-            btn.classList.add('active');
+    if (closedCaseRangeButtons.length) {
+        closedCaseRangeButtons.forEach(function(btn) {
+            btn.addEventListener('keydown', function(event) {
+                if (event.key !== 'Enter' && event.key !== ' ') return;
+                event.preventDefault();
+                var range = btn.getAttribute('data-range');
+                if (!range || !ranges[range]) return;
+                setClosedCaseRange(range);
+            });
+        });
+    }
 
-            if (window.closedChart) {
-                window.closedChart.data.labels = ranges[range].labels;
-                window.closedChart.data.datasets[0].data = ranges[range].data;
-                window.closedChart.update();
+    if (window.MutationObserver) {
+        var themeObserver = new MutationObserver(function(mutations) {
+            for (var i = 0; i < mutations.length; i++) {
+                if (mutations[i].type === 'attributes') {
+                    applyClosedChartTheme(activeClosedCaseRange);
+                    syncClosedCaseEmptyState(activeClosedCaseRange);
+                    break;
+                }
             }
         });
-    });
+        themeObserver.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['class', 'data-theme']
+        });
+    }
 })();
 
 // Pagination Logic

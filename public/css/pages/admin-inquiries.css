@@ -18,6 +18,11 @@
   box-shadow: none !important;
 }
 
+#incomingPanel .inquiries-table td.inquiries-empty {
+  vertical-align: top;
+  padding-top: 24px !important;
+}
+
 .inquiries-page-wrap #allPanel .inquiries-table-scroll {
   overflow-x: auto;
 }
@@ -200,9 +205,9 @@
 
 .inquiries-page-wrap #allTable:not(.inquiries-table--fit) th[data-col="users"],
 .inquiries-page-wrap #allTable:not(.inquiries-table--fit) td[data-col="users"] {
-  width: 108px;
-  min-width: 108px;
-  max-width: 108px;
+  width: 140px;
+  min-width: 140px;
+  max-width: 140px;
   white-space: nowrap;
 }
 
@@ -272,7 +277,7 @@
 }
 
 .inquiries-page-wrap #allTable.inquiries-table--fit th[data-col="date"] .inquiries-filter-icon {
-  right: 20px;
+  right: 10px;
 }
 
 .inquiries-page-wrap #allTable td.inquiries-col-action {
@@ -2218,6 +2223,52 @@ textarea.inquiry-form-input {
 .inquiries-page-wrap > .inquiries-tabs .inquiries-tab.active .inquiries-tab-count {
   background: rgba(124, 58, 237, 0.12);
   color: #6d28d9;
+}
+
+.inquiries-page-wrap > .inquiries-tabs .inquiries-tab-count[data-tooltip] {
+  cursor: help;
+}
+
+.inquiries-page-wrap > .inquiries-tabs .inquiries-tab-count[data-tooltip]::before,
+.inquiries-page-wrap > .inquiries-tabs .inquiries-tab-count[data-tooltip]::after {
+  position: absolute;
+  left: 50%;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  z-index: 20;
+}
+
+.inquiries-page-wrap > .inquiries-tabs .inquiries-tab-count[data-tooltip]::before {
+  content: "";
+  bottom: calc(100% + 4px);
+  transform: translate(-50%, 6px);
+  border: 6px solid transparent;
+  border-top-color: rgba(15, 23, 42, 0.94);
+}
+
+.inquiries-page-wrap > .inquiries-tabs .inquiries-tab-count[data-tooltip]::after {
+  content: attr(data-tooltip);
+  bottom: calc(100% + 14px);
+  transform: translate(-50%, 6px);
+  width: max-content;
+  max-width: 260px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.94);
+  color: #f8fafc;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+  white-space: normal;
+}
+
+.inquiries-page-wrap > .inquiries-tabs .inquiries-tab-count[data-tooltip]:hover::before,
+.inquiries-page-wrap > .inquiries-tabs .inquiries-tab-count[data-tooltip]:hover::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
 }
 
 .inquiries-page-wrap #allTable.inquiries-table--fit td[data-col="assignedto"] {

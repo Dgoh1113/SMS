@@ -83,11 +83,68 @@
   color: #6b7280;
   opacity: 1;
   background: rgba(15, 23, 42, 0.06);
+  position: relative;
 }
 
 .dealer-console-tab-active .inquiries-tab-count {
   background: rgba(124, 58, 237, 0.12);
   color: #6d28d9;
+}
+
+.inquiries-tab-count[data-tooltip] {
+  cursor: help;
+}
+
+.inquiries-tab-count[data-tooltip]::before,
+.inquiries-tab-count[data-tooltip]::after {
+  position: absolute;
+  left: 50%;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  z-index: 30;
+}
+
+.inquiries-tab-count[data-tooltip]::before {
+  content: "";
+  bottom: calc(100% + 4px);
+  transform: translate(-50%, 6px);
+  border: 6px solid transparent;
+  border-top-color: rgba(15, 23, 42, 0.96);
+}
+
+.inquiries-tab-count[data-tooltip]::after {
+  content: attr(data-tooltip);
+  bottom: calc(100% + 14px);
+  transform: translate(-50%, 6px);
+  width: max-content;
+  max-width: 260px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.96);
+  color: #f8fafc;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.45;
+  white-space: normal;
+  text-align: left;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
+}
+
+.inquiries-tab-count[data-tooltip]:hover::before,
+.inquiries-tab-count[data-tooltip]:hover::after {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+html.theme-dark .inquiries-tab-count[data-tooltip]::before {
+  border-top-color: rgba(6, 10, 20, 0.98);
+}
+
+html.theme-dark .inquiries-tab-count[data-tooltip]::after {
+  background: rgba(6, 10, 20, 0.98);
+  color: #eef2ff;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.38);
 }
 
 .dealer-payouts-panel {

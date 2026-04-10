@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', 'History - Admin')
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/pages/admin-history.css') }}?v=20260402-01">
+    <link rel="stylesheet" href="{{ asset('css/pages/admin-history.css') }}?v=20260409-02">
 @endpush
 @section('content')
 <section class="dashboard-panel dashboard-table-panel">
