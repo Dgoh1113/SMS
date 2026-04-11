@@ -812,24 +812,68 @@
             if (inquiryCanvas) {
                 try {
                     const rawInquiryLabels = @json($adminInquiryTrendLabels ?? []);
-                    const inquiryValues = @json($adminInquiryTrendData ?? []);
+                    const rawInquiryValues = @json($adminInquiryTrendData ?? []);
                     const reportPeriod = 'month';
                     const currentMonthName = @json($selectedMonthName ?? now()->format('F'));
+                    const currentYear = @json((int) ($selectedYear ?? now()->year));
                     const brandColor = '#7f5af0';
                     const columnColor = 'rgba(127, 90, 240, 0.32)';
                     const gridColor = 'rgba(148, 163, 184, 0.25)';
                     const axisColor = 'rgba(148, 163, 184, 0.28)';
-                    const inquiryLabels = rawInquiryLabels.map(function (label) {
+                    let inquiryLabels = rawInquiryLabels.map(function (label) {
                         return String(label || '').trim();
                     });
-                    const tooltipLabels = rawInquiryLabels.map(function (label) {
+                    let inquiryValues = rawInquiryValues.slice();
+                    let tooltipLabels = rawInquiryLabels.map(function (label) {
                         const normalized = String(label || '').trim();
                         if (reportPeriod === 'month' && normalized && /^\d+$/.test(normalized)) {
                             return normalized + ' ' + currentMonthName;
                         }
                         return normalized;
                     });
-                    const showAllDayTicks = reportPeriod === 'month';
+
+                    function buildMonthlyWeekBuckets(labels, values) {
+                        const bucketLabels = [];
+                        const bucketValues = [];
+                        const bucketTooltips = [];
+                        let weekNumber = 1;
+
+                        for (let i = 0; i < labels.length; i += 7) {
+                            const labelSlice = labels.slice(i, i + 7);
+                            const valueSlice = values.slice(i, i + 7);
+                            const firstDay = parseInt(String(labelSlice[0] || ''), 10);
+                            const lastDay = parseInt(String(labelSlice[labelSlice.length - 1] || ''), 10);
+                            const total = valueSlice.reduce(function (sum, value) {
+                                return sum + (Number(value) || 0);
+                            }, 0);
+
+                            bucketLabels.push('Week ' + weekNumber);
+                            bucketValues.push(total);
+
+                            if (Number.isFinite(firstDay) && Number.isFinite(lastDay)) {
+                                bucketTooltips.push(currentMonthName + ' ' + firstDay + ', ' + currentYear + ' - ' + currentMonthName + ' ' + lastDay + ', ' + currentYear);
+                            } else {
+                                bucketTooltips.push('Week ' + weekNumber);
+                            }
+
+                            weekNumber++;
+                        }
+
+                        return {
+                            labels: bucketLabels,
+                            values: bucketValues,
+                            tooltips: bucketTooltips
+                        };
+                    }
+
+                    if (reportPeriod === 'month') {
+                        const monthBuckets = buildMonthlyWeekBuckets(inquiryLabels, inquiryValues);
+                        inquiryLabels = monthBuckets.labels;
+                        inquiryValues = monthBuckets.values;
+                        tooltipLabels = monthBuckets.tooltips;
+                    }
+
+                    const showAllWeekTicks = reportPeriod === 'month';
                     const maxTickCount = inquiryLabels.length > 24 ? 11 : (inquiryLabels.length > 14 ? 9 : (inquiryLabels.length > 7 ? 7 : inquiryLabels.length));
                     const tickStep = inquiryLabels.length > 24 ? 3 : (inquiryLabels.length > 14 ? 2 : 1);
                     const maxInquiryValue = inquiryValues.length ? Math.max.apply(null, inquiryValues) : 0;
@@ -1099,14 +1143,14 @@
                                         color: '#8b95b5',
                                         padding: 4,
                                         font: {
-                                            size: showAllDayTicks ? 8 : (inquiryLabels.length > 10 ? 10 : 11),
+                                            size: showAllWeekTicks ? 10 : (inquiryLabels.length > 10 ? 10 : 11),
                                             weight: '500'
                                         },
-                                        autoSkip: !showAllDayTicks,
-                                        maxTicksLimit: showAllDayTicks ? inquiryLabels.length : maxTickCount,
+                                        autoSkip: !showAllWeekTicks,
+                                        maxTicksLimit: showAllWeekTicks ? inquiryLabels.length : maxTickCount,
                                         callback: function (value, index) {
                                             const label = this.getLabelForValue(value);
-                                            if (showAllDayTicks) {
+                                            if (showAllWeekTicks) {
                                                 return label;
                                             }
                                             if (inquiryLabels.length <= maxTickCount) {
@@ -1117,8 +1161,8 @@
                                             }
                                             return '';
                                         },
-                                        maxRotation: showAllDayTicks ? 50 : (inquiryLabels.length > 7 ? 35 : 0),
-                                        minRotation: showAllDayTicks ? 50 : (inquiryLabels.length > 7 ? 35 : 0)
+                                        maxRotation: showAllWeekTicks ? 0 : (inquiryLabels.length > 7 ? 35 : 0),
+                                        minRotation: showAllWeekTicks ? 0 : (inquiryLabels.length > 7 ? 35 : 0)
                                     }
                                 },
                                 y: {
