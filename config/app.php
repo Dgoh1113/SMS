@@ -122,4 +122,10 @@ return [
         'driver' => 'file',
     ],
 
+    'test_login_shortcuts' => filter_var(env('APP_TEST_LOGIN_SHORTCUTS', false), FILTER_VALIDATE_BOOL),
+
+    'test_login_admin_user' => env('APP_TEST_LOGIN_ADMIN_USER', 'U001'),
+
+    'test_login_dealer_user' => env('APP_TEST_LOGIN_DEALER_USER', 'U032'),
+
 ];

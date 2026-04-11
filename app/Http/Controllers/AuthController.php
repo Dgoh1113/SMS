@@ -157,14 +157,14 @@ class AuthController extends Controller
 
     private function testLoginShortcutsEnabled(): bool
     {
-        return filter_var(env('APP_TEST_LOGIN_SHORTCUTS', false), FILTER_VALIDATE_BOOL);
+        return (bool) config('app.test_login_shortcuts', false);
     }
 
     private function findTestingLoginUser(string $role): ?object
     {
         $userId = trim((string) ($role === 'admin'
-            ? env('APP_TEST_LOGIN_ADMIN_USER', 'U001')
-            : env('APP_TEST_LOGIN_DEALER_USER', 'U032')));
+            ? config('app.test_login_admin_user', 'U001')
+            : config('app.test_login_dealer_user', 'U032')));
 
         if ($userId === '') {
             return null;
