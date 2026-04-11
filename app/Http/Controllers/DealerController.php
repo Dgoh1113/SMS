@@ -1147,6 +1147,7 @@ class DealerController extends Controller
         );
         $fromStatus = $lastAct ? trim($lastAct->STATUS ?? '') : 'Pending';
         $lastCreationDate = $lastAct ? ($lastAct->CREATIONDATE ?? null) : null;
+        $lastCreationDateRaw = is_scalar($lastCreationDate) ? trim((string) $lastCreationDate) : null;
 
         // Enforce chronological order: user cannot set a status datetime earlier than the latest saved status.
         if ($lastCreationDate) {
@@ -1161,6 +1162,16 @@ class DealerController extends Controller
                         'success' => false,
                         'message' => 'Invalid date/time. It must be on/after the previous status time (' . $lastDt->format('Y-m-d H:i') . ').',
                     ], 422);
+                }
+
+                // The UI only captures time to the minute. If the dealer saves another
+                // status within the same minute, preserve the previous row's exact
+                // raw timestamp (including milliseconds when Firebird stores them),
+                // so the newer LEAD_ACTID becomes the real latest activity.
+                if ($newComparableDt->equalTo($lastComparableDt) && $newDt->lt($lastDt)) {
+                    $creationDate = $lastCreationDateRaw !== null && $lastCreationDateRaw !== ''
+                        ? $lastCreationDateRaw
+                        : $lastDt->format('Y-m-d H:i:s.u');
                 }
             } catch (\Throwable $e) {
                 // If parsing fails, skip this validation.

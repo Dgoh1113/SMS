@@ -2,7 +2,7 @@
 @section('title', 'My Inquiries – SQL LMS Dealer Console')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/pages/dealer-inquiries.css') }}?v=20260409-07">
+    <link rel="stylesheet" href="{{ asset('css/pages/dealer-inquiries.css') }}?v=20260411-03">
 @endpush
 
 @section('content')
@@ -1355,6 +1355,55 @@ if (document.readyState === 'loading') {
         if (timeLabel) timeLabel.textContent = labels.time;
     }
 
+    function resetEditableFieldsForSelectedStatus() {
+        var remarkEl = document.getElementById('inquiryRemark');
+        var dateEl = document.getElementById('inquiryFollowupDate');
+        var timeEl = document.getElementById('inquiryFollowupTime');
+        var productBoxes = document.querySelectorAll('.inquiry-product-checkbox');
+        if (remarkEl) remarkEl.value = '';
+        if (dateEl) dateEl.value = getDefaultDate();
+        if (timeEl) timeEl.value = getDefaultTime();
+        if (productBoxes.length) {
+            productBoxes.forEach(function(cb) { cb.checked = false; });
+        }
+        clearAttachmentPreviews();
+    }
+
+    function syncModalAfterSuccessfulStatusSave(savedStatus) {
+        var normalizedSavedStatus = normalizeStatus(savedStatus);
+        if (normalizedSavedStatus) {
+            latestStatusRaw = normalizedSavedStatus;
+            if (normalizedSavedStatus !== 'FAILED') {
+                latestNonFailedStatusRaw = normalizedSavedStatus;
+            }
+        }
+
+        var displayStatus = getDisplayProgressionStatus(normalizedSavedStatus, latestNonFailedStatusRaw);
+        var savedIdx = statusOrder.indexOf(normalizeStatus(displayStatus));
+        if (savedIdx < 0) savedIdx = 0;
+        var nextIdx = isFailedLatestStatus() ? -1 : getDefaultSelectedStatusIdx(savedIdx);
+        var hasNextEditableStep = nextIdx > savedIdx;
+
+        if (hasNextEditableStep) {
+            viewMode = false;
+            setProgression(displayStatus);
+            setFieldsReadOnly(false);
+            setRemarkPlaceholder(getSelectedStatusName());
+            setDateTimeLabels(getSelectedStatusName());
+            resetEditableFieldsForSelectedStatus();
+        } else {
+            viewMode = true;
+            setProgression(displayStatus);
+            setFieldsReadOnly(true);
+            setDateTimeLabels(getSelectedStatusName());
+            clearAttachmentPreviews();
+        }
+
+        toggleAddCalendarButton();
+        toggleProductChecklist();
+        toggleUpdateButton();
+    }
+
     function toggleAddCalendarButton() {
         var btn = document.getElementById('inquiryModalAddCalendar');
         if (!btn) return;
@@ -2204,7 +2253,7 @@ if (document.readyState === 'loading') {
             }
         }
         if (toStatus === 'REWARDED' && attachmentFiles.length === 0) {
-            showDealerInquiryToast('Please upload at least one attachment for REWARDED status.');
+            showDealerInquiryToast('Please upload the payment slip for this referral.');
             if (attachmentInput) attachmentInput.focus();
             return;
         }
@@ -2265,17 +2314,9 @@ if (document.readyState === 'loading') {
                 var leadIdNow = currentLeadId;
                 var newStatus = toStatus;
 
-                // Move progression to the submitted status (tick it), and
-                // auto-advance selection to the NEXT status for the next update.
-                setProgression(newStatus);
-                // Show what was just submitted (saved DB data) in view-only mode.
-                viewMode = true;
-                selectedStatusIdx = currentStatusIdx;
-                setFieldsReadOnly(true);
-                setDateTimeLabels(getSelectedStatusName());
-
-                // Clear attachments UI and files (they are already saved)
-                clearAttachmentPreviews();
+                userPickedStep = false;
+                openStartNext = false;
+                syncModalAfterSuccessfulStatusSave(newStatus);
 
                 // Reload activity/timeline and step labels from the database
                 if (leadIdNow) {
@@ -2293,10 +2334,6 @@ if (document.readyState === 'loading') {
                 }
 
                 // Re‑evaluate controls for the new status
-                toggleAddCalendarButton();
-                toggleProductChecklist();
-                toggleUpdateButton();
-
                 showDealerInquiryToast(res.data.message || 'Status updated successfully');
             } else {
                 showDealerInquiryToast(res.data.message || 'Update failed');

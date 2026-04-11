@@ -12,7 +12,6 @@
         <span class="inquiries-tab-label">
             My Inquiries
             <span class="inquiries-tab-count"
-                  data-tooltip="{{ $dealerInquiryCountTooltip }}"
                   title="{{ $dealerInquiryCountTooltip }}"
                   aria-label="My Inquiries count: {{ number_format($dealerInquiryCount) }}. {{ $dealerInquiryCountTooltip }}">{{ number_format($dealerInquiryCount) }}</span>
         </span>
@@ -23,7 +22,6 @@
         <span class="inquiries-tab-label">
             Pending Payouts
             <span class="inquiries-tab-count"
-                  data-tooltip="{{ $dealerPendingPayoutTooltip }}"
                   title="{{ $dealerPendingPayoutTooltip }}"
                   aria-label="Pending Payouts count: {{ number_format($dealerPendingPayoutCount) }}. {{ $dealerPendingPayoutTooltip }}">{{ number_format($dealerPendingPayoutCount) }}</span>
         </span>
