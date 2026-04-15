@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Maintain Users')
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/pages/admin-maintain-users.css') }}?v=20260415-12">
+    <link rel="stylesheet" href="{{ asset('css/pages/admin-maintain-users.css') }}?v=20260415-15">
 @endpush
 
 @section('content')
@@ -552,6 +552,73 @@
             syncAddRoleState();
 
             window.maintainUsersPaginationState = window.maintainUsersPaginationState || { currentPage: 1, perPage: 10 };
+            const maintainUsersWidthMeasurer = document.createElement('span');
+            maintainUsersWidthMeasurer.style.position = 'absolute';
+            maintainUsersWidthMeasurer.style.visibility = 'hidden';
+            maintainUsersWidthMeasurer.style.pointerEvents = 'none';
+            maintainUsersWidthMeasurer.style.whiteSpace = 'pre';
+            maintainUsersWidthMeasurer.style.left = '-9999px';
+            maintainUsersWidthMeasurer.style.top = '-9999px';
+            document.body.appendChild(maintainUsersWidthMeasurer);
+
+            function measureMaintainUsersTextWidth(text, sourceElement) {
+                if (!sourceElement) return 0;
+                const styles = window.getComputedStyle(sourceElement);
+                maintainUsersWidthMeasurer.style.font = styles.font;
+                maintainUsersWidthMeasurer.style.fontSize = styles.fontSize;
+                maintainUsersWidthMeasurer.style.fontWeight = styles.fontWeight;
+                maintainUsersWidthMeasurer.style.letterSpacing = styles.letterSpacing;
+                maintainUsersWidthMeasurer.textContent = text || '';
+                return Math.ceil(maintainUsersWidthMeasurer.getBoundingClientRect().width);
+            }
+
+            function syncMaintainUsersMeasuredFilterWidth(columnName, options) {
+                if (!table) return;
+
+                const header = table.querySelector('thead th[data-col="' + columnName + '"]');
+                const filterWrap = header ? header.querySelector('.inquiries-filter-wrap') : null;
+                const filterInput = header ? header.querySelector('.inquiries-grid-filter') : null;
+                const headerLabel = header ? header.querySelector('.inquiries-header-label') : null;
+                if (!header || !filterWrap || !filterInput) return;
+
+                const visibleRows = Array.prototype.slice.call(table.querySelectorAll('tbody .maintain-users-row')).filter(function (row) {
+                    return row.style.display !== 'none';
+                });
+                const dataCells = visibleRows.map(function (row) {
+                    return row.querySelector('td[data-col="' + columnName + '"]');
+                }).filter(Boolean);
+
+                const labelWidth = headerLabel ? measureMaintainUsersTextWidth(headerLabel.textContent || '', headerLabel) : 0;
+                const widestCell = dataCells.reduce(function (maxWidth, cell) {
+                    return Math.max(maxWidth, measureMaintainUsersTextWidth(cell.textContent || '', cell));
+                }, 0);
+
+                const minWidth = options && options.minWidth ? options.minWidth : 72;
+                const maxWidth = options && options.maxWidth ? options.maxWidth : 180;
+                const labelPadding = options && options.labelPadding ? options.labelPadding : 18;
+                const cellPadding = options && options.cellPadding ? options.cellPadding : 34;
+                const targetWidth = Math.max(minWidth, Math.min(maxWidth, Math.max(labelWidth + labelPadding, widestCell + cellPadding)));
+
+                filterWrap.style.width = targetWidth + 'px';
+                filterWrap.style.minWidth = targetWidth + 'px';
+                filterInput.style.width = '100%';
+                filterInput.style.minWidth = '0';
+            }
+
+            function syncMaintainUsersMeasuredFilters() {
+                syncMaintainUsersMeasuredFilterWidth('alias', {
+                    minWidth: 72,
+                    maxWidth: 180,
+                    labelPadding: 18,
+                    cellPadding: 34
+                });
+                syncMaintainUsersMeasuredFilterWidth('lastlogin', {
+                    minWidth: 110,
+                    maxWidth: 150,
+                    labelPadding: 18,
+                    cellPadding: 34
+                });
+            }
 
             function initMaintainUsersPagination() {
                 if (!table || !pagination) return;
@@ -654,6 +721,7 @@
                     });
 
                     ensureFixedHeight(visibleRows);
+                    syncMaintainUsersMeasuredFilters();
 
                     if (infoEl) {
                         const fromText = total === 0 ? 0 : start + 1;
@@ -750,6 +818,7 @@
 
             initMaintainUsersPagination();
             applyTableFilter(false);
+            window.addEventListener('resize', syncMaintainUsersMeasuredFilters);
 
             const successFlash = document.querySelector('.maintain-users-success');
             if (successFlash) {

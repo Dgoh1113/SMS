@@ -791,7 +791,7 @@
 
 .maintain-users-table.dashboard-table th:nth-child(4),
 .maintain-users-table.dashboard-table td:nth-child(4) {
-  min-width: 84px;
+  min-width: 72px;
 }
 
 .maintain-users-table.dashboard-table th:nth-child(5),
@@ -832,6 +832,19 @@
 .maintain-users-table.dashboard-table th[data-col="role"] .inquiries-filter-wrap,
 .maintain-users-table.dashboard-table th[data-col="active"] .inquiries-filter-wrap {
   width: 78px;
+}
+
+.maintain-users-table.dashboard-table th[data-col="alias"] .inquiries-grid-filter {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  padding-left: 6px;
+  padding-right: 24px;
+}
+
+.maintain-users-table.dashboard-table th[data-col="alias"] .inquiries-filter-wrap {
+  width: 100%;
+  min-width: 0;
 }
 
 .maintain-users-table.dashboard-table th[data-col="userid"] .inquiries-header-label,
@@ -1243,7 +1256,7 @@ html.theme-dark .maintain-users-batch-toggle {
 
   .maintain-users-table.dashboard-table th:nth-child(4),
   .maintain-users-table.dashboard-table td:nth-child(4) {
-    min-width: 52px;
+    min-width: 46px;
   }
 
   .maintain-users-table.dashboard-table th:nth-child(5),
@@ -1263,7 +1276,7 @@ html.theme-dark .maintain-users-batch-toggle {
 
   .maintain-users-table.dashboard-table th:nth-child(8),
   .maintain-users-table.dashboard-table td:nth-child(8) {
-    min-width: 96px;
+    min-width: 88px;
   }
 
   .maintain-users-table.dashboard-table th:nth-child(9),
@@ -1295,6 +1308,19 @@ html.theme-dark .maintain-users-batch-toggle {
     width: 62px;
   }
 
+  .maintain-users-table.dashboard-table th[data-col="alias"] .inquiries-grid-filter {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    padding-left: 6px;
+    padding-right: 22px;
+  }
+
+  .maintain-users-table.dashboard-table th[data-col="alias"] .inquiries-filter-wrap {
+    width: 100%;
+    min-width: 0;
+  }
+
   .maintain-users-table.dashboard-table .inquiries-filter-icon {
     right: 7px;
     font-size: 12px;
@@ -1312,8 +1338,8 @@ html.theme-dark .maintain-users-batch-toggle {
   }
 
   .maintain-users-pill-active {
-    padding: 1px 5px;
-    font-size: 0.56rem;
+    padding: 1px 6px;
+    font-size: 0.6rem;
   }
 
   .maintain-users-pill-passkey {
