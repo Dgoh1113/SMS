@@ -396,6 +396,8 @@ function initDealerReportsPage() {
             var inquiryValues = @json(array_values($inquiryTrendData ?? []));
             var reportPeriod = @json($period ?? 'month');
             var currentMonthName = @json(now()->format('F'));
+            var currentYear = @json(now()->format('Y'));
+            var currentMonthNumber = @json((int) now()->format('n'));
             var darkTheme = document.documentElement.classList.contains('theme-dark');
             var brandColor = darkTheme ? '#b296ff' : '#7f5af0';
             var columnColor = darkTheme ? 'rgba(178, 150, 255, 0.34)' : 'rgba(127, 90, 240, 0.32)';
@@ -415,31 +417,48 @@ function initDealerReportsPage() {
             });
 
             function buildMonthlyWeekBuckets(labels, values) {
+                var monthStart = new Date(Date.UTC(Number(currentYear), Math.max(Number(currentMonthNumber) - 1, 0), 1));
+                var daysInMonth = new Date(Date.UTC(Number(currentYear), Number(currentMonthNumber), 0)).getUTCDate();
+                var firstWeekday = monthStart.getUTCDay();
+                var mondayOffset = firstWeekday === 0 ? 6 : firstWeekday - 1;
+                var totalWeeks = Math.floor((mondayOffset + daysInMonth - 1) / 7) + 1;
+
                 var bucketLabels = [];
-                var bucketValues = [];
-                var bucketTooltips = [];
-                var weekNumber = 1;
+                var bucketValues = new Array(totalWeeks).fill(0);
+                var bucketRanges = new Array(totalWeeks).fill(null).map(function() {
+                    return { firstDay: null, lastDay: null };
+                });
 
-                for (var i = 0; i < labels.length; i += 7) {
-                    var labelSlice = labels.slice(i, i + 7);
-                    var valueSlice = values.slice(i, i + 7);
-                    var firstDay = parseInt(String(labelSlice[0] || ''), 10);
-                    var lastDay = parseInt(String(labelSlice[labelSlice.length - 1] || ''), 10);
-                    var total = valueSlice.reduce(function(sum, value) {
-                        return sum + (Number(value) || 0);
-                    }, 0);
+                for (var weekIndex = 0; weekIndex < totalWeeks; weekIndex++) {
+                    bucketLabels.push('Week ' + (weekIndex + 1));
+                }
 
-                    bucketLabels.push('Week ' + weekNumber);
-                    bucketValues.push(total);
-
-                    if (Number.isFinite(firstDay) && Number.isFinite(lastDay)) {
-                        bucketTooltips.push(currentMonthName + ' ' + firstDay + ' - ' + currentMonthName + ' ' + lastDay);
-                    } else {
-                        bucketTooltips.push('Week ' + weekNumber);
+                labels.forEach(function(label, index) {
+                    var dayNumber = parseInt(String(label || '').trim(), 10);
+                    if (!Number.isFinite(dayNumber) || dayNumber < 1 || dayNumber > daysInMonth) {
+                        return;
                     }
 
-                    weekNumber++;
-                }
+                    var weekIndex = Math.floor((mondayOffset + dayNumber - 1) / 7);
+                    var safeWeekIndex = Math.max(0, Math.min(totalWeeks - 1, weekIndex));
+                    bucketValues[safeWeekIndex] += Number(values[index]) || 0;
+
+                    if (bucketRanges[safeWeekIndex].firstDay === null || dayNumber < bucketRanges[safeWeekIndex].firstDay) {
+                        bucketRanges[safeWeekIndex].firstDay = dayNumber;
+                    }
+
+                    if (bucketRanges[safeWeekIndex].lastDay === null || dayNumber > bucketRanges[safeWeekIndex].lastDay) {
+                        bucketRanges[safeWeekIndex].lastDay = dayNumber;
+                    }
+                });
+
+                var bucketTooltips = bucketRanges.map(function(range, index) {
+                    if (range.firstDay !== null && range.lastDay !== null) {
+                        return currentMonthName + ' ' + range.firstDay + ', ' + currentYear + ' - ' + currentMonthName + ' ' + range.lastDay + ', ' + currentYear;
+                    }
+
+                    return 'Week ' + (index + 1);
+                });
 
                 return {
                     labels: bucketLabels,

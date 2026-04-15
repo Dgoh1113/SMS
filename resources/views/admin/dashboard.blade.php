@@ -213,39 +213,47 @@ document.addEventListener('DOMContentLoaded', function() {
         const bucketLabels = [];
         const bucketData = [];
         const bucketTooltips = [];
-        let weekNumber = 1;
+        const monthStart = new Date(Date.UTC(dashboardChartNow.year, dashboardChartNow.month - 1, 1));
+        const firstWeekday = monthStart.getUTCDay();
+        const mondayOffset = firstWeekday === 0 ? 6 : firstWeekday - 1;
+        const daysInMonth = new Date(Date.UTC(dashboardChartNow.year, dashboardChartNow.month, 0)).getUTCDate();
+        const totalWeeks = Math.floor((mondayOffset + daysInMonth - 1) / 7) + 1;
+        const weekTotals = Array(totalWeeks).fill(0);
 
-        for (let index = 0; index < labels.length; index += 7) {
-            const labelSlice = labels.slice(index, index + 7);
-            const dataSlice = data.slice(index, index + 7);
-            const firstDay = parseInt(String(labelSlice[0] ?? ''), 10);
-            const lastDay = parseInt(String(labelSlice[labelSlice.length - 1] ?? ''), 10);
-            const rangeTotal = dataSlice.reduce((sum, value) => sum + (Number(value) || 0), 0);
-
-            bucketLabels.push('Week ' + weekNumber);
-            bucketData.push(rangeTotal);
-
-            if (Number.isFinite(firstDay) && Number.isFinite(lastDay)) {
-                const startDate = new Date(Date.UTC(dashboardChartNow.year, dashboardChartNow.month - 1, firstDay));
-                const endDate = new Date(Date.UTC(dashboardChartNow.year, dashboardChartNow.month - 1, lastDay));
-                bucketTooltips.push(
-                    startDate.toLocaleDateString('en-US', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                        timeZone: 'UTC'
-                    }) + ' - ' + endDate.toLocaleDateString('en-US', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                        timeZone: 'UTC'
-                    })
-                );
-            } else {
-                bucketTooltips.push('Week ' + weekNumber);
+        for (let index = 0; index < labels.length; index++) {
+            const dayNumber = parseInt(String(labels[index] ?? ''), 10);
+            if (!Number.isFinite(dayNumber)) {
+                continue;
             }
+            const weekIndex = Math.floor((mondayOffset + dayNumber - 1) / 7);
+            if (weekIndex >= 0 && weekIndex < totalWeeks) {
+                weekTotals[weekIndex] += Number(data[index] || 0);
+            }
+        }
 
-            weekNumber++;
+        for (let weekIndex = 0; weekIndex < totalWeeks; weekIndex++) {
+            const calendarStartDay = 1 + (weekIndex * 7) - mondayOffset;
+            const calendarEndDay = calendarStartDay + 6;
+            const displayStartDay = Math.max(1, calendarStartDay);
+            const displayEndDay = Math.min(daysInMonth, calendarEndDay);
+            const startDate = new Date(Date.UTC(dashboardChartNow.year, dashboardChartNow.month - 1, displayStartDay));
+            const endDate = new Date(Date.UTC(dashboardChartNow.year, dashboardChartNow.month - 1, displayEndDay));
+
+            bucketLabels.push('Week ' + (weekIndex + 1));
+            bucketData.push(weekTotals[weekIndex]);
+            bucketTooltips.push(
+                startDate.toLocaleDateString('en-US', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                    timeZone: 'UTC'
+                }) + ' - ' + endDate.toLocaleDateString('en-US', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                    timeZone: 'UTC'
+                })
+            );
         }
 
         return {

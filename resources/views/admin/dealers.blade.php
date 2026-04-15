@@ -1,12 +1,259 @@
 @extends('layouts.app')
 @section('title', 'Dealers – Admin')
+@push('styles')
+<link rel="stylesheet" href="{{ asset('css/pages/admin-inquiries.css') }}?v=20260415-07">
+<style>
+.dealers-page-wrap {
+    padding: 15px;
+    box-sizing: border-box;
+}
+
+.dealers-page-wrap .dealers-page-panel {
+    margin-bottom: 0;
+}
+
+.dealers-page-wrap .dealers-page-body {
+    padding: 0;
+}
+
+.dealers-page-wrap .inquiries-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 18px 12px;
+}
+
+.dealers-page-wrap .inquiries-panel-title-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.dealers-page-wrap .inquiries-panel-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #7c3aed;
+    font-size: 21px;
+}
+
+.dealers-page-wrap .inquiries-panel-title {
+    margin: 0;
+    color: #111827;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.dealers-page-wrap .inquiries-panel-actions,
+.dealers-page-wrap .dealers-panel-buttons {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.dealers-page-wrap .inquiries-panel-actions {
+    margin-left: auto;
+}
+
+.dealers-page-wrap .inquiries-table-wrap {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.dealers-page-wrap .inquiries-table-scroll {
+    overflow-x: auto;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+}
+
+.dealers-page-wrap #dealersTable {
+    width: max-content;
+    min-width: 100%;
+    table-layout: auto;
+}
+
+.dealers-page-wrap #dealersTable tbody td {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    line-height: 1.45;
+}
+
+.dealers-page-wrap #dealersTable th[data-col="totallead"],
+.dealers-page-wrap #dealersTable th[data-col="totalongoing"],
+.dealers-page-wrap #dealersTable th[data-col="totalclosed"],
+.dealers-page-wrap #dealersTable th[data-col="totalfailed"],
+.dealers-page-wrap #dealersTable td[data-col="totallead"],
+.dealers-page-wrap #dealersTable td[data-col="totalongoing"],
+.dealers-page-wrap #dealersTable td[data-col="totalclosed"],
+.dealers-page-wrap #dealersTable td[data-col="totalfailed"] {
+    width: 78px;
+    min-width: 78px;
+    max-width: 78px;
+    text-align: center;
+}
+
+.dealers-page-wrap #dealersTable th[data-col="conversionrate"],
+.dealers-page-wrap #dealersTable td[data-col="conversionrate"] {
+    min-width: 84px;
+    max-width: 92px;
+}
+
+.dealers-page-wrap .dealers-pagination,
+.dealers-page-wrap .inquiries-assigned-pagination {
+    margin-top: 0;
+}
+
+#dealersTable tbody tr.dealer-placeholder-row,
+#dealersTable tbody tr.dealer-placeholder-row:hover {
+    background: transparent !important;
+    pointer-events: none;
+}
+
+#dealersTable tbody tr.dealer-placeholder-row td,
+#dealersTable tbody tr.dealer-placeholder-row:hover td {
+    background: transparent !important;
+}
+
+#dealersTable .dealer-placeholder-cell {
+    padding: 0 !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+html.theme-dark #dealersTable tbody tr.dealer-placeholder-row td,
+html.theme-dark #dealersTable tbody tr.dealer-placeholder-row:hover td {
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+@media (max-height: 900px) {
+    .dealers-page-wrap .inquiries-panel-header {
+        padding: 12px 14px 10px;
+    }
+
+    .dealers-page-wrap .inquiries-btn.inquiries-btn-secondary {
+        min-height: 34px;
+        padding: 7px 14px;
+        font-size: 12px;
+    }
+
+    .dealers-page-wrap #dealersTable th,
+    .dealers-page-wrap #dealersTable td {
+        padding: 7px 10px;
+        font-size: 12px;
+    }
+
+    .dealers-page-wrap #dealersTable tbody td {
+        padding-top: 8px;
+        padding-bottom: 8px;
+    }
+
+    .dealers-page-wrap #dealersTable thead th {
+        font-size: 11px;
+    }
+
+    .dealers-page-wrap .dealers-table-with-filters thead th.inquiries-header-cell {
+        padding: 6px 8px;
+    }
+
+    .dealers-page-wrap .dealers-table-with-filters thead th .inquiries-header-label {
+        margin-bottom: 4px;
+    }
+
+    .dealers-page-wrap .inquiries-header-cell .inquiries-grid-filter,
+    .dealers-page-wrap .inquiries-header-cell .inquiries-grid-filter-all,
+    .dealers-page-wrap .inquiries-header-cell .inquiries-grid-filter-assigned,
+    .dealers-page-wrap .inquiries-header-cell .inquiries-grid-filter-select,
+    .dealers-page-wrap .inquiries-header-cell .dealer-grid-filter {
+        padding: 5px 24px 5px 8px;
+        font-size: 11px;
+        min-height: 28px;
+    }
+
+    .dealers-page-wrap .inquiries-header-cell .inquiries-filter-icon {
+        right: 7px;
+        font-size: 12px;
+    }
+
+    .dealers-page-wrap #dealersTable .dealer-operator-search-box {
+        min-height: 28px;
+    }
+
+    .dealers-page-wrap .dealer-conversion-label {
+        padding: 3px 8px;
+        font-size: 11px;
+    }
+
+    .dealers-page-wrap .inquiries-assigned-pagination {
+        margin-top: 6px;
+        padding: 8px 10px;
+        gap: 8px;
+    }
+
+    .dealers-page-wrap .inquiries-assigned-pagination-info {
+        font-size: 12px;
+    }
+
+    .dealers-page-wrap .inquiries-assigned-pagination-nav {
+        gap: 4px;
+    }
+
+    .dealers-page-wrap .inquiries-pagination-num,
+    .dealers-page-wrap .inquiries-pagination-btn {
+        min-width: 26px;
+        padding: 4px 7px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 768px) {
+    .dealers-page-wrap .inquiries-panel-header {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 14px 16px 10px;
+        gap: 10px;
+    }
+
+    .dealers-page-wrap .inquiries-panel-actions,
+    .dealers-page-wrap .dealers-panel-buttons {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .dealers-page-wrap .inquiries-panel-actions > .inquiries-btn,
+    .dealers-page-wrap .inquiries-panel-actions > .inquiries-columns-dropdown {
+        width: 100%;
+    }
+}
+</style>
+@endpush
 @section('content')
-<section class="dashboard-panel dashboard-table-panel">
-    <div class="dashboard-panel-body">
-        <div class="dealers-panel-actions dealers-panel-actions-right" style="margin-bottom: 12px;">
-            <div class="dealers-panel-buttons">
-                <button type="button" class="inquiries-btn inquiries-btn-secondary" id="dealerClearFilters">Clear filters</button>
-                <div class="inquiries-columns-dropdown dealers-columns-right">
+<div class="inquiries-page-wrap dealers-page-wrap">
+<section class="dealers-page-panel inquiries-mgmt-panel">
+    <div class="dealers-page-body">
+        @php
+            $dealersTotal = count($items);
+            $dealersPerPage = 10;
+            $dealersLastPage = $dealersTotal > 0 ? (int) ceil($dealersTotal / $dealersPerPage) : 1;
+            $dealersTo = $dealersTotal === 0 ? 0 : min($dealersPerPage, $dealersTotal);
+        @endphp
+        <div class="inquiries-panel-header">
+            <div class="inquiries-panel-title-wrap">
+                <i class="bi bi-people inquiries-panel-icon"></i>
+                <h2 class="inquiries-panel-title">Dealers</h2>
+            </div>
+            <div class="inquiries-panel-actions">
+                <div class="inquiries-columns-dropdown">
                     <button type="button" class="inquiries-btn inquiries-btn-secondary" id="dealerColumnsBtn" aria-haspopup="true" aria-expanded="false">Columns</button>
                     <div class="inquiries-columns-menu" id="dealerColumnsMenu" hidden>
                     <div class="inquiries-columns-menu-title">Show columns</div>
@@ -29,10 +276,12 @@
                     <button type="button" class="inquiries-columns-reset" id="dealerColumnsReset">Reset to default</button>
                     </div>
                 </div>
+                <button type="button" class="inquiries-btn inquiries-btn-secondary" id="dealerClearFilters">Clear filters</button>
             </div>
         </div>
-        <div class="table-responsive">
-            <table class="dashboard-table dealers-table-with-filters" id="dealersTable">
+        <div class="inquiries-table-wrap">
+            <div class="inquiries-table-scroll table-responsive">
+            <table class="inquiries-table dealers-table-with-filters" id="dealersTable">
                 <thead>
                     <tr class="inquiries-header-row">
                         <x-tables.text-filter-header col="userid" label="User ID" input-class="dealer-grid-filter" cell-class="dashboard-table-sortable inquiries-header-cell inquiries-sortable" wrap-class="inquiries-filter-wrap dealer-filter-input-wrap" />
@@ -77,15 +326,35 @@
                     @endif
                 </tbody>
             </table>
+            </div>
+            <div class="inquiries-assigned-pagination dealers-pagination" id="dealersPagination"
+             data-total="{{ $dealersTotal }}"
+             data-per-page="{{ $dealersPerPage }}"
+             data-current-page="1"
+             data-last-page="{{ $dealersLastPage }}">
+            <span class="inquiries-assigned-pagination-info">
+                Showing {{ $dealersTotal === 0 ? 0 : 1 }} to {{ $dealersTo }} of {{ $dealersTotal }} entries (Page 1)
+            </span>
+            <div class="inquiries-assigned-pagination-nav">
+                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" data-page="first">First</button>
+                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" data-page="prev">Previous</button>
+                <span class="inquiries-assigned-page-numbers" id="dealersPageNumbers"></span>
+                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" data-page="next">Next</button>
+                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" data-page="last">Last</button>
+            </div>
+        </div>
         </div>
     </div>
 </section>
+</div>
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     var table = document.getElementById('dealersTable');
     if (!table) return;
+    var pagination = document.getElementById('dealersPagination');
     var state = { col: 'conversionrate', dir: -1 };
+    window.dealersPaginationState = window.dealersPaginationState || { currentPage: 1, perPage: 10 };
 
     // ——— Column visibility (customizable like inquiries), Active hidden by default ———
     var DEALER_STORAGE_KEY = 'dealerVisibleColumns';
@@ -209,7 +478,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 maxW = Math.max(maxW, measureEl.offsetWidth);
             }
             table.querySelectorAll('tbody td[data-col="' + col + '"]').forEach(function(td) {
-                if (td.style.display === 'none') return;
                 var t = td.textContent.trim();
                 if (t) {
                     measureEl.textContent = t;
@@ -246,7 +514,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     requestAnimationFrame(function() { measureAndSizeDealerColumns(); });
-    window.addEventListener('resize', function() { measureAndSizeDealerColumns(); });
+    window.addEventListener('resize', function() {
+        measureAndSizeDealerColumns();
+        if (typeof window.dealersGoToPage === 'function') {
+            window.dealersGoToPage(window.dealersPaginationState.currentPage || 1);
+        }
+    });
 
     // ——— Grid filters (text: contains; Leads/Ongoing/Closed/Failed: = or > or <) ———
     var DEALER_NUMERIC_COLS = ['totallead','totalongoing','totalclosed','totalfailed'];
@@ -254,7 +527,187 @@ document.addEventListener('DOMContentLoaded', function() {
         var n = parseInt(String(s).replace(/\s|,/g, ''), 10);
         return isNaN(n) ? 0 : n;
     }
-    function applyDealerGridFilters() {
+    function initDealerPagination() {
+        if (!table || !pagination) return;
+
+        var infoEl = pagination.querySelector('.inquiries-assigned-pagination-info');
+        var pageNumbersEl = document.getElementById('dealersPageNumbers');
+        var controls = pagination.querySelectorAll('.inquiries-pagination-btn');
+        var perPage = parseInt(pagination.getAttribute('data-per-page') || '10', 10);
+        window.dealersPaginationState.perPage = perPage;
+
+        function getAllRows() {
+            return Array.prototype.slice.call(table.querySelectorAll('tbody tr.dealer-row'));
+        }
+
+        function getMatchingRows() {
+            return getAllRows().filter(function(row) {
+                if (!row.dataset.filterMatch) row.dataset.filterMatch = '1';
+                return row.dataset.filterMatch !== '0';
+            });
+        }
+
+        function clearPlaceholderRows() {
+            Array.prototype.slice.call(table.querySelectorAll('tbody tr.dealer-placeholder-row')).forEach(function(row) {
+                row.remove();
+            });
+        }
+
+        function measureDealerRowHeight(row) {
+            if (!row) return 0;
+            var directHeight = Math.round(row.getBoundingClientRect().height || row.offsetHeight || 0);
+            if (directHeight > 0) {
+                return directHeight;
+            }
+
+            var host = document.createElement('div');
+            host.style.position = 'absolute';
+            host.style.left = '-10000px';
+            host.style.top = '0';
+            host.style.visibility = 'hidden';
+            host.style.pointerEvents = 'none';
+            host.style.width = Math.round((table.getBoundingClientRect().width || 0)) > 0
+                ? Math.round(table.getBoundingClientRect().width || 0) + 'px'
+                : '1400px';
+
+            var measureTable = document.createElement('table');
+            measureTable.className = table.className || 'inquiries-table dealers-table-with-filters';
+            measureTable.style.width = '100%';
+
+            var measureBody = document.createElement('tbody');
+            var clone = row.cloneNode(true);
+            clone.style.display = '';
+            measureBody.appendChild(clone);
+            measureTable.appendChild(measureBody);
+            host.appendChild(measureTable);
+            document.body.appendChild(host);
+
+            var measuredHeight = Math.round(clone.getBoundingClientRect().height || clone.offsetHeight || 0);
+            host.remove();
+            return measuredHeight > 0 ? measuredHeight : 0;
+        }
+
+        function ensureFixedHeight(visibleRows) {
+            var tbody = table.querySelector('tbody');
+            if (!tbody) return;
+            clearPlaceholderRows();
+
+            var visibleCount = Array.isArray(visibleRows) ? visibleRows.length : 0;
+            if (visibleCount > 0 && visibleCount < perPage) {
+                var sampleRow = visibleRows.find(function(row) {
+                    return row && row.style.display !== 'none';
+                }) || tbody.querySelector('tr.dealer-row:not([style*="display: none"])') || tbody.querySelector('tr.dealer-row');
+                var rowHeight = measureDealerRowHeight(sampleRow);
+                if (!rowHeight) rowHeight = 46;
+
+                var headerCount = table.querySelectorAll('thead tr:first-child th[data-col]').length || 1;
+                for (var i = visibleCount; i < perPage; i++) {
+                    var row = document.createElement('tr');
+                    row.className = 'dealer-placeholder-row';
+                    row.setAttribute('aria-hidden', 'true');
+
+                    var cell = document.createElement('td');
+                    cell.className = 'dealer-placeholder-cell';
+                    cell.colSpan = headerCount;
+                    row.style.height = rowHeight + 'px';
+                    cell.style.height = rowHeight + 'px';
+                    cell.style.minHeight = rowHeight + 'px';
+
+                    row.appendChild(cell);
+                    tbody.appendChild(row);
+                }
+            }
+        }
+
+        function buildPageNumbers(currentPage, lastPage) {
+            if (!pageNumbersEl) return;
+            pageNumbersEl.innerHTML = '';
+            for (var p = 1; p <= lastPage; p++) {
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'inquiries-pagination-num' + (p === currentPage ? ' inquiries-pagination-num-active' : '');
+                btn.setAttribute('data-page', String(p));
+                btn.textContent = String(p);
+                btn.addEventListener('click', function(e) {
+                    var target = e.currentTarget.getAttribute('data-page') || '1';
+                    window.dealersGoToPage(target);
+                });
+                pageNumbersEl.appendChild(btn);
+            }
+        }
+
+        function renderPage(page) {
+            var matchingRows = getMatchingRows();
+            var total = matchingRows.length;
+            var lastPage = total > 0 ? Math.ceil(total / perPage) : 1;
+            var safePage = Math.min(Math.max(parseInt(page || 1, 10), 1), lastPage);
+            var start = total === 0 ? 0 : (safePage - 1) * perPage;
+            var end = total === 0 ? 0 : Math.min(start + perPage, total);
+
+            pagination.setAttribute('data-total', String(total));
+            pagination.setAttribute('data-current-page', String(safePage));
+            pagination.setAttribute('data-last-page', String(lastPage));
+            window.dealersPaginationState.currentPage = safePage;
+            clearPlaceholderRows();
+
+            getAllRows().forEach(function(row) {
+                row.style.display = 'none';
+            });
+
+            var visibleRows = matchingRows.slice(start, end);
+            visibleRows.forEach(function(row) {
+                row.style.display = '';
+            });
+            ensureFixedHeight(visibleRows);
+
+            if (infoEl) {
+                var fromText = total === 0 ? 0 : start + 1;
+                infoEl.textContent = 'Showing ' + fromText + ' to ' + end + ' of ' + total + ' entries (Page ' + safePage + ')';
+            }
+
+            buildPageNumbers(safePage, lastPage);
+
+            controls.forEach(function(btn) {
+                var action = btn.getAttribute('data-page');
+                var disabled = false;
+                if (total === 0) {
+                    disabled = true;
+                } else if (action === 'first' || action === 'prev') {
+                    disabled = safePage <= 1;
+                } else if (action === 'next' || action === 'last') {
+                    disabled = safePage >= lastPage;
+                }
+                btn.disabled = disabled;
+            });
+        }
+
+        window.dealersGoToPage = function(page) {
+            var action = String(page || '').toLowerCase();
+            var currentPage = window.dealersPaginationState.currentPage || 1;
+            var lastPage = parseInt(pagination.getAttribute('data-last-page') || '1', 10);
+            var targetPage = currentPage;
+
+            if (action === 'first') targetPage = 1;
+            else if (action === 'prev') targetPage = currentPage - 1;
+            else if (action === 'next') targetPage = currentPage + 1;
+            else if (action === 'last') targetPage = lastPage;
+            else targetPage = parseInt(page || '1', 10);
+
+            renderPage(targetPage);
+        };
+
+        controls.forEach(function(btn) {
+            if (btn.getAttribute('data-pagination-bound') === '1') return;
+            btn.setAttribute('data-pagination-bound', '1');
+            btn.addEventListener('click', function() {
+                window.dealersGoToPage(btn.getAttribute('data-page') || '1');
+            });
+        });
+
+        renderPage(window.dealersPaginationState.currentPage || 1);
+    }
+
+    function applyDealerGridFilters(resetPage) {
         var filters = {};
         table.querySelectorAll('.dealer-grid-filter').forEach(function(inp) {
             var col = inp.getAttribute('data-col');
@@ -290,13 +743,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 if (!match) break;
             }
-            row.style.display = match ? '' : 'none';
+            row.dataset.filterMatch = match ? '1' : '0';
         });
+        initDealerPagination();
+        if (window.dealersGoToPage) {
+            window.dealersGoToPage(resetPage ? 1 : (window.dealersPaginationState.currentPage || 1));
+        }
     }
 
     table.querySelectorAll('.dealer-grid-filter').forEach(function(inp) {
-        inp.addEventListener('input', applyDealerGridFilters);
-        inp.addEventListener('keyup', applyDealerGridFilters);
+        inp.addEventListener('input', function() { applyDealerGridFilters(true); });
+        inp.addEventListener('keyup', function() { applyDealerGridFilters(true); });
     });
     table.querySelectorAll('.dealer-operator-btn').forEach(function(btn) {
         var col = btn.getAttribute('data-col');
@@ -320,7 +777,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 btn.textContent = label;
                 dropdown.hidden = true;
                 btn.setAttribute('aria-expanded', 'false');
-                applyDealerGridFilters();
+                applyDealerGridFilters(true);
             });
         });
     });
@@ -339,7 +796,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 btn.setAttribute('aria-expanded', 'false');
             });
             table.querySelectorAll('.dealer-operator-dropdown').forEach(function(d) { d.hidden = true; });
-            applyDealerGridFilters();
+            applyDealerGridFilters(true);
             table.querySelectorAll('thead th[data-col]').forEach(function(h) {
                 h.classList.remove('inquiries-sort-asc', 'inquiries-sort-desc');
             });
@@ -373,6 +830,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         rows.forEach(function(r) { tbody.appendChild(r); });
         if (emptyRow) tbody.appendChild(emptyRow);
+        initDealerPagination();
+        if (window.dealersGoToPage) {
+            window.dealersGoToPage(window.dealersPaginationState.currentPage || 1);
+        }
     }
     table.querySelectorAll('thead th[data-col]').forEach(function(th) {
         th.style.cursor = 'pointer';
@@ -386,6 +847,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     applySort();
+    table.querySelectorAll('tbody tr.dealer-row').forEach(function(row) {
+        row.dataset.filterMatch = '1';
+    });
+    initDealerPagination();
+    applyDealerGridFilters(false);
 });
 </script>
 <script>

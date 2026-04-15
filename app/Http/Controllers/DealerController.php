@@ -1937,10 +1937,19 @@ class DealerController extends Controller
     if ($dealerId && $dateFrom && $dateTo) {
         $df = $dateFrom->format('Y-m-d H:i:s');
         $dt = $dateTo->format('Y-m-d H:i:s');
+        $dealerPendingDateSql = 'SELECT a."LEADID", MAX(a."CREATIONDATE") AS "PENDING_AT"
+            FROM "LEAD_ACT" a
+            WHERE UPPER(TRIM(COALESCE(a."STATUS", \'\'))) = ?
+            GROUP BY a."LEADID"';
 
         $totalRow = DB::selectOne(
-            'SELECT COUNT(*) AS "CNT" FROM "LEAD" WHERE "ASSIGNED_TO" = ? AND "CREATEDAT" >= ? AND "CREATEDAT" <= ?',
-            [$dealerId, $df, $dt]
+            'SELECT COUNT(*) AS "CNT"
+             FROM "LEAD" l
+             JOIN (' . $dealerPendingDateSql . ') p ON p."LEADID" = l."LEADID"
+             WHERE l."ASSIGNED_TO" = ?
+               AND p."PENDING_AT" >= ?
+               AND p."PENDING_AT" <= ?',
+            ['PENDING', $dealerId, $df, $dt]
         );
         $totalInquiry = (int) ($totalRow->CNT ?? 0);
 
@@ -1950,8 +1959,12 @@ class DealerController extends Controller
             for ($i = 0; $i < $numBuckets; $i++) {
                 $d = $dateFrom->copy()->addDays($i)->format('Y-m-d');
                 $row = DB::selectOne(
-                    'SELECT COUNT(*) AS "CNT" FROM "LEAD" WHERE "ASSIGNED_TO" = ? AND CAST("CREATEDAT" AS DATE) = ?',
-                    [$dealerId, $d]
+                    'SELECT COUNT(*) AS "CNT"
+                     FROM "LEAD" l
+                     JOIN (' . $dealerPendingDateSql . ') p ON p."LEADID" = l."LEADID"
+                     WHERE l."ASSIGNED_TO" = ?
+                       AND CAST(p."PENDING_AT" AS DATE) = ?',
+                    ['PENDING', $dealerId, $d]
                 );
                 $dayCounts[] = (int) ($row->CNT ?? 0);
             }
@@ -1961,12 +1974,15 @@ class DealerController extends Controller
             $y = $dateFrom->year;
             for ($m = 1; $m <= 12; $m++) {
                 $row = DB::selectOne(
-                    'SELECT COUNT(*) AS "CNT" FROM "LEAD" l WHERE l."ASSIGNED_TO" = ?
-                        AND l."CREATEDAT" IS NOT NULL
-                        AND l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
-                        AND EXTRACT(YEAR FROM l."CREATEDAT") = ?
-                        AND EXTRACT(MONTH FROM l."CREATEDAT") = ?',
-                    [$dealerId, $df, $dt, $y, $m]
+                    'SELECT COUNT(*) AS "CNT"
+                     FROM "LEAD" l
+                     JOIN (' . $dealerPendingDateSql . ') p ON p."LEADID" = l."LEADID"
+                     WHERE l."ASSIGNED_TO" = ?
+                       AND p."PENDING_AT" IS NOT NULL
+                       AND p."PENDING_AT" >= ? AND p."PENDING_AT" <= ?
+                       AND EXTRACT(YEAR FROM p."PENDING_AT") = ?
+                       AND EXTRACT(MONTH FROM p."PENDING_AT") = ?',
+                    ['PENDING', $dealerId, $df, $dt, $y, $m]
                 );
                 $monthCounts[] = (int) ($row->CNT ?? 0);
             }
@@ -1978,8 +1994,12 @@ class DealerController extends Controller
                 $bStart = $dateFrom->copy()->addDays($i * $bucketDays)->startOfDay()->format('Y-m-d H:i:s');
                 $bEnd = $dateFrom->copy()->addDays(min(($i + 1) * $bucketDays, $days) - 1)->endOfDay()->format('Y-m-d H:i:s');
                 $row = DB::selectOne(
-                    'SELECT COUNT(*) AS "CNT" FROM "LEAD" WHERE "ASSIGNED_TO" = ? AND "CREATEDAT" >= ? AND "CREATEDAT" <= ?',
-                    [$dealerId, $bStart, $bEnd]
+                    'SELECT COUNT(*) AS "CNT"
+                     FROM "LEAD" l
+                     JOIN (' . $dealerPendingDateSql . ') p ON p."LEADID" = l."LEADID"
+                     WHERE l."ASSIGNED_TO" = ?
+                       AND p."PENDING_AT" >= ? AND p."PENDING_AT" <= ?',
+                    ['PENDING', $dealerId, $bStart, $bEnd]
                 );
                 $weekCounts[] = (int) ($row->CNT ?? 0);
             }

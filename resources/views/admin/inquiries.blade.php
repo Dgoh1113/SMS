@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Inquiries Management – Admin')
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/pages/admin-inquiries.css') }}?v=20260410-24">
+    <link rel="stylesheet" href="{{ asset('css/pages/admin-inquiries.css') }}?v=20260415-08">
 @endpush
 @section('content')
 @php
@@ -10,6 +10,8 @@
     $incomingStatusFilterOptions = ['Created'];
     $assignedStatusFilterOptions = ['Followup', 'Demo', 'Confirmed', 'Completed', 'Rewarded', 'Failed'];
     $allStatusFilterOptions = ['Created', 'Pending', 'Followup', 'Demo', 'Confirmed', 'Completed', 'Rewarded', 'Failed'];
+    $incomingTabCountValue = (int) ($totalNewInquiries ?? 0);
+    $assignedTabCountValue = (int) ($totalOngoing ?? 0);
     $allInquiryCount = (int) ($allTotal ?? count($allRows ?? []));
     $incomingTabTooltip = 'Total leads pending for distribution';
     $assignedTabTooltip = 'Total active leads assigned to dealer';
@@ -47,13 +49,13 @@
 
 <div class="inquiries-tabs">
     <button type="button" class="inquiries-tab active" data-tab="incoming" aria-selected="true">
-        <span class="inquiries-tab-label">Incoming <span class="inquiries-tab-count" id="incomingTabCount" data-tooltip="{{ $incomingTabTooltip }}" title="{{ $incomingTabTooltip }}" aria-label="Incoming count: {{ number_format($totalNewInquiries ?? 0) }}. {{ $incomingTabTooltip }}">{{ number_format($totalNewInquiries ?? 0) }}</span></span>
+        <span class="inquiries-tab-label">Incoming <span class="inquiries-tab-count" id="incomingTabCount" data-tooltip="{{ $incomingTabTooltip }}" title="{{ $incomingTabTooltip }}" aria-label="Incoming count: {{ number_format($incomingTabCountValue) }}. {{ $incomingTabTooltip }}" @if($incomingTabCountValue === 0) hidden aria-hidden="true" @endif>{{ number_format($incomingTabCountValue) }}</span></span>
     </button>
     <button type="button" class="inquiries-tab" data-tab="assigned" aria-selected="false">
-        <span class="inquiries-tab-label">Assigned <span class="inquiries-tab-count" id="assignedTabCount" data-tooltip="{{ $assignedTabTooltip }}" title="{{ $assignedTabTooltip }}" aria-label="Assigned count: {{ number_format($totalOngoing ?? 0) }}. {{ $assignedTabTooltip }}">{{ number_format($totalOngoing ?? 0) }}</span></span>
+        <span class="inquiries-tab-label">Assigned <span class="inquiries-tab-count" id="assignedTabCount" data-tooltip="{{ $assignedTabTooltip }}" title="{{ $assignedTabTooltip }}" aria-label="Assigned count: {{ number_format($assignedTabCountValue) }}. {{ $assignedTabTooltip }}" @if($assignedTabCountValue === 0) hidden aria-hidden="true" @endif>{{ number_format($assignedTabCountValue) }}</span></span>
     </button>
     <button type="button" class="inquiries-tab" data-tab="all" aria-selected="false">
-        <span class="inquiries-tab-label">All <span class="inquiries-tab-count" id="allTabCount">{{ number_format($allInquiryCount) }}</span></span>
+        <span class="inquiries-tab-label">All</span>
     </button>
 </div>
 
@@ -235,7 +237,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="18" class="inquiries-empty">No unassigned inquiries.</td></tr>
+                <tr><td colspan="18" class="inquiries-empty"><div class="inquiries-empty-message-viewport">No unassign inquiries at the moment.</div></td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -1855,12 +1857,25 @@ document.addEventListener('DOMContentLoaded', function() {
         Array.from(tbody.querySelectorAll('tr.inquiries-placeholder-row')).forEach(function(row) {
             row.remove();
         });
+        var emptyCell = tbody.querySelector('td.inquiries-empty');
+        if (emptyCell) {
+            emptyCell.style.height = '';
+            emptyCell.style.minHeight = '';
+            emptyCell.style.paddingTop = '';
+            emptyCell.style.paddingBottom = '';
+            emptyCell.style.verticalAlign = '';
+            var emptyRow = emptyCell.closest ? emptyCell.closest('tr') : null;
+            if (emptyRow) {
+                emptyRow.style.height = '';
+                emptyRow.style.display = '';
+            }
+        }
     }
 
     function shouldUseInquiryPlaceholderRows() {
-        var viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
-        var viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
-        return !(viewportWidth >= 1280 && viewportHeight <= 899);
+        // Short pages with real rows should end naturally; only truly empty incoming
+        // states keep a reserved body via the dedicated empty-row helper below.
+        return false;
     }
 
     function getInquiryVisibleColumnCount(table) {
@@ -1975,6 +1990,36 @@ document.addEventListener('DOMContentLoaded', function() {
         return measureInquiryRowsBlockHeight(visibleRows, table, table);
     }
 
+    function getInquiryMeasurementSources(tbody, table) {
+        var candidateSources = [];
+        var seenTableIds = {};
+
+        function addSource(sourceTable, sourceBody) {
+            if (!sourceBody && sourceTable) {
+                sourceBody = sourceTable.querySelector('tbody');
+            }
+            if (!sourceBody) return;
+            var sourceTableId = sourceTable && sourceTable.id ? sourceTable.id : ('inline-' + candidateSources.length);
+            if (seenTableIds[sourceTableId]) return;
+            seenTableIds[sourceTableId] = true;
+            candidateSources.push({ body: sourceBody, table: sourceTable || table });
+        }
+
+        function addTableById(tableId) {
+            var currentTableId = table && table.id ? table.id : '';
+            if (!tableId || (currentTableId === tableId && table)) return;
+            var sourceTable = document.getElementById(tableId);
+            if (!sourceTable) return;
+            addSource(sourceTable, sourceTable.querySelector('tbody'));
+        }
+
+        addSource(table, tbody);
+        addTableById('assignedTable');
+        addTableById('allTable');
+
+        return candidateSources;
+    }
+
     function getInquiryReferenceRowHeight(tbody, table) {
         function measureFromBody(body, sourceTable) {
             if (!body) return 0;
@@ -1986,21 +2031,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return measureInquiryRowHeight(referenceRow, sourceTable || table, table);
         }
 
-        var candidateSources = [];
-        var currentTableId = table && table.id ? table.id : '';
-        if (currentTableId !== 'assignedTable') {
-            var assignedTable = document.getElementById('assignedTable');
-            if (assignedTable) {
-                candidateSources.push({ body: assignedTable.querySelector('tbody'), table: assignedTable });
-            }
-        }
-        if (currentTableId !== 'allTable') {
-            var allTable = document.getElementById('allTable');
-            if (allTable) {
-                candidateSources.push({ body: allTable.querySelector('tbody'), table: allTable });
-            }
-        }
-        candidateSources.push({ body: tbody, table: table });
+        var candidateSources = getInquiryMeasurementSources(tbody, table);
 
         for (var i = 0; i < candidateSources.length; i += 1) {
             var candidate = candidateSources[i];
@@ -2020,21 +2051,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return measureInquiryRowsBlockHeight(rows, sourceTable || table, table);
         }
 
-        var candidateSources = [];
-        var currentTableId = table && table.id ? table.id : '';
-        if (currentTableId !== 'assignedTable') {
-            var assignedTable = document.getElementById('assignedTable');
-            if (assignedTable) {
-                candidateSources.push({ body: assignedTable.querySelector('tbody'), table: assignedTable });
-            }
-        }
-        if (currentTableId !== 'allTable') {
-            var allTable = document.getElementById('allTable');
-            if (allTable) {
-                candidateSources.push({ body: allTable.querySelector('tbody'), table: allTable });
-            }
-        }
-        candidateSources.push({ body: tbody, table: table });
+        var candidateSources = getInquiryMeasurementSources(tbody, table);
 
         for (var i = 0; i < candidateSources.length; i += 1) {
             var candidate = candidateSources[i];
@@ -2046,6 +2063,82 @@ document.addEventListener('DOMContentLoaded', function() {
         return 0;
     }
 
+    function getIncomingAssignedReferenceRowHeight() {
+        var assignedTable = document.getElementById('assignedTable');
+        if (!assignedTable) return 0;
+        var assignedBody = assignedTable.querySelector('tbody');
+        if (!assignedBody) return 0;
+
+        var assignedReferenceRow = Array.from(assignedBody.querySelectorAll('tr.inquiry-row')).find(function(row) {
+            return window.getComputedStyle(row).display !== 'none';
+        }) || assignedBody.querySelector('tr.inquiry-row');
+
+        if (assignedReferenceRow) {
+            var rowHeight = measureInquiryRowHeight(assignedReferenceRow, assignedTable, assignedTable);
+            if (rowHeight > 0) {
+                return rowHeight;
+            }
+        }
+
+        var assignedPlaceholderRow = Array.from(assignedBody.querySelectorAll('tr.inquiries-placeholder-row')).find(function(row) {
+            return window.getComputedStyle(row).display !== 'none';
+        }) || assignedBody.querySelector('tr.inquiries-placeholder-row');
+
+        if (assignedPlaceholderRow) {
+            var placeholderHeight = measureInquiryRowHeight(assignedPlaceholderRow, assignedTable, assignedTable);
+            if (placeholderHeight > 0) {
+                return placeholderHeight;
+            }
+        }
+
+        return 0;
+    }
+
+    function getDefaultInquiryPlaceholderRowHeight(table) {
+        var host = document.createElement('div');
+        host.style.position = 'absolute';
+        host.style.left = '-10000px';
+        host.style.top = '0';
+        host.style.visibility = 'hidden';
+        host.style.pointerEvents = 'none';
+        host.style.width = getInquiryMeasureWidth(table, table) + 'px';
+
+        var measureTable = document.createElement('table');
+        measureTable.className = table && table.className ? table.className : 'inquiries-table';
+        measureTable.style.width = '100%';
+
+        var measureBody = document.createElement('tbody');
+        var row = document.createElement('tr');
+        row.className = 'inquiries-placeholder-row';
+        var cell = document.createElement('td');
+        cell.className = 'inquiries-placeholder-cell';
+        cell.colSpan = getInquiryVisibleColumnCount(table);
+        row.appendChild(cell);
+        measureBody.appendChild(row);
+        measureTable.appendChild(measureBody);
+        host.appendChild(measureTable);
+        document.body.appendChild(host);
+
+        var measuredHeight = Math.round(
+            row.getBoundingClientRect().height ||
+            row.offsetHeight ||
+            cell.getBoundingClientRect().height ||
+            cell.offsetHeight ||
+            parseFloat(window.getComputedStyle(cell).height || '0') ||
+            0
+        );
+        host.remove();
+        return measuredHeight > 0 ? measuredHeight : 0;
+    }
+
+    function getInquiryPlaceholderRowHeight(referenceRowHeight, table) {
+        var defaultHeight = getDefaultInquiryPlaceholderRowHeight(table);
+        if (referenceRowHeight > 0) {
+            return referenceRowHeight;
+        }
+        return defaultHeight > 0 ? defaultHeight : 32;
+    }
+
     function appendInquiryPlaceholderRows(table, tbody, visibleDataCount, perPage, allowZeroFill) {
         if (!table || !tbody) return 0;
         if (visibleDataCount >= perPage) return 0;
@@ -2053,18 +2146,95 @@ document.addEventListener('DOMContentLoaded', function() {
         var missingCount = perPage - visibleDataCount;
         var colspan = getInquiryVisibleColumnCount(table);
         var referenceRowHeight = getInquiryReferenceRowHeight(tbody, table);
-        var visibleRowsTotalHeight = getInquiryVisibleRowsTotalHeight(tbody, table);
-        var targetBodyHeight = getInquiryTargetBodyHeight(tbody, table, perPage);
-        if (targetBodyHeight <= 0 && referenceRowHeight > 0) {
-            targetBodyHeight = referenceRowHeight * perPage;
-        }
-        var placeholderRowHeight = referenceRowHeight;
-        if (targetBodyHeight > 0 && missingCount > 0) {
-            placeholderRowHeight = Math.max((targetBodyHeight - visibleRowsTotalHeight) / missingCount, 0);
+        var placeholderRowHeight = getInquiryPlaceholderRowHeight(referenceRowHeight, table);
+        if (visibleDataCount === 0) {
+            placeholderRowHeight = 37;
         }
         for (var i = 0; i < missingCount; i += 1) {
             var row = document.createElement('tr');
             row.className = 'inquiries-placeholder-row';
+            var cell = document.createElement('td');
+            cell.className = 'inquiries-placeholder-cell';
+            cell.colSpan = colspan;
+            if (placeholderRowHeight > 0) {
+                row.style.height = placeholderRowHeight + 'px';
+                row.style.minHeight = placeholderRowHeight + 'px';
+                row.style.maxHeight = placeholderRowHeight + 'px';
+                cell.style.height = placeholderRowHeight + 'px';
+                cell.style.minHeight = placeholderRowHeight + 'px';
+                cell.style.maxHeight = placeholderRowHeight + 'px';
+                cell.style.paddingTop = '0px';
+                cell.style.paddingBottom = '0px';
+                cell.style.lineHeight = '0';
+                cell.style.fontSize = '0';
+            }
+            row.appendChild(cell);
+            tbody.appendChild(row);
+        }
+        return missingCount;
+    }
+
+    function syncIncomingEmptyOverlay(scrollWrap, table, visibleDataCount) {
+        if (!scrollWrap) return;
+        Array.from(scrollWrap.querySelectorAll('.inquiries-empty-message-viewport')).forEach(function(el) {
+            el.remove();
+        });
+        if (!table || table.id !== 'unassignedTable' || visibleDataCount !== 0) return;
+
+        var overlay = document.createElement('div');
+        overlay.className = 'inquiries-empty-message-viewport';
+        overlay.textContent = 'No unassign inquiries at the moment.';
+
+        var thead = table.querySelector('thead');
+        var headerHeight = Math.round((thead && (thead.getBoundingClientRect().height || thead.offsetHeight)) || 0);
+        overlay.style.top = headerHeight + 'px';
+
+        scrollWrap.appendChild(overlay);
+    }
+
+    function appendIncomingEmptyPlaceholderRows(table, tbody, perPage) {
+        if (!table || !tbody || table.id !== 'unassignedTable') return 0;
+        var emptyRow = Array.from(tbody.querySelectorAll('tr')).find(function(row) {
+            return !!row.querySelector('td.inquiries-empty');
+        }) || null;
+        if (!emptyRow) return 0;
+        var emptyCell = emptyRow.querySelector('td.inquiries-empty');
+
+        var missingCount = Math.max(perPage - 1, 0);
+        if (missingCount <= 0) return 0;
+
+        var colspan = getInquiryVisibleColumnCount(table);
+        var referenceRowHeight = getInquiryReferenceRowHeight(tbody, table);
+        var targetBodyHeight = getInquiryTargetBodyHeight(tbody, table, perPage);
+        if (targetBodyHeight <= 0 && referenceRowHeight > 0) {
+            targetBodyHeight = referenceRowHeight * perPage;
+        }
+        targetBodyHeight = getIncomingCompactTargetBodyHeight(tbody, table, targetBodyHeight);
+
+        var emptyRowHeight = referenceRowHeight > 0
+            ? referenceRowHeight
+            : measureInquiryRowHeight(emptyRow, table, table);
+
+        if (emptyRowHeight > 0) {
+            emptyRow.style.height = emptyRowHeight + 'px';
+            if (emptyCell) {
+                emptyCell.style.height = emptyRowHeight + 'px';
+                emptyCell.style.minHeight = emptyRowHeight + 'px';
+                emptyCell.style.paddingTop = '0px';
+                emptyCell.style.paddingBottom = '0px';
+                emptyCell.style.verticalAlign = 'middle';
+            }
+        }
+
+        var remainingHeight = Math.max(targetBodyHeight - emptyRowHeight, 0);
+        var placeholderRowHeight = referenceRowHeight;
+        if (remainingHeight > 0) {
+            placeholderRowHeight = remainingHeight / missingCount;
+        }
+
+        for (var i = 0; i < missingCount; i += 1) {
+            var row = document.createElement('tr');
+            row.className = 'inquiries-placeholder-row inquiries-placeholder-row-empty';
             var cell = document.createElement('td');
             cell.className = 'inquiries-placeholder-cell';
             cell.colSpan = colspan;
@@ -2076,7 +2246,43 @@ document.addEventListener('DOMContentLoaded', function() {
             row.appendChild(cell);
             tbody.appendChild(row);
         }
+
         return missingCount;
+    }
+
+    function getIncomingCompactTargetBodyHeight(tbody, table, targetBodyHeight) {
+        if (!tbody || !table || table.id !== 'unassignedTable') return targetBodyHeight;
+
+        var viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+        var viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+        if (!(viewportWidth >= 1200 && viewportHeight <= 900)) {
+            return targetBodyHeight;
+        }
+
+        var tableWrap = table.closest ? table.closest('.inquiries-table-wrap') : null;
+        var pagination = tableWrap ? tableWrap.querySelector('.inquiries-assigned-pagination') : null;
+        var tableWrapRect = tableWrap ? tableWrap.getBoundingClientRect() : null;
+        var tbodyRect = tbody.getBoundingClientRect ? tbody.getBoundingClientRect() : null;
+        var mainBody = document.querySelector('.dashboard-main-body');
+        var mainBodyRect = mainBody ? mainBody.getBoundingClientRect() : null;
+        var tableWrapTop = tableWrapRect ? Math.round(tableWrapRect.top || 0) : 0;
+        var tbodyTop = tbodyRect ? Math.round(tbodyRect.top || 0) : 0;
+        var bodyOffset = Math.max(tbodyTop - tableWrapTop, 0);
+        var paginationHeight = pagination ? Math.round((pagination.getBoundingClientRect().height || pagination.offsetHeight || 0)) : 46;
+        var compactBottomBuffer = viewportHeight <= 760 ? 13 : 17;
+        var availableBottom = mainBodyRect ? Math.round(mainBodyRect.bottom || 0) : viewportHeight;
+        if (availableBottom <= 0) {
+            availableBottom = viewportHeight;
+        }
+        var availableBodyHeight = availableBottom - tableWrapTop - bodyOffset - paginationHeight - compactBottomBuffer;
+
+        if (availableBodyHeight > 0) {
+            return targetBodyHeight > 0
+                ? Math.min(targetBodyHeight, availableBodyHeight)
+                : availableBodyHeight;
+        }
+
+        return targetBodyHeight;
     }
 
     function setIncomingEmptyReserveHeight(tbody, table, perPage, enable) {
@@ -2097,6 +2303,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 targetBodyHeight = referenceRowHeight * perPage;
             }
         }
+        targetBodyHeight = getIncomingCompactTargetBodyHeight(tbody, table, targetBodyHeight);
 
         if (targetBodyHeight > 0) {
             emptyCell.style.height = targetBodyHeight + 'px';
@@ -2106,24 +2313,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateInquiryTableHeightMode(scrollWrap, table, tbody, visibleDataCount, perPage, allowZeroFill) {
         clearInquiryPlaceholderRows(tbody);
-        var usePlaceholderRows = shouldUseInquiryPlaceholderRows();
-        var placeholderRowCount = 0;
-        if (usePlaceholderRows) {
-            placeholderRowCount = appendInquiryPlaceholderRows(table, tbody, visibleDataCount, perPage, allowZeroFill) || 0;
-        }
         if (!scrollWrap) return;
         var tableWrap = scrollWrap.closest ? scrollWrap.closest('.inquiries-table-wrap') : null;
-        var visualRowCount = visibleDataCount + placeholderRowCount;
-        var isVisualFullPage = visualRowCount >= perPage;
-        var isTrueEmptyState = visibleDataCount === 0 && !allowZeroFill;
-        var shouldReserveEmptyIncoming = isTrueEmptyState && table && table.id === 'unassignedTable';
-        setIncomingEmptyReserveHeight(tbody, table, perPage, shouldReserveEmptyIncoming);
-        var useShortHeight = !isVisualFullPage && ((visibleDataCount > 0 && visibleDataCount < perPage) || (visibleDataCount === 0 && allowZeroFill));
-        if (tableWrap) {
-            tableWrap.classList.toggle('inquiries-table-wrap-filled', isVisualFullPage || !usePlaceholderRows || shouldReserveEmptyIncoming);
+        var emptyRow = Array.from(tbody.querySelectorAll('tr')).find(function(row) {
+            return !!row.querySelector('td.inquiries-empty');
+        }) || null;
+
+        var targetRows = Math.max(parseInt(perPage || 0, 10) || 0, 0);
+        var shouldFillZeroRows = targetRows > 0 && visibleDataCount === 0;
+        var shouldFillVisibleRows = targetRows > 0 && visibleDataCount > 0 && visibleDataCount < targetRows;
+        var shouldUseFilledLayout = targetRows > 0;
+
+        if (shouldFillVisibleRows || shouldFillZeroRows) {
+            if (shouldFillZeroRows && emptyRow) {
+                emptyRow.style.display = 'none';
+            }
+            appendInquiryPlaceholderRows(table, tbody, visibleDataCount, targetRows, shouldFillZeroRows ? true : allowZeroFill);
         }
-        scrollWrap.classList.toggle('inquiries-table-scroll-empty', isTrueEmptyState && !shouldReserveEmptyIncoming);
-        scrollWrap.classList.toggle('inquiries-table-scroll-short', useShortHeight && !shouldReserveEmptyIncoming);
+
+        if (tableWrap) {
+            tableWrap.classList.toggle('inquiries-table-wrap-filled', shouldUseFilledLayout);
+        }
+        scrollWrap.classList.toggle('inquiries-table-scroll-empty', false);
+        scrollWrap.classList.toggle('inquiries-table-scroll-short', shouldFillVisibleRows && visibleDataCount > 0);
+        syncIncomingEmptyOverlay(scrollWrap, table, visibleDataCount);
     }
 
     function resetInquiryTableScroll(panelId) {
@@ -2159,6 +2372,12 @@ document.addEventListener('DOMContentLoaded', function() {
         var safeCount = parseInt(count || 0, 10);
         if (isNaN(safeCount) || safeCount < 0) safeCount = 0;
         el.textContent = inquiriesCountFormatter.format(safeCount);
+        el.hidden = safeCount === 0;
+        if (safeCount === 0) {
+            el.setAttribute('aria-hidden', 'true');
+        } else {
+            el.removeAttribute('aria-hidden');
+        }
     }
     function getRequestedInquiriesTab() {
         try {
@@ -2185,7 +2404,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!counts || typeof counts !== 'object') return;
         if (counts.incoming !== undefined) setInquiryTabCount('incomingTabCount', counts.incoming);
         if (counts.assigned !== undefined) setInquiryTabCount('assignedTabCount', counts.assigned);
-        if (counts.all !== undefined) setInquiryTabCount('allTabCount', counts.all);
     }
     function setInquiriesTab(tabName, skipUrlUpdate) {
         document.querySelectorAll('.inquiries-tab').forEach(function(bt) {
@@ -2715,6 +2933,10 @@ document.addEventListener('DOMContentLoaded', function() {
       window.addEventListener('load', function() {
           scheduleInquiryPaginationSync();
       }, { once: true });
+
+      window.addEventListener('resize', function() {
+          scheduleInquiryPaginationSync();
+      });
 
       if (document.fonts && document.fonts.ready && typeof document.fonts.ready.then === 'function') {
           document.fonts.ready.then(function() {

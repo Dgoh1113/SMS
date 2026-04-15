@@ -1,28 +1,28 @@
 @extends('layouts.app')
 @section('title', 'Maintain Users')
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/pages/admin-maintain-users.css') }}?v=20260409-03">
+    <link rel="stylesheet" href="{{ asset('css/pages/admin-maintain-users.css') }}?v=20260415-12">
 @endpush
 
 @section('content')
 <div class="maintain-users-page">
-    <div class="maintain-users-header">
-        <div class="maintain-users-header-right">
-            <div class="maintain-users-actions">
-                <div class="maintain-users-batch-form">
-                    <button type="button" class="maintain-users-batch-btn" id="maintainUsersBatchOpenBtn">
-                        <i class="bi bi-envelope"></i>
-                        <span>Send Passkey Setup Links</span>
+    <div class="maintain-users-table-wrap">
+        <div class="maintain-users-header">
+            <div class="maintain-users-header-right">
+                <div class="maintain-users-actions">
+                    <div class="maintain-users-batch-form">
+                        <button type="button" class="maintain-users-batch-btn" id="maintainUsersBatchOpenBtn">
+                            <i class="bi bi-envelope"></i>
+                            <span>Send Passkey Setup Links</span>
+                        </button>
+                    </div>
+                    <button type="button" class="maintain-users-add-btn" id="maintainUsersAddBtn">
+                        <span>+ Add User</span>
                     </button>
                 </div>
-                <button type="button" class="maintain-users-add-btn" id="maintainUsersAddBtn">
-                    <span>+ Add User</span>
-                </button>
             </div>
         </div>
-    </div>
 
-    <div class="maintain-users-table-wrap">
         @if (count($users) === 0)
             <div class="maintain-users-empty">No users found.</div>
         @else
@@ -763,7 +763,3 @@
         });
     </script>
 @endpush
-
-
-
-

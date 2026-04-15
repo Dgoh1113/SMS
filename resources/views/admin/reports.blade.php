@@ -833,31 +833,50 @@
                     });
 
                     function buildMonthlyWeekBuckets(labels, values) {
+                        const monthNumber = Number(@json((int) ($selectedMonth ?? now()->format('n'))));
+                        const yearNumber = Number(currentYear);
+                        const monthStart = new Date(Date.UTC(yearNumber, Math.max(monthNumber - 1, 0), 1));
+                        const daysInMonth = new Date(Date.UTC(yearNumber, monthNumber, 0)).getUTCDate();
+                        const firstWeekday = monthStart.getUTCDay();
+                        const mondayOffset = firstWeekday === 0 ? 6 : firstWeekday - 1;
+                        const totalWeeks = Math.floor((mondayOffset + daysInMonth - 1) / 7) + 1;
+
                         const bucketLabels = [];
-                        const bucketValues = [];
-                        const bucketTooltips = [];
-                        let weekNumber = 1;
+                        const bucketValues = new Array(totalWeeks).fill(0);
+                        const bucketRanges = new Array(totalWeeks).fill(null).map(function () {
+                            return { firstDay: null, lastDay: null };
+                        });
 
-                        for (let i = 0; i < labels.length; i += 7) {
-                            const labelSlice = labels.slice(i, i + 7);
-                            const valueSlice = values.slice(i, i + 7);
-                            const firstDay = parseInt(String(labelSlice[0] || ''), 10);
-                            const lastDay = parseInt(String(labelSlice[labelSlice.length - 1] || ''), 10);
-                            const total = valueSlice.reduce(function (sum, value) {
-                                return sum + (Number(value) || 0);
-                            }, 0);
+                        for (let weekIndex = 0; weekIndex < totalWeeks; weekIndex++) {
+                            bucketLabels.push('Week ' + (weekIndex + 1));
+                        }
 
-                            bucketLabels.push('Week ' + weekNumber);
-                            bucketValues.push(total);
-
-                            if (Number.isFinite(firstDay) && Number.isFinite(lastDay)) {
-                                bucketTooltips.push(currentMonthName + ' ' + firstDay + ', ' + currentYear + ' - ' + currentMonthName + ' ' + lastDay + ', ' + currentYear);
-                            } else {
-                                bucketTooltips.push('Week ' + weekNumber);
+                        labels.forEach(function (label, index) {
+                            const dayNumber = parseInt(String(label || '').trim(), 10);
+                            if (!Number.isFinite(dayNumber) || dayNumber < 1 || dayNumber > daysInMonth) {
+                                return;
                             }
 
-                            weekNumber++;
-                        }
+                            const weekIndex = Math.floor((mondayOffset + dayNumber - 1) / 7);
+                            const safeWeekIndex = Math.max(0, Math.min(totalWeeks - 1, weekIndex));
+                            bucketValues[safeWeekIndex] += Number(values[index]) || 0;
+
+                            if (bucketRanges[safeWeekIndex].firstDay === null || dayNumber < bucketRanges[safeWeekIndex].firstDay) {
+                                bucketRanges[safeWeekIndex].firstDay = dayNumber;
+                            }
+
+                            if (bucketRanges[safeWeekIndex].lastDay === null || dayNumber > bucketRanges[safeWeekIndex].lastDay) {
+                                bucketRanges[safeWeekIndex].lastDay = dayNumber;
+                            }
+                        });
+
+                        const bucketTooltips = bucketRanges.map(function (range, index) {
+                            if (range.firstDay !== null && range.lastDay !== null) {
+                                return currentMonthName + ' ' + range.firstDay + ', ' + currentYear + ' - ' + currentMonthName + ' ' + range.lastDay + ', ' + currentYear;
+                            }
+
+                            return 'Week ' + (index + 1);
+                        });
 
                         return {
                             labels: bucketLabels,

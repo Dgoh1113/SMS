@@ -195,7 +195,6 @@
                         <canvas id="dealerClosedCaseChart" height="200"></canvas>
                         <div class="dealer-chart-empty-state" id="dealerClosedCaseEmpty"{{ $dealerClosedWeekHasData ? ' hidden' : '' }}>
                             <span class="dealer-chart-empty-icon" aria-hidden="true"><i class="bi bi-bar-chart-line"></i></span>
-                            <span class="dealer-chart-empty-range" id="dealerClosedCaseEmptyRange">Week</span>
                             <strong class="dealer-chart-empty-title" id="dealerClosedCaseEmptyTitle">No closed cases this week</strong>
                             <span class="dealer-chart-empty-text" id="dealerClosedCaseEmptyText">Closed inquiries completed this week will appear here once there is activity.</span>
                         </div>
@@ -228,8 +227,7 @@
                                         class="dealer-primary-pill dealer-followup-email-btn"
                                         data-lead-id="{{ $h->leadId }}"
                                         data-email="{{ $h->email ?? '' }}"
-                                        data-subject="Follow-up: {{ $h->inquiryId }}"
-                                        data-body="Hi,\n\nFollowing up on inquiry {{ $h->inquiryId }}.\n\nThanks">
+                                        data-subject="Inquiry ID: {{ $h->inquiryId }}">
                                     Email Now
                                 </button>
                                 <button type="button"
@@ -366,22 +364,18 @@
         : [];
     var closedChartShell = document.getElementById('dealerClosedCaseChartShell');
     var closedChartEmpty = document.getElementById('dealerClosedCaseEmpty');
-    var closedChartEmptyRange = document.getElementById('dealerClosedCaseEmptyRange');
     var closedChartEmptyTitle = document.getElementById('dealerClosedCaseEmptyTitle');
     var closedChartEmptyText = document.getElementById('dealerClosedCaseEmptyText');
     var emptyStateMeta = {
         week: {
-            label: 'Week',
             title: 'No closed cases this week',
             text: 'Closed inquiries completed this week will appear here once there is activity.'
         },
         month: {
-            label: 'Month',
             title: 'No closed cases this month',
             text: 'Closed inquiries completed this month will appear here once there is activity.'
         },
         year: {
-            label: 'Year',
             title: 'No closed cases this year',
             text: 'Closed inquiries completed this year will appear here once there is activity.'
         }
@@ -405,29 +399,42 @@
         var bucketLabels = [];
         var bucketData = [];
         var bucketTooltips = [];
-        var startIndex = 0;
+        var monthStart = new Date(Date.UTC(closedCaseNow.year, closedCaseNow.month - 1, 1));
+        var firstWeekday = monthStart.getUTCDay();
+        var mondayOffset = firstWeekday === 0 ? 6 : firstWeekday - 1;
+        var daysInMonth = new Date(Date.UTC(closedCaseNow.year, closedCaseNow.month, 0)).getUTCDate();
+        var totalWeeks = Math.floor((mondayOffset + daysInMonth - 1) / 7) + 1;
+        var weekTotals = Array(totalWeeks).fill(0);
 
-        while (startIndex < labels.length) {
-            var endIndex = Math.min(startIndex + 6, labels.length - 1);
-            var weekNumber = bucketLabels.length + 1;
-            var rangeTotal = 0;
-
-            for (var i = startIndex; i <= endIndex; i++) {
-                rangeTotal += Number(data[i] || 0);
+        for (var i = 0; i < labels.length; i++) {
+            var dayNumber = parseInt(labels[i], 10);
+            if (!Number.isFinite(dayNumber)) {
+                continue;
             }
+            var weekIndex = Math.floor((mondayOffset + dayNumber - 1) / 7);
+            if (weekIndex >= 0 && weekIndex < totalWeeks) {
+                weekTotals[weekIndex] += Number(data[i] || 0);
+            }
+        }
 
-            bucketLabels.push('Week ' + weekNumber);
-            bucketData.push(rangeTotal);
+        for (var weekIndex = 0; weekIndex < totalWeeks; weekIndex++) {
+            var calendarStartDay = 1 + (weekIndex * 7) - mondayOffset;
+            var calendarEndDay = calendarStartDay + 6;
+            var displayStartDay = Math.max(1, calendarStartDay);
+            var displayEndDay = Math.min(daysInMonth, calendarEndDay);
             var rangeStartDate = new Date(Date.UTC(
                 closedCaseNow.year,
                 closedCaseNow.month - 1,
-                parseInt(labels[startIndex], 10)
+                displayStartDay
             ));
             var rangeEndDate = new Date(Date.UTC(
                 closedCaseNow.year,
                 closedCaseNow.month - 1,
-                parseInt(labels[endIndex], 10)
+                displayEndDay
             ));
+
+            bucketLabels.push('Week ' + (weekIndex + 1));
+            bucketData.push(weekTotals[weekIndex]);
             bucketTooltips.push(
                 rangeStartDate.toLocaleDateString('en-US', {
                     day: 'numeric',
@@ -442,8 +449,6 @@
                     timeZone: 'UTC'
                 })
             );
-
-            startIndex = endIndex + 1;
         }
 
         return {
@@ -660,9 +665,6 @@
         if (closedChartEmpty) {
             closedChartEmpty.hidden = !isEmpty;
         }
-        if (closedChartEmptyRange) {
-            closedChartEmptyRange.textContent = meta.label;
-        }
         if (closedChartEmptyTitle) {
             closedChartEmptyTitle.textContent = meta.title;
         }
@@ -844,10 +846,10 @@
                 return;
             }
             var subject = emailBtn.getAttribute('data-subject') || '';
-            var body = emailBtn.getAttribute('data-body') || '';
-            var href = 'mailto:' + encodeURIComponent(to)
-                + '?subject=' + encodeURIComponent(subject)
-                + '&body=' + encodeURIComponent(body);
+            var href = 'mailto:' + encodeURIComponent(to);
+            if (subject) {
+                href += '?subject=' + encodeURIComponent(subject);
+            }
             window.location.href = href;
             return;
         }

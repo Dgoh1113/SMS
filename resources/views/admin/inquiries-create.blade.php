@@ -493,6 +493,258 @@
             text-decoration: none;
         }
 
+        @media (min-width: 1024px) and (max-height: 920px) {
+            .dashboard-root.inquiry-create-scroll .dashboard-main-body {
+                padding-bottom: 8px !important;
+            }
+
+            .inquiry-create-panel {
+                margin: 6px auto;
+            }
+
+            .inquiry-create-panel--new .dashboard-panel-body.inquiry-create-body {
+                padding-left: 58px !important;
+            }
+
+            .vertical-title {
+                top: 12px;
+                left: 10px;
+                padding: 10px 6px;
+                font-size: 10px;
+                letter-spacing: 0.14em;
+            }
+
+            .inquiry-create-panel .dashboard-panel-body.inquiry-create-body {
+                padding: 12px 16px !important;
+            }
+
+            .inquiry-create-layout {
+                gap: 10px !important;
+            }
+
+            .inquiry-create-panel .inquiry-create-fox {
+                flex: 0 0 96px !important;
+                padding-top: 0;
+            }
+
+            .inquiry-create-panel .inquiry-create-fox-img {
+                max-width: 96px !important;
+            }
+
+            .inquiry-create-panel #inquiryFormGrid {
+                gap: 6px 10px !important;
+            }
+
+            .inquiry-create-panel #inquiryFormGrid .inquiry-form-label,
+            .inquiry-create-panel #inquiryFormGrid .inquiry-address2-inner,
+            .inquiry-create-panel #inquiryFormGrid .inquiry-postcode-mini-field,
+            .inquiry-create-panel #inquiryFormGrid .inquiry-city-mini-field {
+                gap: 2px;
+            }
+
+            .inquiry-create-panel #inquiryFormGrid .inquiry-form-label-title {
+                font-size: 12px;
+            }
+
+            .inquiry-create-panel #inquiryFormGrid .inquiry-form-input {
+                height: 32px;
+                padding: 4px 9px;
+                font-size: 12px;
+            }
+
+            .inquiry-create-panel #inquiryFormGrid textarea.inquiry-form-input {
+                min-height: 48px !important;
+                height: 48px !important;
+                padding: 7px 9px 5px !important;
+            }
+
+            .inquiry-create-panel #inquiryFormGrid.has-address2 {
+                gap: 5px 10px !important;
+            }
+
+            .inquiry-create-panel #inquiryFormGrid.has-address2 textarea.inquiry-form-input {
+                min-height: 42px !important;
+                height: 42px !important;
+                padding-top: 5px !important;
+            }
+
+            .inquiry-create-panel #inquiryFormGrid .inquiry-inline-toggle {
+                margin-top: 0;
+                font-size: 10px;
+            }
+
+            .inquiry-create-panel #inquiryFormGrid .inquiry-toggle {
+                height: 32px;
+                padding: 2px;
+            }
+
+            .inquiry-create-panel #inquiryFormGrid .inquiry-toggle-option {
+                font-size: 10px;
+                padding: 3px 9px;
+            }
+
+            .inquiry-create-panel #inquiryFormGrid .inquiry-form-checkboxes {
+                gap: 4px 10px;
+                margin-top: 1px;
+            }
+
+            .inquiry-create-panel #inquiryFormGrid .inquiry-form-checkbox-label {
+                gap: 4px;
+                font-size: 12px;
+                line-height: 1.1;
+            }
+
+            .inquiry-create-panel #inquiryFormGrid .inquiry-form-checkbox {
+                width: 13px;
+                height: 13px;
+            }
+
+            .inquiry-create-panel #inquiryFormGrid > .inquiry-actions-field {
+                width: calc(100% + 120px);
+                margin-right: -120px;
+                gap: 8px;
+                margin-top: 4px;
+                padding-right: 0;
+            }
+
+            .inquiry-create-panel #inquiryFormGrid > .inquiry-actions-field .login-primary-btn {
+                min-width: 130px;
+                height: 34px;
+                padding: 0 15px;
+                font-size: 12px;
+            }
+
+            .inquiry-create-panel #inquiryFormGrid > .inquiry-actions-field .inquiry-form-cancel {
+                min-width: 96px;
+                height: 34px;
+                padding: 0 14px;
+                font-size: 12px;
+            }
+        }
+
+        @media (min-width: 1024px) and (max-height: 820px) {
+            .dashboard-root.inquiry-create-scroll .dashboard-main-body {
+                padding-bottom: 2px !important;
+            }
+
+            .inquiry-create-panel.inquiry-create-panel--edit {
+                margin: 2px auto;
+            }
+
+            .inquiry-create-panel.inquiry-create-panel--edit .dashboard-panel-body.inquiry-create-body {
+                padding: 10px 14px !important;
+            }
+
+            .inquiry-create-panel.inquiry-create-panel--edit .vertical-title {
+                top: 10px;
+                left: 8px;
+                padding: 8px 5px;
+                font-size: 9px;
+                letter-spacing: 0.12em;
+            }
+
+            .inquiry-create-panel.inquiry-create-panel--edit .inquiry-create-layout {
+                gap: 8px !important;
+            }
+
+            .inquiry-create-panel.inquiry-create-panel--edit .inquiry-create-fox {
+                flex: 0 0 82px !important;
+            }
+
+            .inquiry-create-panel.inquiry-create-panel--edit .inquiry-create-fox-img {
+                max-width: 82px !important;
+            }
+
+            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid {
+                gap: 4px 8px !important;
+            }
+
+            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid.has-address2 {
+                gap: 4px 8px !important;
+            }
+
+            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid .inquiry-form-label,
+            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid .inquiry-address2-inner,
+            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid .inquiry-postcode-mini-field,
+            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid .inquiry-city-mini-field {
+                gap: 1px;
+            }
+
+            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid .inquiry-form-label-title {
+                font-size: 11px;
+            }
+
+            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid .inquiry-form-input {
+                height: 30px;
+                padding: 3px 8px;
+                font-size: 11.5px;
+            }
+
+            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid textarea.inquiry-form-input {
+                min-height: 40px !important;
+                height: 40px !important;
+                padding: 6px 8px 4px !important;
+            }
+
+            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid.has-address2 textarea.inquiry-form-input {
+                min-height: 36px !important;
+                height: 36px !important;
+                padding-top: 4px !important;
+            }
+
+            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid .inquiry-inline-toggle {
+                font-size: 9px;
+            }
+
+            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid .inquiry-toggle {
+                height: 30px;
+                padding: 2px;
+                gap: 3px;
+            }
+
+            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid .inquiry-toggle-option {
+                font-size: 9.5px;
+                padding: 3px 8px;
+            }
+
+            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid .inquiry-form-checkboxes {
+                gap: 3px 9px;
+                margin-top: 0;
+            }
+
+            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid .inquiry-form-checkbox-label {
+                gap: 4px;
+                font-size: 11px;
+                line-height: 1.05;
+            }
+
+            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid .inquiry-form-checkbox {
+                width: 12px;
+                height: 12px;
+            }
+
+            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid > .inquiry-actions-field {
+                width: calc(100% + 96px);
+                margin-right: -96px;
+                gap: 7px;
+                margin-top: 2px;
+            }
+
+            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid > .inquiry-actions-field .login-primary-btn {
+                min-width: 122px;
+                height: 32px;
+                padding: 0 14px;
+                font-size: 11.5px;
+            }
+
+            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid > .inquiry-actions-field .inquiry-form-cancel {
+                min-width: 90px;
+                height: 32px;
+                padding: 0 13px;
+                font-size: 11.5px;
+            }
+        }
+
         @media (max-width: 768px) {
             .inquiry-create-panel {
                 max-width: none;
@@ -622,7 +874,7 @@
     </style>
 @endpush
 @section('content')
-<section class="dashboard-panel dashboard-table-panel inquiry-create-panel{{ $isEdit ? '' : ' inquiry-create-panel--new' }}">
+<section class="dashboard-panel dashboard-table-panel inquiry-create-panel{{ $isEdit ? ' inquiry-create-panel--edit' : ' inquiry-create-panel--new' }}">
     <div class="vertical-title" aria-hidden="true">{{ $isEdit ? 'EDIT INQUIRY - #SQL-' . ($inquiry->LEADID ?? '') : 'ADD INQUIRY' }}</div>
     <div class="dashboard-panel-body inquiry-create-body">
         <div class="inquiry-create-layout">
