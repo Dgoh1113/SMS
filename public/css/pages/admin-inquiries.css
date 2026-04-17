@@ -134,6 +134,23 @@
   max-width: 98px;
 }
 
+.inquiries-page-wrap #unassignedTable th[data-col="inquiryid"],
+.inquiries-page-wrap #unassignedTable td[data-col="inquiryid"],
+.inquiries-page-wrap #assignedTable th[data-col="inquiryid"],
+.inquiries-page-wrap #assignedTable td[data-col="inquiryid"],
+.inquiries-page-wrap #allTable th[data-col="inquiryid"],
+.inquiries-page-wrap #allTable td[data-col="inquiryid"] {
+  width: 98px;
+  min-width: 98px;
+  max-width: 98px;
+}
+
+.inquiries-page-wrap #unassignedTable th[data-col="inquiryid"] .inquiries-grid-filter,
+.inquiries-page-wrap #assignedTable th[data-col="inquiryid"] .inquiries-grid-filter-assigned,
+.inquiries-page-wrap #allTable th[data-col="inquiryid"] .inquiries-grid-filter-all {
+  max-width: 98px;
+}
+
 .inquiries-page-wrap #allTable.inquiries-table--fit th[data-col="customername"],
 .inquiries-page-wrap #allTable.inquiries-table--fit td[data-col="customername"] {
   width: 275px;
@@ -227,9 +244,27 @@
 
 .inquiries-page-wrap #allTable:not(.inquiries-table--fit) th[data-col="users"],
 .inquiries-page-wrap #allTable:not(.inquiries-table--fit) td[data-col="users"] {
-  width: 140px;
-  min-width: 140px;
-  max-width: 140px;
+  width: 92px;
+  min-width: 92px;
+  max-width: 92px;
+  white-space: nowrap;
+}
+
+.inquiries-page-wrap #unassignedTable th[data-col="users"],
+.inquiries-page-wrap #unassignedTable td[data-col="users"],
+.inquiries-page-wrap #assignedTable th[data-col="users"],
+.inquiries-page-wrap #assignedTable td[data-col="users"] {
+  width: 97px;
+  min-width: 97px;
+  max-width: 97px;
+  white-space: nowrap;
+}
+
+.inquiries-page-wrap #allTable th[data-col="users"],
+.inquiries-page-wrap #allTable td[data-col="users"] {
+  width: 92px;
+  min-width: 92px;
+  max-width: 92px;
   white-space: nowrap;
 }
 
@@ -280,18 +315,32 @@
   max-width: 148px;
 }
 
+.inquiries-page-wrap #unassignedTable .inquiries-header-cell .inquiries-filter-wrap,
+.inquiries-page-wrap #assignedTable .inquiries-header-cell .inquiries-filter-wrap,
 .inquiries-page-wrap #allTable .inquiries-header-cell .inquiries-filter-wrap {
   display: block;
   width: 100%;
   min-width: 0;
 }
 
+.inquiries-page-wrap #unassignedTable .inquiries-header-cell .inquiries-grid-filter,
+.inquiries-page-wrap #unassignedTable .inquiries-header-cell .inquiries-grid-filter-select,
+.inquiries-page-wrap #assignedTable .inquiries-header-cell .inquiries-grid-filter-assigned,
+.inquiries-page-wrap #assignedTable .inquiries-header-cell .inquiries-grid-filter-select,
 .inquiries-page-wrap #allTable .inquiries-header-cell .inquiries-grid-filter-all,
 .inquiries-page-wrap #allTable .inquiries-header-cell .inquiries-grid-filter-select {
   display: block;
   width: 100%;
   min-width: 0;
+  line-height: 1;
   box-sizing: border-box;
+}
+
+.inquiries-page-wrap #unassignedTable thead .inquiries-header-cell .inquiries-header-label,
+.inquiries-page-wrap #assignedTable thead .inquiries-header-cell .inquiries-header-label,
+.inquiries-page-wrap #allTable thead .inquiries-header-cell .inquiries-header-label {
+  margin-bottom: 4px;
+  line-height: 1;
 }
 
 .inquiries-page-wrap #allTable .inquiries-header-cell .inquiries-filter-icon {
@@ -300,6 +349,44 @@
 
 .inquiries-page-wrap #allTable.inquiries-table--fit th[data-col="date"] .inquiries-filter-icon {
   right: 10px;
+}
+
+.inquiries-page-wrap #unassignedTable th[data-col="users"] .dealer-operator-search-wrap,
+.inquiries-page-wrap #assignedTable th[data-col="users"] .dealer-operator-search-wrap,
+.inquiries-page-wrap #allTable th[data-col="users"] .dealer-operator-search-wrap {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  margin: 0;
+  top: 0;
+}
+
+.inquiries-page-wrap #unassignedTable th[data-col="users"] .dealer-operator-search-box,
+.inquiries-page-wrap #assignedTable th[data-col="users"] .dealer-operator-search-box,
+.inquiries-page-wrap #allTable th[data-col="users"] .dealer-operator-search-box {
+  width: 100%;
+  max-width: none;
+  height: 25px;
+  min-height: 25px;
+}
+
+.inquiries-page-wrap #unassignedTable th[data-col="users"] .dealer-operator-search-box .dealer-operator-btn,
+.inquiries-page-wrap #assignedTable th[data-col="users"] .dealer-operator-search-box .dealer-operator-btn,
+.inquiries-page-wrap #allTable th[data-col="users"] .dealer-operator-search-box .dealer-operator-btn {
+  width: 25px;
+  min-width: 25px;
+  font-size: 10px;
+}
+
+.inquiries-page-wrap #unassignedTable th[data-col="users"] .dealer-operator-search-box input,
+.inquiries-page-wrap #assignedTable th[data-col="users"] .dealer-operator-search-box input,
+.inquiries-page-wrap #allTable th[data-col="users"] .dealer-operator-search-box input {
+  padding: 2px 5px;
+  font-size: 10px;
+}
+
+.inquiries-page-wrap .inquiries-table thead .inquiries-header-cell .inquiries-header-label {
+  white-space: nowrap;
 }
 
 .inquiries-page-wrap #allTable td.inquiries-col-action {

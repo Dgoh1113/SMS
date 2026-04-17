@@ -16,6 +16,133 @@
             min-width: 0;
         }
 
+        .reports-page .reports-metrics--admin {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 16px;
+            margin-bottom: 2px;
+        }
+
+        .reports-page .reports-metrics--admin > * {
+            min-width: 0;
+        }
+
+        .reports-page .reports-metric-card--admin,
+        .reports-page .report-metric-link--admin {
+            position: relative;
+            min-height: 176px;
+            padding: 18px;
+            border-radius: 18px;
+            align-items: flex-start;
+            gap: 10px;
+            overflow: hidden;
+        }
+
+        .reports-page .report-metric-link--admin {
+            color: inherit;
+            text-decoration: none;
+            transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+        }
+
+        .reports-page .report-metric-link--admin:hover,
+        .reports-page .report-metric-link--admin:focus-visible {
+            transform: translateY(-2px);
+            border-color: #d7deef;
+            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+        }
+
+        .reports-page .report-metric-link--admin:focus-visible {
+            outline: 2px solid rgba(127, 90, 240, 0.22);
+            outline-offset: 3px;
+        }
+
+        .reports-page .reports-admin-metric-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .reports-page .reports-admin-metric-tag,
+        .reports-page .reports-admin-metric-link-indicator {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 24px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+            color: #64748b;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .reports-page .reports-admin-metric-link-indicator {
+            width: 24px;
+            min-width: 24px;
+            padding: 0;
+            font-size: 12px;
+            letter-spacing: 0;
+        }
+
+        .reports-page .reports-metric-card--admin .reports-metric-value {
+            margin-top: 4px;
+            font-size: 30px;
+            line-height: 1;
+            color: #0f172a;
+        }
+
+        .reports-page .reports-metric-card--admin .reports-metric-label {
+            font-size: 12px;
+            letter-spacing: 0.08em;
+            color: #64748b;
+        }
+
+        .reports-page .reports-admin-metric-trend {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: auto;
+            font-size: 12px;
+            font-weight: 600;
+            line-height: 1.45;
+        }
+
+        .reports-page .reports-admin-metric-trend--up {
+            color: #22c55e;
+        }
+
+        .reports-page .reports-admin-metric-trend--down {
+            color: #ef4444;
+        }
+
+        .reports-page .reports-admin-metric-trend--same {
+            color: #64748b;
+        }
+
+        .reports-page .reports-admin-metric-trend-icon {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
+        .reports-page .reports-admin-metric-trend-icon--same {
+            transform: rotate(-90deg);
+        }
+
+        .reports-page .reports-metric-icon-unassigned {
+            background: linear-gradient(135deg, #fb7185 0%, #f43f5e 55%, #e11d48 100%);
+            color: #ffffff;
+            box-shadow: 0 12px 24px rgba(244, 63, 94, 0.24);
+        }
+
         .reports-page .reports-inquiry-section,
         .reports-page .reports-status-section,
         .reports-page .reports-product-section {
@@ -256,6 +383,35 @@
             box-shadow: 0 22px 40px rgba(2, 6, 23, 0.32);
         }
 
+        html.theme-dark .reports-page .reports-metric-card--admin,
+        html.theme-dark .reports-page .report-metric-link--admin {
+            border-color: #283451;
+            background: linear-gradient(180deg, #181f34 0%, #11182b 100%);
+            box-shadow: 0 18px 36px rgba(2, 6, 23, 0.26);
+        }
+
+        html.theme-dark .reports-page .reports-metric-card--admin .reports-metric-label {
+            color: #a8b4d4;
+        }
+
+        html.theme-dark .reports-page .reports-metric-card--admin .reports-metric-value {
+            color: #f8fbff;
+        }
+
+        html.theme-dark .reports-page .reports-admin-metric-tag,
+        html.theme-dark .reports-page .reports-admin-metric-link-indicator {
+            border-color: #2f3b5a;
+            background: rgba(16, 23, 39, 0.66);
+            color: #c8d2eb;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+        }
+
+        html.theme-dark .reports-page .report-metric-link--admin:hover,
+        html.theme-dark .reports-page .report-metric-link--admin:focus-visible {
+            border-color: #3a4a70;
+            box-shadow: 0 22px 40px rgba(2, 6, 23, 0.34);
+        }
+
         html.theme-dark .reports-page .reports-inquiry-heading .dashboard-panel-title,
         html.theme-dark .reports-page .reports-status-heading .dashboard-panel-title,
         html.theme-dark .reports-page .reports-product-heading .dashboard-panel-title,
@@ -351,7 +507,59 @@
             }
         }
 
+        @media (max-width: 1440px) {
+            .reports-page .reports-metrics--admin {
+                grid-template-columns: repeat(12, minmax(0, 1fr));
+                gap: 12px;
+            }
+
+            .reports-page .reports-metrics--admin > * {
+                grid-column: span 3;
+            }
+
+            .reports-page .reports-metrics--admin > *:nth-child(5) {
+                grid-column: 2 / span 3;
+            }
+
+            .reports-page .reports-metrics--admin > *:nth-child(6) {
+                grid-column: 5 / span 3;
+            }
+
+            .reports-page .reports-metrics--admin > *:nth-child(7) {
+                grid-column: 8 / span 3;
+            }
+
+            .reports-page .reports-metric-card--admin,
+            .reports-page .report-metric-link--admin {
+                min-height: 168px;
+                padding: 17px;
+            }
+        }
+
+        @media (max-width: 1100px) {
+            .reports-page .reports-metrics--admin {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .reports-page .reports-metrics--admin > *,
+            .reports-page .reports-metrics--admin > *:nth-child(5),
+            .reports-page .reports-metrics--admin > *:nth-child(6),
+            .reports-page .reports-metrics--admin > *:nth-child(7) {
+                grid-column: span 1;
+            }
+        }
+
         @media (max-width: 768px) {
+            .reports-page .reports-metric-card--admin,
+            .reports-page .report-metric-link--admin {
+                min-height: 160px;
+                padding: 16px;
+            }
+
+            .reports-page .reports-metric-card--admin .reports-metric-value {
+                font-size: 26px;
+            }
+
             .reports-page .reports-inquiry-section .dashboard-panel-header,
             .reports-page .reports-status-section .dashboard-panel-header,
             .reports-page .reports-product-section .dashboard-panel-header {
@@ -424,26 +632,28 @@
             'key' => 'unassigned',
             'label' => 'UNASSIGNED',
             'value' => $metricUnassignedLeads,
+            'icon' => 'bi bi-inbox',
+            'icon_class' => 'reports-metric-icon-unassigned',
             'link' => route('admin.inquiries'),
             'link_aria' => 'View unassigned inquiries'
         ],
-        ['key' => 'Pending', 'label' => 'PENDING', 'value' => $metricActivityStatus['Pending'] ?? 0, 'dealer' => true],
-        ['key' => 'FollowUp', 'label' => 'FOLLOW-UP', 'value' => $metricActivityStatus['FollowUp'] ?? 0, 'dealer' => true],
-        ['key' => 'Demo', 'label' => 'DEMO', 'value' => $metricActivityStatus['Demo'] ?? 0, 'dealer' => true],
-        ['key' => 'Confirmed', 'label' => 'CONFIRMED', 'value' => $metricActivityStatus['Confirmed'] ?? 0, 'dealer' => true],
+        ['key' => 'Pending', 'label' => 'PENDING', 'value' => $metricActivityStatus['Pending'] ?? 0, 'icon' => 'bi bi-file-earmark', 'icon_class' => 'reports-metric-icon-pending'],
+        ['key' => 'FollowUp', 'label' => 'FOLLOW-UP', 'value' => $metricActivityStatus['FollowUp'] ?? 0, 'icon' => 'bi bi-calendar-event', 'icon_class' => 'reports-metric-icon-followup'],
+        ['key' => 'Demo', 'label' => 'DEMO', 'value' => $metricActivityStatus['Demo'] ?? 0, 'icon' => 'bi bi-person-video2', 'icon_class' => 'reports-metric-icon-demo'],
+        ['key' => 'Confirmed', 'label' => 'CONFIRMED', 'value' => $metricActivityStatus['Confirmed'] ?? 0, 'icon' => 'bi bi-check-circle', 'icon_class' => 'reports-metric-icon-confirmed'],
         [
             'key' => 'Completed',
             'label' => 'COMPLETED',
-            'value' => $metricLeadStatus['Closed'] ?? 0,
-            'link' => route('admin.inquiries', ['tab' => 'all']),
-            'link_aria' => 'View completed cases in all inquiries'
+            'value' => $metricActivityStatus['Completed'] ?? 0,
+            'icon' => 'bi bi-box-seam',
+            'icon_class' => 'reports-metric-icon-completed',
         ],
         [
             'key' => 'Rewarded',
             'label' => 'REWARDED',
             'value' => $metricActivityStatus['reward'] ?? 0,
-            'link' => route('admin.inquiries', ['tab' => 'all']),
-            'link_aria' => 'View rewarded cases in all inquiries'
+            'icon' => 'bi bi-gift',
+            'icon_class' => 'reports-metric-icon-reward',
         ],
     ];
 @endphp
@@ -455,7 +665,7 @@
         ['label' => 'FollowUp', 'value' => (int) ($activityStatus['FollowUp'] ?? 0), 'color' => '#f59e0b'],
         ['label' => 'Demo', 'value' => (int) ($activityStatus['Demo'] ?? 0), 'color' => '#eab308'],
         ['label' => 'Confirmed', 'value' => (int) ($activityStatus['Confirmed'] ?? 0), 'color' => '#84cc16'],
-        ['label' => 'Completed', 'value' => (int) ($leadStatus['Closed'] ?? 0), 'color' => '#22c55e'],
+        ['label' => 'Completed', 'value' => (int) ($activityStatus['Completed'] ?? 0), 'color' => '#22c55e'],
         ['label' => 'Rewarded', 'value' => (int) ($activityStatus['reward'] ?? 0), 'color' => '#15803d'],
     ];
     $totalStatus = max(array_sum(array_column($statusReportData, 'value')), 1);
@@ -518,42 +728,41 @@
     </form>
 </div>
 
-<section class="dashboard-metrics-grid">
+<section class="reports-metrics reports-metrics--admin">
     @foreach ($metricCards as $card)
     @php
         $pct = $metricPercent[$card['key']] ?? 0;
         $trend = $pct > 0 ? 'up' : ($pct < 0 ? 'down' : 'same');
     @endphp
     @if (!empty($card['link']))
-    <a href="{{ $card['link'] }}" class="dashboard-metric-card report-metric-link" aria-label="{{ $card['link_aria'] ?? $card['label'] }}">
-        <span class="report-metric-chevron" aria-hidden="true">&gt;</span>
+    <a href="{{ $card['link'] }}" class="reports-metric-card reports-metric-card--admin report-metric-link--admin" aria-label="{{ $card['link_aria'] ?? $card['label'] }}">
     @else
-    <div class="dashboard-metric-card">
+    <div class="reports-metric-card reports-metric-card--admin">
     @endif
-        <div class="dashboard-metric-card-top">
-            <div class="dashboard-metric-label">{{ $card['label'] }}</div>
-            @if (!empty($card['dealer']))
-            <span class="dashboard-metric-dealer-tag">DEALER MANAGED</span>
-            @else
-            <span class="dashboard-metric-dealer-spacer"></span>
+        <div class="reports-admin-metric-top">
+            <div class="reports-metric-icon {{ $card['icon_class'] ?? 'reports-metric-icon-pending' }}">
+                <i class="bi {{ $card['icon'] ?? 'bi bi-file-earmark' }}"></i>
+            </div>
+            @if (!empty($card['link']))
+            <span class="reports-admin-metric-link-indicator" aria-hidden="true">
+                <i class="bi bi-arrow-up-right"></i>
+            </span>
             @endif
         </div>
-        <div class="dashboard-metric-value-row">
-            <div class="dashboard-metric-value">{{ $card['value'] }}</div>
-        </div>
-        <div class="dashboard-metric-trend dashboard-metric-trend-{{ $trend }}">
+        <div class="reports-metric-value">{{ $card['value'] }}</div>
+        <div class="reports-metric-label">{{ $card['label'] }}</div>
+        <div class="reports-admin-metric-trend reports-admin-metric-trend--{{ $trend }}">
             @if ($trend === 'up')
-            <svg class="dashboard-metric-trend-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v13m0-13 4 4m-4-4-4 4"/></svg>
+            <svg class="reports-admin-metric-trend-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v13m0-13 4 4m-4-4-4 4"/></svg>
             <span>+{{ $pct }}% vs last month</span>
             @elseif ($trend === 'down')
-            <svg class="dashboard-metric-trend-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19V5m0 0-4 4m4-4 4 4"/></svg>
+            <svg class="reports-admin-metric-trend-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19V5m0 0-4 4m4-4 4 4"/></svg>
             <span>{{ $pct }}% vs last month</span>
             @else
-            <svg class="dashboard-metric-trend-icon dashboard-metric-trend-icon-same" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-4 4 4-4m0 0 4-4"/></svg>
+            <svg class="reports-admin-metric-trend-icon reports-admin-metric-trend-icon--same" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-4 4 4-4m0 0 4-4"/></svg>
             <span>No change vs last month</span>
             @endif
         </div>
-        <div class="dashboard-metric-btn-wrap"></div>
     @if (!empty($card['link']))
         </a>
     @else

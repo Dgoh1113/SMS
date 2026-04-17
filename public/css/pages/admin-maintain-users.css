@@ -247,11 +247,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 108px;
-  padding: 4px 10px;
+  min-width: 64px;
+  padding: 3px 5px;
   border: 1px solid transparent;
   border-radius: 999px;
-  font-size: 0.74rem;
+  font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.02em;
 }
@@ -791,7 +791,7 @@
 
 .maintain-users-table.dashboard-table th:nth-child(4),
 .maintain-users-table.dashboard-table td:nth-child(4) {
-  min-width: 72px;
+  min-width: 172px;
 }
 
 .maintain-users-table.dashboard-table th:nth-child(5),
@@ -801,17 +801,17 @@
 
 .maintain-users-table.dashboard-table th:nth-child(6),
 .maintain-users-table.dashboard-table td:nth-child(6) {
-  min-width: 128px;
+  min-width: 100px;
 }
 
 .maintain-users-table.dashboard-table th:nth-child(7),
 .maintain-users-table.dashboard-table td:nth-child(7) {
-  min-width: 58px;
+  min-width: 50px;
 }
 
 .maintain-users-table.dashboard-table th:nth-child(8),
 .maintain-users-table.dashboard-table td:nth-child(8) {
-  min-width: 102px;
+  min-width: 72px;
 }
 
 .maintain-users-table.dashboard-table th:nth-child(9),
@@ -822,8 +822,8 @@
 .maintain-users-table.dashboard-table th[data-col="userid"] .inquiries-grid-filter,
 .maintain-users-table.dashboard-table th[data-col="role"] .inquiries-grid-filter,
 .maintain-users-table.dashboard-table th[data-col="active"] .inquiries-grid-filter {
-  width: 78px;
-  min-width: 78px;
+  width: 70px;
+  min-width: 70px;
   padding-left: 6px;
   padding-right: 24px;
 }
@@ -831,20 +831,32 @@
 .maintain-users-table.dashboard-table th[data-col="userid"] .inquiries-filter-wrap,
 .maintain-users-table.dashboard-table th[data-col="role"] .inquiries-filter-wrap,
 .maintain-users-table.dashboard-table th[data-col="active"] .inquiries-filter-wrap {
-  width: 78px;
+  width: 70px;
 }
 
 .maintain-users-table.dashboard-table th[data-col="alias"] .inquiries-grid-filter {
   width: 100%;
-  min-width: 0;
+  min-width: 150px;
   max-width: none;
   padding-left: 6px;
   padding-right: 24px;
 }
 
-.maintain-users-table.dashboard-table th[data-col="alias"] .inquiries-filter-wrap {
+.maintain-users-table.dashboard-table th[data-col="passkey"] .inquiries-grid-filter {
   width: 100%;
   min-width: 0;
+  max-width: 100px;
+}
+
+.maintain-users-table.dashboard-table th[data-col="alias"] .inquiries-filter-wrap {
+  width: 100%;
+  min-width: 150px;
+}
+
+.maintain-users-table.dashboard-table th[data-col="passkey"] .inquiries-filter-wrap {
+  width: 100%;
+  min-width: 0;
+  max-width: 100px;
 }
 
 .maintain-users-table.dashboard-table th[data-col="userid"] .inquiries-header-label,
@@ -871,14 +883,14 @@
 }
 
 .maintain-users-table.dashboard-table tbody tr.maintain-users-placeholder-row:hover td {
-  background: transparent !important;
+  background: #ffffff !important;
 }
 
 .maintain-users-table.dashboard-table .maintain-users-placeholder-cell {
   padding: 0 !important;
-  border-top: none !important;
+  border-top: 1px solid #f3f4f6 !important;
   border-bottom: none !important;
-  background: transparent !important;
+  background: #ffffff !important;
   box-shadow: none !important;
 }
 
@@ -973,8 +985,12 @@ html.theme-dark .maintain-users-table.dashboard-table tbody tr:hover td.maintain
 
 html.theme-dark .maintain-users-table.dashboard-table tbody tr.maintain-users-placeholder-row td,
 html.theme-dark .maintain-users-table.dashboard-table tbody tr.maintain-users-placeholder-row:hover td {
-  background: transparent !important;
+  background: rgba(12, 20, 35, 0.82) !important;
   box-shadow: none !important;
+}
+
+html.theme-dark .maintain-users-table.dashboard-table .maintain-users-placeholder-cell {
+  border-top: 1px solid rgba(54, 68, 95, 0.44) !important;
 }
 
 html.theme-dark .maintain-users-pill-role-admin {
@@ -1256,7 +1272,7 @@ html.theme-dark .maintain-users-batch-toggle {
 
   .maintain-users-table.dashboard-table th:nth-child(4),
   .maintain-users-table.dashboard-table td:nth-child(4) {
-    min-width: 46px;
+    min-width: 146px;
   }
 
   .maintain-users-table.dashboard-table th:nth-child(5),
@@ -1266,17 +1282,17 @@ html.theme-dark .maintain-users-batch-toggle {
 
   .maintain-users-table.dashboard-table th:nth-child(6),
   .maintain-users-table.dashboard-table td:nth-child(6) {
-    min-width: 118px;
+    min-width: 94px;
   }
 
   .maintain-users-table.dashboard-table th:nth-child(7),
   .maintain-users-table.dashboard-table td:nth-child(7) {
-    min-width: 50px;
+    min-width: 44px;
   }
 
   .maintain-users-table.dashboard-table th:nth-child(8),
   .maintain-users-table.dashboard-table td:nth-child(8) {
-    min-width: 88px;
+    min-width: 58px;
   }
 
   .maintain-users-table.dashboard-table th:nth-child(9),
@@ -1298,27 +1314,39 @@ html.theme-dark .maintain-users-batch-toggle {
   }
 
   .maintain-users-table.dashboard-table th[data-col="active"] .inquiries-grid-filter {
-    width: 62px;
-    min-width: 62px;
+    width: 54px;
+    min-width: 54px;
     padding-left: 6px;
     padding-right: 22px;
   }
 
   .maintain-users-table.dashboard-table th[data-col="active"] .inquiries-filter-wrap {
-    width: 62px;
+    width: 54px;
   }
 
   .maintain-users-table.dashboard-table th[data-col="alias"] .inquiries-grid-filter {
     width: 100%;
-    min-width: 0;
+    min-width: 150px;
     max-width: none;
     padding-left: 6px;
     padding-right: 22px;
   }
 
-  .maintain-users-table.dashboard-table th[data-col="alias"] .inquiries-filter-wrap {
+  .maintain-users-table.dashboard-table th[data-col="passkey"] .inquiries-grid-filter {
     width: 100%;
     min-width: 0;
+    max-width: 92px;
+  }
+
+  .maintain-users-table.dashboard-table th[data-col="alias"] .inquiries-filter-wrap {
+    width: 100%;
+    min-width: 150px;
+  }
+
+  .maintain-users-table.dashboard-table th[data-col="passkey"] .inquiries-filter-wrap {
+    width: 100%;
+    min-width: 0;
+    max-width: 92px;
   }
 
   .maintain-users-table.dashboard-table .inquiries-filter-icon {
@@ -1343,8 +1371,8 @@ html.theme-dark .maintain-users-batch-toggle {
   }
 
   .maintain-users-pill-passkey {
-    min-width: 88px;
-    padding: 3px 8px;
+    min-width: 70px;
+    padding: 3px 6px;
     font-size: 0.64rem;
   }
 

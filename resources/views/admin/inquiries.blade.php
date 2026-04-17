@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Inquiries Management – Admin')
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/pages/admin-inquiries.css') }}?v=20260415-08">
+<link rel="stylesheet" href="{{ asset('css/pages/admin-inquiries.css') }}?v=20260416-10">
 @endpush
 @section('content')
 @php
@@ -2139,6 +2139,12 @@ document.addEventListener('DOMContentLoaded', function() {
         return defaultHeight > 0 ? defaultHeight : 32;
     }
 
+    function shouldUseCompactZeroInquiryPlaceholders() {
+        var viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+        var viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+        return viewportWidth >= 1200 && viewportHeight <= 900;
+    }
+
     function appendInquiryPlaceholderRows(table, tbody, visibleDataCount, perPage, allowZeroFill) {
         if (!table || !tbody) return 0;
         if (visibleDataCount >= perPage) return 0;
@@ -2147,7 +2153,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var colspan = getInquiryVisibleColumnCount(table);
         var referenceRowHeight = getInquiryReferenceRowHeight(tbody, table);
         var placeholderRowHeight = getInquiryPlaceholderRowHeight(referenceRowHeight, table);
-        if (visibleDataCount === 0) {
+        if (visibleDataCount === 0 && shouldUseCompactZeroInquiryPlaceholders()) {
             placeholderRowHeight = 37;
         }
         for (var i = 0; i < missingCount; i += 1) {
@@ -2253,9 +2259,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function getIncomingCompactTargetBodyHeight(tbody, table, targetBodyHeight) {
         if (!tbody || !table || table.id !== 'unassignedTable') return targetBodyHeight;
 
-        var viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
-        var viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
-        if (!(viewportWidth >= 1200 && viewportHeight <= 900)) {
+        if (!shouldUseCompactZeroInquiryPlaceholders()) {
             return targetBodyHeight;
         }
 

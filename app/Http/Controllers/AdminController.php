@@ -2446,6 +2446,25 @@ class AdminController extends Controller
         $unassignedCount = $leadStatus['Open'] ?? 0;
         $lastMonthUnassignedCount = $lastMonthLeadStatus['Open'] ?? 0;
 
+        $normalizeActivityStatus = function ($status) {
+            $raw = trim((string) $status);
+            if ($raw === '') {
+                return null;
+            }
+
+            return match (strtoupper($raw)) {
+                'CREATED', 'OPEN' => 'Created',
+                'PENDING' => 'Pending',
+                'FOLLOW UP', 'FOLLOWUP' => 'FollowUp',
+                'DEMO' => 'Demo',
+                'CONFIRMED', 'CASE CONFIRMED' => 'Confirmed',
+                'COMPLETED', 'CASE COMPLETED', 'CLOSED' => 'Completed',
+                'FAILED' => 'Failed',
+                'REWARDED', 'REWARD', 'REWARD DISTRIBUTED', 'PAID' => 'reward',
+                default => null,
+            };
+        };
+
         // Activity status: use LATEST LEAD_ACT per LEADID (by CREATIONDATE)
         $pendingActs = DB::select(
             'SELECT a."STATUS" AS status, COUNT(*) AS c
@@ -2474,12 +2493,9 @@ class AdminController extends Controller
             'reward' => 0,
         ];
         foreach ($pendingActs as $row) {
-            $key = (string) $get($row, 'status');
-            if ($key === 'Rewarded') {
-                $key = 'reward';
-            }
-            if (isset($activityStatus[$key])) {
-                $activityStatus[$key] = (int) $get($row, 'c');
+            $key = $normalizeActivityStatus($get($row, 'status'));
+            if ($key !== null && isset($activityStatus[$key])) {
+                $activityStatus[$key] += (int) $get($row, 'c');
             }
         }
 
@@ -2511,12 +2527,9 @@ class AdminController extends Controller
             'reward' => 0,
         ];
         foreach ($lastMonthActs as $row) {
-            $key = (string) $get($row, 'status');
-            if ($key === 'Rewarded') {
-                $key = 'reward';
-            }
-            if (isset($lastMonthActivity[$key])) {
-                $lastMonthActivity[$key] = (int) $get($row, 'c');
+            $key = $normalizeActivityStatus($get($row, 'status'));
+            if ($key !== null && isset($lastMonthActivity[$key])) {
+                $lastMonthActivity[$key] += (int) $get($row, 'c');
             }
         }
 
@@ -2611,7 +2624,7 @@ class AdminController extends Controller
             'FollowUp' => $percentChange($activityStatus['FollowUp'] ?? 0, $lastMonthActivity['FollowUp'] ?? 0),
             'Demo' => $percentChange($activityStatus['Demo'] ?? 0, $lastMonthActivity['Demo'] ?? 0),
             'Confirmed' => $percentChange($activityStatus['Confirmed'] ?? 0, $lastMonthActivity['Confirmed'] ?? 0),
-            'Completed' => $percentChange($leadStatus['Closed'] ?? 0, $lastMonthLeadStatus['Closed'] ?? 0),
+            'Completed' => $percentChange($activityStatus['Completed'] ?? 0, $lastMonthActivity['Completed'] ?? 0),
             'Rewarded' => $percentChange($activityStatus['reward'] ?? 0, $lastMonthActivity['reward'] ?? 0),
         ];
 

@@ -134,6 +134,103 @@ html.theme-dark #dealersTable tbody tr.dealer-placeholder-row:hover td {
     box-shadow: none !important;
 }
 
+@media (min-width: 1440px) and (min-height: 860px) {
+    .dealers-page-wrap {
+        padding: 20px 22px 18px;
+    }
+
+    .dealers-page-wrap .inquiries-panel-header {
+        padding: 20px 22px 14px;
+        gap: 14px;
+    }
+
+    .dealers-page-wrap .inquiries-panel-title-wrap {
+        gap: 14px;
+    }
+
+    .dealers-page-wrap .inquiries-panel-icon {
+        font-size: 24px;
+    }
+
+    .dealers-page-wrap .inquiries-panel-title {
+        font-size: 20px;
+    }
+
+    .dealers-page-wrap .inquiries-btn.inquiries-btn-secondary {
+        min-height: 40px;
+        padding: 9px 18px;
+        font-size: 14px;
+    }
+
+    .dealers-page-wrap #dealersTable th,
+    .dealers-page-wrap #dealersTable td {
+        padding: 10px 12px;
+        font-size: 13px;
+    }
+
+    .dealers-page-wrap #dealersTable tbody td {
+        padding-top: 12px;
+        padding-bottom: 12px;
+        line-height: 1.5;
+    }
+
+    .dealers-page-wrap #dealersTable thead th {
+        font-size: 12px;
+    }
+
+    .dealers-page-wrap .dealers-table-with-filters thead th.inquiries-header-cell {
+        padding: 8px 10px;
+    }
+
+    .dealers-page-wrap .dealers-table-with-filters thead th .inquiries-header-label {
+        margin-bottom: 6px;
+    }
+
+    .dealers-page-wrap .inquiries-header-cell .inquiries-grid-filter,
+    .dealers-page-wrap .inquiries-header-cell .inquiries-grid-filter-all,
+    .dealers-page-wrap .inquiries-header-cell .inquiries-grid-filter-assigned,
+    .dealers-page-wrap .inquiries-header-cell .inquiries-grid-filter-select,
+    .dealers-page-wrap .inquiries-header-cell .dealer-grid-filter {
+        padding: 7px 28px 7px 10px;
+        font-size: 12px;
+        min-height: 32px;
+    }
+
+    .dealers-page-wrap .inquiries-header-cell .inquiries-filter-icon {
+        right: 8px;
+        font-size: 13px;
+    }
+
+    .dealers-page-wrap #dealersTable .dealer-operator-search-box {
+        min-height: 32px;
+    }
+
+    .dealers-page-wrap .dealer-conversion-label {
+        padding: 5px 10px;
+        font-size: 12px;
+    }
+
+    .dealers-page-wrap .inquiries-assigned-pagination {
+        padding: 10px 14px;
+        gap: 10px;
+    }
+
+    .dealers-page-wrap .inquiries-assigned-pagination-info {
+        font-size: 13px;
+    }
+
+    .dealers-page-wrap .inquiries-assigned-pagination-nav {
+        gap: 6px;
+    }
+
+    .dealers-page-wrap .inquiries-pagination-num,
+    .dealers-page-wrap .inquiries-pagination-btn {
+        min-width: 30px;
+        padding: 5px 9px;
+        font-size: 13px;
+    }
+}
+
 @media (max-height: 900px) {
     .dealers-page-wrap .inquiries-panel-header {
         padding: 12px 14px 10px;
