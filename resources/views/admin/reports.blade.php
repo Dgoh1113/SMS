@@ -2,7 +2,7 @@
 @section('title', 'Report - Monthly Performance Analytics')
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/shared/reports-tabs.css') }}?v=20260409-1">
-    <link rel="stylesheet" href="{{ asset('css/report_monthly_performance_analytics.css') }}?v=20260409-1">
+    <link rel="stylesheet" href="{{ asset('css/report_monthly_performance_analytics.css') }}?v=20260420-2">
     <style>
         .reports-page .dashboard-panels-two-column {
             display: grid;
@@ -100,7 +100,7 @@
         }
 
         .reports-page .reports-metric-card--admin .reports-metric-label {
-            font-size: 12px;
+            font-size: 13px;
             letter-spacing: 0.08em;
             color: #64748b;
         }
@@ -110,7 +110,7 @@
             align-items: center;
             gap: 6px;
             margin-top: auto;
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 600;
             line-height: 1.45;
         }
@@ -186,10 +186,10 @@
         .reports-inquiry-subtitle,
         .reports-status-subtitle,
         .reports-product-subtitle {
-            font-size: 11px;
-            font-weight: 500;
+            font-size: 13px;
+            font-weight: 600;
             color: #64748b;
-            line-height: 1.4;
+            line-height: 1.45;
         }
 
         .reports-inquiry-meta {
@@ -214,7 +214,7 @@
         }
 
         .reports-inquiry-chip-label {
-            font-size: 10px;
+            font-size: 11px;
             font-weight: 700;
             letter-spacing: 0.08em;
             text-transform: uppercase;
@@ -222,7 +222,7 @@
         }
 
         .reports-inquiry-chip-value {
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 700;
             color: #0f172a;
         }

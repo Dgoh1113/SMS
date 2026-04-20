@@ -563,6 +563,12 @@
   box-shadow: 0 10px 24px rgba(91, 104, 156, 0.08);
 }
 
+.reports-page .report-donut {
+  overflow: hidden;
+  isolation: isolate;
+  backface-visibility: hidden;
+}
+
 .reports-page .dashboard-metric-card {
   --report-border-accent: #7c5bff;
   --report-border-soft: rgba(124, 92, 246, 0.22);

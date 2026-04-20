@@ -18,7 +18,7 @@
         })();
     </script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=20260417-03">
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=20260420-05">
     <script src="{{ asset('js/passkey-registration.js') }}"></script>
     <script>
         // Apply sidebar state ASAP (prevents flicker on page navigation)
@@ -37,6 +37,352 @@
     @stack('styles')
 </head>
 <body>
+@php
+    $isAdminGuideRole = in_array(session('user_role'), ['admin', 'manager'], true);
+
+    $guideTopics = $isAdminGuideRole
+        ? [
+            [
+                'id' => 'register-passkey',
+                'icon' => 'bi-key-fill',
+                'label' => 'Register passkey',
+                'subtitle' => 'Security setup',
+                'badge' => 'Security',
+                'title' => 'Register passkey',
+                'intro' => 'Use a passkey to sign in faster and more safely without typing your password every time.',
+                'stepsHeading' => 'How to create',
+                'steps' => [
+                    'Click your profile icon in the top-right corner.',
+                    'Choose Register passkey.',
+                    'Select Use Phone / Scan QR or Register On This Device.',
+                    'Follow your browser or device prompt to save the passkey.',
+                    'Next time, use the passkey sign-in option when available.',
+                ],
+                'tipsHeading' => 'Helpful tips',
+                'tips' => [
+                    'Use your own trusted device or browser profile when saving a passkey.',
+                    'If the prompt is cancelled, you can simply open the setup again and retry.',
+                    'You can register more than one passkey later as a backup option.',
+                ],
+                'note' => 'If you are setting this up for the first time, the phone / QR option is usually the easiest path.',
+                'primaryAction' => 'passkey',
+                'primaryActionLabel' => 'Open passkey setup',
+            ],
+            [
+                'id' => 'create-inquiry',
+                'icon' => 'bi-plus-square-fill',
+                'label' => 'Create inquiry',
+                'subtitle' => 'Lead capture',
+                'badge' => 'Daily work',
+                'title' => 'Create a new inquiry',
+                'intro' => 'Use the inquiry form to capture a lead cleanly so assignment, follow-up, and reporting stay accurate.',
+                'stepsHeading' => 'How to create',
+                'steps' => [
+                    'Open Inquiries and click Add new inquiry.',
+                    'Fill the required company, contact, location, and product details.',
+                    'Check source, business nature, and any referral details before saving.',
+                    'Save the inquiry and review the row once it appears in the table.',
+                ],
+                'tipsHeading' => 'What matters most',
+                'tips' => [
+                    'Accurate contact and location details make dealer assignment easier.',
+                    'Keep product selections clear so reports and conversion tracking stay useful.',
+                    'Use message notes when the lead has special requirements.',
+                ],
+                'note' => 'A clean inquiry record reduces rework later when dealers start following up.',
+            ],
+            [
+                'id' => 'assign-dealer',
+                'icon' => 'bi-person-check-fill',
+                'label' => 'Assign dealer',
+                'subtitle' => 'Routing work',
+                'badge' => 'Daily work',
+                'title' => 'Assign an inquiry to a dealer',
+                'intro' => 'The assign flow helps you match an inquiry to the best dealer based on area, workload, and conversion history.',
+                'stepsHeading' => 'How to assign',
+                'steps' => [
+                    'Open the inquiry row and click the assign action.',
+                    'Review the Select dealer table in the modal.',
+                    'Use filters like postcode, city, total lead, total closed, or conversion rate to narrow the list.',
+                    'Click the dealer row you want, then confirm the assignment.',
+                ],
+                'tipsHeading' => 'Selection tips',
+                'tips' => [
+                    'Check location fields first so the dealer can respond faster.',
+                    'Use conversion rate together with total lead, not by itself.',
+                    'If two dealers look similar, review current workload before assigning.',
+                ],
+                'note' => 'The best assignment is usually the one that balances suitability and current capacity.',
+            ],
+            [
+                'id' => 'update-status',
+                'icon' => 'bi-pencil-square',
+                'label' => 'Update inquiry status',
+                'subtitle' => 'Progress tracking',
+                'badge' => 'Daily work',
+                'title' => 'Update inquiry progress and status',
+                'intro' => 'Keep inquiry status current so your tables, dashboard, and reports reflect the real pipeline.',
+                'stepsHeading' => 'How to update',
+                'steps' => [
+                    'Open the inquiry details or edit flow for the selected lead.',
+                    'Review the latest activity, assignment, and notes.',
+                    'Change the status or follow-up information based on the latest outcome.',
+                    'Save the update so the new status appears in the table and reports.',
+                ],
+                'tipsHeading' => 'Keep it reliable',
+                'tips' => [
+                    'Update status as soon as a meaningful progress change happens.',
+                    'Add notes when the next action or reason matters.',
+                    'Avoid leaving completed or failed cases in older statuses.',
+                ],
+                'note' => 'Timely status updates make the monthly performance cards much more trustworthy.',
+            ],
+            [
+                'id' => 'table-tools',
+                'icon' => 'bi-funnel-fill',
+                'label' => 'Use table tools',
+                'subtitle' => 'Filters and sorting',
+                'badge' => 'Productivity',
+                'title' => 'Use filters, sort, and columns',
+                'intro' => 'Most admin tables support quick searching, clickable sorting, and column visibility so you can focus on the right records faster.',
+                'stepsHeading' => 'How to use',
+                'steps' => [
+                    'Type into the header filter boxes to narrow the visible rows.',
+                    'Click a sortable header to switch between ascending and descending order.',
+                    'Open Columns to hide or show fields depending on what you need to review.',
+                    'Use Clear filters to reset the view back to the full list.',
+                ],
+                'tipsHeading' => 'Best practice',
+                'tips' => [
+                    'Use fewer visible columns on smaller screens to keep the table readable.',
+                    'For numeric fields, use the operator filter when available.',
+                    'Reset filters before assuming data is missing.',
+                ],
+                'note' => 'The quickest reviews usually come from combining one or two filters instead of scanning the whole table.',
+            ],
+            [
+                'id' => 'reports-overview',
+                'icon' => 'bi-bar-chart-fill',
+                'label' => 'Read reports',
+                'subtitle' => 'Monthly performance',
+                'badge' => 'Reports',
+                'title' => 'Read the admin reports',
+                'intro' => 'Admin reports combine inquiry creation, latest activity movement, and conversion results to help you judge pipeline quality.',
+                'stepsHeading' => 'What to check first',
+                'steps' => [
+                    'Choose the month, year, and scope at the top of the report.',
+                    'Review the top status cards for the latest monthly movement.',
+                    'Use Inquiry Trends to see newly created inquiries in that month.',
+                    'Use Status Report and Product Conversion to understand activity outcomes and closed-case results.',
+                ],
+                'tipsHeading' => 'Reading guidance',
+                'tips' => [
+                    'Inquiry Trends shows new inquiries created in the selected month.',
+                    'Status cards reflect latest status activity in that month, which can include older leads.',
+                    'Compare cards and charts together before drawing conclusions.',
+                ],
+                'note' => 'If totals feel different between sections, it is usually because creation-date data and activity-date data are measuring different things.',
+            ],
+            [
+                'id' => 'maintain-users',
+                'icon' => 'bi-people-fill',
+                'label' => 'Maintain users',
+                'subtitle' => 'Admin setup',
+                'badge' => 'Admin',
+                'title' => 'Maintain users and access',
+                'intro' => 'Use Maintain Users to review user access, passkey status, activity state, and account details in one place.',
+                'stepsHeading' => 'How to manage',
+                'steps' => [
+                    'Open Maintain Users from the sidebar.',
+                    'Use filters to find a user by email, alias, role, company, or passkey status.',
+                    'Review Active and Last Login before making changes.',
+                    'Use Add User or the edit action when you need to create or update an account.',
+                ],
+                'tipsHeading' => 'Admin checks',
+                'tips' => [
+                    'A Ready to send passkey state usually means setup is still pending.',
+                    'Last Login helps confirm whether a user is actually using the account.',
+                    'Keep aliases and company names consistent for easier searching later.',
+                ],
+                'note' => 'A tidy user list makes passkey rollout and support much easier.',
+            ],
+        ]
+        : [
+            [
+                'id' => 'register-passkey',
+                'icon' => 'bi-key-fill',
+                'label' => 'Register passkey',
+                'subtitle' => 'Security setup',
+                'badge' => 'Security',
+                'title' => 'Register passkey',
+                'intro' => 'Use a passkey so you can sign in faster and more safely from your trusted device.',
+                'stepsHeading' => 'How to create',
+                'steps' => [
+                    'Click your profile icon in the top-right corner.',
+                    'Choose Register passkey.',
+                    'Select Use Phone / Scan QR or Register On This Device.',
+                    'Follow your browser or device prompt to save the passkey.',
+                    'Use the passkey option the next time you sign in.',
+                ],
+                'tipsHeading' => 'Helpful tips',
+                'tips' => [
+                    'The phone / QR path is often easiest for first-time setup.',
+                    'You can retry immediately if the browser prompt is cancelled.',
+                    'Saving a backup passkey on another trusted device is a good safety step.',
+                ],
+                'note' => 'A passkey helps you sign in quickly without depending on a typed password every time.',
+                'primaryAction' => 'passkey',
+                'primaryActionLabel' => 'Open passkey setup',
+            ],
+            [
+                'id' => 'my-inquiries',
+                'icon' => 'bi-journal-text',
+                'label' => 'My inquiries',
+                'subtitle' => 'Daily queue',
+                'badge' => 'Daily work',
+                'title' => 'Work with My Inquiries',
+                'intro' => 'My Inquiries is your main working list for leads that need review, progress updates, or action.',
+                'stepsHeading' => 'How to use',
+                'steps' => [
+                    'Open My Inquiries from the dealer sidebar or dashboard links.',
+                    'Use the tabs to switch between different inquiry groups.',
+                    'Filter, sort, or adjust columns so the current queue is easier to review.',
+                    'Open a row to view details or update the inquiry when needed.',
+                ],
+                'tipsHeading' => 'Daily habit',
+                'tips' => [
+                    'Start with the oldest or most urgent open leads first.',
+                    'Use filters when you only want one city, status, or product group.',
+                    'Keep inquiry progress up to date before checking payouts or reports.',
+                ],
+                'note' => 'This page works best as your main daily checklist for follow-up work.',
+            ],
+            [
+                'id' => 'update-progress',
+                'icon' => 'bi-arrow-repeat',
+                'label' => 'Update progress',
+                'subtitle' => 'Status tracking',
+                'badge' => 'Daily work',
+                'title' => 'Update inquiry progress',
+                'intro' => 'Every real progress change should be reflected quickly so your dashboard, reports, and payouts stay accurate.',
+                'stepsHeading' => 'How to update',
+                'steps' => [
+                    'Open the inquiry you are working on.',
+                    'Review the latest details, notes, and customer response.',
+                    'Move the inquiry to the correct next status or outcome.',
+                    'Save the update so the latest activity is recorded.',
+                ],
+                'tipsHeading' => 'Keep it useful',
+                'tips' => [
+                    'Update after calls, demos, confirmations, or failed outcomes.',
+                    'Add clear notes when a follow-up date or blocker matters.',
+                    'Try not to leave inquiries parked in an older status after the outcome changes.',
+                ],
+                'note' => 'Consistent updates make both your dashboard cards and admin reports more meaningful.',
+            ],
+            [
+                'id' => 'pending-payouts',
+                'icon' => 'bi-cash-stack',
+                'label' => 'Pending payouts',
+                'subtitle' => 'Dealer earnings',
+                'badge' => 'Daily work',
+                'title' => 'Review Pending Payouts',
+                'intro' => 'Pending Payouts helps you track completed cases that are waiting in the payout flow.',
+                'stepsHeading' => 'How to review',
+                'steps' => [
+                    'Open Pending Payouts from the dealer inquiries area.',
+                    'Use filters and sortable columns to check the specific completed cases you need.',
+                    'Review completion details before raising any payout question.',
+                    'Clear filters to return to the full completed list when done.',
+                ],
+                'tipsHeading' => 'Useful checks',
+                'tips' => [
+                    'Customer name, completion date, and referral code are often the fastest filters.',
+                    'Use the Columns menu on smaller screens to focus on the fields you need.',
+                    'Make sure inquiry progress is updated correctly first, because payouts depend on that history.',
+                ],
+                'note' => 'Pending payouts reflect completed work, so status accuracy earlier in the process is important.',
+            ],
+            [
+                'id' => 'table-tools',
+                'icon' => 'bi-funnel-fill',
+                'label' => 'Use table tools',
+                'subtitle' => 'Filters and sorting',
+                'badge' => 'Productivity',
+                'title' => 'Use filters, sort, and columns',
+                'intro' => 'Dealer tables are built to help you narrow large lists quickly without leaving the page.',
+                'stepsHeading' => 'How to use',
+                'steps' => [
+                    'Type in a header filter box to reduce the visible rows.',
+                    'Click sortable headers to switch between ascending and descending order.',
+                    'Open Columns to hide fields that are not useful for the current task.',
+                    'Use Clear filters when you want to return to the full list.',
+                ],
+                'tipsHeading' => 'Best practice',
+                'tips' => [
+                    'On mobile, fewer columns usually gives a cleaner working view.',
+                    'Use date and status filters together when checking recent progress.',
+                    'If a list feels empty, reset filters before assuming data is missing.',
+                ],
+                'note' => 'A small amount of filtering usually saves a lot of scrolling.',
+            ],
+            [
+                'id' => 'dealer-reports',
+                'icon' => 'bi-graph-up-arrow',
+                'label' => 'Read reports',
+                'subtitle' => 'Performance view',
+                'badge' => 'Reports',
+                'title' => 'Read the dealer reports',
+                'intro' => 'Dealer reports help you understand your inquiry flow, status mix, and product conversion performance over time.',
+                'stepsHeading' => 'What to check first',
+                'steps' => [
+                    'Choose the month, year, or period filter at the top of the report.',
+                    'Review the top cards to see your current status mix.',
+                    'Use Inquiry Trends to see where activity is building or slowing down.',
+                    'Compare Status Report and Product Conversion to understand what is turning into completed work.',
+                ],
+                'tipsHeading' => 'Reading guidance',
+                'tips' => [
+                    'Use the current month view when you want daily detail.',
+                    'High conversion is strongest when the closed count is also meaningful.',
+                    'Check dashboard and inquiry updates first if report numbers look unexpected.',
+                ],
+                'note' => 'Reports are most useful when inquiry status is kept current during daily work.',
+            ],
+            [
+                'id' => 'dealer-dashboard',
+                'icon' => 'bi-speedometer2',
+                'label' => 'Use dashboard',
+                'subtitle' => 'Quick monitoring',
+                'badge' => 'Dashboard',
+                'title' => 'Use the dealer dashboard',
+                'intro' => 'Your dashboard is the fastest way to spot active inquiry movement, closed cases, and urgent follow-ups at a glance.',
+                'stepsHeading' => 'What to watch',
+                'steps' => [
+                    'Start with Active Inquiries to see recent movement.',
+                    'Check Closed Case to understand recent outcome trends.',
+                    'Review High Priority Follow-ups so urgent work is not missed.',
+                    'Jump into My Inquiries when something needs action.',
+                ],
+                'tipsHeading' => 'Good routine',
+                'tips' => [
+                    'Use the dashboard as a quick scan, then do the real work inside your tables.',
+                    'If the charts look quiet, confirm that inquiry updates were saved correctly.',
+                    'On mobile, scroll section by section instead of trying to read everything at once.',
+                ],
+                'note' => 'The dashboard is best used as a quick monitor, not a replacement for updating inquiries.',
+            ],
+        ];
+
+    if (session('user_role') === 'manager') {
+        $guideTopics = array_values(array_filter($guideTopics, function ($topic) {
+            return ($topic['id'] ?? '') !== 'maintain-users';
+        }));
+    }
+
+    $firstGuideTopic = $guideTopics[0];
+@endphp
+
 <div class="dashboard-root" id="dashboardRoot">
     @if (in_array(session('user_role'), ['admin', 'manager'], true))
         @include('partials.sidebar-admin')
@@ -51,57 +397,60 @@
                 <span class="dashboard-topbar-toggle-inner"></span>
             </button>
             <div class="dashboard-topbar-actions">
-                <a href="#" class="dashboard-icon-btn top-right-btn dashboard-bookmark-btn" type="button" title="Bookmark" aria-label="Bookmark">
-                    <img src="{{ asset('Guide.ico') }}" alt="Bookmark" class="dashboard-bookmark-img-light" aria-hidden="true">
-                    <i class="bi bi-bookmark-star-fill dashboard-bookmark-icon-dark" aria-hidden="true"></i>
-                </a>
-                <button type="button" class="dashboard-icon-btn top-right-btn dashboard-theme-toggle" data-theme-toggle aria-label="Enable dark mode" title="Enable dark mode">
-                    <i class="bi bi-moon-fill" data-theme-icon aria-hidden="true"></i>
-                </button>
-                @if (session('user_role') === 'dealer')
-                    <div class="dashboard-notifications">
-                        <button type="button" class="dashboard-icon-btn top-right-btn" id="dealerNotificationsTrigger" aria-expanded="false" aria-haspopup="true" title="Notifications">
-                            <img src="{{ asset('Notification.ico') }}" alt="Notifications" class="dashboard-icon-img">
-                            <span class="dashboard-notifications-dot" id="dealerNotificationsDot" hidden></span>
-                        </button>
-                        <div class="dashboard-notifications-menu" id="dealerNotificationsMenu" hidden>
-                            <div class="dashboard-notifications-header">
-                                <span>Notifications</span>
-                                <button type="button" class="dashboard-notifications-mark-read" id="dealerMarkAllReadBtn">Mark all as read</button>
-                            </div>
-                            <div class="dashboard-notifications-list" id="dealerNotificationsList">
-                                <div class="dashboard-notifications-empty">Loading...</div>
+                <div class="dashboard-topbar-actions-cluster">
+                    <button type="button" class="dashboard-icon-btn top-right-btn dashboard-topbar-icon-btn dashboard-bookmark-btn" id="guideCatalogTrigger" title="Guide" aria-label="Guide" aria-expanded="false" aria-haspopup="dialog">
+                        <i class="bi bi-bookmark-fill dashboard-topbar-icon-symbol" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" class="dashboard-icon-btn top-right-btn dashboard-topbar-icon-btn dashboard-theme-toggle" data-theme-toggle aria-label="Enable dark mode" title="Enable dark mode">
+                        <i class="bi bi-moon-fill dashboard-topbar-icon-symbol" data-theme-icon aria-hidden="true"></i>
+                    </button>
+                    @if (session('user_role') === 'dealer')
+                        <div class="dashboard-notifications">
+                            <button type="button" class="dashboard-icon-btn top-right-btn dashboard-topbar-icon-btn dashboard-bell-btn" id="dealerNotificationsTrigger" aria-expanded="false" aria-haspopup="true" title="Notifications" aria-label="Notifications">
+                                <i class="bi bi-bell-fill dashboard-topbar-icon-symbol" aria-hidden="true"></i>
+                                <span class="dashboard-notifications-dot" id="dealerNotificationsDot" hidden></span>
+                            </button>
+                            <div class="dashboard-notifications-menu" id="dealerNotificationsMenu" hidden>
+                                <div class="dashboard-notifications-header">
+                                    <span>Notifications</span>
+                                    <button type="button" class="dashboard-notifications-mark-read" id="dealerMarkAllReadBtn">Mark all as read</button>
+                                </div>
+                                <div class="dashboard-notifications-list" id="dealerNotificationsList">
+                                    <div class="dashboard-notifications-empty">Loading...</div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                @else
-                    <a href="#" class="dashboard-icon-btn top-right-btn" type="button" title="Notifications"><img src="{{ asset('Notification.ico') }}" alt="Notifications" class="dashboard-icon-img"></a>
-                @endif
-                @php
-                    $avatarInitial = strtoupper(substr(session('user_email', 'U'), 0, 1));
-                    $avatarLetter = (ctype_alpha($avatarInitial) ? $avatarInitial : 'U');
-                @endphp
-                <div class="dashboard-profile-dropdown">
-                    <button type="button" class="dashboard-profile-btn" id="profileDropdownTrigger" aria-expanded="false" aria-haspopup="true" title="{{ session('user_email', '') }}">
-                        <div class="dashboard-user-avatar dashboard-avatar-{{ $avatarLetter }}">{{ $avatarInitial }}</div>
-                    </button>
-                    <div class="dashboard-profile-menu" id="profileDropdownMenu" hidden>
-                        <div class="dashboard-profile-card">
-                            <div class="dashboard-profile-avatar-lg dashboard-avatar-{{ $avatarLetter }}">{{ $avatarInitial }}</div>
-                            <div class="dashboard-profile-email">{{ session('user_email', '') }}</div>
-                            @if(session('user_alias'))
-                                <div class="dashboard-profile-alias">{{ strtoupper(session('user_alias')) }}</div>
-                            @endif
-                            <div class="dashboard-profile-actions">
-                                <button type="button" class="dashboard-profile-passkey-link" id="profileRegisterPasskeyBtn">
-                                    <span>Register passkey</span>
-                                </button>
-                                <form action="{{ route('logout') }}" method="POST" class="dashboard-profile-signout-form">
-                                    @csrf
-                                    <button type="submit" class="dashboard-profile-signout-btn">
-                                        <span>Sign out</span>
+                    @else
+                        <button type="button" class="dashboard-icon-btn top-right-btn dashboard-topbar-icon-btn dashboard-bell-btn" title="Notifications" aria-label="Notifications">
+                            <i class="bi bi-bell-fill dashboard-topbar-icon-symbol" aria-hidden="true"></i>
+                        </button>
+                    @endif
+                    @php
+                        $avatarInitial = strtoupper(substr(session('user_email', 'U'), 0, 1));
+                        $avatarLetter = (ctype_alpha($avatarInitial) ? $avatarInitial : 'U');
+                    @endphp
+                    <div class="dashboard-profile-dropdown">
+                        <button type="button" class="dashboard-profile-btn dashboard-topbar-avatar-btn" id="profileDropdownTrigger" aria-expanded="false" aria-haspopup="true" title="{{ session('user_email', '') }}">
+                            <div class="dashboard-user-avatar dashboard-avatar-{{ $avatarLetter }}">{{ $avatarInitial }}</div>
+                        </button>
+                        <div class="dashboard-profile-menu" id="profileDropdownMenu" hidden>
+                            <div class="dashboard-profile-card">
+                                <div class="dashboard-profile-avatar-lg dashboard-avatar-{{ $avatarLetter }}">{{ $avatarInitial }}</div>
+                                <div class="dashboard-profile-email">{{ session('user_email', '') }}</div>
+                                @if(session('user_alias'))
+                                    <div class="dashboard-profile-alias">{{ strtoupper(session('user_alias')) }}</div>
+                                @endif
+                                <div class="dashboard-profile-actions">
+                                    <button type="button" class="dashboard-profile-passkey-link" id="profileRegisterPasskeyBtn">
+                                        <span>Register passkey</span>
                                     </button>
-                                </form>
+                                    <form action="{{ route('logout') }}" method="POST" class="dashboard-profile-signout-form">
+                                        @csrf
+                                        <button type="submit" class="dashboard-profile-signout-btn">
+                                            <span>Sign out</span>
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -134,6 +483,78 @@
                     </button>
                 </div>
                 <div class="dashboard-passkey-quick-status" id="profilePasskeyQuickStatus" hidden></div>
+            </div>
+        </div>
+
+        <div class="dashboard-guide-modal" id="guideCatalogModal" hidden>
+            <div class="dashboard-guide-card" role="dialog" aria-modal="true" aria-labelledby="guideCatalogTitle">
+                <button type="button" class="dashboard-guide-close" id="guideCatalogClose" aria-label="Close guide">
+                    <i class="bi bi-x-lg" aria-hidden="true"></i>
+                </button>
+                <div class="dashboard-guide-layout">
+                    <aside class="dashboard-guide-nav">
+                        <span class="dashboard-guide-nav-label">Guide</span>
+                        <h3 class="dashboard-guide-nav-title">Topic catalogue</h3>
+                        <div class="dashboard-guide-topic-list">
+                            @foreach ($guideTopics as $index => $topic)
+                                <button
+                                    type="button"
+                                    class="dashboard-guide-topic-btn{{ $index === 0 ? ' is-active' : '' }}"
+                                    data-guide-topic-index="{{ $index }}"
+                                    aria-current="{{ $index === 0 ? 'true' : 'false' }}"
+                                >
+                                    <span class="dashboard-guide-topic-icon"><i class="bi {{ $topic['icon'] }}" aria-hidden="true"></i></span>
+                                    <span class="dashboard-guide-topic-copy">
+                                        <strong>{{ $topic['label'] }}</strong>
+                                        <small>{{ $topic['subtitle'] }}</small>
+                                    </span>
+                                </button>
+                            @endforeach
+                        </div>
+                    </aside>
+                    <section class="dashboard-guide-content">
+                        <div class="dashboard-guide-header">
+                            <span class="dashboard-guide-hero-icon" id="guideCatalogHeroIcon">
+                                <i class="bi {{ $firstGuideTopic['icon'] }}" aria-hidden="true"></i>
+                            </span>
+                            <div class="dashboard-guide-header-copy">
+                                <span class="dashboard-guide-badge" id="guideCatalogBadge">{{ $firstGuideTopic['badge'] }}</span>
+                                <h2 class="dashboard-guide-title" id="guideCatalogTitle">{{ $firstGuideTopic['title'] }}</h2>
+                                <p class="dashboard-guide-intro" id="guideCatalogIntro">{{ $firstGuideTopic['intro'] }}</p>
+                            </div>
+                        </div>
+
+                        <div class="dashboard-guide-section">
+                            <h4 id="guideCatalogStepsHeading">{{ $firstGuideTopic['stepsHeading'] }}</h4>
+                            <ol class="dashboard-guide-steps" id="guideCatalogSteps">
+                                @foreach ($firstGuideTopic['steps'] as $step)
+                                    <li>{{ $step }}</li>
+                                @endforeach
+                            </ol>
+                        </div>
+
+                        <div class="dashboard-guide-section">
+                            <h4 id="guideCatalogTipsHeading">{{ $firstGuideTopic['tipsHeading'] }}</h4>
+                            <ul class="dashboard-guide-tips" id="guideCatalogTips">
+                                @foreach ($firstGuideTopic['tips'] as $tip)
+                                    <li>{{ $tip }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+
+                        <div class="dashboard-guide-note">
+                            <i class="bi bi-info-circle" aria-hidden="true"></i>
+                            <span id="guideCatalogNote">{{ $firstGuideTopic['note'] }}</span>
+                        </div>
+
+                        <div class="dashboard-guide-actions">
+                            <button type="button" class="dashboard-guide-primary-btn" id="guideOpenPasskeyBtn"{{ ($firstGuideTopic['primaryAction'] ?? null) === 'passkey' ? '' : ' hidden' }}>
+                                {{ $firstGuideTopic['primaryActionLabel'] ?? 'Open passkey setup' }}
+                            </button>
+                            <button type="button" class="dashboard-guide-secondary-btn" id="guideCloseActionBtn">Close</button>
+                        </div>
+                    </section>
+                </div>
             </div>
         </div>
 
@@ -302,6 +723,23 @@
         }, 3000);
     });
 
+    var guideTrigger = document.getElementById('guideCatalogTrigger');
+    var guideModal = document.getElementById('guideCatalogModal');
+    var guideCloseBtn = document.getElementById('guideCatalogClose');
+    var guideCloseActionBtn = document.getElementById('guideCloseActionBtn');
+    var guideOpenPasskeyBtn = document.getElementById('guideOpenPasskeyBtn');
+    var guideBadge = document.getElementById('guideCatalogBadge');
+    var guideHeroIcon = document.getElementById('guideCatalogHeroIcon');
+    var guideTitle = document.getElementById('guideCatalogTitle');
+    var guideIntro = document.getElementById('guideCatalogIntro');
+    var guideStepsHeading = document.getElementById('guideCatalogStepsHeading');
+    var guideSteps = document.getElementById('guideCatalogSteps');
+    var guideTipsHeading = document.getElementById('guideCatalogTipsHeading');
+    var guideTips = document.getElementById('guideCatalogTips');
+    var guideNote = document.getElementById('guideCatalogNote');
+    var guideTopicButtons = Array.prototype.slice.call(document.querySelectorAll('[data-guide-topic-index]'));
+    var guideTopics = @json($guideTopics);
+    var activeGuideTopicIndex = 0;
     var trigger = document.getElementById('profileDropdownTrigger');
     var menu = document.getElementById('profileDropdownMenu');
     var passkeyTrigger = document.getElementById('profileRegisterPasskeyBtn');
@@ -316,6 +754,72 @@
         if (!menu || !trigger) return;
         menu.hidden = true;
         trigger.setAttribute('aria-expanded', 'false');
+    }
+
+    function syncDashboardOverlayLock() {
+        var hasGuide = guideModal && !guideModal.hidden;
+        var hasPasskey = passkeyModal && !passkeyModal.hidden;
+        document.body.classList.toggle('dashboard-passkey-modal-open', !!(hasGuide || hasPasskey));
+    }
+
+    function escapeGuideHtml(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function renderGuideList(items, ordered) {
+        return (items || []).map(function(item) {
+            return '<li>' + escapeGuideHtml(item) + '</li>';
+        }).join('');
+    }
+
+    function renderGuideTopic(index) {
+        if (!guideTopics || !guideTopics.length) {
+            return;
+        }
+
+        var safeIndex = index >= 0 && index < guideTopics.length ? index : 0;
+        var topic = guideTopics[safeIndex];
+        activeGuideTopicIndex = safeIndex;
+
+        if (guideHeroIcon) {
+            guideHeroIcon.innerHTML = '<i class="bi ' + escapeGuideHtml(topic.icon || 'bi-bookmark-fill') + '" aria-hidden="true"></i>';
+        }
+        if (guideBadge) guideBadge.textContent = topic.badge || '';
+        if (guideTitle) guideTitle.textContent = topic.title || '';
+        if (guideIntro) guideIntro.textContent = topic.intro || '';
+        if (guideStepsHeading) guideStepsHeading.textContent = topic.stepsHeading || 'Steps';
+        if (guideSteps) guideSteps.innerHTML = renderGuideList(topic.steps || [], true);
+        if (guideTipsHeading) guideTipsHeading.textContent = topic.tipsHeading || 'Helpful tips';
+        if (guideTips) guideTips.innerHTML = renderGuideList(topic.tips || [], false);
+        if (guideNote) guideNote.textContent = topic.note || '';
+
+        if (guideOpenPasskeyBtn) {
+            var isPasskeyTopic = topic.primaryAction === 'passkey';
+            guideOpenPasskeyBtn.hidden = !isPasskeyTopic;
+            guideOpenPasskeyBtn.textContent = topic.primaryActionLabel || 'Open passkey setup';
+        }
+
+        guideTopicButtons.forEach(function(button) {
+            var buttonIndex = Number(button.getAttribute('data-guide-topic-index'));
+            var isActive = buttonIndex === safeIndex;
+            button.classList.toggle('is-active', isActive);
+            button.setAttribute('aria-current', isActive ? 'true' : 'false');
+        });
+    }
+
+    function setGuideModalOpen(open) {
+        if (!guideModal || !guideTrigger) return;
+        guideModal.hidden = !open;
+        guideTrigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if (open) {
+            renderGuideTopic(activeGuideTopicIndex);
+        }
+        syncDashboardOverlayLock();
     }
 
     function showFlashMessage(type, message) {
@@ -394,7 +898,7 @@
     function setPasskeyModalOpen(open) {
         if (!passkeyModal) return;
         passkeyModal.hidden = !open;
-        document.body.classList.toggle('dashboard-passkey-modal-open', !!open);
+        syncDashboardOverlayLock();
         if (!open) {
             setPasskeyStatus('', '');
             setPasskeyButtonsDisabled(false);
@@ -502,6 +1006,48 @@
         });
     }
 
+    if (guideTrigger) {
+        guideTrigger.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            hideProfileMenu();
+            setGuideModalOpen(true);
+        });
+    }
+
+    guideTopicButtons.forEach(function(button) {
+        button.addEventListener('click', function() {
+            renderGuideTopic(Number(button.getAttribute('data-guide-topic-index')));
+        });
+    });
+
+    if (guideCloseBtn) {
+        guideCloseBtn.addEventListener('click', function() {
+            setGuideModalOpen(false);
+        });
+    }
+
+    if (guideCloseActionBtn) {
+        guideCloseActionBtn.addEventListener('click', function() {
+            setGuideModalOpen(false);
+        });
+    }
+
+    if (guideModal) {
+        guideModal.addEventListener('click', function(e) {
+            if (e.target === guideModal) {
+                setGuideModalOpen(false);
+            }
+        });
+    }
+
+    if (guideOpenPasskeyBtn) {
+        guideOpenPasskeyBtn.addEventListener('click', function() {
+            setGuideModalOpen(false);
+            setPasskeyModalOpen(true);
+        });
+    }
+
     if (passkeyCloseBtn) {
         passkeyCloseBtn.addEventListener('click', function() {
             setPasskeyModalOpen(false);
@@ -529,6 +1075,9 @@
     }
 
     document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && guideModal && !guideModal.hidden) {
+            setGuideModalOpen(false);
+        }
         if (e.key === 'Escape' && passkeyModal && !passkeyModal.hidden) {
             setPasskeyModalOpen(false);
         }

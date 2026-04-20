@@ -460,7 +460,7 @@ html.theme-dark #dealersTable tbody tr.dealer-placeholder-row:hover td {
                         <x-tables.operator-filter-header col="totalongoing" label="Ongoing" input-class="dealer-grid-filter" cell-class="dashboard-table-sortable inquiries-header-cell inquiries-sortable" />
                         <x-tables.operator-filter-header col="totalclosed" label="Closed" input-class="dealer-grid-filter" cell-class="dashboard-table-sortable inquiries-header-cell inquiries-sortable" />
                         <x-tables.operator-filter-header col="totalfailed" label="Failed" input-class="dealer-grid-filter" cell-class="dashboard-table-sortable inquiries-header-cell inquiries-sortable" />
-                        <x-tables.text-filter-header col="conversionrate" label="Conversion" input-class="dealer-grid-filter" cell-class="dashboard-table-sortable inquiries-header-cell inquiries-sortable" wrap-class="inquiries-filter-wrap dealer-filter-input-wrap" />
+                        <x-tables.operator-filter-header col="conversionrate" label="Conversion" input-class="dealer-grid-filter" cell-class="dashboard-table-sortable inquiries-header-cell inquiries-sortable" />
                         <x-tables.text-filter-header col="active" label="Active" input-class="dealer-grid-filter" cell-class="dashboard-table-sortable inquiries-header-cell inquiries-sortable" wrap-class="inquiries-filter-wrap dealer-filter-input-wrap" />
                     </tr>
                 </thead>
@@ -656,7 +656,7 @@ document.addEventListener('DOMContentLoaded', function() {
             theads.push({ th: th, col: col });
         });
         document.body.removeChild(measureEl);
-        var NUMERIC_COLS = ['totallead','totalongoing','totalclosed','totalfailed'];
+        var NUMERIC_COLS = ['totallead','totalongoing','totalclosed','totalfailed','conversionrate'];
         var numericIdx = NUMERIC_COLS.map(function(c) {
             var i = theads.findIndex(function(t) { return t.col === c; });
             return i;
@@ -687,11 +687,57 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // ——— Grid filters (text: contains; Leads/Ongoing/Closed/Failed: = or > or <) ———
-    var DEALER_NUMERIC_COLS = ['totallead','totalongoing','totalclosed','totalfailed'];
+    // ——— Grid filters (text: contains; numeric cols: =, !=, >, >=, <, <=) ———
+    var DEALER_NUMERIC_COLS = ['totallead','totalongoing','totalclosed','totalfailed','conversionrate'];
     function parseNum(s) {
-        var n = parseInt(String(s).replace(/\s|,/g, ''), 10);
+        var n = parseFloat(String(s || '').replace(/[^0-9.\-]/g, ''));
         return isNaN(n) ? 0 : n;
+    }
+    function resetDealerOperatorDropdownPosition(dropdown) {
+        if (!dropdown) return;
+        dropdown.style.position = '';
+        dropdown.style.left = '';
+        dropdown.style.top = '';
+        dropdown.style.right = '';
+        dropdown.style.bottom = '';
+        dropdown.style.minWidth = '';
+        dropdown.style.maxHeight = '';
+        dropdown.style.overflowY = '';
+        dropdown.style.overflowX = '';
+        dropdown.style.zIndex = '';
+    }
+    function positionDealerOperatorDropdown(btn, dropdown) {
+        if (!btn || !dropdown) return;
+        var btnRect = btn.getBoundingClientRect();
+        var viewportPadding = 8;
+        var minWidth = Math.max(200, Math.round(btnRect.width + 92));
+
+        dropdown.style.position = 'fixed';
+        dropdown.style.left = '0';
+        dropdown.style.top = '0';
+        dropdown.style.right = 'auto';
+        dropdown.style.bottom = 'auto';
+        dropdown.style.minWidth = minWidth + 'px';
+        dropdown.style.maxHeight = 'none';
+        dropdown.style.overflowY = 'visible';
+        dropdown.style.overflowX = 'visible';
+        dropdown.style.zIndex = '10050';
+
+        var dropdownHeight = Math.ceil(dropdown.scrollHeight || dropdown.getBoundingClientRect().height || 0);
+        var dropdownWidth = Math.ceil(Math.max(dropdown.scrollWidth || 0, dropdown.getBoundingClientRect().width || 0, minWidth));
+        var top = Math.round(btnRect.bottom + 4);
+        var left = Math.round(btnRect.left);
+
+        if (top + dropdownHeight > window.innerHeight - viewportPadding) {
+            top = Math.max(viewportPadding, Math.round(btnRect.top - dropdownHeight - 4));
+        }
+
+        if (left + dropdownWidth > window.innerWidth - viewportPadding) {
+            left = Math.max(viewportPadding, Math.round(window.innerWidth - dropdownWidth - viewportPadding));
+        }
+
+        dropdown.style.left = left + 'px';
+        dropdown.style.top = top + 'px';
     }
     function initDealerPagination() {
         if (!table || !pagination) return;
@@ -928,10 +974,18 @@ document.addEventListener('DOMContentLoaded', function() {
         btn.addEventListener('click', function(e) {
             e.stopPropagation();
             var open = !dropdown.hidden;
-            table.querySelectorAll('.dealer-operator-dropdown').forEach(function(d) { d.hidden = true; });
+            table.querySelectorAll('.dealer-operator-dropdown').forEach(function(d) {
+                d.hidden = true;
+                resetDealerOperatorDropdownPosition(d);
+            });
             table.querySelectorAll('.dealer-operator-btn').forEach(function(b) { b.setAttribute('aria-expanded', 'false'); });
             dropdown.hidden = open;
             btn.setAttribute('aria-expanded', !open);
+            if (!open) {
+                positionDealerOperatorDropdown(btn, dropdown);
+            } else {
+                resetDealerOperatorDropdownPosition(dropdown);
+            }
         });
         dropdown.addEventListener('click', function(e) { e.stopPropagation(); });
         dropdown.querySelectorAll('button[data-op]').forEach(function(opt) {
@@ -943,12 +997,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 btn.textContent = label;
                 dropdown.hidden = true;
                 btn.setAttribute('aria-expanded', 'false');
+                resetDealerOperatorDropdownPosition(dropdown);
                 applyDealerGridFilters(true);
             });
         });
     });
     document.addEventListener('click', function() {
-        table.querySelectorAll('.dealer-operator-dropdown').forEach(function(d) { d.hidden = true; });
+        table.querySelectorAll('.dealer-operator-dropdown').forEach(function(d) {
+            d.hidden = true;
+            resetDealerOperatorDropdownPosition(d);
+        });
         table.querySelectorAll('.dealer-operator-btn').forEach(function(b) { b.setAttribute('aria-expanded', 'false'); });
     });
 
@@ -961,7 +1019,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 btn.textContent = '=';
                 btn.setAttribute('aria-expanded', 'false');
             });
-            table.querySelectorAll('.dealer-operator-dropdown').forEach(function(d) { d.hidden = true; });
+            table.querySelectorAll('.dealer-operator-dropdown').forEach(function(d) {
+                d.hidden = true;
+                resetDealerOperatorDropdownPosition(d);
+            });
             applyDealerGridFilters(true);
             table.querySelectorAll('thead th[data-col]').forEach(function(h) {
                 h.classList.remove('inquiries-sort-asc', 'inquiries-sort-desc');

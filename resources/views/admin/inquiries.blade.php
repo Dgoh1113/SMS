@@ -695,7 +695,32 @@
                                         </span>
                                     </span>
                                 </th>
-                                <th><span class="inquiries-filter-wrap"><input type="text" class="inquiries-assign-filter" data-col="conversion"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                                <th>
+                                    <span class="inquiries-filter-wrap dealer-operator-search-wrap">
+                                        <span class="dealer-operator-search-box">
+                                            <button
+                                                type="button"
+                                                class="dealer-operator-btn"
+                                                data-col="conversion"
+                                                data-op="="
+                                                aria-haspopup="true"
+                                                aria-expanded="false"
+                                                title="Filter operator"
+                                            >
+                                                =
+                                            </button>
+                                            <div class="dealer-operator-dropdown" hidden>
+                                                <button type="button" data-op="=">= Equals</button>
+                                                <button type="button" data-op="!=">!= Does not equal</button>
+                                                <button type="button" data-op="<">&lt; Less than</button>
+                                                <button type="button" data-op="<=">&lt;= Less than or equal to</button>
+                                                <button type="button" data-op=">">&gt; Greater than</button>
+                                                <button type="button" data-op=">=">&gt;= Greater than or equal to</button>
+                                            </div>
+                                            <input type="text" class="inquiries-assign-filter" data-col="conversion" placeholder="0">
+                                        </span>
+                                    </span>
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -716,7 +741,10 @@
                                 @endphp
                                 <tr class="inquiries-assign-dealer-row"
                                     data-assign-userid="{{ $uid }}"
-                                    data-assign-label="{{ e($label) }}">
+                                    data-assign-label="{{ e($label) }}"
+                                    data-assign-postcode="{{ $postcode }}"
+                                    data-assign-city="{{ e($city) }}"
+                                    data-assign-order="{{ $loop->index }}">
                                     <td data-col="alias">{{ $alias ?: '—' }}</td>
                                     <td data-col="company">{{ $company ?: '—' }}</td>
                                     <td data-col="postcode">{{ $postcode ?: '—' }}</td>
@@ -1516,7 +1544,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return '';
     };
 
-    var INQUIRY_NUMERIC_FILTER_COLS = ['users', 'totallead', 'totalclosed'];
+    var INQUIRY_NUMERIC_FILTER_COLS = ['users', 'totallead', 'totalclosed', 'conversion'];
 
     function parseInquiryFilterNumber(value) {
         var num = parseFloat(String(value || '').replace(/[^0-9.\-]/g, ''));
@@ -1588,6 +1616,60 @@ document.addEventListener('DOMContentLoaded', function() {
         return true;
     }
 
+    function resetInquiryOperatorDropdownPosition(dropdown) {
+        if (!dropdown) return;
+        dropdown.style.position = '';
+        dropdown.style.left = '';
+        dropdown.style.top = '';
+        dropdown.style.right = '';
+        dropdown.style.bottom = '';
+        dropdown.style.minWidth = '';
+        dropdown.style.maxHeight = '';
+        dropdown.style.overflowY = '';
+        dropdown.style.overflowX = '';
+        dropdown.style.zIndex = '';
+    }
+
+    function positionInquiryOperatorDropdown(btn, dropdown, tableEl) {
+        if (!btn || !dropdown) return;
+        var inAssignModal = !!(tableEl && tableEl.closest && tableEl.closest('#assignModal'));
+        if (!inAssignModal) {
+            resetInquiryOperatorDropdownPosition(dropdown);
+            return;
+        }
+
+        var btnRect = btn.getBoundingClientRect();
+        var viewportPadding = 8;
+        var minWidth = Math.max(200, Math.round(btnRect.width + 72));
+
+        dropdown.style.position = 'fixed';
+        dropdown.style.left = '0';
+        dropdown.style.top = '0';
+        dropdown.style.right = 'auto';
+        dropdown.style.bottom = 'auto';
+        dropdown.style.minWidth = minWidth + 'px';
+        dropdown.style.maxHeight = 'none';
+        dropdown.style.overflowY = 'visible';
+        dropdown.style.overflowX = 'visible';
+        dropdown.style.zIndex = '10050';
+
+        var dropdownHeight = Math.ceil(dropdown.scrollHeight || dropdown.getBoundingClientRect().height || 0);
+        var dropdownWidth = Math.ceil(Math.max(dropdown.scrollWidth || 0, dropdown.getBoundingClientRect().width || 0, minWidth));
+        var top = Math.round(btnRect.bottom + 4);
+        var left = Math.round(btnRect.left);
+
+        if (top + dropdownHeight > window.innerHeight - viewportPadding) {
+            top = Math.max(viewportPadding, Math.round(btnRect.top - dropdownHeight - 4));
+        }
+
+        if (left + dropdownWidth > window.innerWidth - viewportPadding) {
+            left = Math.max(viewportPadding, Math.round(window.innerWidth - dropdownWidth - viewportPadding));
+        }
+
+        dropdown.style.left = left + 'px';
+        dropdown.style.top = top + 'px';
+    }
+
     function bindInquiryOperatorMenus(tableEl, applyFn) {
         if (!tableEl) return;
         tableEl.querySelectorAll('.dealer-operator-btn').forEach(function(btn) {
@@ -1598,10 +1680,18 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.addEventListener('click', function(e) {
                 e.stopPropagation();
                 var isOpen = !dropdown.hidden;
-                tableEl.querySelectorAll('.dealer-operator-dropdown').forEach(function(d) { d.hidden = true; });
+                tableEl.querySelectorAll('.dealer-operator-dropdown').forEach(function(d) {
+                    d.hidden = true;
+                    resetInquiryOperatorDropdownPosition(d);
+                });
                 tableEl.querySelectorAll('.dealer-operator-btn').forEach(function(b) { b.setAttribute('aria-expanded', 'false'); });
                 dropdown.hidden = isOpen;
                 btn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+                if (!isOpen) {
+                    positionInquiryOperatorDropdown(btn, dropdown, tableEl);
+                } else {
+                    resetInquiryOperatorDropdownPosition(dropdown);
+                }
             });
             dropdown.addEventListener('click', function(e) { e.stopPropagation(); });
             dropdown.querySelectorAll('button[data-op]').forEach(function(option) {
@@ -1612,6 +1702,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     btn.textContent = op;
                     btn.setAttribute('aria-expanded', 'false');
                     dropdown.hidden = true;
+                    resetInquiryOperatorDropdownPosition(dropdown);
                     applyFn();
                 });
             });
@@ -1627,6 +1718,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         tableEl.querySelectorAll('.dealer-operator-dropdown').forEach(function(dropdown) {
             dropdown.hidden = true;
+            resetInquiryOperatorDropdownPosition(dropdown);
         });
     }
 
@@ -1714,7 +1806,10 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('click', function() {
         [document.getElementById('unassignedTable'), document.getElementById('assignedTable'), document.getElementById('allTable'), document.querySelector('#assignModal .inquiries-assign-dealers-table')].forEach(function(tableEl) {
             if (!tableEl) return;
-            tableEl.querySelectorAll('.dealer-operator-dropdown').forEach(function(dropdown) { dropdown.hidden = true; });
+            tableEl.querySelectorAll('.dealer-operator-dropdown').forEach(function(dropdown) {
+                dropdown.hidden = true;
+                resetInquiryOperatorDropdownPosition(dropdown);
+            });
             tableEl.querySelectorAll('.dealer-operator-btn').forEach(function(btn) { btn.setAttribute('aria-expanded', 'false'); });
         });
     });
@@ -2457,16 +2552,111 @@ document.addEventListener('DOMContentLoaded', function() {
         var assignBtn = document.getElementById('assignSubmitBtn');
 
         function close() { modal.hidden = true; }
-        function open(leadId, label) {
+        function syncDealerTableStickyHeader() {
+            if (!dealerTable) return;
+            var headerRow = dealerTable.querySelector('thead tr:first-child');
+            if (!headerRow) return;
+            var headerHeight = Math.round(headerRow.getBoundingClientRect().height || headerRow.offsetHeight || 0);
+            if (headerHeight > 0) {
+                dealerTable.style.setProperty('--assign-dealers-header-height', headerHeight + 'px');
+            }
+        }
+
+        function normalizeAssignPostcode(value) {
+            return String(value || '').replace(/\D+/g, '');
+        }
+
+        function normalizeAssignCity(value) {
+            var normalized = String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
+            return (normalized === '-' || normalized === '—') ? '' : normalized;
+        }
+
+        function getAssignDealerRows() {
+            return Array.prototype.slice.call(modal.querySelectorAll('.inquiries-assign-dealer-row'));
+        }
+
+        function ensureAssignDealerOrderValues() {
+            getAssignDealerRows().forEach(function(row, index) {
+                if (!row.hasAttribute('data-assign-order')) {
+                    row.setAttribute('data-assign-order', String(index));
+                }
+            });
+        }
+
+        function renderAssignDealerRows(rows) {
+            if (!dealerTable || !dealerTable.tBodies || !dealerTable.tBodies[0]) return;
+            var tbody = dealerTable.tBodies[0];
+            rows.forEach(function(row) {
+                tbody.appendChild(row);
+            });
+        }
+
+        function sortAssignDealerRowsForInquiry(preferredPostcode, preferredCity) {
+            ensureAssignDealerOrderValues();
+
+            var rows = getAssignDealerRows();
+            if (!rows.length) return;
+
+            var normalizedPostcode = normalizeAssignPostcode(preferredPostcode);
+            var normalizedCity = normalizeAssignCity(preferredCity);
+
+            var hasPostcodeMatch = normalizedPostcode !== '' && rows.some(function(row) {
+                return normalizeAssignPostcode(row.getAttribute('data-assign-postcode')) === normalizedPostcode;
+            });
+
+            var hasCityMatch = !hasPostcodeMatch && normalizedCity !== '' && rows.some(function(row) {
+                return normalizeAssignCity(row.getAttribute('data-assign-city')) === normalizedCity;
+            });
+
+            rows.sort(function(a, b) {
+                var rankA = 1;
+                var rankB = 1;
+
+                if (hasPostcodeMatch) {
+                    rankA = normalizeAssignPostcode(a.getAttribute('data-assign-postcode')) === normalizedPostcode ? 0 : 1;
+                    rankB = normalizeAssignPostcode(b.getAttribute('data-assign-postcode')) === normalizedPostcode ? 0 : 1;
+                } else if (hasCityMatch) {
+                    rankA = normalizeAssignCity(a.getAttribute('data-assign-city')) === normalizedCity ? 0 : 1;
+                    rankB = normalizeAssignCity(b.getAttribute('data-assign-city')) === normalizedCity ? 0 : 1;
+                }
+
+                if (rankA !== rankB) {
+                    return rankA - rankB;
+                }
+
+                return (parseInt(a.getAttribute('data-assign-order'), 10) || 0) - (parseInt(b.getAttribute('data-assign-order'), 10) || 0);
+            });
+
+            renderAssignDealerRows(rows);
+        }
+
+        function getInquiryLocationFromTrigger(triggerEl) {
+            var row = triggerEl && triggerEl.closest ? triggerEl.closest('tr') : null;
+            if (!row) {
+                return { postcode: '', city: '' };
+            }
+
+            var postcodeCell = row.querySelector('td[data-col="postcode"]');
+            var cityCell = row.querySelector('td[data-col="city"]');
+
+            return {
+                postcode: postcodeCell ? (postcodeCell.textContent || '') : '',
+                city: cityCell ? (cityCell.textContent || '') : ''
+            };
+        }
+
+        function open(leadId, label, postcode, city) {
             if (leadIdInput) leadIdInput.value = String(leadId || '');
             if (leadLabel) leadLabel.textContent = label || ('#SQL-' + leadId);
             if (hiddenTo) hiddenTo.value = '';
             if (assignBtn) assignBtn.disabled = true;
             modal.querySelectorAll('.inquiries-assign-filter').forEach(function(inp) { inp.value = ''; });
             resetInquiryOperatorMenus(dealerTable);
+            sortAssignDealerRowsForInquiry(postcode, city);
             modal.querySelectorAll('.inquiries-assign-dealer-row').forEach(function(r) { r.style.display = ''; });
             modal.querySelectorAll('.inquiries-assign-dealer-row').forEach(function(r) { r.classList.remove('selected'); });
             modal.hidden = false;
+            requestAnimationFrame(syncDealerTableStickyHeader);
         }
 
         function applyDealerFilters() {
@@ -2486,7 +2676,13 @@ document.addEventListener('DOMContentLoaded', function() {
         document.addEventListener('click', function(e) {
             var btn = e.target && e.target.closest ? e.target.closest('[data-assign-lead]') : null;
             if (btn) {
-                open(btn.getAttribute('data-assign-lead'), btn.getAttribute('data-assign-name'));
+                var inquiryLocation = getInquiryLocationFromTrigger(btn);
+                open(
+                    btn.getAttribute('data-assign-lead'),
+                    btn.getAttribute('data-assign-name'),
+                    inquiryLocation.postcode,
+                    inquiryLocation.city
+                );
                 return;
             }
             var row = e.target && e.target.closest ? e.target.closest('.inquiries-assign-dealer-row') : null;
@@ -2502,6 +2698,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape' && !modal.hidden) close();
+        });
+        window.addEventListener('resize', function() {
+            if (!modal.hidden) syncDealerTableStickyHeader();
         });
     })();
 
