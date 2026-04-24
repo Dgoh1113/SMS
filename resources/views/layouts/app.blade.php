@@ -18,7 +18,7 @@
         })();
     </script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=20260422-04">
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=20260424-11">
     <script src="{{ asset('js/passkey-registration.js') }}"></script>
     <script>
         // Apply sidebar state ASAP (prevents flicker on page navigation)
@@ -407,6 +407,8 @@
         ];
     }
 
+    $guideTopicCount = count($guideTopics);
+    $guideTopicTotalLabel = str_pad((string) $guideTopicCount, 2, '0', STR_PAD_LEFT);
     $firstGuideTopic = $guideTopics[0];
 @endphp
 
@@ -456,9 +458,8 @@
                 </button>
                 <div class="dashboard-guide-layout">
                     <aside class="dashboard-guide-nav">
-                        <span class="dashboard-guide-nav-label">Guide</span>
+                        <span class="dashboard-guide-nav-label">Guidebook</span>
                         <h3 class="dashboard-guide-nav-title">Topic catalogue</h3>
-                        <p class="dashboard-guide-nav-text">Start with <strong>Must know first</strong>, then move to the next group when you are ready.</p>
                         <div class="dashboard-guide-topic-groups">
                             @foreach ($guideTopicGroups as $groupLabel => $groupItems)
                                 <section class="dashboard-guide-topic-group" aria-label="{{ $groupLabel }}">
@@ -475,7 +476,7 @@
                                                 data-guide-topic-index="{{ $index }}"
                                                 aria-current="{{ $index === 0 ? 'true' : 'false' }}"
                                             >
-                                                <span class="dashboard-guide-topic-icon"><i class="bi {{ $topic['icon'] }}" aria-hidden="true"></i></span>
+                                                <span class="dashboard-guide-topic-number">{{ str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT) }}</span>
                                                 <span class="dashboard-guide-topic-copy">
                                                     <strong>{{ $topic['label'] }}</strong>
                                                     <small>{{ $topic['subtitle'] }}</small>
@@ -488,46 +489,52 @@
                         </div>
                     </aside>
                     <section class="dashboard-guide-content">
-                        <div class="dashboard-guide-header">
-                            <span class="dashboard-guide-hero-icon" id="guideCatalogHeroIcon">
-                                <i class="bi {{ $firstGuideTopic['icon'] }}" aria-hidden="true"></i>
-                            </span>
-                            <div class="dashboard-guide-header-copy">
-                                <span class="dashboard-guide-badge" id="guideCatalogBadge">{{ $firstGuideTopic['badge'] }}</span>
-                                <h2 class="dashboard-guide-title" id="guideCatalogTitle">{{ $firstGuideTopic['title'] }}</h2>
-                                <p class="dashboard-guide-intro" id="guideCatalogIntro">{{ $firstGuideTopic['intro'] }}</p>
+                        <article class="dashboard-guide-paper" id="guideCatalogPaper">
+                            <div class="dashboard-guide-page-meta">
+                                <span class="dashboard-guide-page-kicker" id="guideCatalogPageKicker">{{ $firstGuideTopic['group'] ?? 'Guidebook' }}</span>
+                                <span class="dashboard-guide-page-count">Page <span id="guideCatalogPageNumber">01</span> / <span id="guideCatalogPageTotal">{{ $guideTopicTotalLabel }}</span></span>
                             </div>
-                        </div>
+                            <div class="dashboard-guide-header">
+                                <span class="dashboard-guide-hero-icon" id="guideCatalogHeroIcon">
+                                    <i class="bi {{ $firstGuideTopic['icon'] }}" aria-hidden="true"></i>
+                                </span>
+                                <div class="dashboard-guide-header-copy">
+                                    <span class="dashboard-guide-badge" id="guideCatalogBadge">{{ $firstGuideTopic['badge'] }}</span>
+                                    <h2 class="dashboard-guide-title" id="guideCatalogTitle">{{ $firstGuideTopic['title'] }}</h2>
+                                    <p class="dashboard-guide-intro" id="guideCatalogIntro">{{ $firstGuideTopic['intro'] }}</p>
+                                </div>
+                            </div>
 
-                        <div class="dashboard-guide-section">
-                            <h4 id="guideCatalogStepsHeading">{{ $firstGuideTopic['stepsHeading'] }}</h4>
-                            <ol class="dashboard-guide-steps" id="guideCatalogSteps">
-                                @foreach ($firstGuideTopic['steps'] as $step)
-                                    <li>{{ $step }}</li>
-                                @endforeach
-                            </ol>
-                        </div>
+                            <div class="dashboard-guide-section">
+                                <h4 id="guideCatalogStepsHeading">{{ $firstGuideTopic['stepsHeading'] }}</h4>
+                                <ol class="dashboard-guide-steps" id="guideCatalogSteps">
+                                    @foreach ($firstGuideTopic['steps'] as $step)
+                                        <li>{{ $step }}</li>
+                                    @endforeach
+                                </ol>
+                            </div>
 
-                        <div class="dashboard-guide-section">
-                            <h4 id="guideCatalogTipsHeading">{{ $firstGuideTopic['tipsHeading'] }}</h4>
-                            <ul class="dashboard-guide-tips" id="guideCatalogTips">
-                                @foreach ($firstGuideTopic['tips'] as $tip)
-                                    <li>{{ $tip }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
+                            <div class="dashboard-guide-section">
+                                <h4 id="guideCatalogTipsHeading">{{ $firstGuideTopic['tipsHeading'] }}</h4>
+                                <ul class="dashboard-guide-tips" id="guideCatalogTips">
+                                    @foreach ($firstGuideTopic['tips'] as $tip)
+                                        <li>{{ $tip }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
 
-                        <div class="dashboard-guide-note">
-                            <i class="bi bi-info-circle" aria-hidden="true"></i>
-                            <span id="guideCatalogNote">{{ $firstGuideTopic['note'] }}</span>
-                        </div>
+                            <div class="dashboard-guide-note">
+                                <i class="bi bi-info-circle" aria-hidden="true"></i>
+                                <span id="guideCatalogNote">{{ $firstGuideTopic['note'] }}</span>
+                            </div>
 
-                        <div class="dashboard-guide-actions">
-                            <button type="button" class="dashboard-guide-primary-btn" id="guideOpenPasskeyBtn"{{ ($firstGuideTopic['primaryAction'] ?? null) === 'passkey' ? '' : ' hidden' }}>
-                                {{ $firstGuideTopic['primaryActionLabel'] ?? 'Open passkey setup' }}
-                            </button>
-                            <button type="button" class="dashboard-guide-secondary-btn" id="guideCloseActionBtn">Close</button>
-                        </div>
+                            <div class="dashboard-guide-actions">
+                                <button type="button" class="dashboard-guide-primary-btn" id="guideOpenPasskeyBtn"{{ ($firstGuideTopic['primaryAction'] ?? null) === 'passkey' ? '' : ' hidden' }}>
+                                    {{ $firstGuideTopic['primaryActionLabel'] ?? 'Open passkey setup' }}
+                                </button>
+                                <button type="button" class="dashboard-guide-secondary-btn" id="guideCloseActionBtn">Close</button>
+                            </div>
+                        </article>
                     </section>
                 </div>
             </div>
@@ -705,6 +712,8 @@
     var guideOpenPasskeyBtn = document.getElementById('guideOpenPasskeyBtn');
     var guideBadge = document.getElementById('guideCatalogBadge');
     var guideHeroIcon = document.getElementById('guideCatalogHeroIcon');
+    var guidePageKicker = document.getElementById('guideCatalogPageKicker');
+    var guidePageNumber = document.getElementById('guideCatalogPageNumber');
     var guideTitle = document.getElementById('guideCatalogTitle');
     var guideIntro = document.getElementById('guideCatalogIntro');
     var guideStepsHeading = document.getElementById('guideCatalogStepsHeading');
@@ -713,6 +722,7 @@
     var guideTips = document.getElementById('guideCatalogTips');
     var guideNote = document.getElementById('guideCatalogNote');
     var guideContent = document.querySelector('.dashboard-guide-content');
+    var guidePaper = document.getElementById('guideCatalogPaper');
     var guideDesktopParent = guideContent ? guideContent.parentNode : null;
     var guideDesktopNextSibling = guideContent ? guideContent.nextSibling : null;
     var guideMobileQuery = window.matchMedia ? window.matchMedia('(max-width: 768px)') : null;
@@ -720,6 +730,7 @@
     var guideTopics = @json($guideTopics);
     var activeGuideTopicIndex = 0;
     var isGuideMobileContentOpen = false;
+    var guideFlipTimer = null;
     var trigger = document.getElementById('profileDropdownTrigger');
     var menu = document.getElementById('profileDropdownMenu');
     var passkeyTrigger = document.getElementById('profileRegisterPasskeyBtn');
@@ -757,6 +768,23 @@
         }).join('');
     }
 
+    function formatGuidePageNumber(index) {
+        var pageNumber = Number(index) + 1;
+        return pageNumber < 10 ? '0' + pageNumber : String(pageNumber);
+    }
+
+    function clearGuideFlipTimer() {
+        if (guideFlipTimer) {
+            window.clearTimeout(guideFlipTimer);
+            guideFlipTimer = null;
+        }
+    }
+
+    function clearGuideFlipState() {
+        if (!guideContent) return;
+        guideContent.classList.remove('is-flipping-out', 'is-flipping-in', 'is-flipping-forward', 'is-flipping-backward');
+    }
+
     function isGuideMobileLayout() {
         return guideMobileQuery ? guideMobileQuery.matches : false;
     }
@@ -790,26 +818,12 @@
         guideContent.hidden = false;
     }
 
-    function renderGuideTopic(index, mobileContentOpen) {
-        if (!guideTopics || !guideTopics.length) {
-            return;
-        }
-
-        var safeIndex = index >= 0 && index < guideTopics.length ? index : 0;
-        var topic = guideTopics[safeIndex];
-        activeGuideTopicIndex = safeIndex;
-
-        if (isGuideMobileLayout()) {
-            if (typeof mobileContentOpen === 'boolean') {
-                isGuideMobileContentOpen = mobileContentOpen;
-            }
-        } else {
-            isGuideMobileContentOpen = true;
-        }
-
+    function applyGuideTopic(topic, safeIndex) {
         if (guideHeroIcon) {
             guideHeroIcon.innerHTML = '<i class="bi ' + escapeGuideHtml(topic.icon || 'bi-bookmark-fill') + '" aria-hidden="true"></i>';
         }
+        if (guidePageKicker) guidePageKicker.textContent = topic.group || topic.badge || 'Guidebook';
+        if (guidePageNumber) guidePageNumber.textContent = formatGuidePageNumber(safeIndex);
         if (guideBadge) guideBadge.textContent = topic.badge || '';
         if (guideTitle) guideTitle.textContent = topic.title || '';
         if (guideIntro) guideIntro.textContent = topic.intro || '';
@@ -824,6 +838,49 @@
             guideOpenPasskeyBtn.hidden = !isPasskeyTopic;
             guideOpenPasskeyBtn.textContent = topic.primaryActionLabel || 'Open passkey setup';
         }
+    }
+
+    function animateGuideTopicChange(topic, safeIndex, directionClass) {
+        if (!guideContent || !guidePaper) {
+            applyGuideTopic(topic, safeIndex);
+            placeGuideContent();
+            return;
+        }
+
+        clearGuideFlipTimer();
+        clearGuideFlipState();
+        guideContent.classList.add(directionClass, 'is-flipping-out');
+
+        guideFlipTimer = window.setTimeout(function() {
+            applyGuideTopic(topic, safeIndex);
+            placeGuideContent();
+            clearGuideFlipState();
+            guideContent.classList.add(directionClass, 'is-flipping-in');
+
+            guideFlipTimer = window.setTimeout(function() {
+                clearGuideFlipState();
+                guideFlipTimer = null;
+            }, 360);
+        }, 220);
+    }
+
+    function renderGuideTopic(index, mobileContentOpen) {
+        if (!guideTopics || !guideTopics.length) {
+            return;
+        }
+
+        var safeIndex = index >= 0 && index < guideTopics.length ? index : 0;
+        var previousIndex = activeGuideTopicIndex;
+        var topic = guideTopics[safeIndex];
+        activeGuideTopicIndex = safeIndex;
+
+        if (isGuideMobileLayout()) {
+            if (typeof mobileContentOpen === 'boolean') {
+                isGuideMobileContentOpen = mobileContentOpen;
+            }
+        } else {
+            isGuideMobileContentOpen = true;
+        }
 
         guideTopicButtons.forEach(function(button) {
             var buttonIndex = Number(button.getAttribute('data-guide-topic-index'));
@@ -833,6 +890,14 @@
             button.setAttribute('aria-expanded', isActive && isGuideMobileLayout() && isGuideMobileContentOpen ? 'true' : 'false');
         });
 
+        if (!isGuideMobileLayout() && guideModal && !guideModal.hidden && safeIndex !== previousIndex) {
+            animateGuideTopicChange(topic, safeIndex, safeIndex > previousIndex ? 'is-flipping-forward' : 'is-flipping-backward');
+            return;
+        }
+
+        clearGuideFlipTimer();
+        clearGuideFlipState();
+        applyGuideTopic(topic, safeIndex);
         placeGuideContent();
     }
 
@@ -842,6 +907,9 @@
         guideTrigger.setAttribute('aria-expanded', open ? 'true' : 'false');
         if (open) {
             renderGuideTopic(activeGuideTopicIndex, false);
+        } else {
+            clearGuideFlipTimer();
+            clearGuideFlipState();
         }
         syncDashboardOverlayLock();
     }
@@ -1054,6 +1122,8 @@
     });
 
     function handleGuideLayoutChange() {
+        clearGuideFlipTimer();
+        clearGuideFlipState();
         isGuideMobileContentOpen = !isGuideMobileLayout();
         renderGuideTopic(activeGuideTopicIndex, isGuideMobileContentOpen);
     }
