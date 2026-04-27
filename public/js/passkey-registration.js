@@ -53,15 +53,16 @@
 
   function applyCreatePreference(options, preference) {
     var pk = options.publicKey || {};
-    pk.hints = preference === 'phone'
-      ? ['hybrid', 'client-device']
-      : ['client-device', 'hybrid'];
     pk.authenticatorSelection = pk.authenticatorSelection || {};
+
     if (preference === 'phone') {
+      pk.hints = ['hybrid'];
       pk.authenticatorSelection.authenticatorAttachment = 'cross-platform';
-    } else if (pk.authenticatorSelection.authenticatorAttachment === 'cross-platform') {
-      delete pk.authenticatorSelection.authenticatorAttachment;
+    } else {
+      pk.hints = ['client-device'];
+      pk.authenticatorSelection.authenticatorAttachment = 'platform';
     }
+
     return options;
   }
 

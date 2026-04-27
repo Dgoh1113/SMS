@@ -21,6 +21,8 @@ Route::post('/passkey/auth/verify', [PasskeyController::class, 'authVerify'])->n
 Route::middleware(['auth.sms'])->group(function () {
     Route::post('/passkey/register/options', [PasskeyController::class, 'registerOptions'])->name('passkey.register.options');
     Route::post('/passkey/register/verify', [PasskeyController::class, 'registerVerify'])->name('passkey.register.verify');
+    Route::get('/passkey/manage/list', [PasskeyController::class, 'manageList'])->name('passkey.manage.list');
+    Route::post('/passkey/manage/{passkeyId}/delete', [PasskeyController::class, 'manageDelete'])->name('passkey.manage.delete');
 });
 
 Route::middleware(['auth.sms', 'admin'])->prefix('admin')->name('admin.')->group(function () {

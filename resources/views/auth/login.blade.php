@@ -21,7 +21,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=20260417-01">
-    <script src="{{ asset('js/passkey-registration.js') }}"></script>
+<script src="{{ asset('js/passkey-registration.js') }}?v=20260427-02"></script>
 </head>
 <body>
 <div class="login-root{{ !empty($show_register_passkey) ? ' login-root-passkey-setup' : '' }}">
@@ -420,8 +420,8 @@
             var nicknamePromptDefault = preference === 'phone' ? 'My phone' : 'This device';
             var nickname = prompt(
                 preference === 'phone'
-                    ? 'Name this phone passkey (e.g. "My iPhone" or "My Android"):'
-                    : 'Name this passkey (e.g. "My laptop"):',
+                    ? 'How should we name this phone passkey? Example: "My iPhone" or "My Android".'
+                    : 'How should we name this passkey? Example: "My laptop" or "Office desktop".',
                 nicknamePromptDefault
             );
             if (nickname === null) return;

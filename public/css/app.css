@@ -2873,6 +2873,259 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
   margin-top: 16px;
 }
 
+.dashboard-passkey-manage-card {
+  width: min(860px, 100%);
+}
+
+.dashboard-passkey-access-card {
+  width: min(460px, 100%);
+  padding-top: 24px;
+  text-align: center;
+}
+
+.dashboard-passkey-access-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px;
+  border-radius: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(124, 92, 255, 0.12), rgba(124, 92, 255, 0.2));
+  color: #6d3df5;
+  font-size: 24px;
+}
+
+.dashboard-passkey-access-message {
+  margin-bottom: 0;
+}
+
+.dashboard-passkey-access-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.dashboard-passkey-manage-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dashboard-passkey-nickname-box[hidden] {
+  display: none !important;
+}
+
+.dashboard-passkey-nickname-box {
+  margin-top: 16px;
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #f8fbff 0%, #f5f7ff 100%);
+  border: 1px solid #dbe4ff;
+}
+
+.dashboard-passkey-nickname-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.dashboard-passkey-nickname-help {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #667085;
+}
+
+.dashboard-passkey-nickname-field {
+  display: grid;
+  gap: 8px;
+}
+
+.dashboard-passkey-nickname-field span {
+  font-size: 13px;
+  font-weight: 700;
+  color: #344054;
+}
+
+.dashboard-passkey-nickname-field input {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid #d0d8ea;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #111827;
+  outline: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.dashboard-passkey-nickname-field input:focus {
+  border-color: #7c5cff;
+  box-shadow: 0 0 0 3px rgba(124, 92, 255, 0.14);
+}
+
+.dashboard-passkey-nickname-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.dashboard-passkey-secondary-btn {
+  min-height: 42px;
+  border: 1px solid #d0d8ea;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #344054;
+  padding: 0 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.dashboard-passkey-secondary-btn:hover {
+  background: #f8faff;
+  border-color: #bcc9e3;
+  transform: translateY(-1px);
+}
+
+.dashboard-passkey-manage-section {
+  margin-top: 18px;
+  display: grid;
+  gap: 12px;
+}
+
+.dashboard-passkey-manage-section-head {
+  display: grid;
+  gap: 4px;
+}
+
+.dashboard-passkey-manage-section-head h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.dashboard-passkey-manage-section-head p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #6b7280;
+}
+
+.dashboard-passkey-manage-list-wrap {
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.dashboard-passkey-manage-empty {
+  padding: 20px 18px;
+  text-align: center;
+  color: #667085;
+  font-size: 14px;
+}
+
+.dashboard-passkey-manage-empty.is-error {
+  color: #b42318;
+}
+
+.dashboard-passkey-table-scroll {
+  overflow-x: auto;
+}
+
+.dashboard-passkey-table {
+  width: 100%;
+  min-width: 620px;
+  border-collapse: collapse;
+}
+
+.dashboard-passkey-table th,
+.dashboard-passkey-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #eef2f7;
+  text-align: left;
+}
+
+.dashboard-passkey-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.dashboard-passkey-table th {
+  background: #f8fafc;
+  color: #667085;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dashboard-passkey-table-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 13px;
+  font-weight: 700;
+  color: #6d3df5;
+}
+
+.dashboard-passkey-table-nickname {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.dashboard-passkey-table-lastuse {
+  font-size: 13px;
+  color: #475467;
+}
+
+.dashboard-passkey-table-action {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.dashboard-passkey-delete-btn {
+  min-height: 34px;
+  border: 1px solid #f1b2b0;
+  border-radius: 999px;
+  background: #fff5f5;
+  color: #d92d20;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.dashboard-passkey-delete-btn:hover {
+  background: #ffe4e4;
+  border-color: #ea8a84;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+  .dashboard-passkey-manage-card {
+    width: min(100%, 100%);
+    padding: 22px 16px 18px;
+  }
+
+  .dashboard-passkey-manage-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-passkey-nickname-actions {
+    flex-direction: column;
+  }
+
+  .dashboard-passkey-secondary-btn,
+  .dashboard-passkey-nickname-actions .login-primary-btn {
+    width: 100%;
+  }
+}
+
 .dashboard-guide-modal[hidden] {
   display: none !important;
 }
@@ -10088,6 +10341,79 @@ html.theme-dark .inquiries-assign-close:hover,
 html.theme-dark .dashboard-passkey-quick-close:hover {
   background: rgba(148, 163, 184, 0.12);
   color: #ffffff;
+}
+
+html.theme-dark .dashboard-passkey-nickname-box {
+  background: linear-gradient(180deg, rgba(18, 28, 47, 0.98), rgba(14, 23, 41, 0.98));
+  border-color: rgba(86, 104, 141, 0.34);
+}
+
+html.theme-dark .dashboard-passkey-nickname-title,
+html.theme-dark .dashboard-passkey-manage-section-head h4,
+html.theme-dark .dashboard-passkey-table-nickname {
+  color: #eef4ff;
+}
+
+html.theme-dark .dashboard-passkey-nickname-help,
+html.theme-dark .dashboard-passkey-manage-section-head p,
+html.theme-dark .dashboard-passkey-manage-empty,
+html.theme-dark .dashboard-passkey-table-lastuse {
+  color: #9db0d3;
+}
+
+html.theme-dark .dashboard-passkey-nickname-field span {
+  color: #c8d5ef;
+}
+
+html.theme-dark .dashboard-passkey-nickname-field input {
+  background: #10192b;
+  border-color: #2a3447;
+  color: #f4f7ff;
+}
+
+html.theme-dark .dashboard-passkey-secondary-btn {
+  background: #10192b;
+  border-color: #2a3447;
+  color: #dce6ff;
+}
+
+html.theme-dark .dashboard-passkey-secondary-btn:hover {
+  background: #172133;
+  border-color: #3b4a61;
+}
+
+html.theme-dark .dashboard-passkey-manage-list-wrap {
+  background: #10192b;
+  border-color: #243041;
+}
+
+html.theme-dark .dashboard-passkey-table th {
+  background: #172133;
+  color: #dce6ff;
+  border-bottom-color: #2a3447;
+}
+
+html.theme-dark .dashboard-passkey-table td {
+  border-bottom-color: #243041;
+}
+
+html.theme-dark .dashboard-passkey-table-id {
+  color: #bdaeff;
+}
+
+html.theme-dark .dashboard-passkey-delete-btn {
+  background: rgba(127, 29, 29, 0.18);
+  border-color: rgba(248, 113, 113, 0.34);
+  color: #fecaca;
+}
+
+html.theme-dark .dashboard-passkey-delete-btn:hover {
+  background: rgba(153, 27, 27, 0.28);
+  border-color: rgba(252, 165, 165, 0.42);
+}
+
+html.theme-dark .dashboard-passkey-manage-empty.is-error {
+  color: #fecaca;
 }
 
 html.theme-dark table,

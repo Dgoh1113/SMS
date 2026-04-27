@@ -18,8 +18,8 @@
         })();
     </script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=20260424-11">
-    <script src="{{ asset('js/passkey-registration.js') }}"></script>
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=20260427-03">
+    <script src="{{ asset('js/passkey-registration.js') }}?v=20260427-02"></script>
     <script>
         // Apply sidebar state ASAP (prevents flicker on page navigation)
         (function () {
@@ -431,13 +431,13 @@
         @endif
 
         <div class="dashboard-passkey-quick-modal" id="profilePasskeyQuickModal" hidden>
-            <div class="dashboard-passkey-quick-card" role="dialog" aria-modal="true" aria-labelledby="profilePasskeyQuickTitle">
+            <div class="dashboard-passkey-quick-card dashboard-passkey-manage-card" role="dialog" aria-modal="true" aria-labelledby="profilePasskeyQuickTitle">
                 <button type="button" class="dashboard-passkey-quick-close" id="profilePasskeyQuickClose" aria-label="Close">
                     <i class="bi bi-x-lg" aria-hidden="true"></i>
                 </button>
-                <h3 class="dashboard-passkey-quick-title" id="profilePasskeyQuickTitle">Register passkey</h3>
-                <p class="dashboard-passkey-quick-subtitle">Choose where to save your new passkey.</p>
-                <div class="dashboard-passkey-quick-actions">
+                <h3 class="dashboard-passkey-quick-title" id="profilePasskeyQuickTitle">Manage passkeys</h3>
+                <p class="dashboard-passkey-quick-subtitle">Add a new passkey for a trusted device, and remove old ones when you no longer need them.</p>
+                <div class="dashboard-passkey-quick-actions dashboard-passkey-manage-actions">
                     <button type="button" class="login-primary-btn" id="profilePasskeyPhoneBtn" style="margin-top: 0;">
                         <i class="bi bi-phone" aria-hidden="true"></i>
                         <span>Use Phone / Scan QR</span>
@@ -447,7 +447,47 @@
                         <span>Register On This Device</span>
                     </button>
                 </div>
+
+                <div class="dashboard-passkey-nickname-box" id="profilePasskeyNicknameBox" hidden>
+                    <div class="dashboard-passkey-nickname-title" id="profilePasskeyNicknameTitle">Who will be using this passkey?</div>
+                    <p class="dashboard-passkey-nickname-help" id="profilePasskeyNicknameHelp"></p>
+                    <label class="dashboard-passkey-nickname-field" for="profilePasskeyNicknameInput">
+                        <span>Passkey nickname</span>
+                        <input type="text" id="profilePasskeyNicknameInput" maxlength="255" autocomplete="off" placeholder="My laptop">
+                    </label>
+                    <div class="dashboard-passkey-nickname-actions">
+                        <button type="button" class="dashboard-passkey-secondary-btn" id="profilePasskeyNicknameCancel">Cancel</button>
+                        <button type="button" class="login-primary-btn" id="profilePasskeyNicknameConfirm" style="margin-top: 0;">Continue</button>
+                    </div>
+                </div>
+
                 <div class="dashboard-passkey-quick-status" id="profilePasskeyQuickStatus" hidden></div>
+
+                <section class="dashboard-passkey-manage-section">
+                    <div class="dashboard-passkey-manage-section-head">
+                        <h4>Saved passkeys</h4>
+                        <p>Keep at least one trusted passkey available for future sign-in.</p>
+                    </div>
+                    <div class="dashboard-passkey-manage-list-wrap" id="profilePasskeyListWrap">
+                        <div class="dashboard-passkey-manage-empty">Loading passkeys...</div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <div class="dashboard-passkey-quick-modal dashboard-passkey-access-modal" id="profilePasskeyAccessModal" hidden>
+            <div class="dashboard-passkey-quick-card dashboard-passkey-access-card" role="dialog" aria-modal="true" aria-labelledby="profilePasskeyAccessTitle">
+                <button type="button" class="dashboard-passkey-quick-close" id="profilePasskeyAccessClose" aria-label="Close">
+                    <i class="bi bi-x-lg" aria-hidden="true"></i>
+                </button>
+                <div class="dashboard-passkey-access-icon" aria-hidden="true">
+                    <i class="bi bi-shield-lock"></i>
+                </div>
+                <h3 class="dashboard-passkey-quick-title" id="profilePasskeyAccessTitle">Access denied</h3>
+                <p class="dashboard-passkey-quick-subtitle dashboard-passkey-access-message" id="profilePasskeyAccessMessage">Sign in using the first registered passkey to manage additional passkeys.</p>
+                <div class="dashboard-passkey-access-actions">
+                    <button type="button" class="dashboard-passkey-secondary-btn" id="profilePasskeyAccessAction">Close</button>
+                </div>
             </div>
         </div>
 
@@ -736,10 +776,24 @@
     var passkeyTrigger = document.getElementById('profileRegisterPasskeyBtn');
     var passkeyModal = document.getElementById('profilePasskeyQuickModal');
     var passkeyCloseBtn = document.getElementById('profilePasskeyQuickClose');
+    var passkeyAccessModal = document.getElementById('profilePasskeyAccessModal');
+    var passkeyAccessCloseBtn = document.getElementById('profilePasskeyAccessClose');
+    var passkeyAccessActionBtn = document.getElementById('profilePasskeyAccessAction');
+    var passkeyAccessMessage = document.getElementById('profilePasskeyAccessMessage');
     var passkeyDeviceBtn = document.getElementById('profilePasskeyDeviceBtn');
     var passkeyPhoneBtn = document.getElementById('profilePasskeyPhoneBtn');
     var passkeyStatus = document.getElementById('profilePasskeyQuickStatus');
+    var passkeyListWrap = document.getElementById('profilePasskeyListWrap');
+    var passkeyNicknameBox = document.getElementById('profilePasskeyNicknameBox');
+    var passkeyNicknameTitle = document.getElementById('profilePasskeyNicknameTitle');
+    var passkeyNicknameHelp = document.getElementById('profilePasskeyNicknameHelp');
+    var passkeyNicknameInput = document.getElementById('profilePasskeyNicknameInput');
+    var passkeyNicknameCancelBtn = document.getElementById('profilePasskeyNicknameCancel');
+    var passkeyNicknameConfirmBtn = document.getElementById('profilePasskeyNicknameConfirm');
     var passkeyUtils = window.SQLSMSPasskey;
+    var passkeyPendingPreference = null;
+    var passkeyListUrl = '{{ route("passkey.manage.list") }}';
+    var passkeyDeleteUrlTemplate = '{{ route("passkey.manage.delete", ['passkeyId' => '__PASSKEY_ID__']) }}';
 
     function hideProfileMenu() {
         if (!menu || !trigger) return;
@@ -750,7 +804,8 @@
     function syncDashboardOverlayLock() {
         var hasGuide = guideModal && !guideModal.hidden;
         var hasPasskey = passkeyModal && !passkeyModal.hidden;
-        document.body.classList.toggle('dashboard-passkey-modal-open', !!(hasGuide || hasPasskey));
+        var hasPasskeyAccess = passkeyAccessModal && !passkeyAccessModal.hidden;
+        document.body.classList.toggle('dashboard-passkey-modal-open', !!(hasGuide || hasPasskey || hasPasskeyAccess));
     }
 
     function escapeGuideHtml(value) {
@@ -987,20 +1042,48 @@
         }, true);
     });
 
-    function setPasskeyModalOpen(open) {
-        if (!passkeyModal) return;
-        passkeyModal.hidden = !open;
-        syncDashboardOverlayLock();
-        if (!open) {
-            setPasskeyStatus('', '');
-            setPasskeyButtonsDisabled(false);
-        }
+    function getCsrfToken() {
+        var meta = document.querySelector('meta[name="csrf-token"]');
+        return meta ? meta.getAttribute('content') : '';
+    }
+
+    function parsePasskeyResponse(response) {
+        return response.text().then(function(text) {
+            var data = {};
+            try {
+                data = text ? JSON.parse(text) : {};
+            } catch (e) {
+                data = {};
+            }
+
+            return {
+                ok: response.ok,
+                status: response.status,
+                data: data
+            };
+        });
+    }
+
+    function buildPasskeyDeleteUrl(passkeyId) {
+        return passkeyDeleteUrlTemplate.replace('__PASSKEY_ID__', encodeURIComponent(String(passkeyId || '')));
     }
 
     function setPasskeyButtonsDisabled(disabled) {
-        [passkeyDeviceBtn, passkeyPhoneBtn].forEach(function(button) {
-            if (button) button.disabled = !!disabled;
+        [passkeyDeviceBtn, passkeyPhoneBtn, passkeyNicknameCancelBtn, passkeyNicknameConfirmBtn].forEach(function(button) {
+            if (button) {
+                button.disabled = !!disabled;
+            }
         });
+
+        if (passkeyNicknameInput) {
+            passkeyNicknameInput.disabled = !!disabled;
+        }
+
+        if (passkeyListWrap) {
+            passkeyListWrap.querySelectorAll('[data-passkey-delete-id]').forEach(function(button) {
+                button.disabled = !!disabled;
+            });
+        }
     }
 
     function setPasskeyStatus(type, message) {
@@ -1015,9 +1098,166 @@
         passkeyStatus.textContent = message;
     }
 
-    function getCsrfToken() {
-        var meta = document.querySelector('meta[name="csrf-token"]');
-        return meta ? meta.getAttribute('content') : '';
+    function renderPasskeyList(items) {
+        if (!passkeyListWrap) return;
+
+        if (!items || !items.length) {
+            passkeyListWrap.innerHTML = '<div class="dashboard-passkey-manage-empty">No passkeys saved yet.</div>';
+            return;
+        }
+
+        passkeyListWrap.innerHTML = [
+            '<div class="dashboard-passkey-table-scroll">',
+                '<table class="dashboard-passkey-table">',
+                    '<thead><tr><th>Passkey ID</th><th>Nickname</th><th>Last use</th><th>Action</th></tr></thead>',
+                    '<tbody>',
+                        items.map(function(item) {
+                            var passkeyId = item.user_passkeyid || item.id || '';
+                            return [
+                                '<tr>',
+                                    '<td class="dashboard-passkey-table-id">#', escapeGuideHtml(passkeyId), '</td>',
+                                    '<td>',
+                                        '<div class="dashboard-passkey-table-nickname">', escapeGuideHtml(item.nickname), '</div>',
+                                    '</td>',
+                                    '<td class="dashboard-passkey-table-lastuse">', escapeGuideHtml(item.last_use_label || 'Never used'), '</td>',
+                                    '<td class="dashboard-passkey-table-action">',
+                                        '<button type="button" class="dashboard-passkey-delete-btn" data-passkey-delete-id="', escapeGuideHtml(passkeyId), '" data-passkey-delete-name="', escapeGuideHtml(item.nickname), '">Delete</button>',
+                                    '</td>',
+                                '</tr>',
+                            ].join('');
+                        }).join(''),
+                    '</tbody>',
+                '</table>',
+            '</div>'
+        ].join('');
+    }
+
+    function loadPasskeyList() {
+        if (!passkeyListWrap) {
+            return Promise.resolve();
+        }
+
+        passkeyListWrap.innerHTML = '<div class="dashboard-passkey-manage-empty">Loading passkeys...</div>';
+
+        return fetch(passkeyListUrl, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
+        })
+        .then(parsePasskeyResponse)
+        .then(function(result) {
+            if (!result.ok) {
+                throw new Error((result.data && result.data.error) ? result.data.error : 'Could not load passkeys.');
+            }
+
+            renderPasskeyList(result.data.items || []);
+        })
+        .catch(function(err) {
+            passkeyListWrap.innerHTML = '<div class="dashboard-passkey-manage-empty is-error">' + escapeGuideHtml(err && err.message ? err.message : 'Could not load passkeys.') + '</div>';
+        });
+    }
+
+    function requestOpenPasskeyManager(onSuccess) {
+        return fetch(passkeyListUrl, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
+        })
+        .then(parsePasskeyResponse)
+        .then(function(result) {
+            if (!result.ok) {
+                throw new Error((result.data && result.data.error) ? result.data.error : 'Access denied.');
+            }
+
+            if (typeof onSuccess === 'function') {
+                onSuccess(result.data || {});
+            }
+        })
+        .catch(function(err) {
+            setPasskeyAccessModalOpen(true, err && err.message ? err.message : 'Access denied.');
+        });
+    }
+
+    function setPasskeyAccessModalOpen(open, message) {
+        if (!passkeyAccessModal) return;
+
+        if (passkeyAccessMessage && typeof message === 'string' && message.trim() !== '') {
+            passkeyAccessMessage.textContent = message;
+        }
+
+        passkeyAccessModal.hidden = !open;
+        syncDashboardOverlayLock();
+    }
+
+    function getPasskeyPromptCopy(preference) {
+        if (preference === 'phone') {
+            return {
+                title: 'Who will be using this passkey?',
+                help: '',
+                placeholder: 'My phone',
+                defaultValue: 'My phone'
+            };
+        }
+
+        return {
+            title: 'Who will be using this passkey?',
+            help: '',
+            placeholder: 'My laptop',
+            defaultValue: 'My laptop'
+        };
+    }
+
+    function setPasskeyNicknamePromptOpen(open, preference) {
+        if (!passkeyNicknameBox) return;
+
+        passkeyNicknameBox.hidden = !open;
+        passkeyPendingPreference = open ? (preference === 'phone' ? 'phone' : 'device') : null;
+
+        if (!open) {
+            if (passkeyNicknameInput) {
+                passkeyNicknameInput.value = '';
+            }
+            return;
+        }
+
+        var copy = getPasskeyPromptCopy(passkeyPendingPreference);
+        if (passkeyNicknameTitle) passkeyNicknameTitle.textContent = copy.title;
+        if (passkeyNicknameHelp) passkeyNicknameHelp.textContent = copy.help;
+        if (passkeyNicknameInput) {
+            passkeyNicknameInput.value = copy.defaultValue;
+            passkeyNicknameInput.setAttribute('placeholder', copy.placeholder);
+            window.setTimeout(function() {
+                passkeyNicknameInput.focus();
+                passkeyNicknameInput.select();
+            }, 30);
+        }
+    }
+
+    function setPasskeyModalOpen(open) {
+        if (!passkeyModal) return;
+        passkeyModal.hidden = !open;
+        if (open) {
+            setPasskeyAccessModalOpen(false);
+        }
+        syncDashboardOverlayLock();
+
+        if (open) {
+            setPasskeyStatus('', '');
+            setPasskeyButtonsDisabled(false);
+            setPasskeyNicknamePromptOpen(false);
+            loadPasskeyList();
+            return;
+        }
+
+        setPasskeyStatus('', '');
+        setPasskeyButtonsDisabled(false);
+        setPasskeyNicknamePromptOpen(false);
     }
 
     function passkeyErrorMessage(err) {
@@ -1040,12 +1280,34 @@
         }
 
         setPasskeyStatus('', '');
+        setPasskeyNicknamePromptOpen(true, preference);
+    }
+
+    function submitProfilePasskeyRegistration() {
+        if (!window.PublicKeyCredential || !passkeyUtils) {
+            setPasskeyStatus('error', 'Passkeys are not supported in this browser.');
+            return;
+        }
+
+        if (!passkeyPendingPreference) {
+            setPasskeyStatus('error', 'Choose where to save the passkey first.');
+            return;
+        }
+
+        var nickname = passkeyNicknameInput ? String(passkeyNicknameInput.value || '').trim() : '';
+        if (!nickname) {
+            setPasskeyStatus('error', 'Please name this passkey before continuing.');
+            if (passkeyNicknameInput) {
+                passkeyNicknameInput.focus();
+            }
+            return;
+        }
+
+        setPasskeyStatus('', '');
         setPasskeyButtonsDisabled(true);
 
-        var nickname = preference === 'phone' ? 'Phone passkey' : 'This device';
-
         passkeyUtils.register({
-            preference: preference,
+            preference: passkeyPendingPreference,
             optionsUrl: '{{ route("passkey.register.options") }}',
             verifyUrl: '{{ route("passkey.register.verify") }}',
             csrfToken: getCsrfToken(),
@@ -1054,14 +1316,15 @@
             }
         })
         .then(function(result) {
-            setPasskeyModalOpen(false);
-
             if (result && result.redirect) {
                 window.location.href = result.redirect;
                 return;
             }
 
-            showFlashMessage('success', 'Passkey registered successfully.');
+            setPasskeyNicknamePromptOpen(false);
+            setPasskeyButtonsDisabled(false);
+            setPasskeyStatus('success', 'Passkey registered successfully.');
+            return loadPasskeyList();
         })
         .catch(function(err) {
             setPasskeyButtonsDisabled(false);
@@ -1069,6 +1332,48 @@
             if (message) {
                 setPasskeyStatus('error', message);
             }
+        });
+    }
+
+    function deleteManagedPasskey(passkeyId, nickname) {
+        if (!passkeyId) {
+            return;
+        }
+
+            var confirmMessage = nickname
+                ? 'Confirm Remove "' + nickname + '" as your login passkey?'
+                : 'Confirm Remove this passkey as your login passkey?';
+            if (!window.confirm(confirmMessage)) {
+                return;
+            }
+
+        setPasskeyStatus('', '');
+        setPasskeyButtonsDisabled(true);
+
+        fetch(buildPasskeyDeleteUrl(passkeyId), {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': getCsrfToken()
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({})
+        })
+        .then(parsePasskeyResponse)
+        .then(function(result) {
+            if (!result.ok) {
+                throw new Error((result.data && result.data.error) ? result.data.error : 'Could not delete passkey.');
+            }
+
+            setPasskeyButtonsDisabled(false);
+            setPasskeyStatus('success', (result.data && result.data.message) ? result.data.message : 'Passkey deleted successfully.');
+            return loadPasskeyList();
+        })
+        .catch(function(err) {
+            setPasskeyButtonsDisabled(false);
+            setPasskeyStatus('error', err && err.message ? err.message : 'Could not delete passkey.');
         });
     }
 
@@ -1094,7 +1399,10 @@
             e.preventDefault();
             e.stopPropagation();
             hideProfileMenu();
-            setPasskeyModalOpen(true);
+            requestOpenPasskeyManager(function(result) {
+                setPasskeyModalOpen(true);
+                renderPasskeyList((result && result.items) || []);
+            });
         });
     }
 
@@ -1158,8 +1466,11 @@
 
     if (guideOpenPasskeyBtn) {
         guideOpenPasskeyBtn.addEventListener('click', function() {
-            setGuideModalOpen(false);
-            setPasskeyModalOpen(true);
+            requestOpenPasskeyManager(function(result) {
+                setGuideModalOpen(false);
+                setPasskeyModalOpen(true);
+                renderPasskeyList((result && result.items) || []);
+            });
         });
     }
 
@@ -1169,10 +1480,22 @@
         });
     }
 
-    if (passkeyModal) {
-        passkeyModal.addEventListener('click', function(e) {
-            if (e.target === passkeyModal) {
-                setPasskeyModalOpen(false);
+    if (passkeyAccessCloseBtn) {
+        passkeyAccessCloseBtn.addEventListener('click', function() {
+            setPasskeyAccessModalOpen(false);
+        });
+    }
+
+    if (passkeyAccessActionBtn) {
+        passkeyAccessActionBtn.addEventListener('click', function() {
+            setPasskeyAccessModalOpen(false);
+        });
+    }
+
+    if (passkeyAccessModal) {
+        passkeyAccessModal.addEventListener('click', function(e) {
+            if (e.target === passkeyAccessModal) {
+                setPasskeyAccessModalOpen(false);
             }
         });
     }
@@ -1189,12 +1512,49 @@
         });
     }
 
+    if (passkeyNicknameCancelBtn) {
+        passkeyNicknameCancelBtn.addEventListener('click', function() {
+            setPasskeyNicknamePromptOpen(false);
+            setPasskeyStatus('', '');
+        });
+    }
+
+    if (passkeyNicknameConfirmBtn) {
+        passkeyNicknameConfirmBtn.addEventListener('click', function() {
+            submitProfilePasskeyRegistration();
+        });
+    }
+
+    if (passkeyNicknameInput) {
+        passkeyNicknameInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                submitProfilePasskeyRegistration();
+            }
+        });
+    }
+
+    if (passkeyListWrap) {
+        passkeyListWrap.addEventListener('click', function(e) {
+            var deleteBtn = e.target.closest('[data-passkey-delete-id]');
+            if (!deleteBtn) {
+                return;
+            }
+
+            e.preventDefault();
+            deleteManagedPasskey(
+                deleteBtn.getAttribute('data-passkey-delete-id'),
+                deleteBtn.getAttribute('data-passkey-delete-name') || ''
+            );
+        });
+    }
+
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape' && guideModal && !guideModal.hidden) {
             setGuideModalOpen(false);
         }
-        if (e.key === 'Escape' && passkeyModal && !passkeyModal.hidden) {
-            setPasskeyModalOpen(false);
+        if (e.key === 'Escape' && passkeyAccessModal && !passkeyAccessModal.hidden) {
+            setPasskeyAccessModalOpen(false);
         }
     });
 

@@ -6,18 +6,22 @@
 @section('content')
 <div class="admin-dashboard-page">
 <section class="dashboard-metrics">
+    @php
+        $dashboardMetricDefaultRange = '30';
+        $dashboardMetricDefaultChanges = $dashboardMetricRangeChanges[$dashboardMetricDefaultRange] ?? [];
+    @endphp
     <div class="dashboard-metric-card">
         <div class="dashboard-metric-icon dashboard-metric-icon-leads"><i class="bi bi-graph-up-arrow"></i></div>
         <div class="dashboard-metric-label">Total Leads</div>
         <div class="dashboard-metric-value-row">
             <div class="dashboard-metric-value">{{ number_format($totalLeads) }}</div>
             @php
-                $p = (float)($pctLeads ?? 0);
+                $p = (float)($dashboardMetricDefaultChanges['leads'] ?? $pctLeads ?? 0);
                 $trendClass = $p > 0 ? 'dashboard-metric-pill-up' : ($p < 0 ? 'dashboard-metric-pill-down' : 'dashboard-metric-pill-neutral');
                 $trendSign = $p > 0 ? '+' : ($p < 0 ? '-' : '');
-                $trendText = $p == 0.0 ? 'No change vs last week' : ($trendSign . abs($p) . '% vs last week');
+                $trendText = $p == 0.0 ? 'No change vs previous 30 days' : ($trendSign . abs($p) . '% vs previous 30 days');
             @endphp
-            <span class="dashboard-metric-pill {{ $trendClass }}">{{ $trendText }}</span>
+            <span class="dashboard-metric-pill {{ $trendClass }}" data-dashboard-metric-trend="leads">{{ $trendText }}</span>
         </div>
     </div>
     <div class="dashboard-metric-card">
@@ -26,12 +30,12 @@
         <div class="dashboard-metric-value-row">
             <div class="dashboard-metric-value">{{ number_format($totalClosed) }}</div>
             @php
-                $p = (float)($pctClosed ?? 0);
+                $p = (float)($dashboardMetricDefaultChanges['closed'] ?? $pctClosed ?? 0);
                 $trendClass = $p > 0 ? 'dashboard-metric-pill-up' : ($p < 0 ? 'dashboard-metric-pill-down' : 'dashboard-metric-pill-neutral');
                 $trendSign = $p > 0 ? '+' : ($p < 0 ? '-' : '');
-                $trendText = $p == 0.0 ? 'No change vs last week' : ($trendSign . abs($p) . '% vs last week');
+                $trendText = $p == 0.0 ? 'No change vs previous 30 days' : ($trendSign . abs($p) . '% vs previous 30 days');
             @endphp
-            <span class="dashboard-metric-pill {{ $trendClass }}">{{ $trendText }}</span>
+            <span class="dashboard-metric-pill {{ $trendClass }}" data-dashboard-metric-trend="closed">{{ $trendText }}</span>
         </div>
     </div>
     <div class="dashboard-metric-card">
@@ -40,12 +44,12 @@
         <div class="dashboard-metric-value-row">
             <div class="dashboard-metric-value">{{ number_format($activeInquiries) }}</div>
             @php
-                $p = (float)($pctActive ?? 0);
+                $p = (float)($dashboardMetricDefaultChanges['active'] ?? $pctActive ?? 0);
                 $trendClass = $p > 0 ? 'dashboard-metric-pill-up' : ($p < 0 ? 'dashboard-metric-pill-down' : 'dashboard-metric-pill-neutral');
                 $trendSign = $p > 0 ? '+' : ($p < 0 ? '-' : '');
-                $trendText = $p == 0.0 ? 'No change vs last week' : ($trendSign . abs($p) . '% vs last week');
+                $trendText = $p == 0.0 ? 'No change vs previous 30 days' : ($trendSign . abs($p) . '% vs previous 30 days');
             @endphp
-            <span class="dashboard-metric-pill {{ $trendClass }}">{{ $trendText }}</span>
+            <span class="dashboard-metric-pill {{ $trendClass }}" data-dashboard-metric-trend="active">{{ $trendText }}</span>
         </div>
     </div>
     <div class="dashboard-metric-card">
@@ -54,12 +58,12 @@
         <div class="dashboard-metric-value-row">
             <div class="dashboard-metric-value">{{ $conversionRate }}%</div>
             @php
-                $p = (float)($conversionRateChange ?? 0);
+                $p = (float)($dashboardMetricDefaultChanges['conversion'] ?? $conversionRateChange ?? 0);
                 $trendClass = $p > 0 ? 'dashboard-metric-pill-up' : ($p < 0 ? 'dashboard-metric-pill-down' : 'dashboard-metric-pill-neutral');
                 $trendSign = $p > 0 ? '+' : ($p < 0 ? '-' : '');
-                $trendText = $p == 0.0 ? 'No change vs last week' : ($trendSign . abs($p) . '% vs last week');
+                $trendText = $p == 0.0 ? 'No change vs previous 30 days' : ($trendSign . abs($p) . '% vs previous 30 days');
             @endphp
-            <span class="dashboard-metric-pill {{ $trendClass }}">{{ $trendText }}</span>
+            <span class="dashboard-metric-pill {{ $trendClass }}" data-dashboard-metric-trend="conversion">{{ $trendText }}</span>
         </div>
     </div>
     <div class="dashboard-metric-card">
@@ -74,9 +78,9 @@
 <section class="dashboard-charts-container">
     <div class="dashboard-charts-container-header">
         <div class="dashboard-chart-tabs" id="closedCaseRangeTabs">
-            <button type="button" class="dashboard-chart-tab active" data-range="week">Week</button>
-            <button type="button" class="dashboard-chart-tab" data-range="month">Month</button>
-            <button type="button" class="dashboard-chart-tab" data-range="year">Year</button>
+            <button type="button" class="dashboard-chart-tab active" data-range="30">30 Days</button>
+            <button type="button" class="dashboard-chart-tab" data-range="60">60 Days</button>
+            <button type="button" class="dashboard-chart-tab" data-range="90">90 Days</button>
         </div>
     </div>
     <div class="dashboard-row">
@@ -85,15 +89,15 @@
                 <div class="dashboard-panel-title dashboard-chart-title">
                     <span class="dashboard-chart-title-text">Recent Referral Activity</span>
                     <i class="bi bi-info-circle dashboard-info-icon"
-                       title="Count of leads turning into Follow-Up status by dealer (weekly/monthly/yearly)."></i>
+                       title="Count of leads turning into Follow-Up status within the selected rolling day range."></i>
                 </div>
                 @php
-                    $p = (float)($pctReferral ?? 0);
+                    $p = (float)($dashboardReferralRangeChanges['30'] ?? 0);
                     $trendClass = $p > 0 ? 'dashboard-metric-pill-up' : ($p < 0 ? 'dashboard-metric-pill-down' : 'dashboard-metric-pill-neutral');
                     $trendSign = $p > 0 ? '+' : ($p < 0 ? '-' : '');
-                    $trendText = $p == 0.0 ? 'No change vs last week' : ($trendSign . abs($p) . '% vs last week');
+                    $trendText = $p == 0.0 ? 'No change vs previous 30 days' : ($trendSign . abs($p) . '% vs previous 30 days');
                 @endphp
-                <span class="dashboard-metric-pill {{ $trendClass }}">{{ $trendText }}</span>
+                <span class="dashboard-metric-pill {{ $trendClass }}" id="referralRangeTrendPill">{{ $trendText }}</span>
             </div>
             <div class="dashboard-panel-body">
                 <div class="dashboard-chart-container">
@@ -194,91 +198,109 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const ctx1 = document.getElementById('closedCaseChart')?.getContext('2d');
     const ctx2 = document.getElementById('referralChart')?.getContext('2d');
-    const weekLabels = @json($chartLabels);
-    const weekData = @json($chartData);
-    const monthLabels = @json($chartMonthLabels);
-    const monthData = @json($chartMonthData);
-    const yearLabels = @json($chartYearLabels);
-    const yearData = @json($chartYearData);
-    const referralWeekData = @json($referralWeekData);
-    const referralMonthData = @json($referralMonthData);
-    const referralYearData = @json($referralYearData);
-    const dashboardChartNow = {
-        year: {{ now()->year }},
-        month: {{ now()->month }},
-        day: {{ now()->day }}
-    };
+    const closedRanges = @json($dashboardClosedCaseRanges);
+    const referralRanges = @json($dashboardReferralRanges);
+    const referralRangeChanges = @json($dashboardReferralRangeChanges);
+    const metricRangeChanges = @json($dashboardMetricRangeChanges ?? []);
+    const referralTrendPill = document.getElementById('referralRangeTrendPill');
+    const metricTrendPills = Array.prototype.slice.call(document.querySelectorAll('[data-dashboard-metric-trend]'));
 
-    function buildDashboardMonthRange(labels, data) {
-        const bucketLabels = [];
-        const bucketData = [];
-        const bucketTooltips = [];
-        const monthStart = new Date(Date.UTC(dashboardChartNow.year, dashboardChartNow.month - 1, 1));
-        const firstWeekday = monthStart.getUTCDay();
-        const mondayOffset = firstWeekday === 0 ? 6 : firstWeekday - 1;
-        const daysInMonth = new Date(Date.UTC(dashboardChartNow.year, dashboardChartNow.month, 0)).getUTCDate();
-        const totalWeeks = Math.floor((mondayOffset + daysInMonth - 1) / 7) + 1;
-        const weekTotals = Array(totalWeeks).fill(0);
-
-        for (let index = 0; index < labels.length; index++) {
-            const dayNumber = parseInt(String(labels[index] ?? ''), 10);
-            if (!Number.isFinite(dayNumber)) {
-                continue;
-            }
-            const weekIndex = Math.floor((mondayOffset + dayNumber - 1) / 7);
-            if (weekIndex >= 0 && weekIndex < totalWeeks) {
-                weekTotals[weekIndex] += Number(data[index] || 0);
-            }
+    function buildWeeklyRange(range) {
+        if (!range || !Array.isArray(range.data) || !Array.isArray(range.tooltipTitles)) {
+            return { labels: [], data: [], tooltipTitles: [] };
         }
 
-        for (let weekIndex = 0; weekIndex < totalWeeks; weekIndex++) {
-            const calendarStartDay = 1 + (weekIndex * 7) - mondayOffset;
-            const calendarEndDay = calendarStartDay + 6;
-            const displayStartDay = Math.max(1, calendarStartDay);
-            const displayEndDay = Math.min(daysInMonth, calendarEndDay);
-            const startDate = new Date(Date.UTC(dashboardChartNow.year, dashboardChartNow.month - 1, displayStartDay));
-            const endDate = new Date(Date.UTC(dashboardChartNow.year, dashboardChartNow.month - 1, displayEndDay));
+        const labels = [];
+        const data = [];
+        const tooltipTitles = [];
+        const titles = range.tooltipTitles;
+        const values = range.data;
 
-            bucketLabels.push('Week ' + (weekIndex + 1));
-            bucketData.push(weekTotals[weekIndex]);
-            bucketTooltips.push(
-                startDate.toLocaleDateString('en-US', {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric',
-                    timeZone: 'UTC'
-                }) + ' - ' + endDate.toLocaleDateString('en-US', {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric',
-                    timeZone: 'UTC'
-                })
-            );
+        for (let startIndex = 0; startIndex < values.length; startIndex += 7) {
+            const endIndex = Math.min(startIndex + 6, values.length - 1);
+            let bucketTotal = 0;
+
+            for (let index = startIndex; index <= endIndex; index++) {
+                bucketTotal += Number(values[index] || 0);
+            }
+
+            labels.push('Week ' + (labels.length + 1));
+            tooltipTitles.push((titles[startIndex] || '') + ' - ' + (titles[endIndex] || ''));
+            data.push(bucketTotal);
         }
 
         return {
-            labels: bucketLabels,
-            data: bucketData,
-            tooltipTitles: bucketTooltips
+            labels: labels,
+            data: data,
+            tooltipTitles: tooltipTitles
         };
     }
 
-    const closedMonthRange = buildDashboardMonthRange(monthLabels, monthData);
-    const referralMonthRange = buildDashboardMonthRange(monthLabels, referralMonthData);
+    function buildDisplayRanges(sourceRanges) {
+        const displayRanges = {};
 
-    const ranges = {
-        week: { labels: weekLabels, data: weekData },
-        month: closedMonthRange,
-        year: { labels: yearLabels, data: yearData },
-    };
+        Object.keys(sourceRanges || {}).forEach(function(rangeKey) {
+            const rawRange = sourceRanges[rangeKey];
+            displayRanges[rangeKey] = (rangeKey === '60' || rangeKey === '90')
+                ? buildWeeklyRange(rawRange)
+                : rawRange;
+        });
 
-    const referralRanges = {
-        week: { labels: weekLabels, data: referralWeekData },
-        month: referralMonthRange,
-        year: { labels: yearLabels, data: referralYearData },
-    };
+        return displayRanges;
+    }
 
-    let activeRange = 'week';
+    const closedDisplayRanges = buildDisplayRanges(closedRanges);
+    const referralDisplayRanges = buildDisplayRanges(referralRanges);
+
+    function buildRangeTrendMeta(change, days) {
+        const numericChange = Number(change || 0);
+        const trendClass = numericChange > 0
+            ? 'dashboard-metric-pill-up'
+            : (numericChange < 0 ? 'dashboard-metric-pill-down' : 'dashboard-metric-pill-neutral');
+        const trendSign = numericChange > 0 ? '+' : (numericChange < 0 ? '-' : '');
+        const trendText = numericChange === 0
+            ? 'No change vs previous ' + days + ' days'
+            : (trendSign + Math.abs(numericChange) + '% vs previous ' + days + ' days');
+
+        return {
+            className: trendClass,
+            text: trendText
+        };
+    }
+
+    function updateReferralTrendPill(range) {
+        if (!referralTrendPill) {
+            return;
+        }
+
+        const meta = buildRangeTrendMeta(referralRangeChanges[range] || 0, range);
+        referralTrendPill.className = 'dashboard-metric-pill ' + meta.className;
+        referralTrendPill.textContent = meta.text;
+    }
+
+    function updateDashboardMetricTrendPills(range) {
+        metricTrendPills.forEach(function(pill) {
+            const metricKey = pill.getAttribute('data-dashboard-metric-trend') || '';
+            const rangeValues = metricRangeChanges[range] || {};
+            const meta = buildRangeTrendMeta(rangeValues[metricKey] || 0, range);
+            pill.className = 'dashboard-metric-pill ' + meta.className;
+            pill.textContent = meta.text;
+        });
+    }
+
+    function formatDashboardTooltipTitle(label, range, dataIndex) {
+        const titles = (closedDisplayRanges[range] && closedDisplayRanges[range].tooltipTitles)
+            ? closedDisplayRanges[range].tooltipTitles
+            : [];
+
+        if (Number.isInteger(dataIndex) && titles[dataIndex]) {
+            return titles[dataIndex];
+        }
+
+        return String(label);
+    }
+
+    let activeRange = '30';
     let closedChart = null;
     let referralChart = null;
 
@@ -316,51 +338,6 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
 
-    function getDashboardWeekTooltipDate(index) {
-        const today = new Date(Date.UTC(
-            dashboardChartNow.year,
-            dashboardChartNow.month - 1,
-            dashboardChartNow.day
-        ));
-        const weekday = today.getUTCDay();
-        const mondayOffset = weekday === 0 ? -6 : 1 - weekday;
-        const monday = new Date(today);
-        monday.setUTCDate(today.getUTCDate() + mondayOffset);
-        monday.setUTCDate(monday.getUTCDate() + index);
-        return monday;
-    }
-
-    function formatDashboardTooltipTitle(label, range, dataIndex) {
-        if (range === 'week' && Number.isInteger(dataIndex)) {
-            const fullDate = getDashboardWeekTooltipDate(dataIndex);
-            return fullDate.toLocaleDateString('en-US', {
-                weekday: 'short',
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric',
-                timeZone: 'UTC'
-            });
-        }
-
-        if (range === 'month' && Number.isInteger(dataIndex)) {
-            return closedMonthRange.tooltipTitles[dataIndex] || String(label);
-        }
-
-        if (range === 'year') {
-            const monthIndex = yearLabels.indexOf(String(label));
-            if (monthIndex >= 0) {
-                const fullDate = new Date(Date.UTC(dashboardChartNow.year, monthIndex, 1));
-                return fullDate.toLocaleDateString('en-US', {
-                    month: 'long',
-                    year: 'numeric',
-                    timeZone: 'UTC'
-                });
-            }
-        }
-
-        return String(label);
-    }
-
     function buildTooltipOptions(palette) {
         return {
             backgroundColor: palette.tooltipBg,
@@ -389,7 +366,11 @@ document.addEventListener('DOMContentLoaded', function() {
             x: {
                 ticks: {
                     color: palette.tick,
-                    font: { size: 11 }
+                    font: { size: 11 },
+                    autoSkip: true,
+                    maxTicksLimit: 10,
+                    maxRotation: 0,
+                    minRotation: 0
                 },
                 grid: {
                     color: palette.grid,
@@ -451,15 +432,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    if (ctx1 && weekData) {
+    if (ctx1 && closedDisplayRanges[activeRange]) {
         const palette = getDashboardChartPalette();
         closedChart = new Chart(ctx1, {
             type: 'bar',
             data: {
-                labels: weekLabels,
+                labels: closedDisplayRanges[activeRange].labels,
                 datasets: [{
                     label: 'Closed',
-                    data: weekData,
+                    data: closedDisplayRanges[activeRange].data,
                     backgroundColor: palette.closedFill,
                     borderColor: palette.closedBorder,
                     borderWidth: 1,
@@ -480,15 +461,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    if (ctx2 && referralWeekData) {
+    if (ctx2 && referralDisplayRanges[activeRange]) {
         const palette = getDashboardChartPalette();
         referralChart = new Chart(ctx2, {
             type: 'line',
             data: {
-                labels: weekLabels,
+                labels: referralDisplayRanges[activeRange].labels,
                 datasets: [{
                     label: 'Activity',
-                    data: referralWeekData,
+                    data: referralDisplayRanges[activeRange].data,
                     borderColor: palette.referralBorder,
                     backgroundColor: palette.referralFill,
                     fill: true,
@@ -522,25 +503,30 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('#closedCaseRangeTabs .dashboard-chart-tab[data-range]').forEach((btn) => {
         btn.addEventListener('click', () => {
             const range = btn.getAttribute('data-range');
-            if (!range || !ranges[range]) return;
+            if (!range || !closedDisplayRanges[range] || !referralDisplayRanges[range]) return;
 
             activeRange = range;
             document.querySelectorAll('#closedCaseRangeTabs .dashboard-chart-tab[data-range]').forEach((b) => b.classList.remove('active'));
             btn.classList.add('active');
 
             if (closedChart) {
-                closedChart.data.labels = ranges[range].labels;
-                closedChart.data.datasets[0].data = ranges[range].data;
+                closedChart.data.labels = closedDisplayRanges[range].labels;
+                closedChart.data.datasets[0].data = closedDisplayRanges[range].data;
                 closedChart.update();
             }
             if (referralChart) {
-                referralChart.data.labels = referralRanges[range].labels;
-                referralChart.data.datasets[0].data = referralRanges[range].data;
+                referralChart.data.labels = referralDisplayRanges[range].labels;
+                referralChart.data.datasets[0].data = referralDisplayRanges[range].data;
                 referralChart.update();
             }
+
+            updateDashboardMetricTrendPills(range);
+            updateReferralTrendPill(range);
         });
     });
 
+    updateDashboardMetricTrendPills(activeRange);
+    updateReferralTrendPill(activeRange);
     applyDashboardChartTheme();
 
     if (window.MutationObserver) {

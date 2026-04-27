@@ -48,7 +48,7 @@
                         @endif
                         <div class="dashboard-profile-actions">
                             <button type="button" class="dashboard-profile-passkey-link" id="profileRegisterPasskeyBtn">
-                                <span>Register passkey</span>
+                                <span>Manage Passkey</span>
                             </button>
                             <form action="{{ route('logout') }}" method="POST" class="dashboard-profile-signout-form">
                                 @csrf
