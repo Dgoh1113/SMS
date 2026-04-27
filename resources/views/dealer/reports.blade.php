@@ -131,17 +131,17 @@
             <form method="get" action="{{ route('dealer.reports') }}" class="reports-period-form reports-period-form-compact reports-period-form--dealer" id="reportsPeriodForm">
                 <div class="reports-period-quick-group">
                     <select name="period" id="reportsPeriodSelect" class="reports-period-select reports-period-select--dealer" aria-label="Report period">
-                        <option value="week" {{ ($period ?? 'month') === 'week' ? 'selected' : '' }}>Current Week</option>
-                        <option value="month" {{ ($period ?? 'month') === 'month' ? 'selected' : '' }}>Current Month</option>
-                        <option value="year" {{ ($period ?? 'month') === 'year' ? 'selected' : '' }}>Current Year</option>
-                        <option value="range" {{ ($period ?? 'month') === 'range' ? 'selected' : '' }}>Range</option>
+                        <option value="30_days" {{ ($period ?? '60_days') === '30_days' ? 'selected' : '' }}>30 Days</option>
+                        <option value="60_days" {{ ($period ?? '60_days') === '60_days' ? 'selected' : '' }}>60 Days</option>
+                        <option value="90_days" {{ ($period ?? '60_days') === '90_days' ? 'selected' : '' }}>90 Days</option>
+                        <option value="range" {{ ($period ?? '60_days') === 'range' ? 'selected' : '' }}>Range</option>
                     </select>
                 </div>
-                <div class="reports-period-range-inline{{ ($period ?? 'month') === 'range' ? '' : ' is-hidden' }}" id="reportsRangeInline">
+                <div class="reports-period-range-inline{{ ($period ?? '60_days') === 'range' ? '' : ' is-hidden' }}" id="reportsRangeInline">
                     <input type="date" name="from" id="reportsRangeFrom" class="reports-period-select reports-period-select--dealer reports-period-date" value="{{ $from ?? '' }}" aria-label="From date">
                     <input type="date" name="to" id="reportsRangeTo" class="reports-period-select reports-period-select--dealer reports-period-date" value="{{ $to ?? '' }}" aria-label="To date">
                 </div>
-                <button type="button" class="report-filter-export reports-period-export" data-export-report-pdf data-export-title="Dealer Performance Report - {{ $periodLabel ?? 'Current Month' }}" data-export-target=".dashboard-content.reports-page">Export PDF</button>
+                <button type="button" class="report-filter-export reports-period-export" data-export-report-pdf data-export-title="Dealer Performance Report - {{ $periodLabel ?? '60 Days' }}" data-export-target=".dashboard-content.reports-page">Export PDF</button>
             </form>
         </div>
     </header>
@@ -259,7 +259,7 @@
             <div class="dashboard-panel-header">
                 <div class="reports-inquiry-heading">
                     <div class="dashboard-panel-title">Inquiry Trends</div>
-                    <div class="reports-inquiry-subtitle">Inquiries for {{ $periodLabel ?? 'Current Month' }}</div>
+                    <div class="reports-inquiry-subtitle">Inquiries for {{ $periodLabel ?? '60 Days' }}</div>
                 </div>
                 <div class="reports-inquiry-meta">
                     <span class="reports-inquiry-chip">
@@ -286,7 +286,7 @@
             <div class="dashboard-panel-header">
                 <div class="dealer-reports-status-heading">
                     <div class="dashboard-panel-title">Status Report</div>
-                    <div class="dealer-reports-status-subtitle">Current status distribution for {{ $periodLabel ?? 'Current Month' }}</div>
+                    <div class="dealer-reports-status-subtitle">Current status distribution for {{ $periodLabel ?? '60 Days' }}</div>
                 </div>
             </div>
             <div class="dashboard-panel-body report-status-body">
@@ -323,7 +323,7 @@
         <div class="dashboard-panel-header">
             <div class="reports-product-heading">
                 <div class="dashboard-panel-title">Product Conversion Rate</div>
-                <div class="reports-product-subtitle">Closed-case conversions by product for {{ $periodLabel ?? 'Current Month' }}</div>
+                <div class="reports-product-subtitle">Closed-case conversions by product for {{ $periodLabel ?? '60 Days' }}</div>
             </div>
             <div class="reports-product-scale" aria-hidden="true">
                 <span class="reports-product-scale-chip"><span class="reports-product-scale-dot reports-product-scale-dot--high"></span>High</span>
@@ -514,7 +514,7 @@ function initDealerReportsPage() {
         try {
             var rawInquiryLabels = @json(array_values($trendLabels ?? []));
             var inquiryValues = @json(array_values($inquiryTrendData ?? []));
-            var reportPeriod = @json($period ?? 'month');
+            var reportPeriod = @json($period ?? '60_days');
             var currentMonthName = @json(now()->format('F'));
             var currentYear = @json(now()->format('Y'));
             var currentMonthNumber = @json((int) now()->format('n'));

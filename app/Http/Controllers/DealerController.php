@@ -1804,14 +1804,14 @@ class DealerController extends Controller
     public function reports(Request $request): View
     {
         $dealerId = $request->session()->get('user_id');
-        $period = $request->get('period', 'month');
+        $period = $request->get('period', '60_days');
         $fromInput = $request->get('from');
         $toInput = $request->get('to');
 
     $dateFrom = null;
     $dateTo = null;
-    $periodLabel = 'Current Month';
-    $trendLabels = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+    $periodLabel = '';
+    $trendLabels = [];
 
     $days = 0;
     if ($period === 'range' && !empty($fromInput) && !empty($toInput)) {
@@ -1822,26 +1822,34 @@ class DealerController extends Controller
             : $dateFrom->format('M j, Y') . ' – ' . $dateTo->format('M j, Y');
         $days = (int) ($dateFrom->diffInDays($dateTo) + 1);
         $days = max(1, $days);
-        $trendLabels = $days <= 7
-            ? array_map(fn($i) => $dateFrom->copy()->addDays($i)->format('D'), range(0, $days - 1))
-            : ($days <= 31 ? ['Week 1', 'Week 2', 'Week 3', 'Week 4'] : array_map(fn($m) => Carbon::create()->month($m)->format('M'), range(1, 12)));
-    } elseif ($period === 'week') {
-        $dateFrom = Carbon::now()->startOfWeek(Carbon::MONDAY);
-        $dateTo = Carbon::now()->endOfWeek(Carbon::SUNDAY);
-        $periodLabel = 'Current Week';
-        $trendLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-        $days = 7;
-    } elseif ($period === 'year') {
-        $dateFrom = Carbon::now()->startOfYear();
-        $dateTo = Carbon::now()->endOfYear();
-        $periodLabel = 'Current Year';
-        $trendLabels = array_map(fn($m) => Carbon::create()->month($m)->format('M'), range(1, 12));
+        
+        if ($days <= 7) {
+            $trendLabels = array_map(fn($i) => $dateFrom->copy()->addDays($i)->format('D'), range(0, $days - 1));
+        } elseif ($days <= 31) {
+            $trendLabels = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+        } else {
+            $trendLabels = ['Period 1', 'Period 2', 'Period 3', 'Period 4', 'Period 5', 'Period 6'];
+        }
+    } elseif ($period === '30_days') {
+        $dateFrom = Carbon::now()->subDays(30)->startOfDay();
+        $dateTo = Carbon::now()->endOfDay();
+        $days = (int) ($dateFrom->diffInDays($dateTo) + 1);
+        $trendLabels = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+    } elseif ($period === '90_days') {
+        $dateFrom = Carbon::now()->subDays(90)->startOfDay();
+        $dateTo = Carbon::now()->endOfDay();
+        $days = (int) ($dateFrom->diffInDays($dateTo) + 1);
+        $trendLabels = ['Period 1', 'Period 2', 'Period 3'];
     } else {
-        $period = 'month';
-        $dateFrom = Carbon::now()->startOfMonth();
-        $dateTo = Carbon::now()->endOfMonth();
-        $periodLabel = 'Current Month';
-        $trendLabels = array_map(fn($i) => str_pad((string) $i, 2, '0', STR_PAD_LEFT), range(1, $dateFrom->daysInMonth));
+        $period = '60_days';
+        $dateFrom = Carbon::now()->subDays(60)->startOfDay();
+        $dateTo = Carbon::now()->endOfDay();
+        $days = (int) ($dateFrom->diffInDays($dateTo) + 1);
+        $trendLabels = ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Week 7', 'Week 8'];
+    }
+
+    if ($period !== 'range' && $dateFrom && $dateTo) {
+        $periodLabel = $dateFrom->format('M j, Y') . ' - ' . $dateTo->format('M j, Y');
     }
 
     $statusMap = [
@@ -1954,7 +1962,7 @@ class DealerController extends Controller
         $totalInquiry = (int) ($totalRow->CNT ?? 0);
 
         $numBuckets = count($trendLabels);
-        if ($period === 'week' || $period === 'month' || ($period === 'range' && $days <= 7)) {
+        if ($days <= 7) {
             $dayCounts = [];
             for ($i = 0; $i < $numBuckets; $i++) {
                 $d = $dateFrom->copy()->addDays($i)->format('Y-m-d');
@@ -1969,28 +1977,10 @@ class DealerController extends Controller
                 $dayCounts[] = (int) ($row->CNT ?? 0);
             }
             $inquiryTrendData = $dayCounts;
-        } elseif ($period === 'year' || ($period === 'range' && $days > 31)) {
-            $monthCounts = [];
-            $y = $dateFrom->year;
-            for ($m = 1; $m <= 12; $m++) {
-                $row = DB::selectOne(
-                    'SELECT COUNT(*) AS "CNT"
-                     FROM "LEAD" l
-                     JOIN (' . $dealerPendingDateSql . ') p ON p."LEADID" = l."LEADID"
-                     WHERE l."ASSIGNED_TO" = ?
-                       AND p."PENDING_AT" IS NOT NULL
-                       AND p."PENDING_AT" >= ? AND p."PENDING_AT" <= ?
-                       AND EXTRACT(YEAR FROM p."PENDING_AT") = ?
-                       AND EXTRACT(MONTH FROM p."PENDING_AT") = ?',
-                    ['PENDING', $dealerId, $df, $dt, $y, $m]
-                );
-                $monthCounts[] = (int) ($row->CNT ?? 0);
-            }
-            $inquiryTrendData = $monthCounts;
-        } elseif ($period === 'range' && $days >= 8 && $days <= 31) {
-            $bucketDays = (int) ceil($days / 4);
-            $weekCounts = [];
-            for ($i = 0; $i < 4; $i++) {
+        } else {
+            $bucketDays = max(1, (int) ceil($days / $numBuckets));
+            $bucketCounts = [];
+            for ($i = 0; $i < $numBuckets; $i++) {
                 $bStart = $dateFrom->copy()->addDays($i * $bucketDays)->startOfDay()->format('Y-m-d H:i:s');
                 $bEnd = $dateFrom->copy()->addDays(min(($i + 1) * $bucketDays, $days) - 1)->endOfDay()->format('Y-m-d H:i:s');
                 $row = DB::selectOne(
@@ -2001,9 +1991,9 @@ class DealerController extends Controller
                        AND p."PENDING_AT" >= ? AND p."PENDING_AT" <= ?',
                     ['PENDING', $dealerId, $bStart, $bEnd]
                 );
-                $weekCounts[] = (int) ($row->CNT ?? 0);
+                $bucketCounts[] = (int) ($row->CNT ?? 0);
             }
-            $inquiryTrendData = $weekCounts;
+            $inquiryTrendData = $bucketCounts;
         }
 
         $statusCounts = $buildStatusCounts($dateFrom, $dateTo);

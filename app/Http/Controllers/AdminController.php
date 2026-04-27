@@ -2347,25 +2347,51 @@ class AdminController extends Controller
 
     public function reports(Request $request): View
     {
-        $now = now();
-        $year = (int) $request->query('year', (int) $now->format('Y'));
-        $month = (int) $request->query('month', (int) $now->format('n'));
         $selectedReportScope = $this->resolveAdminReportScope($request);
         $reportScopeOptions = $this->adminReportScopeOptions();
-        if ($year < 2000 || $year > 2100) {
-            $year = (int) $now->format('Y');
+
+        $daysParam = $request->query('days', '60');
+        $days = (int) $daysParam;
+        if (!in_array($days, [30, 60, 90], true)) {
+            $days = 60;
+        $fromParam = trim((string) $request->query('from', ''));
+        $toParam = trim((string) $request->query('to', ''));
+        $useCustom = $fromParam !== '' && $toParam !== '';
+
+        if ($useCustom) {
+            try {
+                $startDate = Carbon::parse($fromParam)->startOfDay();
+                $endDate = Carbon::parse($toParam)->endOfDay();
+                if ($startDate->gt($endDate)) {
+                    $useCustom = false;
+                } else {
+                    $days = (int) max(1, $startDate->diffInDays($endDate) + 1);
+                }
+            } catch (\Throwable $e) {
+                $useCustom = false;
+            }
         }
-        if ($month < 1 || $month > 12) {
-            $month = (int) $now->format('n');
+
+        $startDate = Carbon::now()->subDays($days)->startOfDay();
+        $endDate = Carbon::now()->endOfDay();
+        if (!$useCustom) {
+            $days = (int) $daysParam;
+            if (!in_array($days, [30, 60, 90], true)) {
+                $days = 60;
+            }
+            $startDate = Carbon::now()->subDays($days - 1)->startOfDay();
+            $endDate = Carbon::now()->endOfDay();
         }
-        $selectedDate = Carbon::create($year, $month, 1, 0, 0, 0);
-        $prevDate = (clone $selectedDate)->subMonth();
-        $selectedMonth = (int) $selectedDate->format('n');
-        $selectedYear = (int) $selectedDate->format('Y');
-        $selectedMonthName = $selectedDate->format('F');
-        $selectedDaysInMonth = (int) $selectedDate->daysInMonth;
-        $prevMonth = (int) $prevDate->format('n');
-        $prevYear = (int) $prevDate->format('Y');
+
+        $periodLabel = $startDate->format('M j, Y') . ' - ' . $endDate->format('M j, Y');
+        $startStr = $startDate->format('Y-m-d H:i:s');
+        $endStr = $endDate->format('Y-m-d H:i:s');
+
+        $currentRangeDays = (int) ($startDate->diffInDays($endDate) + 1);
+        $prevStartDate = $startDate->copy()->subDays($currentRangeDays)->startOfDay();
+        $prevEndDate = $startDate->copy()->subSecond();
+        $prevStartStr = $prevStartDate->format('Y-m-d H:i:s');
+        $prevEndStr = $prevEndDate->format('Y-m-d H:i:s');
 
         [$leadScopeSql, $leadScopeBindings] = $this->buildAdminReportScopeSql(
             $selectedReportScope,
@@ -2401,10 +2427,10 @@ class AdminController extends Controller
             'SELECT l."CURRENTSTATUS" AS status, COUNT(*) AS c
              FROM "LEAD" l
              LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
-             WHERE EXTRACT(YEAR FROM l."CREATEDAT") = ? AND EXTRACT(MONTH FROM l."CREATEDAT") = ?
+             WHERE l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
              ' . $leadScopeSql . '
              GROUP BY l."CURRENTSTATUS"',
-            array_merge([$selectedYear, $selectedMonth], $leadScopeBindings)
+            array_merge([$startStr, $endStr], $leadScopeBindings)
         );
         $leadStatus = [
             'Open' => 0,
@@ -2424,10 +2450,10 @@ class AdminController extends Controller
             'SELECT l."CURRENTSTATUS" AS status, COUNT(*) AS c
              FROM "LEAD" l
              LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
-             WHERE EXTRACT(YEAR FROM l."CREATEDAT") = ? AND EXTRACT(MONTH FROM l."CREATEDAT") = ?
+             WHERE l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
              ' . $leadScopeSql . '
              GROUP BY l."CURRENTSTATUS"',
-            array_merge([$prevYear, $prevMonth], $leadScopeBindings)
+            array_merge([$prevStartStr, $prevEndStr], $leadScopeBindings)
         );
         $lastMonthLeadStatus = [
             'Open' => 0,
@@ -2472,7 +2498,7 @@ class AdminController extends Controller
              JOIN (
                  SELECT "LEADID", MAX("CREATIONDATE") AS max_created
                  FROM "LEAD_ACT"
-                 WHERE EXTRACT(YEAR FROM "CREATIONDATE") = ? AND EXTRACT(MONTH FROM "CREATIONDATE") = ?
+                 WHERE "CREATIONDATE" >= ? AND "CREATIONDATE" <= ?
                  GROUP BY "LEADID"
              ) m ON m."LEADID" = a."LEADID" AND m.max_created = a."CREATIONDATE"
              JOIN "LEAD" l ON l."LEADID" = a."LEADID"
@@ -2480,7 +2506,7 @@ class AdminController extends Controller
              WHERE 1 = 1
              ' . $leadScopeSql . '
              GROUP BY a."STATUS"',
-            array_merge([$selectedYear, $selectedMonth], $leadScopeBindings)
+            array_merge([$startStr, $endStr], $leadScopeBindings)
         );
         $activityStatus = [
             'Created' => 0,
@@ -2506,7 +2532,7 @@ class AdminController extends Controller
              JOIN (
                  SELECT "LEADID", MAX("CREATIONDATE") AS max_created
                  FROM "LEAD_ACT"
-                 WHERE EXTRACT(YEAR FROM "CREATIONDATE") = ? AND EXTRACT(MONTH FROM "CREATIONDATE") = ?
+                 WHERE "CREATIONDATE" >= ? AND "CREATIONDATE" <= ?
                  GROUP BY "LEADID"
              ) m ON m."LEADID" = a."LEADID" AND m.max_created = a."CREATIONDATE"
              JOIN "LEAD" l ON l."LEADID" = a."LEADID"
@@ -2514,7 +2540,7 @@ class AdminController extends Controller
              WHERE 1 = 1
              ' . $leadScopeSql . '
              GROUP BY a."STATUS"',
-            array_merge([$prevYear, $prevMonth], $leadScopeBindings)
+            array_merge([$prevStartStr, $prevEndStr], $leadScopeBindings)
         );
         $lastMonthActivity = [
             'Created' => 0,
@@ -2538,10 +2564,10 @@ class AdminController extends Controller
             'SELECT p."STATUS" AS status, COUNT(*) AS c
              FROM "REFERRER_PAYOUT" p
              LEFT JOIN "USERS" u ON u."USERID" = p."USERID"
-             WHERE EXTRACT(YEAR FROM p."DATEGENERATED") = ? AND EXTRACT(MONTH FROM p."DATEGENERATED") = ?
+             WHERE p."DATEGENERATED" >= ? AND p."DATEGENERATED" <= ?
              ' . $payoutScopeSql . '
              GROUP BY p."STATUS"',
-            array_merge([$selectedYear, $selectedMonth], $payoutScopeBindings)
+            array_merge([$startStr, $endStr], $payoutScopeBindings)
         );
         $payoutStatus = [
             'Awaiting Deal Completion' => 0,
@@ -2560,10 +2586,10 @@ class AdminController extends Controller
             'SELECT p."STATUS" AS status, COUNT(*) AS c
              FROM "REFERRER_PAYOUT" p
              LEFT JOIN "USERS" u ON u."USERID" = p."USERID"
-             WHERE EXTRACT(YEAR FROM p."DATEGENERATED") = ? AND EXTRACT(MONTH FROM p."DATEGENERATED") = ?
+             WHERE p."DATEGENERATED" >= ? AND p."DATEGENERATED" <= ?
              ' . $payoutScopeSql . '
              GROUP BY p."STATUS"',
-            array_merge([$prevYear, $prevMonth], $payoutScopeBindings)
+            array_merge([$prevStartStr, $prevEndStr], $payoutScopeBindings)
         );
         $lastMonthPayout = [
             'Awaiting Deal Completion' => 0,
@@ -2577,24 +2603,35 @@ class AdminController extends Controller
             }
         }
 
+        // Inquiry trend for period (leads created)
         // Inquiry trend for current month (leads created)
         $trendRows = DB::select(
-            'SELECT EXTRACT(DAY FROM l."CREATEDAT") AS d, COUNT(*) AS c
+            'SELECT CAST(l."CREATEDAT" AS DATE) AS d, COUNT(*) AS c
              FROM "LEAD" l
              LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
-             WHERE EXTRACT(MONTH FROM l."CREATEDAT") = ? AND EXTRACT(YEAR FROM l."CREATEDAT") = ?
+             WHERE l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
              ' . $leadScopeSql . '
-             GROUP BY EXTRACT(DAY FROM l."CREATEDAT")
-             ORDER BY d',
-            array_merge([$selectedMonth, $selectedYear], $leadScopeBindings)
+             GROUP BY CAST(l."CREATEDAT" AS DATE)
+             ORDER BY CAST(l."CREATEDAT" AS DATE)',
+            array_merge([$startStr, $endStr], $leadScopeBindings)
         );
-        $inquiryTrend = [];
         $trendByDay = [];
+        for ($i = 0; $i < $currentRangeDays; $i++) {
+            $dateKey = $startDate->copy()->addDays($i)->format('Y-m-d');
+            $trendByDay[$dateKey] = 0;
+        }
         foreach ($trendRows as $row) {
-            $day = (int) $get($row, 'd');
-            $count = (int) $get($row, 'c');
-            $inquiryTrend[] = ['day' => $day, 'count' => $count];
-            $trendByDay[$day] = $count;
+            $d = $get($row, 'd');
+            if ($d) {
+                $dateKey = Carbon::parse($d)->format('Y-m-d');
+                if (isset($trendByDay[$dateKey])) {
+                    $trendByDay[$dateKey] += (int) $get($row, 'c');
+                }
+            }
+        }
+        $inquiryTrend = [];
+        foreach ($trendByDay as $dayKey => $count) {
+            $inquiryTrend[] = ['day' => Carbon::parse($dayKey)->format('M j'), 'count' => $count];
         }
 
         $currentMonthTotal = array_sum($trendByDay);
@@ -2602,9 +2639,9 @@ class AdminController extends Controller
             'SELECT COUNT(*) AS c
              FROM "LEAD" l
              LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
-             WHERE EXTRACT(YEAR FROM l."CREATEDAT") = ? AND EXTRACT(MONTH FROM l."CREATEDAT") = ?
+             WHERE l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
              ' . $leadScopeSql,
-            array_merge([$prevYear, $prevMonth], $leadScopeBindings)
+            array_merge([$prevStartStr, $prevEndStr], $leadScopeBindings)
         );
         $lastMonthTotal = (int) ($lastMonthRows[0]->c ?? 0);
         $inquiryTrendPercentChange = $lastMonthTotal > 0
@@ -2652,10 +2689,10 @@ class AdminController extends Controller
              LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
              WHERE a."DEALTPRODUCT" IS NOT NULL
                AND TRIM(a."DEALTPRODUCT") <> \'\'
-               AND EXTRACT(MONTH FROM a."CREATIONDATE") = ?
-               AND EXTRACT(YEAR FROM a."CREATIONDATE") = ?
+               AND a."CREATIONDATE" >= ?
+               AND a."CREATIONDATE" <= ?
                ' . $leadScopeSql,
-            array_merge([$selectedMonth, $selectedYear], $leadScopeBindings)
+            array_merge([$startStr, $endStr], $leadScopeBindings)
         );
         foreach ($dealRows as $row) {
             $val = trim((string) ($get($row, 'dealt') ?? ''));
@@ -2690,20 +2727,18 @@ class AdminController extends Controller
             'inquiryTrend' => $inquiryTrend,
             'inquiryTrendPercentChange' => $inquiryTrendPercentChange,
             'productConversion' => $productConversion,
-            'selectedMonth' => $selectedMonth,
-            'selectedYear' => $selectedYear,
-            'selectedMonthName' => $selectedMonthName,
-            'selectedDaysInMonth' => $selectedDaysInMonth,
+            'days' => $days,
+            'periodLabel' => $periodLabel,
             'selectedReportScope' => $selectedReportScope,
             'reportScopeOptions' => $reportScopeOptions,
-            'monthOptions' => range(1, 12),
-            'yearOptions' => range(((int) $now->format('Y')) - 4, ((int) $now->format('Y'))),
+            'from' => $useCustom ? $fromParam : null,
+            'to' => $useCustom ? $toParam : null,
         ]);
     }
 
     public function reportsV2(Request $request): View
     {
-        $daysParam = $request->query('days', '90');
+        $daysParam = $request->query('days', '60');
         $compareDaysParam = $request->query('compare_days', '30');
         $primaryFrom = trim((string) $request->query('primary_from', ''));
         $primaryTo = trim((string) $request->query('primary_to', ''));
@@ -2739,7 +2774,7 @@ class AdminController extends Controller
         if (!$useCustomPrimary) {
             $days = (int) $daysParam;
             if (!in_array($days, [30, 60, 90], true)) {
-                $days = 90;
+                $days = 60;
             }
         }
 
@@ -3150,6 +3185,11 @@ class AdminController extends Controller
             'top10Failed' => $top10Failed,
             'top10Closed' => $top10Closed,
             'chartDays' => $days,
+            'primaryFrom' => $useCustomPrimary ? $primaryFrom : null,
+            'primaryTo' => $useCustomPrimary ? $primaryTo : null,
+            'compareFrom' => $useCustomCompare ? $compareFrom : null,
+            'compareTo' => $useCustomCompare ? $compareTo : null,
+            'compareDays' => $compareDays,
         ]);
     }
 
@@ -3177,24 +3217,43 @@ class AdminController extends Controller
 
     public function reportsRevenue(Request $request): View
     {
-        $quarter = strtoupper((string) $request->query('quarter', ''));
-        $year = (int) $request->query('year', (int) now()->format('Y'));
         $selectedReportScope = $this->resolveAdminReportScope($request);
         $reportScopeOptions = $this->adminReportScopeOptions();
 
-        if (!in_array($quarter, ['Q1', 'Q2', 'Q3', 'Q4'], true)) {
-            $m = (int) now()->format('n');
-            $q = (int) ceil($m / 3);
-            $quarter = 'Q' . $q;
-        }
-        if ($year < 2000 || $year > 2100) {
-            $year = (int) now()->format('Y');
+        $daysParam = $request->query('days', '60');
+        $days = (int) $daysParam;
+        if (!in_array($days, [30, 60, 90], true)) {
+            $days = 60;
+        $fromParam = trim((string) $request->query('from', ''));
+        $toParam = trim((string) $request->query('to', ''));
+        $useCustom = $fromParam !== '' && $toParam !== '';
+
+        if ($useCustom) {
+            try {
+                $start = Carbon::parse($fromParam)->startOfDay();
+                $end = Carbon::parse($toParam)->endOfDay();
+                if ($start->gt($end)) {
+                    $useCustom = false;
+                } else {
+                    $days = (int) max(1, $start->diffInDays($end) + 1);
+                }
+            } catch (\Throwable $e) {
+                $useCustom = false;
+            }
         }
 
-        $qNum = (int) substr($quarter, 1, 1);
-        $startMonth = ($qNum - 1) * 3 + 1;
-        $start = Carbon::create($year, $startMonth, 1, 0, 0, 0);
-        $end = (clone $start)->addMonths(3)->subSecond(); // inclusive end
+        $start = Carbon::now()->subDays($days)->startOfDay();
+        $end = Carbon::now()->endOfDay();
+        if (!$useCustom) {
+            $days = (int) $daysParam;
+            if (!in_array($days, [30, 60, 90], true)) {
+                $days = 60;
+            }
+            $start = Carbon::now()->subDays($days - 1)->startOfDay();
+            $end = Carbon::now()->endOfDay();
+        }
+
+        $periodLabel = $start->format('M j, Y') . ' - ' . $end->format('M j, Y');
 
         $startStr = $start->format('Y-m-d H:i:s');
         $endStr = $end->format('Y-m-d H:i:s');
@@ -3368,11 +3427,12 @@ class AdminController extends Controller
 
         return view('admin.reports_revenue', [
             'currentPage' => 'reports',
-            'selectedQuarter' => $quarter,
-            'selectedYear' => $year,
+            'days' => $days,
+            'periodLabel' => $periodLabel,
             'selectedReportScope' => $selectedReportScope,
             'reportScopeOptions' => $reportScopeOptions,
-            'yearOptions' => range(((int) now()->format('Y')) - 4, ((int) now()->format('Y'))),
+            'from' => $useCustom ? $fromParam : null,
+            'to' => $useCustom ? $toParam : null,
             'totalVolume' => $totalVolume,
             'avgRejectionRate' => $avgRejection,
             'topProductDealer' => $topProductDealer,
@@ -4066,13 +4126,3 @@ class AdminController extends Controller
         }
     }
 }
-
-
-
-
-
-
-
-
-
-

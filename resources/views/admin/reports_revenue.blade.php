@@ -12,13 +12,29 @@
         if ($currentReportScope !== '') {
             $reportTabQuery['report_scope'] = $currentReportScope;
         }
+        $periodOptionLabels = [
+            30 => '30 Days',
+            60 => '60 Days',
+            90 => '90 Days',
+        ];
+        $selectedDays = (int) ($days ?? request('days', 60));
+        if (!isset($periodOptionLabels[$selectedDays])) {
+            $selectedDays = 60;
+        }
+        $selectedPeriodOptionLabel = $periodOptionLabels[$selectedDays];
+        $displayPeriodLabel = trim((string) ($periodLabel ?? '')) !== '' ? (string) ($periodLabel ?? '') : $selectedPeriodOptionLabel;
+        $exportScopeLabel = $reportScopeOptions[$selectedReportScope ?? 'all']['label'] ?? 'All';
+        $revenueExportTitle = 'Dealer Revenue Production Report - ' . $displayPeriodLabel;
+        if ($exportScopeLabel !== 'All') {
+            $revenueExportTitle .= ' - ' . $exportScopeLabel;
+        }
     @endphp
     <div class="reports-tabs-row rrp-tabs-row">
         <nav class="reports-tabs-nav" aria-label="Report views">
             <a href="{{ route('admin.reports', $reportTabQuery) }}"
                class="reports-tab-link {{ request()->routeIs('admin.reports') ? 'is-active' : '' }}">
                 <i class="bi bi-bar-chart-line reports-tab-icon" aria-hidden="true"></i>
-                <span>Monthly Performance</span>
+                <span>Performance Analytics</span>
             </a>
             <a href="{{ route('admin.reports.v2', $reportTabQuery) }}"
                class="reports-tab-link {{ request()->routeIs('admin.reports.v2') ? 'is-active' : '' }}">
@@ -36,14 +52,9 @@
     <div class="rrp-filter-row">
         <form method="GET" class="rrp-filter-form" data-auto-submit-report-filters>
             <div class="rrp-period-date-group" aria-label="Report date filter">
-                <select name="quarter" class="rrp-filter-select rrp-filter-select--quarter" aria-label="Select quarter">
-                    @foreach (['Q1', 'Q2', 'Q3', 'Q4'] as $q)
-                        <option value="{{ $q }}" {{ ($selectedQuarter ?? 'Q1') === $q ? 'selected' : '' }}>{{ $q }}</option>
-                    @endforeach
-                </select>
-                <select name="year" class="rrp-filter-select rrp-filter-select--year" aria-label="Select year">
-                    @foreach (($yearOptions ?? []) as $y)
-                        <option value="{{ $y }}" {{ (int) ($selectedYear ?? now()->format('Y')) === (int) $y ? 'selected' : '' }}>{{ $y }}</option>
+                <select name="days" class="rrp-filter-select rrp-filter-select--quarter" aria-label="Select report period">
+                    @foreach ($periodOptionLabels as $value => $label)
+                        <option value="{{ $value }}" {{ $selectedDays === (int) $value ? 'selected' : '' }}>{{ $label }}</option>
                     @endforeach
                 </select>
             </div>
@@ -59,7 +70,7 @@
                 'showApply' => false,
                 'showExport' => true,
                 'showClear' => false,
-                'exportTitle' => 'Dealer Revenue Production Report',
+                'exportTitle' => $revenueExportTitle,
                 'exportTarget' => '.rrp-page',
             ])
         </form>
@@ -69,18 +80,18 @@
         <div class="rrp-metric-card">
             <div class="rrp-metric-label">Total Inquiries</div>
             <div class="rrp-metric-value">{{ number_format($totalVolume) }}</div>
-            <div class="rrp-metric-sub">Total leads assigned to dealers in {{ $selectedQuarter ?? 'Q3' }}, {{ $selectedYear ?? now()->format('Y') }}</div>
+            <div class="rrp-metric-sub">Total leads assigned to dealers in {{ $displayPeriodLabel }}</div>
         </div>
         <div class="rrp-metric-card">
             <div class="rrp-metric-label">Average Fail Rate</div>
             <div class="rrp-metric-value">{{ number_format($avgRejectionRate, 1) }}%</div>
-            <div class="rrp-metric-sub">Across active dealers in {{ $selectedQuarter ?? 'Q3' }}, {{ $selectedYear ?? now()->format('Y') }}</div>
+            <div class="rrp-metric-sub">Across active dealers in {{ $displayPeriodLabel }}</div>
         </div>
         <div class="rrp-metric-card">
             <div class="rrp-metric-label">Top Dealer by Product Conversion</div>
             <div class="rrp-metric-value">{{ $topProductDealer['name'] ?? '-' }}</div>
             <div class="rrp-metric-sub">
-                {{ isset($topProductDealer['converted_products']) ? number_format((int) $topProductDealer['converted_products']) : 0 }} converted products in {{ $selectedQuarter ?? 'Q1' }}, {{ $selectedYear ?? now()->format('Y') }}
+                {{ isset($topProductDealer['converted_products']) ? number_format((int) $topProductDealer['converted_products']) : 0 }} converted products in {{ $displayPeriodLabel }}
             </div>
         </div>
     </section>
@@ -89,7 +100,7 @@
         <div class="rrp-panel-header">
             <div>
                 <div class="rrp-panel-title">Dealer Volume vs Outcomes</div>
-                <div class="rrp-panel-subtitle">Top dealers for {{ $selectedQuarter ?? 'Q1' }}, {{ $selectedYear ?? now()->format('Y') }}</div>
+                <div class="rrp-panel-subtitle">Top dealers for {{ $displayPeriodLabel }}</div>
             </div>
             <div class="rrp-legend">
                 <span class="rrp-legend-item"><span class="rrp-dot rrp-dot-purple"></span> Total Leads</span>
@@ -112,9 +123,9 @@
         <div class="rrp-panel-header">
             <div>
                 <div class="rrp-panel-title">Dealer Product Conversion Ranking</div>
-                <div class="rrp-panel-subtitle">Sorted by closed products in {{ $selectedQuarter ?? 'Q1' }}, {{ $selectedYear ?? now()->format('Y') }}</div>
+                <div class="rrp-panel-subtitle">Sorted by closed products in {{ $displayPeriodLabel }}</div>
             </div>
-            <div class="rrp-pill rrp-pill-purple">{{ $selectedQuarter ?? 'Q1' }} {{ $selectedYear ?? now()->format('Y') }}</div>
+            <div class="rrp-pill rrp-pill-purple">{{ $displayPeriodLabel }}</div>
         </div>
         <div class="rrp-panel-body">
             <div class="table-responsive">
@@ -140,7 +151,7 @@
                                 <td>{{ number_format((int) ($row['converted_products'] ?? 0)) }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="5" class="inquiries-empty">No dealer data for selected quarter and year.</td></tr>
+                            <tr><td colspan="5" class="inquiries-empty">No dealer data for the selected period.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -230,7 +241,7 @@
                     }, 80);
                 };
 
-                form.querySelectorAll('select[name="quarter"], select[name="year"], select[name="report_scope"]').forEach(function (select) {
+                form.querySelectorAll('select[name="days"], select[name="report_scope"]').forEach(function (select) {
                     select.addEventListener('change', submitReportFilters);
 
                     const bindTomSelectChange = function () {

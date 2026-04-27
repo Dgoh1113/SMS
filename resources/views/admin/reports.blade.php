@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Report - Monthly Performance Analytics')
+@section('title', 'Report - Performance Analytics')
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/shared/reports-tabs.css') }}?v=20260424-1">
     <link rel="stylesheet" href="{{ asset('css/report_monthly_performance_analytics.css') }}?v=20260424-3">
@@ -655,7 +655,7 @@
             <a href="{{ route('admin.reports', $reportTabQuery) }}"
                class="reports-tab-link {{ request()->routeIs('admin.reports') ? 'is-active' : '' }}">
                 <i class="bi bi-bar-chart-line reports-tab-icon" aria-hidden="true"></i>
-                <span>Monthly Performance</span>
+                <span>Performance Analytics</span>
             </a>
             <a href="{{ route('admin.reports.v2', $reportTabQuery) }}"
                class="reports-tab-link {{ request()->routeIs('admin.reports.v2') ? 'is-active' : '' }}">
@@ -727,18 +727,23 @@
         ['label' => 'Failed', 'value' => (int) ($activityStatus['Failed'] ?? 0), 'color' => '#374151'],
     ];
     $totalStatus = max(array_sum(array_column($statusReportData, 'value')), 1);
-    $selectedDays = max((int) ($selectedDaysInMonth ?? now()->daysInMonth), 1);
-    $trendByDay = collect($inquiryTrend ?? [])->mapWithKeys(function ($item) {
-        return [
-            (int) ($item['day'] ?? 0) => (int) ($item['count'] ?? 0),
-        ];
-    })->all();
-    $adminInquiryTrendLabels = array_map(function ($day) {
-        return str_pad((string) $day, 2, '0', STR_PAD_LEFT);
-    }, range(1, $selectedDays));
-    $adminInquiryTrendData = array_map(function ($day) use ($trendByDay) {
-        return (int) ($trendByDay[$day] ?? 0);
-    }, range(1, $selectedDays));
+    $periodOptionLabels = [
+        30 => '30 Days',
+        60 => '60 Days',
+        90 => '90 Days',
+    ];
+    $selectedDays = (int) ($days ?? request('days', 60));
+    if (!isset($periodOptionLabels[$selectedDays])) {
+        $selectedDays = 60;
+    }
+    $selectedPeriodOptionLabel = $periodOptionLabels[$selectedDays];
+    $displayPeriodLabel = trim((string) ($periodLabel ?? '')) !== '' ? (string) $periodLabel : $selectedPeriodOptionLabel;
+    $adminInquiryTrendLabels = collect($inquiryTrend ?? [])->map(function ($item) {
+        return (string) ($item['day'] ?? '');
+    })->values()->all();
+    $adminInquiryTrendData = collect($inquiryTrend ?? [])->map(function ($item) {
+        return (int) ($item['count'] ?? 0);
+    })->values()->all();
     $totalInquiry = array_sum($adminInquiryTrendData);
     $hasInquiryTrendData = $totalInquiry > 0;
 @endphp
@@ -746,31 +751,17 @@
 <div class="reports-period-row">
     @php
         $exportScopeLabel = $reportScopeOptions[$selectedReportScope ?? 'all']['label'] ?? 'All';
-        $monthlyExportTitle = 'Monthly Performance Report - ' . $selectedMonthName . ' ' . $selectedYear;
+        $monthlyExportTitle = 'Performance Analytics Report - ' . $displayPeriodLabel;
         if ($exportScopeLabel !== 'All') {
             $monthlyExportTitle .= ' - ' . $exportScopeLabel;
         }
     @endphp
     <form method="get" class="reports-period-form reports-period-form-compact" data-auto-submit-report-filters>
-        @php
-            $months = [
-                1 => 'January', 2 => 'February', 3 => 'March', 4 => 'April',
-                5 => 'May', 6 => 'June', 7 => 'July', 8 => 'August',
-                9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December',
-            ];
-        @endphp
         <div class="reports-period-date-group" aria-label="Report date filter">
-            <select name="month" class="reports-period-select reports-period-select--month" aria-label="Select month">
-                @foreach ($months as $m => $label)
-                    <option value="{{ $m }}" {{ (int) ($selectedMonth ?? now()->format('n')) === (int) $m ? 'selected' : '' }}>
+            <select name="days" class="reports-period-select reports-period-select--month" aria-label="Select report period">
+                @foreach ($periodOptionLabels as $value => $label)
+                    <option value="{{ $value }}" {{ $selectedDays === (int) $value ? 'selected' : '' }}>
                         {{ $label }}
-                    </option>
-                @endforeach
-            </select>
-            <select name="year" class="reports-period-select reports-period-select--year" aria-label="Select year">
-                @foreach (($yearOptions ?? []) as $y)
-                    <option value="{{ $y }}" {{ (int) ($selectedYear ?? now()->format('Y')) === (int) $y ? 'selected' : '' }}>
-                        {{ $y }}
                     </option>
                 @endforeach
             </select>
@@ -821,13 +812,13 @@
         <div class="reports-admin-metric-trend reports-admin-metric-trend--{{ $trend }}">
             @if ($trend === 'up')
             <svg class="reports-admin-metric-trend-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v13m0-13 4 4m-4-4-4 4"/></svg>
-            <span>+{{ $pct }}% vs last month</span>
+            <span>+{{ $pct }}% vs previous period</span>
             @elseif ($trend === 'down')
             <svg class="reports-admin-metric-trend-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19V5m0 0-4 4m4-4 4 4"/></svg>
-            <span>{{ $pct }}% vs last month</span>
+            <span>{{ $pct }}% vs previous period</span>
             @else
             <svg class="reports-admin-metric-trend-icon reports-admin-metric-trend-icon--same" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-4 4 4-4m0 0 4-4"/></svg>
-            <span>No change vs last month</span>
+            <span>No change vs previous period</span>
             @endif
         </div>
     @if (!empty($card['link']))
@@ -843,7 +834,7 @@
         <div class="dashboard-panel-header">
             <div class="reports-inquiry-heading">
                 <div class="dashboard-panel-title">Inquiry Trends</div>
-                <div class="reports-inquiry-subtitle">Inquiries for {{ $selectedMonthName }} {{ $selectedYear }}</div>
+                <div class="reports-inquiry-subtitle">Inquiries for {{ $displayPeriodLabel }}</div>
             </div>
             <div class="reports-inquiry-meta">
                 <span class="reports-inquiry-chip">
@@ -886,7 +877,7 @@
         <div class="dashboard-panel-header">
             <div class="reports-status-heading">
                 <div class="dashboard-panel-title">Status Report</div>
-                <div class="reports-status-subtitle">Current status distribution for {{ $selectedMonthName }} {{ $selectedYear }}</div>
+                <div class="reports-status-subtitle">Current status distribution for {{ $displayPeriodLabel }}</div>
             </div>
         </div>
         <div class="dashboard-panel-body report-status-body">
@@ -969,7 +960,7 @@
     <div class="dashboard-panel-header">
         <div class="reports-product-heading">
             <div class="dashboard-panel-title">Product Conversion Rate</div>
-            <div class="reports-product-subtitle">Closed-case conversions by product for {{ $selectedMonthName }} {{ $selectedYear }}</div>
+            <div class="reports-product-subtitle">Closed-case conversions by product for {{ $displayPeriodLabel }}</div>
         </div>
         <div class="reports-product-scale" aria-hidden="true">
             <span class="reports-product-scale-chip">
@@ -989,7 +980,7 @@
     <div class="dashboard-panel-body">
         <div class="reports-product-card">
         @if ($productConversionDisplay->isEmpty())
-            <p class="reports-product-empty">No closed cases this month yet.</p>
+            <p class="reports-product-empty">No closed cases in this period yet.</p>
         @else
             @php
                 $itemCount = $productConversionDisplay->count();
@@ -1092,7 +1083,7 @@
                     }, 80);
                 };
 
-                form.querySelectorAll('select[name="month"], select[name="year"], select[name="report_scope"]').forEach(function (select) {
+                form.querySelectorAll('select[name="days"], select[name="report_scope"]').forEach(function (select) {
                     select.addEventListener('change', submitReportFilters);
 
                     const bindTomSelectChange = function () {
@@ -1146,9 +1137,7 @@
                 try {
                     const rawInquiryLabels = @json($adminInquiryTrendLabels ?? []);
                     const rawInquiryValues = @json($adminInquiryTrendData ?? []);
-                    const reportPeriod = 'month';
-                    const currentMonthName = @json($selectedMonthName ?? now()->format('F'));
-                    const currentYear = @json((int) ($selectedYear ?? now()->year));
+                    const reportPeriod = 'rolling_days';
                     const brandColor = '#7f5af0';
                     const columnColor = 'rgba(127, 90, 240, 0.32)';
                     const gridColor = 'rgba(148, 163, 184, 0.25)';
@@ -1158,11 +1147,7 @@
                     });
                     let inquiryValues = rawInquiryValues.slice();
                     let tooltipLabels = rawInquiryLabels.map(function (label) {
-                        const normalized = String(label || '').trim();
-                        if (reportPeriod === 'month' && normalized && /^\d+$/.test(normalized)) {
-                            return normalized + ' ' + currentMonthName;
-                        }
-                        return normalized;
+                        return String(label || '').trim();
                     });
 
                     function buildMonthlyWeekBuckets(labels, values) {

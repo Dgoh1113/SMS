@@ -20,7 +20,7 @@
                 <a href="{{ route('admin.reports', $reportTabQuery) }}"
                    class="reports-tab-link {{ request()->routeIs('admin.reports') ? 'is-active' : '' }}">
                     <i class="bi bi-bar-chart-line reports-tab-icon" aria-hidden="true"></i>
-                    <span>Monthly Performance</span>
+                    <span>Performance Analytics</span>
                 </a>
                 <a href="{{ route('admin.reports.v2', $reportTabQuery) }}"
                    class="reports-tab-link {{ request()->routeIs('admin.reports.v2') ? 'is-active' : '' }}">

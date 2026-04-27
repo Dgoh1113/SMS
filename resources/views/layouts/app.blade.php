@@ -139,7 +139,7 @@
                     'Add notes when the next action or reason matters.',
                     'Avoid leaving completed or failed cases in older statuses.',
                 ],
-                'note' => 'Timely status updates make the monthly performance cards much more trustworthy.',
+                'note' => 'Timely status updates make the performance cards much more trustworthy.',
             ],
             [
                 'id' => 'table-tools',
@@ -170,21 +170,21 @@
                 'group' => 'Reports',
                 'icon' => 'bi-bar-chart-fill',
                 'label' => 'Read reports',
-                'subtitle' => 'Monthly performance',
+                'subtitle' => 'Performance analytics',
                 'badge' => 'Reports',
                 'title' => 'Read the admin reports',
                 'intro' => 'Admin reports combine inquiry creation, latest activity movement, and conversion results to help you judge pipeline quality.',
                 'stepsHeading' => 'What to check first',
                 'steps' => [
-                    'Choose the month, year, and scope at the top of the report.',
-                    'Review the top status cards for the latest monthly movement.',
-                    'Use Inquiry Trends to see newly created inquiries in that month.',
+                    'Choose the 30, 60, or 90 day period and scope at the top of the report.',
+                    'Review the top status cards for the latest movement in that rolling window.',
+                    'Use Inquiry Trends to see newly created inquiries across the selected date range.',
                     'Use Status Report and Product Conversion to understand activity outcomes and closed-case results.',
                 ],
                 'tipsHeading' => 'Reading guidance',
                 'tips' => [
-                    'Inquiry Trends shows new inquiries created in the selected month.',
-                    'Status cards reflect latest status activity in that month, which can include older leads.',
+                    'Inquiry Trends shows new inquiries created in the selected rolling period.',
+                    'Status cards reflect latest status activity in that period, which can include older leads.',
                     'Compare cards and charts together before drawing conclusions.',
                 ],
                 'note' => 'If totals feel different between sections, it is usually because creation-date data and activity-date data are measuring different things.',
@@ -349,14 +349,14 @@
                 'intro' => 'Dealer reports help you understand your inquiry flow, status mix, and product conversion performance over time.',
                 'stepsHeading' => 'What to check first',
                 'steps' => [
-                    'Choose the month, year, or period filter at the top of the report.',
+                    'Choose the 30, 60, or 90 day period, or use a custom range, at the top of the report.',
                     'Review the top cards to see your current status mix.',
                     'Use Inquiry Trends to see where activity is building or slowing down.',
                     'Compare Status Report and Product Conversion to understand what is turning into completed work.',
                 ],
                 'tipsHeading' => 'Reading guidance',
                 'tips' => [
-                    'Use the current month view when you want daily detail.',
+                    'Use the 30 day view when you want the most granular recent detail.',
                     'High conversion is strongest when the closed count is also meaningful.',
                     'Check dashboard and inquiry updates first if report numbers look unexpected.',
                 ],
@@ -1783,7 +1783,8 @@
     }
 
     function buildExportWindow(printWindow, title, generatedLabel) {
-        var isMonthlyPerformance = title.indexOf('Monthly Performance Report') === 0;
+        var isMonthlyPerformance = title.indexOf('Monthly Performance Report') === 0
+            || title.indexOf('Performance Analytics Report') === 0;
         var isDealerPerformance = title.indexOf('Dealer Performance Report') === 0;
         var isDealerSalesOvertime = title.indexOf('Dealer Sales Overtime Report') === 0;
         var isDealerRevenueProduction = title.indexOf('Dealer Revenue Production Report') === 0;
