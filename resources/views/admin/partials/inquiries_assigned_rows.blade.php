@@ -129,8 +129,11 @@
     @php $arawStatusDisp = $arawStatus !== '' ? $arawStatus : 'PENDING'; @endphp
     <td data-col="status"><span class="inquiries-status {{ $astatusClass }}">{{ $arawStatusDisp }}</span></td>
     <td class="inquiries-col-action inquiries-action-cell">
-        <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-view-status-btn" data-lead-id="{{ $r->LEADID }}" title="View Status" aria-label="View Status"><i class="bi bi-eye-fill" aria-hidden="true"></i></button>
-        <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-btn-assign-danger inquiries-mark-failed-btn" data-lead-id="{{ $r->LEADID }}" data-status="{{ $arawStatusDisp }}" title="Mark As Failed" aria-label="Mark As Failed"><i class="bi bi-flag-fill" aria-hidden="true"></i></button>
+        @if(in_array($arawStatus, ['', 'OPEN', 'CREATED', 'PENDING', 'ONGOING'], true))
+            <a href="{{ route('admin.inquiries.edit', ['leadId' => $r->LEADID, 'tab' => 'assigned']) }}" class="inquiries-btn inquiries-btn-assign inquiries-edit-inquiry-btn" data-lead-id="{{ $r->LEADID }}" title="Edit" aria-label="Edit"><i class="bi bi-pencil-square" aria-hidden="true"></i></a>
+        @endif
+        <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-view-status-btn" data-lead-id="{{ $r->LEADID }}" title="View Status" aria-label="View Status"><i class="bi bi-eye" aria-hidden="true"></i></button>
+        <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-btn-assign-danger inquiries-mark-failed-btn" data-lead-id="{{ $r->LEADID }}" data-status="{{ $arawStatusDisp }}" title="Mark As Failed" aria-label="Mark As Failed"><i class="bi bi-flag" aria-hidden="true"></i></button>
     </td>
 </tr>
 @empty
