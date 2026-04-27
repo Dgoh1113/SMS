@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Inquiries Management – Admin')
 @push('styles')
-<link rel="stylesheet" href="{{ asset('css/pages/admin-inquiries.css') }}?v=20260421-04">
+<link rel="stylesheet" href="{{ asset('css/pages/admin-inquiries.css') }}?v=20260424-03">
 @endpush
 @section('content')
 @php

@@ -1031,7 +1031,7 @@
   }
 
   .inquiries-page-wrap .inquiries-table .inquiries-placeholder-cell {
-    height: 28px;
+    height: 31px;
   }
 
   .inquiries-page-wrap .inquiries-table thead .inquiries-header-row th {
@@ -1041,8 +1041,8 @@
 
   .inquiries-page-wrap .inquiries-table th,
   .inquiries-page-wrap .inquiries-table td {
-    padding-top: 6px;
-    padding-bottom: 6px;
+    padding-top: 7px;
+    padding-bottom: 8px;
     font-size: 12px;
   }
 
