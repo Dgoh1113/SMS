@@ -8,7 +8,7 @@
     $assignUndo = session('assign_undo');
     $assignEmailPending = session('assign_email_pending');
     $incomingStatusFilterOptions = ['Created'];
-    $assignedStatusFilterOptions = ['Followup', 'Demo', 'Confirmed', 'Completed', 'Rewarded', 'Failed'];
+    $assignedStatusFilterOptions = ['Pending', 'Followup', 'Demo', 'Confirmed', 'Completed', 'Rewarded', 'Failed'];
     $allStatusFilterOptions = ['Created', 'Pending', 'Followup', 'Demo', 'Confirmed', 'Completed', 'Rewarded', 'Failed'];
     $incomingTabCountValue = (int) ($totalNewInquiries ?? 0);
     $assignedTabCountValue = (int) ($totalOngoing ?? 0);
@@ -231,8 +231,8 @@
                             $acontact = trim((string)($r->CONTACTNAME ?? ''));
                             $assignLeadLabel = $acompany !== '' && $acontact !== '' ? ($acompany . ' - ' . $acontact) : ($acompany !== '' ? $acompany : ($acontact !== '' ? $acontact : ('#SQL-' . ($r->LEADID ?? ''))));
                         @endphp
+                        <a href="{{ route('admin.inquiries.edit', ['leadId' => $r->LEADID, 'tab' => 'incoming']) }}" class="inquiries-btn inquiries-btn-assign inquiries-edit-inquiry-btn" data-lead-id="{{ $r->LEADID }}" title="Edit" aria-label="Edit"><i class="bi bi-pencil-square" aria-hidden="true"></i></a>
                         <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-incoming-assign-btn" data-assign-lead="{{ $r->LEADID }}" data-assign-name="{{ e($assignLeadLabel) }}" title="Assign" aria-label="Assign"><i class="bi bi-person-check" aria-hidden="true"></i></button>
-                        <a href="{{ route('admin.inquiries.edit', $r->LEADID) }}" class="inquiries-btn inquiries-btn-assign inquiries-edit-inquiry-btn" data-lead-id="{{ $r->LEADID }}" title="Edit" aria-label="Edit"><i class="bi bi-pencil-square" aria-hidden="true"></i></a>
                         <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-delete-inquiry-btn" data-lead-id="{{ $r->LEADID }}" title="Delete" aria-label="Delete"><i class="bi bi-trash" aria-hidden="true"></i></button>
                     </td>
                 </tr>
@@ -474,8 +474,11 @@
                     @php $arawStatusDisp = $arawStatus !== '' ? $arawStatus : 'PENDING'; @endphp
                     <td data-col="status"><span class="inquiries-status {{ $astatusClass }}">{{ $arawStatusDisp }}</span></td>
                     <td class="inquiries-col-action inquiries-action-cell">
-                        <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-view-status-btn" data-lead-id="{{ $r->LEADID }}" title="View Status" aria-label="View Status"><i class="bi bi-eye-fill" aria-hidden="true"></i></button>
-                        <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-btn-assign-danger inquiries-mark-failed-btn" data-lead-id="{{ $r->LEADID }}" data-status="{{ $arawStatusDisp }}" title="Mark As Failed" aria-label="Mark As Failed"><i class="bi bi-flag-fill" aria-hidden="true"></i></button>
+                        @if(in_array($arawStatus, ['', 'OPEN', 'CREATED', 'PENDING'], true))
+                            <a href="{{ route('admin.inquiries.edit', ['leadId' => $r->LEADID, 'tab' => 'assigned']) }}" class="inquiries-btn inquiries-btn-assign inquiries-edit-inquiry-btn" data-lead-id="{{ $r->LEADID }}" title="Edit" aria-label="Edit"><i class="bi bi-pencil-square" aria-hidden="true"></i></a>
+                        @endif
+                        <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-view-status-btn" data-lead-id="{{ $r->LEADID }}" title="View Status" aria-label="View Status"><i class="bi bi-eye" aria-hidden="true"></i></button>
+                        <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-btn-assign-danger inquiries-mark-failed-btn" data-lead-id="{{ $r->LEADID }}" data-status="{{ $arawStatusDisp }}" title="Mark As Failed" aria-label="Mark As Failed"><i class="bi bi-flag" aria-hidden="true"></i></button>
                     </td>
                         </tr>
                     @empty

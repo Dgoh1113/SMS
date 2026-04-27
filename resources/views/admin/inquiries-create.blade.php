@@ -1149,6 +1149,9 @@
                     @if ($isEdit)
                         @method('PUT')
                         <input type="hidden" name="INQUIRY_SNAPSHOT_AT" value="{{ $inquiry->SNAPSHOT_MODIFIED_AT ?? $inquiry->snapshot_modified_at ?? '' }}">
+                        @if(request()->query('tab'))
+                            <input type="hidden" name="return_tab" value="{{ request()->query('tab') }}">
+                        @endif
                     @endif
             <div class="inquiry-form-grid form-grid" id="inquiryFormGrid">
                 <label class="inquiry-form-label inquiry-company-field company-name">

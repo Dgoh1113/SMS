@@ -280,7 +280,7 @@ class AdminController extends Controller
         $latest = DB::selectOne(
             'SELECT FIRST 1 "STATUS"
              FROM "LEAD_ACT"
-             WHERE "LEADID" = ?
+             WHERE "LEADID" = ? AND UPPER(TRIM(COALESCE("STATUS", \'\'))) <> \'CREATED\'
              ORDER BY "CREATIONDATE" DESC, "LEAD_ACTID" DESC',
             [$leadId]
         );
@@ -293,19 +293,24 @@ class AdminController extends Controller
             'assigned_to' => $assignedTo,
             'status' => $assignedTo === ''
                 ? ($leadStatus !== '' ? $leadStatus : $latestStatus)
-                : $latestStatus,
+                : ($latestStatus !== '' ? $latestStatus : 'PENDING'),
         ];
     }
 
-    private function incomingInquiryStaleMessage(int $leadId): ?string
+    private function incomingInquiryStaleMessage(int $leadId, bool $allowPendingWhileAssigned = false): ?string
     {
         $state = $this->getLeadCurrentActionState($leadId);
         if ($state === null) {
             return AppConstants::ERR_INQUIRY_NOT_FOUND;
         }
 
+        $status = strtoupper(StringHelper::normalize($state['status'] ?? ''));
         $assignedTo = StringHelper::normalize($state['assigned_to'] ?? '');
         if ($assignedTo !== '') {
+            if ($allowPendingWhileAssigned && in_array($status, ['', 'OPEN', 'CREATED', 'PENDING'], true)) {
+                return null;
+            }
+
             $maps = $this->userDisplayMaps([$assignedTo]);
             $assignedToMap = $maps['assignedToMap'] ?? [];
             $assignedLabel = $assignedToMap[$assignedTo] ?? $assignedTo;
@@ -313,7 +318,6 @@ class AdminController extends Controller
             return sprintf(AppConstants::ERR_INQUIRY_ALREADY_ASSIGNED, $assignedLabel);
         }
 
-        $status = strtoupper(StringHelper::normalize($state['status'] ?? ''));
         if ($status !== '' && !in_array($status, [AppConstants::STATUS_OPEN, AppConstants::STATUS_CREATED], true)) {
             return sprintf(AppConstants::ERR_INQUIRY_ALREADY_PROCESSED, $status);
         }
@@ -891,10 +895,12 @@ class AdminController extends Controller
                          SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
                          FROM "LEAD_ACT"
                          WHERE "LEADID" IN (' . $placeholders . ')
+                           AND UPPER(TRIM(COALESCE("STATUS", \'\'))) <> \'CREATED\'
                          GROUP BY "LEADID"
                      ) x
                        ON x."LEADID" = a."LEADID" AND x.MAXCD = a."CREATIONDATE"
-                     WHERE a."LEADID" IN (' . $placeholders . ')',
+                     WHERE a."LEADID" IN (' . $placeholders . ')
+                       AND UPPER(TRIM(COALESCE(a."STATUS", \'\'))) <> \'CREATED\'',
                     array_merge($leadIds, $leadIds)
                 );
                 $statusMap = [];
@@ -1110,10 +1116,12 @@ class AdminController extends Controller
                          SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
                          FROM "LEAD_ACT"
                          WHERE "LEADID" IN (' . $placeholders . ')
+                           AND UPPER(TRIM(COALESCE("STATUS", \'\'))) <> \'CREATED\'
                          GROUP BY "LEADID"
                      ) x
                        ON x."LEADID" = a."LEADID" AND x.MAXCD = a."CREATIONDATE"
-                     WHERE a."LEADID" IN (' . $placeholders . ')',
+                     WHERE a."LEADID" IN (' . $placeholders . ')
+                       AND UPPER(TRIM(COALESCE(a."STATUS", \'\'))) <> \'CREATED\'',
                     array_merge($leadIds, $leadIds)
                 );
                 $statusMap = [];
@@ -1606,7 +1614,7 @@ class AdminController extends Controller
 
     public function editInquiry(int $leadId): View|RedirectResponse
     {
-        $staleMessage = $this->incomingInquiryStaleMessage($leadId);
+        $staleMessage = $this->incomingInquiryStaleMessage($leadId, true);
         if ($staleMessage !== null && $staleMessage !== 'Lead not found.') {
             return redirect()->route('admin.inquiries')->with('error', $staleMessage);
         }
@@ -1818,7 +1826,7 @@ class AdminController extends Controller
             return redirect()->route('admin.inquiries.edit', $leadId)->with('error', $snapshotMessage);
         }
 
-        $staleMessage = $this->incomingInquiryStaleMessage($leadId);
+        $staleMessage = $this->incomingInquiryStaleMessage($leadId, true);
         if ($staleMessage !== null) {
             return redirect()->route('admin.inquiries')->with('error', $staleMessage);
         }
@@ -1910,7 +1918,13 @@ class AdminController extends Controller
             return back()->withInput($request->only(array_keys($validated)))->with('error', 'Could not update the inquiry. Please try again.');
         }
 
-        return redirect()->route('admin.inquiries')->with('success', 'Inquiry updated.');
+        $activeTab = $request->input('return_tab');
+        if (!$activeTab) {
+            $leadAfterUpdate = DB::selectOne('SELECT "ASSIGNED_TO" FROM "LEAD" WHERE "LEADID" = ?', [$leadId]);
+            $activeTab = (!empty($leadAfterUpdate->ASSIGNED_TO)) ? 'assigned' : 'incoming';
+        }
+
+        return redirect()->route('admin.inquiries', ['tab' => $activeTab])->with('success', 'Inquiry updated.');
     }
 
     public function deleteInquiry(Request $request, int $leadId): \Illuminate\Http\JsonResponse
