@@ -117,6 +117,7 @@
         .inquiry-create-panel #inquiryFormGrid > .address2 { grid-column: 1 / span 10 !important; }
         .inquiry-create-panel #inquiryFormGrid > .post-code { grid-column: 1 / span 3 !important; }
         .inquiry-create-panel #inquiryFormGrid > .city { grid-column: 4 / span 5 !important; }
+        .inquiry-create-panel #inquiryFormGrid > .map-btn-col { grid-column: 9 / span 1 !important; display: flex; flex-direction: column; gap: 4px; }
         .inquiry-create-panel #inquiryFormGrid > .product-interested { grid-column: 1 / span 12 !important; }
         .inquiry-create-panel #inquiryFormGrid > .referral-code { grid-column: 1 / span 12 !important; }
         .inquiry-create-panel #inquiryFormGrid > .message { grid-column: 1 / span 12 !important; }
@@ -133,6 +134,7 @@
         .inquiry-create-panel #inquiryFormGrid > .address2,
         .inquiry-create-panel #inquiryFormGrid > .post-code,
         .inquiry-create-panel #inquiryFormGrid > .city,
+        .inquiry-create-panel #inquiryFormGrid > .map-btn-col,
         .inquiry-create-panel #inquiryFormGrid > .product-interested,
         .inquiry-create-panel #inquiryFormGrid > .referral-code,
         .inquiry-create-panel #inquiryFormGrid > .message,
@@ -192,6 +194,25 @@
             outline: none;
             border-color: #7c5cff;
             box-shadow: 0 0 0 3px rgba(124, 92, 255, 0.10);
+        }
+
+        .inquiry-create-panel #inquiryFormGrid .google-maps-btn {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            height: 38px;
+            width: 38px;
+            border-radius: 10px;
+            border: 1px solid #d8dce8;
+            background: #fff;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+        }
+
+        .inquiry-create-panel #inquiryFormGrid .google-maps-btn:hover {
+            background: #f8f9fc;
+            border-color: #c9cfdf;
         }
 
         .inquiry-create-panel #inquiryFormGrid textarea.inquiry-form-input {
@@ -592,6 +613,11 @@
                 font-size: 12px;
             }
 
+            .inquiry-create-panel #inquiryFormGrid .google-maps-btn {
+                height: 32px;
+                width: 32px;
+            }
+
             .inquiry-create-panel #inquiryFormGrid textarea.inquiry-form-input {
                 min-height: 48px !important;
                 height: 48px !important;
@@ -718,6 +744,11 @@
                 height: 30px;
                 padding: 3px 8px;
                 font-size: 11.5px;
+            }
+
+            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid .google-maps-btn {
+                height: 30px;
+                width: 30px;
             }
 
             .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid textarea.inquiry-form-input {
@@ -1118,6 +1149,9 @@
                     @if ($isEdit)
                         @method('PUT')
                         <input type="hidden" name="INQUIRY_SNAPSHOT_AT" value="{{ $inquiry->SNAPSHOT_MODIFIED_AT ?? $inquiry->snapshot_modified_at ?? '' }}">
+                        @if(request()->query('tab'))
+                            <input type="hidden" name="return_tab" value="{{ request()->query('tab') }}">
+                        @endif
                     @endif
             <div class="inquiry-form-grid form-grid" id="inquiryFormGrid">
                 <label class="inquiry-form-label inquiry-company-field company-name">
@@ -1220,6 +1254,12 @@
                         <input type="text" id="cityInput" name="CITY" value="{{ old('CITY', $inquiry->CITY ?? '') }}" required maxlength="100" autocomplete="address-level2" class="inquiry-form-input">
                     </label>
                 </div>
+                <div class="map-btn-col" id="googleMapsWrap" style="display: none;">
+                    <span class="inquiry-form-label-title" style="visibility: hidden;">Map</span>
+                    <a href="#" id="googleMapsBtn" target="_blank" title="View on Google Maps" class="google-maps-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92.3 132.3" style="height: 18px; width: auto;"><path fill="#1a73e8" d="M60.2 2.2C55.8.8 51 0 46.1 0 32 0 19.3 6.4 10.8 16.5l21.8 18.3L60.2 2.2z"/><path fill="#ea4335" d="M10.8 16.5C4.1 24.5 0 34.9 0 46.1c0 8.7 1.7 15.7 4.6 22l28-33.3-21.8-18.3z"/><path fill="#4285f4" d="M46.2 28.5c9.8 0 17.7 7.9 17.7 17.7 0 4.3-1.6 8.3-4.2 11.4 0 0 13.9-16.6 27.5-32.7-5.6-10.8-15.3-19-27-22.7L32.6 34.8c3.3-3.8 8.1-6.3 13.6-6.3"/><path fill="#fbbc04" d="M46.2 63.8c-9.8 0-17.7-7.9-17.7-17.7 0-4.3 1.5-8.3 4.1-11.3l-28 33.3c4.8 10.6 12.8 19.2 21 29.9l34.1-40.5c-3.3 3.9-8.1 6.3-13.5 6.3"/><path fill="#34a853" d="M59.1 109.2c15.4-24.1 33.3-35 33.3-63 0-7.7-1.9-14.9-5.2-21.3L25.6 98c2.6 3.4 5.3 7.3 7.9 11.3 9.4 14.5 6.8 23.1 12.8 23.1s3.4-8.7 12.8-23.2"/></svg>
+                    </a>
+                </div>
                 <div class="inquiry-form-label inquiry-form-products inquiry-products-field product-interested">
                     <span class="inquiry-form-label-title">Product interested <span class="required">*</span></span>
                     <div class="inquiry-form-checkboxes @error('product_interested') inquiry-input-error @enderror" role="group" aria-required="true">
@@ -1284,6 +1324,25 @@ document.addEventListener('DOMContentLoaded', function () {
         return String(value || '').replace(/\D+/g, '').slice(0, 5);
     }
 
+    var googleMapsWrap = document.getElementById('googleMapsWrap');
+    var googleMapsBtn = document.getElementById('googleMapsBtn');
+
+    function updateGoogleMapsLink() {
+        if (!cityInput || !postcodeInput || !googleMapsWrap || !googleMapsBtn) return;
+        
+        var city = cityInput.value.trim();
+        var postcode = postcodeInput.value.trim();
+        
+        if (city) {
+            var query = encodeURIComponent(postcode + ' ' + city);
+            googleMapsBtn.href = 'https://www.google.com/maps/search/?api=1&query=' + query;
+            googleMapsWrap.style.display = 'flex';
+            googleMapsBtn.style.display = 'flex';
+        } else {
+            googleMapsWrap.style.display = 'none';
+        }
+    }
+
     function syncCityFromPostcode() {
         if (!postcodeInput || !cityInput) return;
 
@@ -1297,27 +1356,28 @@ document.addEventListener('DOMContentLoaded', function () {
                 cityInput.value = '';
             }
             lastAutoFilledCity = '';
-            return;
-        }
-
-        var matchedCity = postcodeCityLookup[normalizedPostcode] || '';
-        if (!matchedCity) {
-            if (lastAutoFilledCity && cityInput.value === lastAutoFilledCity) {
-                cityInput.value = '';
+        } else {
+            var matchedCity = postcodeCityLookup[normalizedPostcode] || '';
+            if (!matchedCity) {
+                if (lastAutoFilledCity && cityInput.value === lastAutoFilledCity) {
+                    cityInput.value = '';
+                }
+                lastAutoFilledCity = '';
+            } else {
+                if (cityInput.value.trim() === '' || cityInput.value === lastAutoFilledCity) {
+                    cityInput.value = matchedCity;
+                    lastAutoFilledCity = matchedCity;
+                } else if (cityInput.value.trim().toLowerCase() === matchedCity.toLowerCase()) {
+                    lastAutoFilledCity = cityInput.value;
+                }
             }
-            lastAutoFilledCity = '';
-            return;
         }
+        updateGoogleMapsLink();
+    }
 
-        if (cityInput.value.trim() === '' || cityInput.value === lastAutoFilledCity) {
-            cityInput.value = matchedCity;
-            lastAutoFilledCity = matchedCity;
-            return;
-        }
-
-        if (cityInput.value.trim().toLowerCase() === matchedCity.toLowerCase()) {
-            lastAutoFilledCity = cityInput.value;
-        }
+    if (cityInput) {
+        cityInput.addEventListener('input', updateGoogleMapsLink);
+        cityInput.addEventListener('change', updateGoogleMapsLink);
     }
 
     // Demo mode toggle (Zoom / On-site)

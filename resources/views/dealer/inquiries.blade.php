@@ -910,7 +910,7 @@ if (document.readyState === 'loading') {
                     </div>
                     
                     <label class="inquiry-field">
-                        <span class="inquiry-field-label">ATTACHMENT (images)</span>
+                        <span class="inquiry-field-label" id="inquiryAttachmentLabel">ATTACHMENT (images)</span>
                         <div class="inquiry-field-input-wrap">
                             <i class="bi bi-image"></i>
                             <input type="file" class="inquiry-field-input inquiry-field-file" id="inquiryAttachment" accept="image/*" multiple>
@@ -1396,8 +1396,20 @@ if (document.readyState === 'loading') {
         var labels = dateTimeLabels[status] || dateTimeLabels['FOLLOW UP'];
         var dateLabel = document.getElementById('inquiryDateLabel');
         var timeLabel = document.getElementById('inquiryTimeLabel');
+        var attachmentLabel = document.getElementById('inquiryAttachmentLabel');
+
         if (dateLabel) dateLabel.textContent = labels.date;
         if (timeLabel) timeLabel.textContent = labels.time;
+        
+        if (attachmentLabel) {
+            if (status === 'COMPLETED') {
+                attachmentLabel.innerHTML = 'UPLOAD INVOICE <span class="inquiry-field-required">*</span>';
+            } else if (status === 'REWARDED') {
+                attachmentLabel.innerHTML = 'UPLOAD REFERRAL PAYOUT PROOF <span class="inquiry-field-required">*</span>';
+            } else {
+                attachmentLabel.textContent = 'ATTACHMENT (images)';
+            }
+        }
     }
 
     function resetEditableFieldsForSelectedStatus() {
@@ -2297,8 +2309,13 @@ if (document.readyState === 'loading') {
                 return;
             }
         }
+        if (toStatus === 'COMPLETED' && attachmentFiles.length === 0) {
+            showDealerInquiryToast('Please upload the Invoice for COMPLETED status.');
+            if (attachmentInput) attachmentInput.focus();
+            return;
+        }
         if (toStatus === 'REWARDED' && attachmentFiles.length === 0) {
-            showDealerInquiryToast('Please upload the payment slip for this referral.');
+            showDealerInquiryToast('Please upload the Referral Payout Proof.');
             if (attachmentInput) attachmentInput.focus();
             return;
         }

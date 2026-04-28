@@ -16,6 +16,30 @@
   min-width: 96px;
 }
 
+#historyTable th[data-col="postcode"],
+#historyTable td[data-col="postcode"] {
+  width: 96px;
+  min-width: 96px;
+}
+
+#historyTable th[data-col="city"],
+#historyTable td[data-col="city"] {
+  width: 130px;
+  min-width: 130px;
+}
+
+#historyTable th[data-col="status"],
+#historyTable td[data-col="status"] {
+  width: 110px;
+  min-width: 110px;
+}
+
+#historyTable th[data-col="date"],
+#historyTable td[data-col="date"] {
+  width: 140px;
+  min-width: 140px;
+}
+
 #historyTable th[data-col="id"] .inquiries-filter-wrap input {
   width: 64px;
   max-width: 64px;
@@ -26,14 +50,34 @@
   max-width: 92px;
 }
 
-#historyTable th[data-col="user"] .inquiries-filter-wrap input {
+#historyTable th[data-col="user"] .inquiries-filter-wrap input,
+#historyTable th[data-col="postcode"] .inquiries-filter-wrap input {
   width: 72px;
   max-width: 72px;
 }
 
+#historyTable th[data-col="city"] .inquiries-filter-wrap input {
+  width: 106px;
+  max-width: 106px;
+}
+
+#historyTable th[data-col="status"] .inquiries-filter-wrap input {
+  width: 86px;
+  max-width: 86px;
+}
+
+#historyTable th[data-col="date"] .inquiries-filter-wrap input {
+  width: 116px;
+  max-width: 116px;
+}
+
 #historyTable th[data-col="id"] .inquiries-filter-wrap,
 #historyTable th[data-col="inquiryid"] .inquiries-filter-wrap,
-#historyTable th[data-col="user"] .inquiries-filter-wrap {
+#historyTable th[data-col="user"] .inquiries-filter-wrap,
+#historyTable th[data-col="postcode"] .inquiries-filter-wrap,
+#historyTable th[data-col="city"] .inquiries-filter-wrap,
+#historyTable th[data-col="status"] .inquiries-filter-wrap,
+#historyTable th[data-col="date"] .inquiries-filter-wrap {
   width: fit-content;
 }
 
