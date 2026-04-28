@@ -88,9 +88,11 @@
                             <td data-col="city">{{ $r->CITY ?? '-' }}</td>
                             <td data-col="subject">{{ $subjectText !== '' ? $subjectText : '-' }}</td>
                             <td data-col="description"
-                                class="inquiries-msg-cell {{ $isLongDesc ? 'inquiries-msg-clickable' : '' }}"
-                                @if($isLongDesc) data-full-message="{{ e($fullDescTrim) }}" @endif>
-                                {{ $descPreview }}
+                                class="inquiries-msg-cell {{ $isLongDesc ? 'expandable-desc' : '' }}">
+                                <div class="desc-preview">{{ $descPreview }}</div>
+                                @if($isLongDesc)
+                                    <div class="desc-full">{!! nl2br(e($fullDescTrim)) !!}</div>
+                                @endif
                             </td>
                             <td data-col="status">{{ $r->STATUS ?? '-' }}</td>
                             <td data-col="date">{{ $dateStr ?: '-' }}</td>
@@ -196,43 +198,58 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    (function initMessageModal() {
-        if (document.getElementById('inquiryMessageModal')) return;
-        var modal = document.createElement('div');
-        modal.id = 'inquiryMessageModal';
-        modal.className = 'inquiries-msg-modal';
-        modal.hidden = true;
-        modal.innerHTML = ''
-            + '<div class="inquiries-msg-modal-backdrop" data-close="1"></div>'
-            + '<div class="inquiries-msg-modal-window" role="dialog" aria-modal="true" aria-labelledby="inquiriesMsgModalTitle">'
-            + '  <div class="inquiries-msg-modal-header">'
-            + '    <div class="inquiries-msg-modal-title" id="inquiriesMsgModalTitle">Description</div>'
-            + '    <button type="button" class="inquiries-msg-modal-close" aria-label="Close" data-close="1">&times;</button>'
-            + '  </div>'
-            + '  <div class="inquiries-msg-modal-body"><pre class="inquiries-msg-modal-text" id="inquiriesMsgModalText"></pre></div>'
-            + '</div>';
-        document.body.appendChild(modal);
-
-        function close() { modal.hidden = true; }
-        function open(text) {
-            var el = document.getElementById('inquiriesMsgModalText');
-            if (el) el.textContent = text || '';
-            modal.hidden = false;
+    // Row Click to Expand
+    table.addEventListener('click', function(e) {
+        var row = e.target.closest('tr.history-row');
+        if (!row) return;
+        var descCell = row.querySelector('.expandable-desc');
+        if (descCell) {
+            descCell.classList.toggle('expanded');
         }
+    });
 
-        document.addEventListener('click', function(e) {
-            var cell = e.target && e.target.closest ? e.target.closest('.inquiries-msg-clickable[data-full-message]') : null;
-            if (cell) {
-                open(cell.getAttribute('data-full-message') || '');
-                return;
-            }
-            var closer = e.target && e.target.closest ? e.target.closest('[data-close="1"]') : null;
-            if (closer && modal && !modal.hidden && modal.contains(closer)) close();
+    // Context Menu for "Full Expand"
+    var contextMenu = document.createElement('div');
+    contextMenu.className = 'history-context-menu hidden';
+    contextMenu.innerHTML = ''
+        + '<div class="context-menu-item" id="menuExpandAll"><i class="bi bi-arrows-expand"></i> Full Expand All</div>'
+        + '<div class="context-menu-item" id="menuCollapseAll"><i class="bi bi-arrows-collapse"></i> Collapse All</div>';
+    document.body.appendChild(contextMenu);
+
+    table.addEventListener('contextmenu', function(e) {
+        var row = e.target.closest('tr.history-row');
+        if (!row) return;
+
+        e.preventDefault();
+        
+        var rect = contextMenu.getBoundingClientRect();
+        var x = e.clientX;
+        var y = e.clientY;
+        
+        contextMenu.style.left = x + 'px';
+        contextMenu.style.top = y + 'px';
+        contextMenu.classList.remove('hidden');
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!contextMenu.contains(e.target)) {
+            contextMenu.classList.add('hidden');
+        }
+    });
+
+    document.getElementById('menuExpandAll').addEventListener('click', function() {
+        table.querySelectorAll('.expandable-desc').forEach(function(cell) {
+            cell.classList.add('expanded');
         });
-        window.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && !modal.hidden) close();
+        contextMenu.classList.add('hidden');
+    });
+
+    document.getElementById('menuCollapseAll').addEventListener('click', function() {
+        table.querySelectorAll('.expandable-desc').forEach(function(cell) {
+            cell.classList.remove('expanded');
         });
-    })();
+        contextMenu.classList.add('hidden');
+    });
 });
 </script>
 @endpush
