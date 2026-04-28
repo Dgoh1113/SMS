@@ -22,6 +22,135 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="{{ asset('css/app.css') }}?v=20260417-01">
 <script src="{{ asset('js/passkey-registration.js') }}?v=20260427-02"></script>
+<style>
+.login-help-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.login-help-modal.is-active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.login-help-modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(8px);
+}
+
+.login-help-modal-container {
+    position: relative;
+    background: var(--card-bg, #fff);
+    width: 100%;
+    max-width: 500px;
+    border-radius: 32px;
+    padding: 40px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    transform: translateY(20px);
+    transition: transform 0.3s ease;
+}
+
+.login-help-modal.is-active .login-help-modal-container {
+    transform: translateY(0);
+}
+
+.login-help-modal-close {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    border: none;
+    background: transparent;
+    font-size: 28px;
+    color: var(--text-muted);
+    cursor: pointer;
+    line-height: 1;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+
+.login-help-modal-close:hover {
+    background: rgba(0,0,0,0.05);
+}
+
+.login-help-modal-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.login-help-modal-header i {
+    font-size: 48px;
+    color: var(--primary);
+    display: block;
+    margin-bottom: 16px;
+}
+
+.login-help-modal-header h2 {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text-main);
+}
+
+.login-help-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+.login-help-step {
+    display: flex;
+    gap: 20px;
+    text-align: left;
+}
+
+.login-help-step-number {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    background: var(--primary);
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 18px;
+}
+
+.login-help-step-text h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 4px;
+    color: var(--text-main);
+}
+
+.login-help-step-text p {
+    font-size: 14px;
+    margin: 0;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+#closeHelpModalBtn {
+    margin-top: 0;
+}
+</style>
 </head>
 <body>
 <div class="login-root{{ !empty($show_register_passkey) ? ' login-root-passkey-setup' : '' }}">
@@ -74,7 +203,7 @@
                 <i class="bi bi-moon-fill" data-theme-icon aria-hidden="true"></i>
             </button>
             <button class="login-bell" type="button" aria-label="Notifications"><i class="bi bi-bell-fill" aria-hidden="true"></i></button>
-            <button class="login-help-link" type="button">Help</button>
+            <button class="login-help-link" type="button" id="loginHelpBtn">Help</button>
         </div>
     </header>
 
@@ -159,6 +288,46 @@
             </div>
         </div>
     </main>
+</div>
+
+<!-- Help Modal -->
+<div id="loginHelpModal" class="login-help-modal" aria-hidden="true" style="display: none;">
+    <div class="login-help-modal-overlay"></div>
+    <div class="login-help-modal-container">
+        <button type="button" class="login-help-modal-close" id="closeHelpModal" aria-label="Close help">
+            <i class="bi bi-x"></i>
+        </button>
+        <div class="login-help-modal-content">
+            <div class="login-help-modal-header">
+                <i class="bi bi-question-circle-fill"></i>
+                <h2>How to Access Your Account</h2>
+            </div>
+            <div class="login-help-steps">
+                <div class="login-help-step">
+                    <div class="login-help-step-number">1</div>
+                    <div class="login-help-step-text">
+                        <h3>Check Your Email</h3>
+                        <p>If this is your first time, use the passkey registration link sent to your email by your administrator.</p>
+                    </div>
+                </div>
+                <div class="login-help-step">
+                    <div class="login-help-step-number">2</div>
+                    <div class="login-help-step-text">
+                        <h3>Register Your Passkey</h3>
+                        <p>Follow the link to register a passkey on your device. This will be your primary way to sign in safely.</p>
+                    </div>
+                </div>
+                <div class="login-help-step">
+                    <div class="login-help-step-number">3</div>
+                    <div class="login-help-step-text">
+                        <h3>Login & Manage</h3>
+                        <p>Once registered, return here to log in. You can manage or add more passkeys from your dashboard settings.</p>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="login-primary-btn" id="closeHelpModalBtn">Got it, thanks!</button>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -341,6 +510,40 @@
     var loginPasskeyBtn = document.getElementById('login-passkey-btn');
     var registerPasskeyBtn = document.getElementById('register-passkey-btn');
     var registerPasskeyPhoneBtn = document.getElementById('register-passkey-phone-btn');
+    var loginHelpBtn = document.getElementById('loginHelpBtn');
+
+    if (loginHelpBtn) {
+        var helpModal = document.getElementById('loginHelpModal');
+        
+        loginHelpBtn.addEventListener('click', function() {
+            if (helpModal) {
+                helpModal.style.display = 'flex';
+                setTimeout(function() {
+                    helpModal.classList.add('is-active');
+                    helpModal.setAttribute('aria-hidden', 'false');
+                }, 10);
+            }
+        });
+
+        // Close logic
+        var handleClose = function() {
+            if (helpModal) {
+                helpModal.classList.remove('is-active');
+                helpModal.setAttribute('aria-hidden', 'true');
+                setTimeout(function() {
+                    helpModal.style.display = 'none';
+                }, 300);
+            }
+        };
+
+        var closeOverlay = helpModal ? helpModal.querySelector('.login-help-modal-overlay') : null;
+        var closeX = document.getElementById('closeHelpModal');
+        var closeBtn = document.getElementById('closeHelpModalBtn');
+
+        if (closeOverlay) closeOverlay.addEventListener('click', handleClose);
+        if (closeX) closeX.addEventListener('click', handleClose);
+        if (closeBtn) closeBtn.addEventListener('click', handleClose);
+    }
 
     function resetPasskeyScreenState() {
         [loginPasskeyBtn, registerPasskeyBtn, registerPasskeyPhoneBtn].forEach(function (button) {
