@@ -38,13 +38,13 @@ class ApiController extends Controller
     public function leadsStore(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'COMPANYNAME' => 'required|string',
-            'CONTACTNAME' => 'nullable|string',
-            'CONTACTNO' => 'nullable|string',
-            'EMAIL' => 'nullable|string',
-            'CITY' => 'nullable|string',
-            'CURRENTSTATUS' => 'nullable|string',
-            'ASSIGNED_TO' => 'nullable|integer',
+            'COMPANYNAME' => 'required|string|max:50',
+            'CONTACTNAME' => 'nullable|string|max:100',
+            'CONTACTNO' => 'nullable|string|max:15',
+            'EMAIL' => 'nullable|string|max:50',
+            'CITY' => 'nullable|string|max:20',
+            'CURRENTSTATUS' => 'nullable|string|max:10',
+            'ASSIGNED_TO' => 'nullable|string|max:10',
         ]);
 
         $row = DB::selectOne(
@@ -83,11 +83,11 @@ class ApiController extends Controller
     {
         $validated = $request->validate([
             'LEADID' => 'required|integer',
-            'USERID' => 'required|integer',
-            'SUBJECT' => 'nullable|string',
-            'DESCRIPTION' => 'nullable|string',
+            'USERID' => 'required|string|max:10',
+            'SUBJECT' => 'nullable|string|max:50',
+            'DESCRIPTION' => 'nullable|string|max:150',
             'ATTACHMENT' => 'nullable|string',
-            'STATUS' => 'nullable|string',
+            'STATUS' => 'nullable|string|max:15',
         ]);
 
         $row = DB::selectOne(

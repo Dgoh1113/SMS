@@ -12,29 +12,13 @@
         if ($currentReportScope !== '') {
             $reportTabQuery['report_scope'] = $currentReportScope;
         }
-        $periodOptionLabels = [
-            30 => '30 Days',
-            60 => '60 Days',
-            90 => '90 Days',
-        ];
-        $selectedDays = (int) ($days ?? request('days', 60));
-        if (!isset($periodOptionLabels[$selectedDays])) {
-            $selectedDays = 60;
-        }
-        $selectedPeriodOptionLabel = $periodOptionLabels[$selectedDays];
-        $displayPeriodLabel = trim((string) ($periodLabel ?? '')) !== '' ? (string) ($periodLabel ?? '') : $selectedPeriodOptionLabel;
-        $exportScopeLabel = $reportScopeOptions[$selectedReportScope ?? 'all']['label'] ?? 'All';
-        $revenueExportTitle = 'Dealer Revenue Production Report - ' . $displayPeriodLabel;
-        if ($exportScopeLabel !== 'All') {
-            $revenueExportTitle .= ' - ' . $exportScopeLabel;
-        }
     @endphp
     <div class="reports-tabs-row rrp-tabs-row">
         <nav class="reports-tabs-nav" aria-label="Report views">
             <a href="{{ route('admin.reports', $reportTabQuery) }}"
                class="reports-tab-link {{ request()->routeIs('admin.reports') ? 'is-active' : '' }}">
                 <i class="bi bi-bar-chart-line reports-tab-icon" aria-hidden="true"></i>
-                <span>Performance Analytics</span>
+                <span>Monthly Performance</span>
             </a>
             <a href="{{ route('admin.reports.v2', $reportTabQuery) }}"
                class="reports-tab-link {{ request()->routeIs('admin.reports.v2') ? 'is-active' : '' }}">
@@ -51,28 +35,49 @@
 
     <div class="rrp-filter-row">
         <form method="GET" class="rrp-filter-form" data-auto-submit-report-filters>
-            <div class="rrp-period-date-group" aria-label="Report date filter">
-                <select name="days" class="rrp-filter-select rrp-filter-select--quarter" aria-label="Select report period">
-                    @foreach ($periodOptionLabels as $value => $label)
-                        <option value="{{ $value }}" {{ $selectedDays === (int) $value ? 'selected' : '' }}>{{ $label }}</option>
-                    @endforeach
+            <div class="reports-period-date-group-wrapper reports-filter-container">
+                <div class="reports-range-label">PERIOD</div>
+                <select name="days" class="rrp-filter-select" aria-label="Select period" id="reportsPeriodSelect" style="display: {{ request('from') || request('to') ? 'none' : 'block' }};">
+                    @php $daysParam = request('days', '60'); @endphp
+                    <option value="30" {{ $daysParam == '30' ? 'selected' : '' }}>Last 30 Days</option>
+                    <option value="60" {{ $daysParam == '60' ? 'selected' : '' }}>Last 60 Days</option>
+                    <option value="90" {{ $daysParam == '90' ? 'selected' : '' }}>Last 90 Days</option>
+                    <option value="custom" {{ request('from') || request('to') ? 'selected' : '' }}>Custom range…</option>
                 </select>
+                <div id="reportsRangeInline" class="reports-range-grid" style="display: {{ request('from') || request('to') ? 'grid' : 'none' }};">
+                    <div class="reports-range-col">
+                        <label class="reports-range-label">Starting</label>
+                        <input type="date" name="from" id="reportsRangeFrom" value="{{ request('from') }}" class="reports-range-input" aria-label="From date">
+                    </div>
+                    <div class="reports-range-col">
+                        <label class="reports-range-label">Ending</label>
+                        <input type="date" name="to" id="reportsRangeTo" value="{{ request('to') }}" class="reports-range-input" aria-label="To date">
+                    </div>
+                    <button type="button" class="reports-range-back-btn" id="reportsRangeReset">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
             </div>
-            @include('admin.partials.report_scope_picker', [
-                'options' => $reportScopeOptions ?? [],
-                'selected' => $selectedReportScope ?? 'all',
-            ])
-            @include('admin.partials.report_filter_actions', [
-                'wrapperClass' => 'rrp-filter-actions report-filter-actions',
-                'applyClass' => 'report-filter-apply',
-                'exportClass' => 'report-filter-export',
-                'clearClass' => 'report-filter-clear',
-                'showApply' => false,
-                'showExport' => true,
-                'showClear' => false,
-                'exportTitle' => $revenueExportTitle,
-                'exportTarget' => '.rrp-page',
-            ])
+            <div class="reports-filter-container">
+                <div class="reports-range-label">DEALER SCOPE</div>
+                @include('admin.partials.report_scope_picker', [
+                    'options' => $reportScopeOptions ?? [],
+                    'selected' => $selectedReportScope ?? 'all',
+                ])
+            </div>
+            <div class="rrp-filter-actions report-filter-actions" style="flex-shrink: 0;">
+                @include('admin.partials.report_filter_actions', [
+                    'wrapperClass' => 'rrp-filter-actions-inner',
+                    'applyClass' => 'report-filter-apply',
+                    'exportClass' => 'report-filter-export',
+                    'clearClass' => 'report-filter-clear',
+                    'showApply' => false,
+                    'showExport' => true,
+                    'showClear' => false,
+                    'exportTitle' => 'Dealer Revenue Production Report',
+                    'exportTarget' => '.rrp-page',
+                ])
+            </div>
         </form>
     </div>
 
@@ -80,18 +85,18 @@
         <div class="rrp-metric-card">
             <div class="rrp-metric-label">Total Inquiries</div>
             <div class="rrp-metric-value">{{ number_format($totalVolume) }}</div>
-            <div class="rrp-metric-sub">Total leads assigned to dealers in {{ $displayPeriodLabel }}</div>
+            <div class="rrp-metric-sub">Total leads assigned to dealers in {{ $periodLabel ?? 'selected period' }}</div>
         </div>
         <div class="rrp-metric-card">
             <div class="rrp-metric-label">Average Fail Rate</div>
             <div class="rrp-metric-value">{{ number_format($avgRejectionRate, 1) }}%</div>
-            <div class="rrp-metric-sub">Across active dealers in {{ $displayPeriodLabel }}</div>
+            <div class="rrp-metric-sub">Across active dealers in {{ $periodLabel ?? 'selected period' }}</div>
         </div>
         <div class="rrp-metric-card">
             <div class="rrp-metric-label">Top Dealer by Product Conversion</div>
             <div class="rrp-metric-value">{{ $topProductDealer['name'] ?? '-' }}</div>
             <div class="rrp-metric-sub">
-                {{ isset($topProductDealer['converted_products']) ? number_format((int) $topProductDealer['converted_products']) : 0 }} converted products in {{ $displayPeriodLabel }}
+                {{ isset($topProductDealer['converted_products']) ? number_format((int) $topProductDealer['converted_products']) : 0 }} converted products in {{ $periodLabel ?? 'selected period' }}
             </div>
         </div>
     </section>
@@ -100,7 +105,7 @@
         <div class="rrp-panel-header">
             <div>
                 <div class="rrp-panel-title">Dealer Volume vs Outcomes</div>
-                <div class="rrp-panel-subtitle">Top dealers for {{ $displayPeriodLabel }}</div>
+                <div class="rrp-panel-subtitle">Top dealers for {{ $periodLabel ?? 'selected period' }}</div>
             </div>
             <div class="rrp-legend">
                 <span class="rrp-legend-item"><span class="rrp-dot rrp-dot-purple"></span> Total Leads</span>
@@ -123,9 +128,9 @@
         <div class="rrp-panel-header">
             <div>
                 <div class="rrp-panel-title">Dealer Product Conversion Ranking</div>
-                <div class="rrp-panel-subtitle">Sorted by closed products in {{ $displayPeriodLabel }}</div>
+                <div class="rrp-panel-subtitle">Sorted by closed products in {{ $periodLabel ?? 'selected period' }}</div>
             </div>
-            <div class="rrp-pill rrp-pill-purple">{{ $displayPeriodLabel }}</div>
+            <div class="rrp-pill rrp-pill-purple">{{ $periodLabel ?? 'Period' }}</div>
         </div>
         <div class="rrp-panel-body">
             <div class="table-responsive">
@@ -151,7 +156,7 @@
                                 <td>{{ number_format((int) ($row['converted_products'] ?? 0)) }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="5" class="inquiries-empty">No dealer data for the selected period.</td></tr>
+                            <tr><td colspan="5" class="inquiries-empty">No dealer data for selected quarter and year.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -227,8 +232,59 @@
 
                 form.addEventListener('submit', markReportFiltersSubmitting);
 
+                const getRangeWrapper = function (select) {
+                    if (select.name !== 'days') return null;
+                    return document.getElementById('reportsRangeInline');
+                };
+
+                const syncRange = function (select) {
+                    const wrapper = getRangeWrapper(select);
+                    if (!wrapper) return;
+                    const isCustom = select.value === 'custom';
+                    wrapper.style.display = isCustom ? 'grid' : 'none';
+                    select.style.display = isCustom ? 'none' : 'block';
+                    
+                    const inputs = wrapper.querySelectorAll('input[type="date"]');
+                    const fromInput = inputs[0];
+                    const toInput = inputs[1];
+
+                    if (fromInput && toInput) {
+                        fromInput.disabled = !isCustom;
+                        toInput.disabled = !isCustom;
+                        fromInput.required = isCustom;
+                        toInput.required = isCustom;
+
+                        if (!isCustom) {
+                            fromInput.value = '';
+                            toInput.value = '';
+                            toInput.min = '';
+                        } else {
+                            toInput.min = fromInput.value || '';
+                        }
+                    }
+                };
+
+                const isFormReadyToSubmit = function () {
+                    const daysSelect = form.querySelector('select[name="days"]');
+                    if (daysSelect && daysSelect.value === 'custom') {
+                        const wrapper = getRangeWrapper(daysSelect);
+                        if (wrapper) {
+                            const inputs = wrapper.querySelectorAll('input[type="date"]');
+                            const from = inputs[0] ? inputs[0].value : '';
+                            const to = inputs[1] ? inputs[1].value : '';
+                            if (from === '' || to === '' || from > to) {
+                                return false;
+                            }
+                        }
+                    }
+                    return true;
+                };
+
                 const submitReportFilters = function () {
                     window.clearTimeout(autoSubmitTimer);
+                    if (!isFormReadyToSubmit()) {
+                        return;
+                    }
                     autoSubmitTimer = window.setTimeout(function () {
                         markReportFiltersSubmitting();
 
@@ -242,7 +298,14 @@
                 };
 
                 form.querySelectorAll('select[name="days"], select[name="report_scope"]').forEach(function (select) {
-                    select.addEventListener('change', submitReportFilters);
+                    if (select.name === 'days') {
+                        select.addEventListener('change', function() {
+                            syncRange(select);
+                            submitReportFilters();
+                        });
+                    } else {
+                        select.addEventListener('change', submitReportFilters);
+                    }
 
                     const bindTomSelectChange = function () {
                         if (!select.tomselect || select.dataset.autoSubmitTomSelectReady === '1') {
@@ -257,6 +320,39 @@
                     window.setTimeout(bindTomSelectChange, 120);
                     window.setTimeout(bindTomSelectChange, 360);
                 });
+
+                const rangeWrapper = document.getElementById('reportsRangeInline');
+                if (rangeWrapper) {
+                    const inputs = rangeWrapper.querySelectorAll('input[type="date"]');
+                    if (inputs.length === 2) {
+                        const fromInput = inputs[0];
+                        const toInput = inputs[1];
+
+                        fromInput.addEventListener('input', function() {
+                            toInput.min = fromInput.value || '';
+                            if (toInput.value && fromInput.value && toInput.value < fromInput.value) {
+                                toInput.value = fromInput.value;
+                            }
+                            submitReportFilters();
+                        });
+
+                        fromInput.addEventListener('change', submitReportFilters);
+                        toInput.addEventListener('input', submitReportFilters);
+                        toInput.addEventListener('change', submitReportFilters);
+                    }
+
+                    const rangeReset = document.getElementById('reportsRangeReset');
+                    if (rangeReset) {
+                        rangeReset.addEventListener('click', function() {
+                            const daysSelect = form.querySelector('select[name="days"]');
+                            if (daysSelect) {
+                                daysSelect.value = '60';
+                                syncRange(daysSelect);
+                                submitReportFilters();
+                            }
+                        });
+                    }
+                }
             });
 
             const labels = @json($chartLabels);

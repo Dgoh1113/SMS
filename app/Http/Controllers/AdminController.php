@@ -321,91 +321,6 @@ class AdminController extends Controller
         return null;
     }
 
-    private function buildDashboardRollingStatusSeries(int $days, string $status): array
-    {
-        $days = max(1, $days);
-        $normalizedStatus = strtoupper(trim($status));
-        $end = Carbon::now()->endOfDay();
-        $currentStart = Carbon::now()->subDays($days - 1)->startOfDay();
-        $previousEnd = $currentStart->copy()->subSecond();
-        $previousStart = $currentStart->copy()->subDays($days)->startOfDay();
-
-        $rows = DB::select(
-            'SELECT CAST("CREATIONDATE" AS DATE) AS day_key, COUNT(*) AS c
-             FROM "LEAD_ACT"
-             WHERE "CREATIONDATE" >= ? AND "CREATIONDATE" <= ?
-               AND UPPER(TRIM("STATUS")) = ?
-             GROUP BY CAST("CREATIONDATE" AS DATE)
-             ORDER BY CAST("CREATIONDATE" AS DATE)',
-            [
-                $currentStart->format('Y-m-d H:i:s'),
-                $end->format('Y-m-d H:i:s'),
-                $normalizedStatus,
-            ]
-        );
-
-        $countsByDay = [];
-        foreach ($rows as $row) {
-            $rawDay = $row->DAY_KEY ?? $row->day_key ?? null;
-            if (!$rawDay) {
-                continue;
-            }
-
-            try {
-                $dayKey = Carbon::parse((string) $rawDay)->format('Y-m-d');
-            } catch (\Throwable $e) {
-                continue;
-            }
-
-            $countsByDay[$dayKey] = (int) ($row->C ?? $row->c ?? current((array) $row) ?? 0);
-        }
-
-        $labels = [];
-        $tooltipTitles = [];
-        $data = [];
-        $currentTotal = 0;
-
-        for ($offset = 0; $offset < $days; $offset++) {
-            $day = $currentStart->copy()->addDays($offset);
-            $dayKey = $day->format('Y-m-d');
-            $value = (int) ($countsByDay[$dayKey] ?? 0);
-
-            $labels[] = $day->format('j M');
-            $tooltipTitles[] = $day->format('D, j M Y');
-            $data[] = $value;
-            $currentTotal += $value;
-        }
-
-        $previousRow = DB::selectOne(
-            'SELECT COUNT(*) AS c
-             FROM "LEAD_ACT"
-             WHERE "CREATIONDATE" >= ? AND "CREATIONDATE" <= ?
-               AND UPPER(TRIM("STATUS")) = ?',
-            [
-                $previousStart->format('Y-m-d H:i:s'),
-                $previousEnd->format('Y-m-d H:i:s'),
-                $normalizedStatus,
-            ]
-        );
-
-        $previousTotal = (int) ($previousRow->C ?? $previousRow->c ?? current((array) $previousRow) ?? 0);
-        $change = $previousTotal > 0
-            ? round((($currentTotal - $previousTotal) / $previousTotal) * 100, 1)
-            : ($currentTotal > 0 ? 100.0 : 0.0);
-
-        if (abs($change) < 0.05) {
-            $change = 0.0;
-        }
-
-        return [
-            'labels' => $labels,
-            'data' => $data,
-            'tooltipTitles' => $tooltipTitles,
-            'change' => $change,
-            'days' => $days,
-        ];
-    }
-
     private function dashboardData(): array
     {
         // Total leads: all rows in LEAD
@@ -519,7 +434,6 @@ class AdminController extends Controller
         $referralLastWeek = 0;
         $activeThisWeek = $activeInquiries;
         $activeLastWeek = 0;
-        $countActiveSnapshot = null;
         $percentChange = static function ($current, $previous): float {
             $change = $previous > 0
                 ? round((($current - $previous) / $previous) * 100, 1)
@@ -616,77 +530,6 @@ class AdminController extends Controller
         $conversionRateChange = round($conversionRate - $conversionRateLastWeek, 1);
         if (abs($conversionRateChange) < 0.05) {
             $conversionRateChange = 0.0;
-        }
-
-        $dashboardMetricRangeChanges = [];
-        foreach ([30, 60, 90] as $rollingDays) {
-            $currentStart = Carbon::now()->subDays($rollingDays - 1)->startOfDay();
-            $currentEnd = Carbon::now()->endOfDay();
-            $previousEnd = $currentStart->copy()->subSecond();
-            $previousStart = $currentStart->copy()->subDays($rollingDays)->startOfDay();
-
-            $rangeLeadsCurrent = 0;
-            $rangeLeadsPrevious = 0;
-            $rangeClosedCurrent = 0;
-            $rangeClosedPrevious = 0;
-            $rangeActivePrevious = 0;
-
-            try {
-                $r = DB::selectOne(
-                    'SELECT COUNT(*) AS c FROM "LEAD" WHERE "CREATEDAT" >= ? AND "CREATEDAT" <= ?',
-                    [$currentStart->format('Y-m-d H:i:s'), $currentEnd->format('Y-m-d H:i:s')]
-                );
-                $rangeLeadsCurrent = (int) ($r->c ?? $r->C ?? 0);
-
-                $r = DB::selectOne(
-                    'SELECT COUNT(*) AS c FROM "LEAD" WHERE "CREATEDAT" >= ? AND "CREATEDAT" <= ?',
-                    [$previousStart->format('Y-m-d H:i:s'), $previousEnd->format('Y-m-d H:i:s')]
-                );
-                $rangeLeadsPrevious = (int) ($r->c ?? $r->C ?? 0);
-
-                $r = DB::selectOne(
-                    'SELECT COUNT(*) AS c FROM "LEAD_ACT" WHERE UPPER(TRIM("STATUS")) = \'COMPLETED\' AND "CREATIONDATE" >= ? AND "CREATIONDATE" <= ?',
-                    [$currentStart->format('Y-m-d H:i:s'), $currentEnd->format('Y-m-d H:i:s')]
-                );
-                $rangeClosedCurrent = (int) ($r->c ?? $r->C ?? 0);
-
-                $r = DB::selectOne(
-                    'SELECT COUNT(*) AS c FROM "LEAD_ACT" WHERE UPPER(TRIM("STATUS")) = \'COMPLETED\' AND "CREATIONDATE" >= ? AND "CREATIONDATE" <= ?',
-                    [$previousStart->format('Y-m-d H:i:s'), $previousEnd->format('Y-m-d H:i:s')]
-                );
-                $rangeClosedPrevious = (int) ($r->c ?? $r->C ?? 0);
-
-                if (is_callable($countActiveSnapshot)) {
-                    $rangeActivePrevious = (int) $countActiveSnapshot($previousEnd->format('Y-m-d H:i:s'));
-                }
-            } catch (\Throwable $e) {
-                $rangeLeadsCurrent = 0;
-                $rangeLeadsPrevious = 0;
-                $rangeClosedCurrent = 0;
-                $rangeClosedPrevious = 0;
-                $rangeActivePrevious = 0;
-            }
-
-            $currentPeriodConversion = $rangeLeadsCurrent > 0 ? ($rangeClosedCurrent / $rangeLeadsCurrent) * 100 : 0;
-            $previousPeriodConversion = $rangeLeadsPrevious > 0 ? ($rangeClosedPrevious / $rangeLeadsPrevious) * 100 : 0;
-            $rangeConversionChange = round($currentPeriodConversion - $previousPeriodConversion, 1);
-            if (abs($rangeConversionChange) < 0.05) {
-                $rangeConversionChange = 0.0;
-            }
-
-            $dashboardMetricRangeChanges[(string) $rollingDays] = [
-                'leads' => $percentChange($rangeLeadsCurrent, $rangeLeadsPrevious),
-                'closed' => $percentChange($rangeClosedCurrent, $rangeClosedPrevious),
-                'active' => $percentChange($activeInquiries, $rangeActivePrevious),
-                'conversion' => $rangeConversionChange,
-            ];
-        }
-
-        if (isset($dashboardMetricRangeChanges['30'])) {
-            $pctLeads = (float) ($dashboardMetricRangeChanges['30']['leads'] ?? $pctLeads);
-            $pctClosed = (float) ($dashboardMetricRangeChanges['30']['closed'] ?? $pctClosed);
-            $pctActive = (float) ($dashboardMetricRangeChanges['30']['active'] ?? $pctActive);
-            $conversionRateChange = (float) ($dashboardMetricRangeChanges['30']['conversion'] ?? $conversionRateChange);
         }
 
         $dealerStats = [];
@@ -788,48 +631,185 @@ class AdminController extends Controller
             // Schema may differ; keep empty
         }
 
+        // Closed cases (LEAD_ACT STATUS = 'Completed') - week/month/year
+        $chartLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        $chartData = [12, 19, 15, 22, 18, 24, 20];
+        $referralWeekData = [0, 0, 0, 0, 0, 0, 0];
+        try {
+            $startOfWeek = now()->startOfWeek(\Carbon\Carbon::MONDAY);
+            for ($i = 0; $i < 7; $i++) {
+                $day = $startOfWeek->copy()->addDays($i)->format('Y-m-d');
+                $r = DB::selectOne(
+                    'SELECT COUNT(*) as c FROM "LEAD_ACT" WHERE CAST("CREATIONDATE" AS DATE) = CAST(? AS DATE) AND UPPER(TRIM("STATUS")) = \'COMPLETED\'',
+                    [$day]
+                );
+                $chartData[$i] = (int) ($r->c ?? $r->C ?? current((array) $r) ?? 0);
+
+                $ro = DB::selectOne(
+                    'SELECT COUNT(*) as c FROM "LEAD_ACT" WHERE CAST("CREATIONDATE" AS DATE) = CAST(? AS DATE) AND "STATUS" = \'FollowUp\'',
+                    [$day]
+                );
+                $referralWeekData[$i] = (int) ($ro->c ?? $ro->C ?? current((array) $ro) ?? 0);
+            }
+        } catch (\Throwable $e) {
+            // keep default chartData
+        }
+
+        $chartMonthLabels = [];
+        $chartMonthData = [];
+        $referralMonthData = [];
+        try {
+            $start = now()->startOfMonth();
+            $daysInMonth = $start->daysInMonth;
+            for ($i = 1; $i <= $daysInMonth; $i++) {
+                $chartMonthLabels[] = (string) $i;
+                $day = $start->copy()->day($i)->format('Y-m-d');
+                $r = DB::selectOne(
+                    'SELECT COUNT(*) as c FROM "LEAD_ACT" WHERE CAST("CREATIONDATE" AS DATE) = CAST(? AS DATE) AND UPPER(TRIM("STATUS")) = \'COMPLETED\'',
+                    [$day]
+                );
+                $chartMonthData[] = (int) ($r->c ?? $r->C ?? current((array) $r) ?? 0);
+
+                $ro = DB::selectOne(
+                    'SELECT COUNT(*) as c FROM "LEAD_ACT" WHERE CAST("CREATIONDATE" AS DATE) = CAST(? AS DATE) AND "STATUS" = \'FollowUp\'',
+                    [$day]
+                );
+                $referralMonthData[] = (int) ($ro->c ?? $ro->C ?? current((array) $ro) ?? 0);
+            }
+        } catch (\Throwable $e) {
+            $chartMonthLabels = ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20','21','22','23','24','25','26','27','28','29','30'];
+            $chartMonthData = array_slice([12, 19, 15, 22, 18, 24, 20, 16, 21, 13, 17, 23, 19, 14, 18, 24, 20, 15, 22, 18, 24, 20, 16, 21, 13, 17, 23, 19, 14, 18], 0, count($chartMonthLabels));
+            $referralMonthData = array_fill(0, count($chartMonthLabels), 0);
+        }
+
+        $chartYearLabels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        $chartYearData = array_fill(0, 12, 0);
+        $referralYearData = array_fill(0, 12, 0);
+        try {
+            $yearStart = now()->startOfYear();
+            for ($m = 0; $m < 12; $m++) {
+                $monthStart = $yearStart->copy()->addMonths($m);
+                $monthEnd = $monthStart->copy()->endOfMonth();
+                $r = DB::selectOne(
+                    'SELECT COUNT(*) as c FROM "LEAD_ACT" WHERE "CREATIONDATE" >= ? AND "CREATIONDATE" <= ? AND UPPER(TRIM("STATUS")) = \'COMPLETED\'',
+                    [$monthStart->format('Y-m-d 00:00:00'), $monthEnd->format('Y-m-d 23:59:59')]
+                );
+                $chartYearData[$m] = (int) ($r->c ?? $r->C ?? current((array) $r) ?? 0);
+
+                $ro = DB::selectOne(
+                    'SELECT COUNT(*) as c FROM "LEAD_ACT" WHERE "CREATIONDATE" >= ? AND "CREATIONDATE" <= ? AND "STATUS" = \'FollowUp\'',
+                    [$monthStart->format('Y-m-d 00:00:00'), $monthEnd->format('Y-m-d 23:59:59')]
+                );
+                $referralYearData[$m] = (int) ($ro->c ?? $ro->C ?? current((array) $ro) ?? 0);
+            }
+        } catch (\Throwable $e) {
+            $chartYearData = [120, 98, 110, 130, 90, 105, 125, 115, 100, 140, 135, 150];
+            $referralYearData = array_fill(0, 12, 0);
+        }
+
+        // Build 30/60/90-day range data for dashboard charts
         $dashboardClosedCaseRanges = [];
         $dashboardReferralRanges = [];
         $dashboardReferralRangeChanges = [];
-        foreach ([30, 60, 90] as $rollingDays) {
+        $dashboardMetricRangeChanges = [];
+
+        foreach ([30, 60, 90] as $rangeDays) {
+            $rangeKey = (string) $rangeDays;
+            $labels = [];
+            $closedData = [];
+            $referralData = [];
+            $tooltipTitles = [];
+
             try {
-                $closedSeries = $this->buildDashboardRollingStatusSeries($rollingDays, 'COMPLETED');
-                $referralSeries = $this->buildDashboardRollingStatusSeries($rollingDays, 'FOLLOWUP');
-            } catch (\Throwable $e) {
-                $labels = [];
-                $tooltipTitles = [];
-                for ($offset = $rollingDays - 1; $offset >= 0; $offset--) {
-                    $day = Carbon::now()->subDays($offset);
-                    $labels[] = $day->format('j M');
-                    $tooltipTitles[] = $day->format('D, j M Y');
+                $rangeEnd = Carbon::today();
+                $rangeStart = $rangeEnd->copy()->subDays($rangeDays - 1);
+
+                for ($d = 0; $d < $rangeDays; $d++) {
+                    $day = $rangeStart->copy()->addDays($d);
+                    $dayStr = $day->format('Y-m-d');
+                    $labels[] = $day->format('d M');
+                    $tooltipTitles[] = $day->format('d M Y');
+
+                    $r = DB::selectOne(
+                        'SELECT COUNT(*) as c FROM "LEAD_ACT" WHERE CAST("CREATIONDATE" AS DATE) = CAST(? AS DATE) AND UPPER(TRIM("STATUS")) = \'COMPLETED\'',
+                        [$dayStr]
+                    );
+                    $closedData[] = (int) ($r->c ?? $r->C ?? 0);
+
+                    $ro = DB::selectOne(
+                        'SELECT COUNT(*) as c FROM "LEAD_ACT" WHERE CAST("CREATIONDATE" AS DATE) = CAST(? AS DATE) AND "STATUS" = \'FollowUp\'',
+                        [$dayStr]
+                    );
+                    $referralData[] = (int) ($ro->c ?? $ro->C ?? 0);
                 }
 
-                $closedSeries = [
-                    'labels' => $labels,
-                    'data' => array_fill(0, $rollingDays, 0),
-                    'tooltipTitles' => $tooltipTitles,
-                    'change' => 0.0,
+                // Previous period for comparison
+                $prevEnd = $rangeStart->copy()->subDay();
+                $prevStart = $prevEnd->copy()->subDays($rangeDays - 1);
+
+                $rCur = DB::selectOne(
+                    'SELECT COUNT(*) as c FROM "LEAD_ACT" WHERE UPPER(TRIM("STATUS")) = \'COMPLETED\' AND "CREATIONDATE" >= ? AND "CREATIONDATE" <= ?',
+                    [$rangeStart->format('Y-m-d 00:00:00'), $rangeEnd->format('Y-m-d 23:59:59')]
+                );
+                $rPrev = DB::selectOne(
+                    'SELECT COUNT(*) as c FROM "LEAD_ACT" WHERE UPPER(TRIM("STATUS")) = \'COMPLETED\' AND "CREATIONDATE" >= ? AND "CREATIONDATE" <= ?',
+                    [$prevStart->format('Y-m-d 00:00:00'), $prevEnd->format('Y-m-d 23:59:59')]
+                );
+                $curClosed = (int) ($rCur->c ?? $rCur->C ?? 0);
+                $prevClosed = (int) ($rPrev->c ?? $rPrev->C ?? 0);
+
+                $refCur = DB::selectOne(
+                    'SELECT COUNT(*) as c FROM "LEAD_ACT" WHERE "STATUS" = \'FollowUp\' AND "CREATIONDATE" >= ? AND "CREATIONDATE" <= ?',
+                    [$rangeStart->format('Y-m-d 00:00:00'), $rangeEnd->format('Y-m-d 23:59:59')]
+                );
+                $refPrev = DB::selectOne(
+                    'SELECT COUNT(*) as c FROM "LEAD_ACT" WHERE "STATUS" = \'FollowUp\' AND "CREATIONDATE" >= ? AND "CREATIONDATE" <= ?',
+                    [$prevStart->format('Y-m-d 00:00:00'), $prevEnd->format('Y-m-d 23:59:59')]
+                );
+                $curRef = (int) ($refCur->c ?? $refCur->C ?? 0);
+                $prevRef = (int) ($refPrev->c ?? $refPrev->C ?? 0);
+
+                $dashboardReferralRangeChanges[$rangeKey] = $percentChange($curRef, $prevRef);
+
+                // Metric range changes (leads, closed, active, conversion)
+                $leadsCur = DB::selectOne(
+                    'SELECT COUNT(*) as c FROM "LEAD" WHERE "CREATEDAT" >= ? AND "CREATEDAT" <= ?',
+                    [$rangeStart->format('Y-m-d 00:00:00'), $rangeEnd->format('Y-m-d 23:59:59')]
+                );
+                $leadsPrev = DB::selectOne(
+                    'SELECT COUNT(*) as c FROM "LEAD" WHERE "CREATEDAT" >= ? AND "CREATEDAT" <= ?',
+                    [$prevStart->format('Y-m-d 00:00:00'), $prevEnd->format('Y-m-d 23:59:59')]
+                );
+                $curLeadsCount = (int) ($leadsCur->c ?? $leadsCur->C ?? 0);
+                $prevLeadsCount = (int) ($leadsPrev->c ?? $leadsPrev->C ?? 0);
+
+                $dashboardMetricRangeChanges[$rangeKey] = [
+                    'leads' => $percentChange($curLeadsCount, $prevLeadsCount),
+                    'closed' => $percentChange($curClosed, $prevClosed),
+                    'active' => $percentChange($activeInquiries, max($activeInquiries - ($curLeadsCount - $prevLeadsCount), 0)),
+                    'conversion' => $totalLeads > 0
+                        ? round(($curClosed / max($curLeadsCount, 1)) * 100 - ($prevClosed / max($prevLeadsCount, 1)) * 100, 1)
+                        : 0.0,
                 ];
-                $referralSeries = [
-                    'labels' => $labels,
-                    'data' => array_fill(0, $rollingDays, 0),
-                    'tooltipTitles' => $tooltipTitles,
-                    'change' => 0.0,
-                ];
+            } catch (\Throwable $e) {
+                $labels = array_fill(0, $rangeDays, '');
+                $closedData = array_fill(0, $rangeDays, 0);
+                $referralData = array_fill(0, $rangeDays, 0);
+                $tooltipTitles = $labels;
+                $dashboardReferralRangeChanges[$rangeKey] = 0;
+                $dashboardMetricRangeChanges[$rangeKey] = ['leads' => 0, 'closed' => 0, 'active' => 0, 'conversion' => 0];
             }
 
-            $rangeKey = (string) $rollingDays;
             $dashboardClosedCaseRanges[$rangeKey] = [
-                'labels' => $closedSeries['labels'],
-                'data' => $closedSeries['data'],
-                'tooltipTitles' => $closedSeries['tooltipTitles'],
+                'labels' => $labels,
+                'data' => $closedData,
+                'tooltipTitles' => $tooltipTitles,
             ];
             $dashboardReferralRanges[$rangeKey] = [
-                'labels' => $referralSeries['labels'],
-                'data' => $referralSeries['data'],
-                'tooltipTitles' => $referralSeries['tooltipTitles'],
+                'labels' => $labels,
+                'data' => $referralData,
+                'tooltipTitles' => $tooltipTitles,
             ];
-            $dashboardReferralRangeChanges[$rangeKey] = (float) ($referralSeries['change'] ?? 0.0);
         }
 
         return [
@@ -844,11 +824,20 @@ class AdminController extends Controller
             'pctActive' => $pctActive,
             'conversionRateChange' => $conversionRateChange,
             'pctReferral' => $pctReferral,
-            'dashboardMetricRangeChanges' => $dashboardMetricRangeChanges,
             'topDealers' => $dealerStats,
+            'chartLabels' => $chartLabels,
+            'chartData' => $chartData,
+            'chartMonthLabels' => $chartMonthLabels,
+            'chartMonthData' => $chartMonthData,
+            'chartYearLabels' => $chartYearLabels,
+            'chartYearData' => $chartYearData,
+            'referralWeekData' => $referralWeekData,
+            'referralMonthData' => $referralMonthData,
+            'referralYearData' => $referralYearData,
             'dashboardClosedCaseRanges' => $dashboardClosedCaseRanges,
             'dashboardReferralRanges' => $dashboardReferralRanges,
             'dashboardReferralRangeChanges' => $dashboardReferralRangeChanges,
+            'dashboardMetricRangeChanges' => $dashboardMetricRangeChanges,
         ];
     }
 
@@ -1413,9 +1402,9 @@ class AdminController extends Controller
     {
         $validated = $request->validate([
             'LEADID' => 'required|integer|min:1',
-            'FAIL_REASON' => 'nullable|string|max:4000|required_without:DESCRIPTION',
+            'FAIL_REASON' => 'nullable|string|max:130|required_without:DESCRIPTION',
             'FAIL_DETAIL' => 'nullable|string|max:4000',
-            'DESCRIPTION' => 'nullable|string|max:4000|required_without:FAIL_REASON',
+            'DESCRIPTION' => 'nullable|string|max:130|required_without:FAIL_REASON',
         ]);
         $leadId = (int) $validated['LEADID'];
         $reason = trim((string) ($validated['FAIL_REASON'] ?? ''));
@@ -1630,23 +1619,23 @@ class AdminController extends Controller
     {
         $validated = $request->validate(
             [
-                'COMPANYNAME' => 'required|string|max:255',
-                'CONTACTNAME' => 'required|string|max:255',
+                'COMPANYNAME' => 'required|string|max:50',
+                'CONTACTNAME' => 'required|string|max:100',
                 'CONTACTNO' => 'required|string|min:10|max:15',
-                'EMAIL' => 'required|email|max:255',
-                'ADDRESS1' => 'nullable|string|max:255',
-                'ADDRESS2' => 'nullable|string|max:255',
-                'CITY' => 'required|string|max:100',
+                'EMAIL' => 'required|email|max:50',
+                'ADDRESS1' => 'nullable|string|max:80',
+                'ADDRESS2' => 'nullable|string|max:80',
+                'CITY' => 'required|string|max:20',
                 'POSTCODE' => 'required|string|digits:5',
-                'BUSINESSNATURE' => 'required|string|max:255',
-                'USERCOUNT' => 'nullable|string|max:50',
-                'EXISTINGSOFTWARE' => 'required|string|max:255',
+                'BUSINESSNATURE' => 'required|string|max:30',
+                'USERCOUNT' => 'nullable|integer',
+                'EXISTINGSOFTWARE' => 'required|string|max:40',
                 'DEMOMODE' => 'required|string|in:Zoom,On-site',
                 'product_interested' => 'required|array',
                 'product_interested.*' => 'integer|in:1,2,3,4,5,6,7,8,9,10,11',
-                'DESCRIPTION' => 'nullable|string|max:4000',
-                'REFERRALCODE' => 'nullable|string|max:100',
-                'ASSIGNED_TO' => 'nullable|string|max:50',
+                'DESCRIPTION' => 'nullable|string|max:160',
+                'REFERRALCODE' => 'nullable|string|max:20',
+                'ASSIGNED_TO' => 'nullable|string|max:10',
             ],
             [
                 'CONTACTNO.min'          => 'Invalid Contact Number.',
@@ -1773,22 +1762,22 @@ class AdminController extends Controller
     {
         $validated = $request->validate(
             [
-                'COMPANYNAME' => 'required|string|max:255',
-                'CONTACTNAME' => 'required|string|max:255',
+                'COMPANYNAME' => 'required|string|max:50',
+                'CONTACTNAME' => 'required|string|max:100',
                 'CONTACTNO' => 'required|string|min:10|max:15',
-                'EMAIL' => 'required|email|max:255',
-                'ADDRESS1' => 'nullable|string|max:255',
-                'ADDRESS2' => 'nullable|string|max:255',
-                'CITY' => 'required|string|max:100',
+                'EMAIL' => 'required|email|max:50',
+                'ADDRESS1' => 'nullable|string|max:80',
+                'ADDRESS2' => 'nullable|string|max:80',
+                'CITY' => 'required|string|max:20',
                 'POSTCODE' => 'required|string|digits:5',
-                'BUSINESSNATURE' => 'required|string|max:255',
-                'USERCOUNT' => 'nullable|string|max:50',
-                'EXISTINGSOFTWARE' => 'required|string|max:255',
+                'BUSINESSNATURE' => 'required|string|max:30',
+                'USERCOUNT' => 'nullable|integer',
+                'EXISTINGSOFTWARE' => 'required|string|max:40',
                 'DEMOMODE' => 'required|string|in:Zoom,On-site',
                 'product_interested' => 'required|array',
                 'product_interested.*' => 'integer|in:1,2,3,4,5,6,7,8,9,10,11',
-                'DESCRIPTION' => 'nullable|string|max:4000',
-                'REFERRALCODE' => 'nullable|string|max:100',
+                'DESCRIPTION' => 'nullable|string|max:160',
+                'REFERRALCODE' => 'nullable|string|max:20',
                 'INQUIRY_SNAPSHOT_AT' => 'nullable|string|max:50',
             ],
             [
@@ -2471,9 +2460,6 @@ class AdminController extends Controller
         $reportScopeOptions = $this->adminReportScopeOptions();
 
         $daysParam = $request->query('days', '60');
-        $days = (int) $daysParam;
-        if (!in_array($days, [30, 60, 90], true)) {
-            $days = 60;
         $fromParam = trim((string) $request->query('from', ''));
         $toParam = trim((string) $request->query('to', ''));
         $useCustom = $fromParam !== '' && $toParam !== '';
@@ -2492,8 +2478,6 @@ class AdminController extends Controller
             }
         }
 
-        $startDate = Carbon::now()->subDays($days)->startOfDay();
-        $endDate = Carbon::now()->endOfDay();
         if (!$useCustom) {
             $days = (int) $daysParam;
             if (!in_array($days, [30, 60, 90], true)) {
@@ -3341,9 +3325,6 @@ class AdminController extends Controller
         $reportScopeOptions = $this->adminReportScopeOptions();
 
         $daysParam = $request->query('days', '60');
-        $days = (int) $daysParam;
-        if (!in_array($days, [30, 60, 90], true)) {
-            $days = 60;
         $fromParam = trim((string) $request->query('from', ''));
         $toParam = trim((string) $request->query('to', ''));
         $useCustom = $fromParam !== '' && $toParam !== '';
@@ -3362,8 +3343,6 @@ class AdminController extends Controller
             }
         }
 
-        $start = Carbon::now()->subDays($days)->startOfDay();
-        $end = Carbon::now()->endOfDay();
         if (!$useCustom) {
             $days = (int) $daysParam;
             if (!in_array($days, [30, 60, 90], true)) {
@@ -3884,11 +3863,14 @@ class AdminController extends Controller
             $city = '';
         }
 
-        $existing = DB::selectOne('SELECT "USERID" FROM "USERS" WHERE UPPER(TRIM("EMAIL")) = UPPER(TRIM(?))', [$email]);
+        $existing = DB::selectOne(
+            'SELECT "USERID" FROM "USERS" WHERE UPPER(TRIM("EMAIL")) = UPPER(TRIM(?)) AND UPPER(TRIM("SYSTEMROLE")) = UPPER(TRIM(?))',
+            [$email, $systemRole]
+        );
         if ($existing) {
             return back()
                 ->withInput()
-                ->with('error', 'Email already exists for another user.');
+                ->with('error', "User with this email already has the '{$systemRole}' role.");
         }
 
         DB::insert(
@@ -3906,8 +3888,8 @@ class AdminController extends Controller
         );
 
         $createdUser = DB::selectOne(
-            'SELECT "USERID" FROM "USERS" WHERE UPPER(TRIM("EMAIL")) = UPPER(TRIM(?))',
-            [$email]
+            'SELECT "USERID" FROM "USERS" WHERE UPPER(TRIM("EMAIL")) = UPPER(TRIM(?)) AND UPPER(TRIM("SYSTEMROLE")) = UPPER(TRIM(?))',
+            [$email, $systemRole]
         );
 
         $createAction = trim((string) $request->input('CREATE_ACTION', 'create'));
@@ -3974,13 +3956,14 @@ class AdminController extends Controller
             $city = '';
         }
 
-        // Email unique except current user
+        // Email + Role unique except current user
+        $roleValue = $existing->SYSTEMROLE ?? '';
         $emailConflict = DB::selectOne(
-            'SELECT "USERID" FROM "USERS" WHERE UPPER(TRIM("EMAIL")) = UPPER(TRIM(?)) AND "USERID" <> ?',
-            [$email, $userid]
+            'SELECT "USERID" FROM "USERS" WHERE UPPER(TRIM("EMAIL")) = UPPER(TRIM(?)) AND UPPER(TRIM("SYSTEMROLE")) = UPPER(TRIM(?)) AND "USERID" <> ?',
+            [$email, $roleValue, $userid]
         );
         if ($emailConflict) {
-            return back()->withInput()->with('error', 'Email already exists for another user.');
+            return back()->withInput()->with('error', "Another user already has this email with the '{$roleValue}' role.");
         }
 
         // Use actual USERS table column names (same as Full Database) for Firebird compatibility

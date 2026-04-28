@@ -606,3 +606,110 @@ html.theme-dark .report-filter-export:focus-visible {
     font-size: 26px;
   }
 }
+
+.reports-period-form {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: nowrap;
+}
+
+.reports-filter-container {
+  position: relative;
+  min-width: max-content;
+  flex: 0 0 auto;
+  flex-shrink: 0;
+  padding: 8px 12px;
+  border: 1px solid #d6d9e8;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+}
+
+.reports-period-date-group-wrapper {
+  position: relative;
+}
+
+.reports-range-grid {
+  display: none;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  align-items: flex-end;
+  min-width: 320px;
+}
+
+.reports-range-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.reports-range-label {
+  font-size: 10px;
+  font-weight: 800;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.reports-range-input {
+  height: 34px;
+  padding: 0 8px;
+  border: 1px solid rgba(124, 91, 255, 0.2);
+  border-radius: 9px;
+  background: #ffffff;
+  color: #1f2937;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  box-sizing: border-box;
+}
+
+.reports-range-back-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  height: 24px;
+  width: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.reports-range-back-btn:hover {
+  background: #f1f5f9;
+  color: #ef4444;
+}
+
+html.theme-dark .reports-range-input {
+  border-color: #32405f;
+  background: #0f1628;
+  color: #d9e2f6;
+}
+
+html.theme-dark .reports-range-back-btn {
+  color: #64748b;
+  background: transparent;
+}
+html.theme-dark .reports-range-back-btn:hover {
+  color: #f87171;
+  background: #1e293b;
+}
+
+@media (max-width: 640px) {
+  .reports-range-grid {
+    grid-template-columns: 1fr;
+    min-width: 0;
+    width: 100%;
+  }
+}

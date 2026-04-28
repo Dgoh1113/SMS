@@ -171,7 +171,7 @@
 .rv2-filters {
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: stretch;
 }
 .rv2-filters-form {
@@ -179,7 +179,7 @@
   justify-content: flex-end;
   margin-left: auto;
   --report-scope-picker-height: 34px;
-  --report-scope-picker-width: 250px;
+  --report-scope-picker-width: 180px;
   --report-filter-radius: 9px;
   --report-filter-actions-gap: 8px;
   --report-filter-apply-height: 34px;
@@ -189,8 +189,15 @@
   --report-filter-clear-padding: 0 12px;
   --report-filter-clear-font-size: 11px;
 }
+
+/* When custom range is active, shrink dealer scope */
+.rv2-filters-form.rv2-has-custom-range {
+  --report-scope-picker-width: 100px;
+}
 .rv2-filter {
-  min-width: 186px;
+  position: relative;
+  min-width: 0;
+  flex: 1 1 auto;
   padding: 8px 10px;
   border: 1px solid #d6d9e8;
   border-radius: 10px;
@@ -203,6 +210,26 @@
   font-weight: 800;
   color: #9ca3af;
   letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Extra compact when custom range is active to fit everything */
+.rv2-filters-form.rv2-has-custom-range .rv2-filter {
+  padding: 8px 10px;
+  flex: 0 0 auto;
+}
+.rv2-filters-form.rv2-has-custom-range .rv2-filter .reports-range-grid {
+  gap: 8px;
+  min-width: 280px;
+  max-width: 280px;
+}
+.rv2-filters-form.rv2-has-custom-range .rv2-filter .reports-range-input {
+  height: 34px !important;
+  font-size: 12px;
+  padding: 0 8px;
+}
+.rv2-filters-form.rv2-has-custom-range .rv2-filter .reports-range-label {
+  font-size: 9px;
 }
 .rv2-filter-actions {
   justify-content: flex-start;
@@ -284,6 +311,58 @@
   border-color: #8b5cf6;
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.14);
 }
+
+/* Overrides for the unified 2-column custom range when used inside rv2-filter */
+.rv2-filter .reports-range-grid {
+  min-width: 0;
+  gap: 4px;
+  margin-top: 7px;
+  grid-template-columns: 1fr 1fr;
+}
+.rv2-filter .reports-range-col {
+  gap: 2px;
+}
+.rv2-filter .reports-range-label {
+  font-size: 9px;
+  margin-left: 2px;
+  color: #9ca3af;
+}
+.rv2-filter .reports-range-input {
+  flex: none !important;
+  width: 100%;
+  height: 34px !important;
+  padding: 0 4px;
+  border-radius: 8px;
+  font-size: 11px;
+  border: 1px solid #d6d9e8;
+}
+.rv2-filter .reports-range-input:focus {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.14);
+  outline: none;
+}
+.rv2-filter .reports-range-back-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  height: 22px !important;
+  width: 22px;
+  padding: 0;
+  border-radius: 6px;
+  font-size: 11px;
+  background: transparent;
+  color: #9ca3af;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.rv2-filter .reports-range-back-btn:hover {
+  background: #f1f5f9;
+  color: #ef4444;
+  border-color: transparent;
+}
+
 .rv2-filter-apply {
   display: flex;
   align-items: center;

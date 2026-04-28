@@ -243,13 +243,9 @@ class DealerController extends Controller
                 $conversionTrend = 0.0;
             }
 
-            $pendingFollowupsSql = $dealerEmail
-                ? 'SELECT COUNT(*) AS "CNT" FROM "LEAD"
-                  WHERE "ASSIGNED_TO" = (SELECT "USERID" FROM "USERS" WHERE "EMAIL" = ?)
-                  AND UPPER(TRIM(COALESCE("CURRENTSTATUS", \'\'))) = ?'
-                : 'SELECT COUNT(*) AS "CNT" FROM "LEAD"
+            $pendingFollowupsSql = 'SELECT COUNT(*) AS "CNT" FROM "LEAD"
                   WHERE "ASSIGNED_TO" = ? AND UPPER(TRIM(COALESCE("CURRENTSTATUS", \'\'))) = ?';
-            $pendingFollowupsParams = $dealerEmail ? [$dealerEmail, 'ONGOING'] : [$dealerId, 'ONGOING'];
+            $pendingFollowupsParams = [$dealerId, 'ONGOING'];
             $pendingFollowupsRow = DB::selectOne($pendingFollowupsSql, $pendingFollowupsParams);
             $pendingFollowupsCount = (int) ($pendingFollowupsRow->CNT ?? 0);
 
@@ -1073,8 +1069,8 @@ class DealerController extends Controller
         if ($isMultipart) {
             $request->validate([
                 'lead_id' => 'required|integer',
-                'status' => 'required|string|max:50',
-                'remark' => 'nullable|string|max:4000',
+                'status' => 'required|string|max:15',
+                'remark' => 'nullable|string|max:150',
                 'attachments' => 'nullable|array',
                 'attachments.*' => 'image|max:5120',
             ]);
@@ -1087,8 +1083,8 @@ class DealerController extends Controller
         } else {
             $validated = $request->validate([
                 'lead_id' => 'required|integer',
-                'status' => 'required|string|max:50',
-                'remark' => 'nullable|string|max:4000',
+                'status' => 'required|string|max:15',
+                'remark' => 'nullable|string|max:150',
                 'products' => 'nullable|array',
                 'products.*.id' => 'nullable',
                 'products.*.name' => 'nullable|string|max:100',
@@ -1810,7 +1806,7 @@ class DealerController extends Controller
 
     $dateFrom = null;
     $dateTo = null;
-    $periodLabel = '';
+    $periodLabel = 'Last 60 Days';
     $trendLabels = [];
 
     $days = 0;
@@ -1828,28 +1824,27 @@ class DealerController extends Controller
         } elseif ($days <= 31) {
             $trendLabels = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
         } else {
-            $trendLabels = ['Period 1', 'Period 2', 'Period 3', 'Period 4', 'Period 5', 'Period 6'];
+            $trendLabels = ['Month 1', 'Month 2', 'Month 3', 'Month 4', 'Month 5', 'Month 6'];
         }
     } elseif ($period === '30_days') {
-        $dateFrom = Carbon::now()->subDays(30)->startOfDay();
+        $dateFrom = Carbon::now()->subDays(29)->startOfDay();
         $dateTo = Carbon::now()->endOfDay();
-        $days = (int) ($dateFrom->diffInDays($dateTo) + 1);
+        $periodLabel = 'Last 30 Days';
+        $days = 30;
         $trendLabels = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
     } elseif ($period === '90_days') {
-        $dateFrom = Carbon::now()->subDays(90)->startOfDay();
+        $dateFrom = Carbon::now()->subDays(89)->startOfDay();
         $dateTo = Carbon::now()->endOfDay();
-        $days = (int) ($dateFrom->diffInDays($dateTo) + 1);
-        $trendLabels = ['Period 1', 'Period 2', 'Period 3'];
+        $periodLabel = 'Last 90 Days';
+        $days = 90;
+        $trendLabels = ['Month 1', 'Month 2', 'Month 3'];
     } else {
         $period = '60_days';
-        $dateFrom = Carbon::now()->subDays(60)->startOfDay();
+        $dateFrom = Carbon::now()->subDays(59)->startOfDay();
         $dateTo = Carbon::now()->endOfDay();
-        $days = (int) ($dateFrom->diffInDays($dateTo) + 1);
+        $periodLabel = 'Last 60 Days';
+        $days = 60;
         $trendLabels = ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Week 7', 'Week 8'];
-    }
-
-    if ($period !== 'range' && $dateFrom && $dateTo) {
-        $periodLabel = $dateFrom->format('M j, Y') . ' - ' . $dateTo->format('M j, Y');
     }
 
     $statusMap = [

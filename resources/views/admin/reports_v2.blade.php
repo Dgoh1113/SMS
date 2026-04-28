@@ -20,7 +20,7 @@
                 <a href="{{ route('admin.reports', $reportTabQuery) }}"
                    class="reports-tab-link {{ request()->routeIs('admin.reports') ? 'is-active' : '' }}">
                     <i class="bi bi-bar-chart-line reports-tab-icon" aria-hidden="true"></i>
-                    <span>Performance Analytics</span>
+                    <span>Monthly Performance</span>
                 </a>
                 <a href="{{ route('admin.reports.v2', $reportTabQuery) }}"
                    class="reports-tab-link {{ request()->routeIs('admin.reports.v2') ? 'is-active' : '' }}">
@@ -46,32 +46,48 @@
                 @endforeach
                 <div class="rv2-filter">
                     <div class="rv2-filter-label">PRIMARY PERIOD</div>
-                    <select name="days" class="rv2-filter-select">
+                    <select name="days" class="rv2-filter-select" id="rv2PrimarySelect" style="display: {{ request('primary_from') || request('primary_to') ? 'none' : 'block' }};">
                         @php $primaryDays = (int) request('days', $chartDays ?? 90); @endphp
                         <option value="30" {{ $primaryDays === 30 ? 'selected' : '' }}>Last 30 days</option>
                         <option value="60" {{ $primaryDays === 60 ? 'selected' : '' }}>Last 60 days</option>
                         <option value="90" {{ $primaryDays === 90 ? 'selected' : '' }}>Last 90 days</option>
                         <option value="custom" {{ request('primary_from') || request('primary_to') ? 'selected' : '' }}>Custom range…</option>
                     </select>
-                    <div class="rv2-date-range">
-                        <input type="date" name="primary_from" value="{{ request('primary_from') }}">
-                        <span>to</span>
-                        <input type="date" name="primary_to" value="{{ request('primary_to') }}">
+                    <div class="rv2-date-range reports-range-grid" style="display: {{ request('primary_from') || request('primary_to') ? 'grid' : 'none' }};">
+                        <div class="reports-range-col">
+                            <label class="reports-range-label">Starting</label>
+                            <input type="date" name="primary_from" value="{{ request('primary_from') }}" class="reports-range-input">
+                        </div>
+                        <div class="reports-range-col">
+                            <label class="reports-range-label">Ending</label>
+                            <input type="date" name="primary_to" value="{{ request('primary_to') }}" class="reports-range-input">
+                        </div>
+                        <button type="button" class="reports-range-back-btn rv2-range-reset" data-target="rv2PrimarySelect">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
                     </div>
                 </div>
                 <div class="rv2-filter">
                     <div class="rv2-filter-label">COMPARE AGAINST</div>
                     @php $compareDays = (int) request('compare_days', 30); @endphp
-                    <select name="compare_days" class="rv2-filter-select">
+                    <select name="compare_days" class="rv2-filter-select" id="rv2CompareSelect" style="display: {{ request('compare_from') || request('compare_to') ? 'none' : 'block' }};">
                         <option value="30" {{ $compareDays === 30 ? 'selected' : '' }}>Last 30 days</option>
                         <option value="60" {{ $compareDays === 60 ? 'selected' : '' }}>Last 60 days</option>
                         <option value="90" {{ $compareDays === 90 ? 'selected' : '' }}>Last 90 days</option>
                         <option value="custom" {{ request('compare_from') || request('compare_to') ? 'selected' : '' }}>Custom range…</option>
                     </select>
-                    <div class="rv2-date-range">
-                        <input type="date" name="compare_from" value="{{ request('compare_from') }}">
-                        <span>to</span>
-                        <input type="date" name="compare_to" value="{{ request('compare_to') }}">
+                    <div class="rv2-date-range reports-range-grid" style="display: {{ request('compare_from') || request('compare_to') ? 'grid' : 'none' }};">
+                        <div class="reports-range-col">
+                            <label class="reports-range-label">Starting</label>
+                            <input type="date" name="compare_from" value="{{ request('compare_from') }}" class="reports-range-input">
+                        </div>
+                        <div class="reports-range-col">
+                            <label class="reports-range-label">Ending</label>
+                            <input type="date" name="compare_to" value="{{ request('compare_to') }}" class="reports-range-input">
+                        </div>
+                        <button type="button" class="reports-range-back-btn rv2-range-reset" data-target="rv2CompareSelect">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
                     </div>
                 </div>
                 <div class="rv2-filter">
@@ -331,6 +347,14 @@
                     return filter ? filter.querySelector('.rv2-date-range') : null;
                 };
 
+                const syncFormCustomState = function () {
+                    const anyCustom = Array.prototype.some.call(
+                        form.querySelectorAll('select[name="days"], select[name="compare_days"]'),
+                        function (s) { return s.value === 'custom'; }
+                    );
+                    form.classList.toggle('rv2-has-custom-range', anyCustom);
+                };
+
                 const syncRange = function (select) {
                     const wrapper = getRangeWrapper(select);
                     if (!wrapper) {
@@ -338,14 +362,29 @@
                     }
 
                     const isCustom = select.value === 'custom';
-                    wrapper.style.display = isCustom ? 'flex' : 'none';
-                    wrapper.querySelectorAll('input[type="date"]').forEach(function (input) {
-                        input.disabled = !isCustom;
-                        input.required = isCustom;
+                    wrapper.style.display = isCustom ? 'grid' : 'none';
+                    select.style.display = isCustom ? 'none' : 'block';
+                    
+                    const inputs = wrapper.querySelectorAll('input[type="date"]');
+                    const fromInput = inputs[0];
+                    const toInput = inputs[1];
+
+                    if (fromInput && toInput) {
+                        fromInput.disabled = !isCustom;
+                        toInput.disabled = !isCustom;
+                        fromInput.required = isCustom;
+                        toInput.required = isCustom;
+
                         if (!isCustom) {
-                            input.value = '';
+                            fromInput.value = '';
+                            toInput.value = '';
+                            toInput.min = '';
+                        } else {
+                            toInput.min = fromInput.value || '';
                         }
-                    });
+                    }
+
+                    syncFormCustomState();
                 };
 
                 const isFormReadyToSubmit = function () {
@@ -409,9 +448,36 @@
                     window.setTimeout(bindTomSelectChange, 360);
                 });
 
-                form.querySelectorAll('input[type="date"]').forEach(function (input) {
-                    input.addEventListener('change', submitReportFilters);
-                    input.addEventListener('input', submitReportFilters);
+                form.querySelectorAll('.rv2-range-reset').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        const targetId = btn.getAttribute('data-target');
+                        const select = document.getElementById(targetId);
+                        if (select) {
+                            select.value = '60';
+                            syncRange(select);
+                            submitReportFilters();
+                        }
+                    });
+                });
+
+                form.querySelectorAll('.reports-range-grid').forEach(function(grid) {
+                    const inputs = grid.querySelectorAll('input[type="date"]');
+                    if (inputs.length === 2) {
+                        const fromInput = inputs[0];
+                        const toInput = inputs[1];
+
+                        fromInput.addEventListener('input', function() {
+                            toInput.min = fromInput.value || '';
+                            if (toInput.value && fromInput.value && toInput.value < fromInput.value) {
+                                toInput.value = fromInput.value;
+                            }
+                            submitReportFilters();
+                        });
+
+                        fromInput.addEventListener('change', submitReportFilters);
+                        toInput.addEventListener('input', submitReportFilters);
+                        toInput.addEventListener('change', submitReportFilters);
+                    }
                 });
             });
 
