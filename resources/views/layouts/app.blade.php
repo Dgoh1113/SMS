@@ -584,15 +584,7 @@
             @yield('content')
         </div>
 
-        {{-- FIXED: Footer properly moved here inside the main tag --}}
-        <footer class="dashboard-bottombar" style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #6b7280;">
-            <div class="dashboard-bottombar-left">
-                <span class="dashboard-footer-text-main">&copy; {{ date('Y') }} E Stream Software. All rights reserved.</span>
-            </div>
-            <div class="dashboard-bottombar-right">
-                <span>Designed &amp; Developed by <strong>Damien, WeiJian &amp; WenJun with &#x1F49C;</strong></span>
-            </div>
-        </footer>
+
     </main>
 </div>
 
