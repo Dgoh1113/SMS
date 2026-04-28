@@ -49,6 +49,9 @@
                         <th data-col="id" class="inquiries-header-cell"><span class="inquiries-header-label">ID</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="id"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="inquiryid" class="inquiries-header-cell"><span class="inquiries-header-label">Inquiry ID</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="inquiryid"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="user" class="inquiries-header-cell"><span class="inquiries-header-label">User</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="user"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="customer" class="inquiries-header-cell"><span class="inquiries-header-label">Customer Name</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="customer"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="postcode" class="inquiries-header-cell"><span class="inquiries-header-label">Postcode</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="postcode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="city" class="inquiries-header-cell"><span class="inquiries-header-label">City</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="city"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="subject" class="inquiries-header-cell"><span class="inquiries-header-label">Subject</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="subject"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="description" class="inquiries-header-cell"><span class="inquiries-header-label">Description</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="description"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="status" class="inquiries-header-cell"><span class="inquiries-header-label">Status</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="status"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
@@ -68,14 +71,21 @@
                             $isSystemMarkedFail = in_array(strtoupper($subjectText), ['STATUS CHANGED TO FAILED (AUTO AFTER 8 MONTHS)', 'LEAD FAILED'], true)
                                 || in_array(strtoupper($fullDescTrim), ['STATUS CHANGED TO FAILED (AUTO AFTER 8 MONTHS)', 'LEAD IS EXPIRED AFTER 8 MONTHS OF INQUIRY DATE'], true)
                                 || str_contains(strtolower($fullDescTrim), 'expired automatically because it has been open for more than 8 months');
-                            $searchHaystack = strtolower(($r->LEAD_ACTID ?? '').' '.$inquiryId.' '.($r->USERID ?? '').' '.$subjectText.' '.$fullDescTrim.' '.($r->STATUS ?? '').' '.$dateStr);
+                            $company = trim((string) ($r->COMPANYNAME ?? ''));
+                            $contact = trim((string) ($r->CONTACTNAME ?? ''));
+                            $customerDisplay = $company !== '' && $contact !== '' ? ($company . ' - ' . $contact) : ($company !== '' ? $company : ($contact !== '' ? $contact : '-'));
+                            $userDisplay = trim((string) ($r->ALIAS ?? '')) !== '' ? $r->ALIAS : $r->USERID;
+                            $searchHaystack = strtolower(($r->LEAD_ACTID ?? '').' '.$inquiryId.' '.$userDisplay.' '.$customerDisplay.' '.($r->POSTCODE ?? '').' '.($r->CITY ?? '').' '.$subjectText.' '.$fullDescTrim.' '.($r->STATUS ?? '').' '.$dateStr);
                         @endphp
                         <tr class="history-row inquiry-row"
                             data-search="{{ $searchHaystack }}"
                             data-system-marked-fail="{{ $isSystemMarkedFail ? '1' : '0' }}">
                             <td data-col="id">{{ $r->LEAD_ACTID }}</td>
                             <td data-col="inquiryid">{{ $inquiryId }}</td>
-                            <td data-col="user">{{ $r->USERID }}</td>
+                            <td data-col="user">{{ $userDisplay }}</td>
+                            <td data-col="customer">{{ $customerDisplay }}</td>
+                            <td data-col="postcode">{{ $r->POSTCODE ?? '-' }}</td>
+                            <td data-col="city">{{ $r->CITY ?? '-' }}</td>
                             <td data-col="subject">{{ $subjectText !== '' ? $subjectText : '-' }}</td>
                             <td data-col="description"
                                 class="inquiries-msg-cell {{ $isLongDesc ? 'inquiries-msg-clickable' : '' }}"
@@ -86,7 +96,7 @@
                             <td data-col="date">{{ $dateStr ?: '-' }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="7">No activities found for the selected date range.</td></tr>
+                        <tr><td colspan="10">No activities found for the selected date range.</td></tr>
                     @endforelse
                 </tbody>
             </table>

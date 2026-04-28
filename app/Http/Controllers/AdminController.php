@@ -3524,9 +3524,13 @@ class AdminController extends Controller
 
         $rows = DB::select(
             'SELECT FIRST 100
-                "LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS"
-            FROM "LEAD_ACT"
-            WHERE "CREATIONDATE" >= ? AND "CREATIONDATE" <= ?
+                a."LEAD_ACTID", a."LEADID", a."USERID", a."CREATIONDATE", a."SUBJECT", a."DESCRIPTION", a."ATTACHMENT", a."STATUS",
+                u."ALIAS",
+                l."POSTCODE", l."CITY", l."COMPANYNAME", l."CONTACTNAME"
+            FROM "LEAD_ACT" a
+            LEFT JOIN "USERS" u ON a."USERID" = u."USERID"
+            LEFT JOIN "LEAD" l ON a."LEADID" = l."LEADID"
+            WHERE a."CREATIONDATE" >= ? AND a."CREATIONDATE" <= ?
             ORDER BY "LEAD_ACTID" DESC',
             [
                 $historyDateFilter['rangeStart']->format('Y-m-d H:i:s'),
