@@ -188,8 +188,6 @@
             <div class="login-splash-illustration" aria-hidden="true">
                 <img src="{{ asset('sql-cover-mascot.png') }}" alt="" class="login-splash-illustration-img">
             </div>
-
-            <p class="login-splash-credits">Wei Jian &amp; Wen Jun &amp; Damien</p>
         </div>
     </div>
 
