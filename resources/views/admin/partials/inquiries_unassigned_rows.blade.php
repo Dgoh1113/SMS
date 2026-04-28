@@ -11,7 +11,9 @@
     <td data-col="email">{{ $r->EMAIL ?? '-' }}</td>
     <td data-col="source">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '-') }}</td>
     <td data-col="postcode">{{ $r->POSTCODE ?? '-' }}</td>
-    <td data-col="city">{{ $r->CITY ?? '-' }}</td>
+    <td data-col="city">{{ $r->CITY ?? '—' }}</td>
+    <td data-col="state">{{ $r->STATE ?? '—' }}</td>
+    <td data-col="country">{{ $r->COUNTRY ?? '—' }}</td>
     @php
         $addr1 = trim((string) ($r->ADDRESS1 ?? ''));
         $addr2 = trim((string) ($r->ADDRESS2 ?? ''));

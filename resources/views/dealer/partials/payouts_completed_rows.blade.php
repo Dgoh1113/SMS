@@ -63,7 +63,7 @@
         <td data-col="inquiryid">#SQL-{{ $r->LEADID }}</td>
         <td data-col="date">{{ $inquiryDate }}</td>
         <td data-col="customer">{{ $custDisp }}</td>
-        <td data-col="assignedto">{{ $r->ASSIGNED_TO_NAME ?? ($r->ASSIGNED_TO ?? '-') }}</td>
+        <td data-col="assignedto">{{ $r->assignedToName ?? ($r->assignedTo ?? '-') }}</td>
         <td data-col="assigndate">{{ $assignDate }}</td>
         <td data-col="referralcode">{{ $r->REFERRALCODE ?? '-' }}</td>
         <td data-col="completeddate">{{ $completionDate }}</td>
@@ -84,6 +84,8 @@
         <td data-col="source">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '-') }}</td>
         <td data-col="postcode">{{ $r->POSTCODE ?? '-' }}</td>
         <td data-col="city">{{ $r->CITY ?? '-' }}</td>
+        <td data-col="state">{{ $r->STATE ?? '-' }}</td>
+        <td data-col="country">{{ $r->COUNTRY ?? '-' }}</td>
         <td data-col="address">{{ $addr !== '' ? $addr : '-' }}</td>
         <td data-col="contactno">{{ $r->CONTACTNO ?? '-' }}</td>
         <td data-col="businessnature">{{ $r->BUSINESSNATURE ?? '-' }}</td>
@@ -119,3 +121,4 @@
         </td>
     </tr>
 @endforelse
+

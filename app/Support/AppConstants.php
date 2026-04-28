@@ -15,8 +15,7 @@ class AppConstants
     // Lead Status Values
     public const STATUS_OPEN = 'OPEN';
     public const STATUS_CREATED = 'CREATED';
-    public const STATUS_ONGOING = 'ONGOING';
-    public const STATUS_CLOSED = 'CLOSED';
+
     public const STATUS_COMPLETED = 'COMPLETED';  // Used in LEAD_ACT
     public const STATUS_FAILED = 'FAILED';
 
@@ -34,8 +33,8 @@ class AppConstants
     public const DB_COLUMN_USERID = 'USERID';
     public const DB_COLUMN_STATUS = 'STATUS';
     public const DB_COLUMN_CREATIONDATE = 'CREATIONDATE';
-    public const DB_COLUMN_ASSIGNED_TO = 'ASSIGNED_TO';
-    public const DB_COLUMN_CURRENTSTATUS = 'CURRENTSTATUS';
+    public const DB_COLUMN_assignedTo = 'assignedTo';
+
 
     // Cache Keys
     public const CACHE_KEY_POSTCODE_LOOKUP = 'postcode_city_lookup';
@@ -62,3 +61,4 @@ class AppConstants
     public const SEPARATOR_DISPLAY = ' - ';
     public const SEPARATOR_PROPERTY = '-';
 }
+

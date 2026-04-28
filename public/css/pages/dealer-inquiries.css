@@ -689,10 +689,20 @@ html.theme-dark .inquiries-tab-count[data-tooltip]::after {
     max-width: 92px;
   }
 
+  #dealerInquiriesTable th[data-col="state"],
+  #dealerInquiriesTable td[data-col="state"],
+  #dealerInquiriesTable th[data-col="country"],
+  #dealerInquiriesTable td[data-col="country"] {
+    max-width: 45px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   #dealerInquiriesTable th[data-col="customer"],
   #dealerInquiriesTable td[data-col="customer"] {
-    min-width: 120px;
-    max-width: 120px;
+    min-width: 200px;
+    max-width: 200px;
   }
 
   #dealerInquiriesTable td[data-col="customer"] > span {

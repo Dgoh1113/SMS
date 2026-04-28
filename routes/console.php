@@ -19,13 +19,12 @@ Artisan::command('leads:auto-fail', function () {
     $rows = DB::select(
         'SELECT
             l."LEADID",
-            l."ASSIGNED_TO",
+            l."ASSIGNEDTO" AS "assignedTo",
             COALESCE(
                 (SELECT FIRST 1 la."STATUS"
                  FROM "LEAD_ACT" la
                  WHERE la."LEADID" = l."LEADID"
                  ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC),
-                l."CURRENTSTATUS",
                 \'Pending\'
             ) AS "LATEST_STATUS"
          FROM "LEAD" l
@@ -80,7 +79,7 @@ Artisan::command('leads:auto-fail', function () {
     foreach ($rows as $r) {
         $leadId = (int) ($r->LEADID ?? 0);
         $latestStatus = strtoupper(trim((string) ($r->LATEST_STATUS ?? 'PENDING')));
-        $activityUserId = trim((string) ($assignmentUserMap[$leadId] ?? ($r->ASSIGNED_TO ?? '')));
+        $activityUserId = trim((string) ($assignmentUserMap[$leadId] ?? ($r->assignedTo ?? '')));
         if ($leadId <= 0) {
             continue;
         }
@@ -96,8 +95,7 @@ Artisan::command('leads:auto-fail', function () {
         try {
             DB::update(
                 'UPDATE "LEAD"
-                 SET "CURRENTSTATUS" = \'Failed\',
-                     "LASTMODIFIED" = CURRENT_TIMESTAMP
+                 SET "LASTMODIFIED" = CURRENT_TIMESTAMP
                  WHERE "LEADID" = ?',
                 [$leadId]
             );
@@ -124,3 +122,4 @@ Artisan::command('leads:auto-fail', function () {
 
 // Run auto-fail check every 2 minutes
 Schedule::command('leads:auto-fail')->everyTwoMinutes()->withoutOverlapping();
+

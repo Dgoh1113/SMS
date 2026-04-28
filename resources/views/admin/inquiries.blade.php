@@ -20,8 +20,8 @@
 @if($assignUndo)
 <div id="assignUndoToast" class="assign-undo-toast assign-undo-toast-hidden"
      data-lead-id="{{ $assignUndo['lead_id'] ?? '' }}"
-     data-prev-assigned-to="{{ $assignUndo['prev_assigned_to'] ?? '' }}"
-     data-new-assigned-to="{{ $assignUndo['new_assigned_to'] ?? '' }}"
+     data-prev-assigned-to="{{ $assignUndo['prevAssignedTo'] ?? '' }}"
+     data-new-assigned-to="{{ $assignUndo['new_assignedTo'] ?? '' }}"
      data-prev-lastmodified="{{ $assignUndo['prev_lastmodified'] ?? '' }}">
     <span class="assign-undo-message">
         Lead #SQL-{{ $assignUndo['lead_id'] ?? '' }} assigned.
@@ -32,7 +32,7 @@
 <form id="assignUndoForm" method="POST" action="{{ route('admin.inquiries.assign-undo') }}" style="display:none;">
     @csrf
     <input type="hidden" name="LEADID" id="assignUndoLeadId">
-    <input type="hidden" name="PREV_ASSIGNED_TO" id="assignUndoPrevAssigned">
+    <input type="hidden" name="prevAssignedTo" id="assignUndoPrevAssigned">
     <input type="hidden" name="PREV_LASTMODIFIED" id="assignUndoPrevLastModified">
 </form>
 @endif
@@ -78,6 +78,8 @@
                 <label class="inquiries-columns-check"><input type="checkbox" data-col="source"> SOURCE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="postcode"> POSTCODE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="city"> CITY</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="state"> STATE</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="country"> COUNTRY</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="address"> ADDRESS</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="contactno"> CONTACT NO</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="businessnature"> BUSINESS NATURE</label>
@@ -113,6 +115,8 @@
                     <x-tables.text-filter-header col="source" label="SOURCE" />
                     <x-tables.text-filter-header col="postcode" label="POSTCODE" />
                     <x-tables.text-filter-header col="city" label="CITY" />
+                    <x-tables.text-filter-header col="state" label="STATE" />
+                    <x-tables.text-filter-header col="country" label="COUNTRY" />
                     <x-tables.text-filter-header col="address" label="ADDRESS" />
                     <x-tables.text-filter-header col="contactno" label="CONTACT NO" />
                     <x-tables.text-filter-header col="businessnature" label="BUSINESS NATURE" />
@@ -141,6 +145,8 @@
                     <td data-col="source">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '—') }}</td>
                     <td data-col="postcode">{{ $r->POSTCODE ?? '—' }}</td>
                     <td data-col="city">{{ $r->CITY ?? '—' }}</td>
+                    <td data-col="state">{{ $r->STATE ?? '—' }}</td>
+                    <td data-col="country">{{ $r->COUNTRY ?? '—' }}</td>
                     @php
                         $addr1 = trim((string)($r->ADDRESS1 ?? ''));
                         $addr2 = trim((string)($r->ADDRESS2 ?? ''));
@@ -285,6 +291,8 @@
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="source"> SOURCE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="postcode"> POSTCODE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="city"> CITY</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="state"> STATE</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="country"> COUNTRY</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="address"> ADDRESS</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="contactno"> CONTACT NO</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="businessnature"> BUSINESS NATURE</label>
@@ -322,6 +330,8 @@
                     <x-tables.text-filter-header col="source" label="SOURCE" input-class="inquiries-grid-filter-assigned" />
                     <x-tables.text-filter-header col="postcode" label="POSTCODE" input-class="inquiries-grid-filter-assigned" />
                     <x-tables.text-filter-header col="city" label="CITY" input-class="inquiries-grid-filter-assigned" />
+                    <x-tables.text-filter-header col="state" label="STATE" input-class="inquiries-grid-filter-assigned" />
+                    <x-tables.text-filter-header col="country" label="COUNTRY" input-class="inquiries-grid-filter-assigned" />
                     <x-tables.text-filter-header col="address" label="ADDRESS" input-class="inquiries-grid-filter-assigned" />
                     <x-tables.text-filter-header col="contactno" label="CONTACT NO" input-class="inquiries-grid-filter-assigned" />
                     <x-tables.text-filter-header col="businessnature" label="BUSINESS NATURE" input-class="inquiries-grid-filter-assigned" />
@@ -357,6 +367,8 @@
                     <td data-col="source">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '—') }}</td>
                     <td data-col="postcode">{{ $r->POSTCODE ?? '—' }}</td>
                     <td data-col="city">{{ $r->CITY ?? '—' }}</td>
+                    <td data-col="state">{{ $r->STATE ?? '—' }}</td>
+                    <td data-col="country">{{ $r->COUNTRY ?? '—' }}</td>
                     @php
                         $addr1 = trim((string)($r->ADDRESS1 ?? ''));
                         $addr2 = trim((string)($r->ADDRESS2 ?? ''));
@@ -432,7 +444,7 @@
                     </td>
                     <td data-col="referralcode">{{ $r->REFERRALCODE ?? '—' }}</td>
                                         <td data-col="assignedby">{{ $r->ASSIGNEDBY_NAME ?? ($r->ASSIGNEDBY ?? '—') }}</td>
-                    <td data-col="assignedto">{{ $r->ASSIGNED_TO_NAME ?? ($r->ASSIGNED_TO ?? '—') }}</td>
+                    <td data-col="assignedto">{{ $r->assignedToName ?? ($r->assignedTo ?? '—') }}</td>
                     <td data-col="completiondate">{{ !empty($r->COMPLETED_AT) ? date('d/m/Y', strtotime($r->COMPLETED_AT)) : '—' }}</td>
                     <td data-col="payoutsdate">{{ !empty($r->REWARDED_AT) ? date('d/m/Y', strtotime($r->REWARDED_AT)) : '—' }}</td>
                     <td data-col="attachment">
@@ -525,6 +537,8 @@
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="source"> SOURCE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="postcode"> POSTCODE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="city"> CITY</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="state"> STATE</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="country"> COUNTRY</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="address"> ADDRESS</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="contactno"> CONTACT NO</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="businessnature"> BUSINESS NATURE</label>
@@ -563,6 +577,8 @@
                     <x-tables.text-filter-header col="source" label="SOURCE" input-class="inquiries-grid-filter-all" />
                     <x-tables.text-filter-header col="postcode" label="POSTCODE" input-class="inquiries-grid-filter-all" />
                     <x-tables.text-filter-header col="city" label="CITY" input-class="inquiries-grid-filter-all" />
+                    <x-tables.text-filter-header col="state" label="STATE" input-class="inquiries-grid-filter-all" />
+                    <x-tables.text-filter-header col="country" label="COUNTRY" input-class="inquiries-grid-filter-all" />
                     <x-tables.text-filter-header col="address" label="ADDRESS" input-class="inquiries-grid-filter-all" />
                     <x-tables.text-filter-header col="contactno" label="CONTACT NO" input-class="inquiries-grid-filter-all" />
                     <x-tables.text-filter-header col="businessnature" label="BUSINESS NATURE" input-class="inquiries-grid-filter-all" />
@@ -618,7 +634,7 @@
         <form method="POST" action="{{ route('admin.inquiries.assign') }}" class="inquiries-assign-body">
             @csrf
             <input type="hidden" name="LEADID" id="assignLeadId">
-            <input type="hidden" name="ASSIGNED_TO" id="assignToHidden" required>
+            <input type="hidden" name="assignedTo" id="assignToHidden" required>
             <div class="inquiries-assign-row">
                 <div class="inquiries-assign-label">Lead</div>
                 <div class="inquiries-assign-value" id="assignLeadLabel">—</div>
@@ -1116,7 +1132,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     fetch('{{ route('admin.inquiries.send-assignment-email') }}', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': tok },
-                        body: JSON.stringify({ lead_id: parseInt(leadId, 10), assigned_to: newAssignedTo, _token: tok })
+                        body: JSON.stringify({ lead_id: parseInt(leadId, 10), assignedTo: newAssignedTo, _token: tok })
                     });
                 }
             }, 6000);
@@ -1135,7 +1151,7 @@ document.addEventListener('DOMContentLoaded', function() {
     @if($assignEmailPending)
     (function () {
         var leadId = {{ (int) ($assignEmailPending['lead_id'] ?? 0) }};
-        var assignedTo = {!! json_encode($assignEmailPending['assigned_to'] ?? '') !!};
+        var assignedTo = {!! json_encode($assignEmailPending['assignedTo'] ?? '') !!};
         if (leadId && assignedTo) {
             setTimeout(function () {
                 var tok = (document.querySelector('meta[name="csrf-token"]') || {}).content;
@@ -1143,7 +1159,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     fetch('{{ route('admin.inquiries.send-assignment-email') }}', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': tok },
-                        body: JSON.stringify({ lead_id: leadId, assigned_to: assignedTo, _token: tok })
+                        body: JSON.stringify({ lead_id: leadId, assignedTo: assignedTo, _token: tok })
                     });
                 }
             }, 6000);
@@ -1151,18 +1167,18 @@ document.addEventListener('DOMContentLoaded', function() {
     })();
     @endif
 
-    var STORAGE_KEY = 'inquiryVisibleColumns_v3';
-    var LEGACY_STORAGE_KEY = 'inquiryVisibleColumns_v2';
-    var LEGACY_DEFAULT_COLUMNS = ['inquiryid', 'date', 'customername', 'postcode', 'city', 'businessnature', 'products', 'status'];
+    var STORAGE_KEY = 'inquiryVisibleColumns_v5';
+    var LEGACY_STORAGE_KEY = 'inquiryVisibleColumns_v5_disabled';
+    var LEGACY_DEFAULT_COLUMNS = ['inquiryid', 'date', 'customername', 'postcode', 'city', 'state', 'country', 'businessnature', 'products', 'status'];
     var DEFAULT_COLUMNS = ['inquiryid', 'date', 'customername', 'email', 'postcode', 'city', 'products', 'status'];
-    var INCOMING_ALL_COLUMNS = ['inquiryid','date','customername','email','source','city','postcode','address','contactno','businessnature','users','existingsw','demomode','products','message','referralcode','status'];
-    var ASSIGNED_STORAGE_KEY = 'assignedVisibleColumns_v3';
-    var ASSIGNED_LEGACY_STORAGE_KEY = 'assignedVisibleColumns_v2';
-    var ASSIGNED_LEGACY_DEFAULT_COLUMNS = ['inquiryid', 'customername', 'postcode', 'city', 'assignedto', 'assigndate', 'status'];
+    var INCOMING_ALL_COLUMNS = ['inquiryid','date','customername','email','source','city','state','country','postcode','address','contactno','businessnature','users','existingsw','demomode','products','message','referralcode','status'];
+    var ASSIGNED_STORAGE_KEY = 'assignedVisibleColumns_v5';
+    var ASSIGNED_LEGACY_STORAGE_KEY = 'assignedVisibleColumns_v5_disabled';
+    var ASSIGNED_LEGACY_DEFAULT_COLUMNS = ['inquiryid', 'customername', 'postcode', 'city', 'state', 'country', 'assignedto', 'assigndate', 'status'];
     // Default Assigned layout
     var ASSIGNED_DEFAULT_COLUMNS = ['inquiryid', 'date', 'customername', 'postcode', 'city', 'assignedto', 'assigndate', 'status'];
-    var ASSIGNED_ALL_COLUMNS = ['inquiryid','date','customername','email','source','city','postcode','address','contactno','businessnature','users','existingsw','demomode','products','dealtproducts','message','referralcode','assignedby','assignedto','completiondate','payoutsdate','attachment','assigndate','status'];
-    var ALL_STORAGE_KEY = 'allInquiryVisibleColumns_v2';
+    var ASSIGNED_ALL_COLUMNS = ['inquiryid','date','customername','email','source','city','state','country','postcode','address','contactno','businessnature','users','existingsw','demomode','products','dealtproducts','message','referralcode','assignedby','assignedto','completiondate','payoutsdate','attachment','assigndate','status'];
+    var ALL_STORAGE_KEY = 'allInquiryVisibleColumns_v4';
     var ALL_DEFAULT_COLUMNS = ['inquiryid', 'date', 'customername', 'email', 'postcode', 'city', 'assignedto', 'status'];
     var ALL_TABLE_COLUMNS = ASSIGNED_ALL_COLUMNS.slice();
 
@@ -3168,3 +3184,4 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   </script>
   @endsection
+

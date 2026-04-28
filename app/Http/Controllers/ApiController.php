@@ -25,11 +25,19 @@ class ApiController extends Controller
     {
         $rows = DB::select(
             'SELECT FIRST 200
-                "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL","ADDRESS1","ADDRESS2",
-                "CITY","POSTCODE","BUSINESSNATURE","USERCOUNT","EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION",
-                "REFERRALCODE","CURRENTSTATUS","CREATEDAT","CREATEDBY","ASSIGNED_TO","LASTMODIFIED"
-            FROM "LEAD"
-            ORDER BY "LEADID" DESC'
+                l."LEADID",l."PRODUCTID",l."COMPANYNAME",l."CONTACTNAME",l."CONTACTNO",l."EMAIL",l."ADDRESS1",l."ADDRESS2",
+                l."CITY",l."STATE",l."COUNTRY",l."POSTCODE",l."BUSINESSNATURE",l."USERCOUNT",l."EXISTINGSOFTWARE",l."DEMOMODE",l."DESCRIPTION",
+                l."REFERRALCODE",
+                COALESCE(
+                    (SELECT FIRST 1 la."STATUS"
+                     FROM "LEAD_ACT" la
+                     WHERE la."LEADID" = l."LEADID"
+                     ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC),
+                    \'Created\'
+                ) AS "CURRENTSTATUS",
+                l."CREATEDAT",l."CREATEDBY",l."ASSIGNEDTO" AS "assignedTo",l."LASTMODIFIED"
+            FROM "LEAD" l
+            ORDER BY l."LEADID" DESC'
         );
 
         return response()->json(array_map(fn ($r) => (array) $r, $rows));
@@ -43,13 +51,14 @@ class ApiController extends Controller
             'CONTACTNO' => 'nullable|string',
             'EMAIL' => 'nullable|string',
             'CITY' => 'nullable|string',
-            'CURRENTSTATUS' => 'nullable|string',
-            'ASSIGNED_TO' => 'nullable|integer',
+            'STATE' => 'nullable|string',
+            'COUNTRY' => 'nullable|string',
+            'assignedTo' => 'nullable|integer',
         ]);
 
         $row = DB::selectOne(
-            'INSERT INTO "LEAD" ("COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL","CITY","CURRENTSTATUS","ASSIGNED_TO","CREATEDAT","LASTMODIFIED")
-             VALUES (?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
+            'INSERT INTO "LEAD" ("COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL","CITY","STATE","COUNTRY","ASSIGNEDTO","CREATEDAT","LASTMODIFIED")
+             VALUES (?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
              RETURNING "LEADID","CREATEDAT"',
             [
                 $validated['COMPANYNAME'],
@@ -57,8 +66,9 @@ class ApiController extends Controller
                 $validated['CONTACTNO'] ?? null,
                 $validated['EMAIL'] ?? null,
                 $validated['CITY'] ?? null,
-                $validated['CURRENTSTATUS'] ?? null,
-                $validated['ASSIGNED_TO'] ?? null,
+                $validated['STATE'] ?? null,
+                $validated['COUNTRY'] ?? null,
+                $validated['assignedTo'] ?? null,
             ]
         );
 
@@ -130,3 +140,4 @@ class ApiController extends Controller
         return response()->json(array_map(fn ($r) => (array) $r, $rows));
     }
 }
+

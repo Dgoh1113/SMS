@@ -39,6 +39,8 @@
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="source"> SOURCE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="postcode"> POSTCODE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="city"> CITY</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="state"> STATE</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="country"> COUNTRY</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="address"> ADDRESS</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="contactno"> CONTACT NO</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="businessnature"> BUSINESS NATURE</label>
@@ -77,6 +79,8 @@
                         <x-tables.text-filter-header col="source" label="SOURCE" input-class="inquiries-grid-filter payouts-grid-filter" table="completed" />
                         <x-tables.text-filter-header col="postcode" label="POSTCODE" input-class="inquiries-grid-filter payouts-grid-filter" table="completed" />
                         <x-tables.text-filter-header col="city" label="CITY" input-class="inquiries-grid-filter payouts-grid-filter" table="completed" />
+                        <x-tables.text-filter-header col="state" label="STATE" input-class="inquiries-grid-filter payouts-grid-filter" table="completed" />
+                        <x-tables.text-filter-header col="country" label="COUNTRY" input-class="inquiries-grid-filter payouts-grid-filter" table="completed" />
                         <x-tables.text-filter-header col="address" label="ADDRESS" input-class="inquiries-grid-filter payouts-grid-filter" table="completed" />
                         <x-tables.text-filter-header col="contactno" label="CONTACT NO" input-class="inquiries-grid-filter payouts-grid-filter" table="completed" />
                         <x-tables.text-filter-header col="businessnature" label="BUSINESS NATURE" input-class="inquiries-grid-filter payouts-grid-filter" table="completed" />
@@ -222,19 +226,19 @@
 @push('scripts')
 <script>
 function initDealerPendingPayoutsPage() {
-    var COMPLETED_STORAGE_KEY = 'dealerPayoutCompletedVisibleColumns_v4';
-    var COMPLETED_LEGACY_STORAGE_KEY = 'dealerPayoutCompletedVisibleColumns_v3';
+    var COMPLETED_STORAGE_KEY = 'dealerPayoutCompletedVisibleColumns_v6';
+    var COMPLETED_LEGACY_STORAGE_KEY = 'dealerPayoutCompletedVisibleColumns_v6_disabled';
     var COMPLETED_OLDER_LEGACY_STORAGE_KEY = 'dealerPayoutCompletedVisibleColumns_v2';
     // Default + all columns: match dealer inquiries table column IDs
     var COMPLETED_LEGACY_DEFAULT_COLUMNS = ['inquiryid','completeddate','customer','dealtproducts','referralcode','assignby','status'];
     var COMPLETED_OLDER_LEGACY_DEFAULT_COLUMNS = ['inquiryid','completeddate','customer','dealtproducts','referralcode','attachment','assignby','status'];
     var COMPLETED_PREVIOUS_DEFAULT_COLUMNS = ['inquiryid','customer','assignedto','referralcode','completeddate','status','dealtproducts'];
     var COMPLETED_DEFAULT_COLUMNS = ['inquiryid','customer','assignedto','referralcode','completeddate','status','dealtproducts'];
-    var COMPLETED_ALL_COLUMNS = ['inquiryid','date','customer','assignedto','assigndate','referralcode','completeddate','status','dealtproducts','source','postcode','city','address','contactno','businessnature','users','existingsw','demomode','message','attachment','assignby'];
+    var COMPLETED_ALL_COLUMNS = ['inquiryid','date','customer','assignedto','assigndate','referralcode','completeddate','status','dealtproducts','source','postcode','city','state','country','address','contactno','businessnature','users','existingsw','demomode','message','attachment','assignby'];
 
-    var REWARDED_STORAGE_KEY = 'dealerPayoutRewardedVisibleColumns_v2';
+    var REWARDED_STORAGE_KEY = 'dealerPayoutRewardedVisibleColumns_v4';
     var REWARDED_DEFAULT_COLUMNS = ['inquiryid','payoutdate','customer','dealtproducts','referralcode','attachment','assignby','status'];
-    var REWARDED_ALL_COLUMNS = ['inquiryid','date','payoutdate','completiondate','assigndate','customer','source','postcode','city','address','contactno','businessnature','users','existingsw','demomode','dealtproducts','message','referralcode','attachment','assignby','status'];
+    var REWARDED_ALL_COLUMNS = ['inquiryid','date','payoutdate','completiondate','assigndate','customer','source','postcode','city','state','country','address','contactno','businessnature','users','existingsw','demomode','dealtproducts','message','referralcode','attachment','assignby','status'];
 
     function getCompletedVisibleColumns() {
         try {

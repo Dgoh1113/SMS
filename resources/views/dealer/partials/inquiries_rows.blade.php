@@ -49,7 +49,9 @@
         </td>
         <td data-col="email">{{ $r->EMAIL ?? '-' }}</td>
         <td data-col="postcode">{{ $r->POSTCODE ?? '-' }}</td>
-        <td data-col="city">{{ $r->CITY ?? '-' }}</td>
+        <td data-col="city">{{ $r->CITY ?? '—' }}</td>
+        <td data-col="state">{{ $r->STATE ?? '—' }}</td>
+        <td data-col="country">{{ $r->COUNTRY ?? '—' }}</td>
         <td data-col="address">{{ $addressDisplay }}</td>
         <td data-col="contactno">{{ $r->CONTACTNO ?? '-' }}</td>
         <td data-col="businessnature">{{ $r->BUSINESSNATURE ?? '-' }}</td>

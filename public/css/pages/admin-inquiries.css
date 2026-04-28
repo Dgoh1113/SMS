@@ -78,9 +78,9 @@
 
 .inquiries-page-wrap #unassignedTable.inquiries-table--fit th[data-col="customername"],
 .inquiries-page-wrap #unassignedTable.inquiries-table--fit td[data-col="customername"] {
-  width: 300px;
-  min-width: 300px;
-  max-width: 300px;
+  width: 350px;
+  min-width: 350px;
+  max-width: 350px;
 }
 
 .inquiries-page-wrap #unassignedTable.inquiries-table--fit th[data-col="email"],
@@ -154,9 +154,9 @@
 
 .inquiries-page-wrap #assignedTable th[data-col="assignedto"],
 .inquiries-page-wrap #assignedTable td[data-col="assignedto"] {
-  width: 160px;
-  min-width: 160px;
-  max-width: 160px;
+  width: 230px;
+  min-width: 230px;
+  max-width: 230px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -217,9 +217,9 @@
 
 .inquiries-page-wrap #allTable.inquiries-table--fit th[data-col="customername"],
 .inquiries-page-wrap #allTable.inquiries-table--fit td[data-col="customername"] {
-  width: 275px;
-  min-width: 275px;
-  max-width: 275px;
+  width: 360px;
+  min-width: 360px;
+  max-width: 360px;
 }
 
 .inquiries-page-wrap #allTable.inquiries-table--fit th[data-col="email"],
@@ -243,11 +243,20 @@
   max-width: 82px;
 }
 
+.inquiries-page-wrap #allTable.inquiries-table--fit th[data-col="state"],
+.inquiries-page-wrap #allTable.inquiries-table--fit td[data-col="state"],
+.inquiries-page-wrap #allTable.inquiries-table--fit th[data-col="country"],
+.inquiries-page-wrap #allTable.inquiries-table--fit td[data-col="country"] {
+  width: 45px;
+  min-width: 45px;
+  max-width: 45px;
+}
+
 .inquiries-page-wrap #allTable.inquiries-table--fit th[data-col="assignedto"],
 .inquiries-page-wrap #allTable.inquiries-table--fit td[data-col="assignedto"] {
-  width: 145px;
-  min-width: 145px;
-  max-width: 145px;
+  width: 210px;
+  min-width: 210px;
+  max-width: 210px;
 }
 
 .inquiries-page-wrap #allTable.inquiries-table--fit th[data-col="status"],
@@ -266,7 +275,7 @@
 
 .inquiries-page-wrap #allTable:not(.inquiries-table--fit) th[data-col="customername"],
 .inquiries-page-wrap #allTable:not(.inquiries-table--fit) td[data-col="customername"] {
-  min-width: 250px;
+  min-width: 300px;
 }
 
 .inquiries-page-wrap #allTable:not(.inquiries-table--fit) th[data-col="source"],
@@ -296,6 +305,15 @@
 .inquiries-page-wrap #allTable:not(.inquiries-table--fit) td[data-col="city"] {
   width: 1%;
   max-width: 105px;
+  white-space: nowrap;
+}
+
+.inquiries-page-wrap #allTable:not(.inquiries-table--fit) th[data-col="state"],
+.inquiries-page-wrap #allTable:not(.inquiries-table--fit) td[data-col="state"],
+.inquiries-page-wrap #allTable:not(.inquiries-table--fit) th[data-col="country"],
+.inquiries-page-wrap #allTable:not(.inquiries-table--fit) td[data-col="country"] {
+  width: 1%;
+  max-width: 45px;
   white-space: nowrap;
 }
 
@@ -351,7 +369,7 @@
 .inquiries-page-wrap #allTable:not(.inquiries-table--fit) td[data-col="assignedby"],
 .inquiries-page-wrap #allTable:not(.inquiries-table--fit) th[data-col="assignedto"],
 .inquiries-page-wrap #allTable:not(.inquiries-table--fit) td[data-col="assignedto"] {
-  min-width: 150px;
+  min-width: 220px;
   max-width: none;
   white-space: nowrap;
 }

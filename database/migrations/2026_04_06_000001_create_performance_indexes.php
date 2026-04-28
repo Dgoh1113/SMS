@@ -10,7 +10,7 @@ return new class extends Migration
      * 
      * These indexes optimize the most critical query patterns:
      * - Dashboard queries
-     * - Report filtering by assigned_to, status, dates
+     * - Report filtering by assignedTo, status, dates
      * - Lead activity lookups
      * 
      * Expected performance improvement: 30-50% faster queries
@@ -19,7 +19,7 @@ return new class extends Migration
     {
         try {
             // LEAD table indexes
-            DB::statement('CREATE INDEX idx_lead_assigned_to ON "LEAD"("ASSIGNED_TO")');
+            DB::statement('CREATE INDEX idx_lead_assignedTo ON "LEAD"("assignedTo")');
         } catch (\Throwable) {
             // Index may already exist
         }
@@ -38,7 +38,7 @@ return new class extends Migration
 
         try {
             // Composite index for common filter combinations
-            DB::statement('CREATE INDEX idx_lead_assigned_status ON "LEAD"("ASSIGNED_TO", "CURRENTSTATUS")');
+            DB::statement('CREATE INDEX idx_lead_assigned_status ON "LEAD"("assignedTo", "CURRENTSTATUS")');
         } catch (\Throwable) {}
 
         // LEAD_ACT table indexes
@@ -101,7 +101,7 @@ return new class extends Migration
     public function down(): void
     {
         try {
-            DB::statement('DROP INDEX idx_lead_assigned_to');
+            DB::statement('DROP INDEX idx_lead_assignedTo');
         } catch (\Throwable) {}
 
         try {
@@ -169,3 +169,4 @@ return new class extends Migration
         } catch (\Throwable) {}
     }
 };
+

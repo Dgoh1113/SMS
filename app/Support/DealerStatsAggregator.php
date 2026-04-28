@@ -56,19 +56,37 @@ class DealerStatsAggregator
 
             try {
                 $leadsRow = DB::selectOne(
-                    'SELECT COUNT(*) as c FROM "LEAD" WHERE TRIM(CAST("ASSIGNED_TO" AS VARCHAR(50))) = TRIM(CAST(? AS VARCHAR(50)))',
+                    'SELECT COUNT(*) as c FROM "LEAD" WHERE TRIM(CAST("ASSIGNEDTO" AS VARCHAR(50))) = TRIM(CAST(? AS VARCHAR(50)))',
                     [$userId]
                 );
                 $closedRow = DB::selectOne(
-                    'SELECT COUNT(*) as c FROM "LEAD" WHERE TRIM(CAST("ASSIGNED_TO" AS VARCHAR(50))) = TRIM(CAST(? AS VARCHAR(50))) AND "CURRENTSTATUS" = \'Closed\'',
+                    'SELECT COUNT(*) as c FROM "LEAD" l
+                     WHERE TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) = TRIM(CAST(? AS VARCHAR(50)))
+                       AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
+                            FROM "LEAD_ACT" la
+                            WHERE la."LEADID" = l."LEADID"
+                            ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
+                           ) IN (\'COMPLETED\', \'REWARDED\')',
                     [$userId]
                 );
                 $failedRow = DB::selectOne(
-                    'SELECT COUNT(*) as c FROM "LEAD" WHERE TRIM(CAST("ASSIGNED_TO" AS VARCHAR(50))) = TRIM(CAST(? AS VARCHAR(50))) AND UPPER(TRIM("CURRENTSTATUS")) = \'FAILED\'',
+                    'SELECT COUNT(*) as c FROM "LEAD" l
+                     WHERE TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) = TRIM(CAST(? AS VARCHAR(50)))
+                       AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
+                            FROM "LEAD_ACT" la
+                            WHERE la."LEADID" = l."LEADID"
+                            ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
+                           ) = \'FAILED\'',
                     [$userId]
                 );
                 $ongoingRow = DB::selectOne(
-                    'SELECT COUNT(*) as c FROM "LEAD" WHERE TRIM(CAST("ASSIGNED_TO" AS VARCHAR(50))) = TRIM(CAST(? AS VARCHAR(50))) AND UPPER(TRIM("CURRENTSTATUS")) = \'ONGOING\'',
+                    'SELECT COUNT(*) as c FROM "LEAD" l
+                     WHERE TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) = TRIM(CAST(? AS VARCHAR(50)))
+                       AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
+                            FROM "LEAD_ACT" la
+                            WHERE la."LEADID" = l."LEADID"
+                            ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
+                           ) IN (\'PENDING\', \'FOLLOWUP\', \'FOLLOW UP\', \'DEMO\', \'CONFIRMED\')',
                     [$userId]
                 );
 
@@ -111,7 +129,7 @@ class DealerStatsAggregator
                     a."LEADID",
                     a."STATUS",
                     a."CREATIONDATE",
-                    l."ASSIGNED_TO"
+                    l."ASSIGNEDTO" AS "assignedTo"
                  FROM "LEAD_ACT" a
                  LEFT JOIN "LEAD" l ON l."LEADID" = a."LEADID"
                  WHERE a."STATUS" IS NOT NULL
@@ -125,7 +143,7 @@ class DealerStatsAggregator
                 $leadId = (int) ($row->LEADID ?? 0);
                 $status = strtoupper(trim((string) ($row->STATUS ?? '')));
                 $createdAt = $row->CREATIONDATE;
-                $assignedTo = trim((string) ($row->ASSIGNED_TO ?? ''));
+                $assignedTo = trim((string) ($row->assignedTo ?? ''));
 
                 if ($leadId <= 0 || !$createdAt || !$status) {
                     continue;

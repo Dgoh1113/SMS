@@ -45,15 +45,23 @@ class AdminController extends Controller
         try {
             $statsRows = DB::select(
                 'SELECT
-                    TRIM(CAST("ASSIGNED_TO" AS VARCHAR(50))) AS UID,
+                    TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) AS UID,
                     COUNT(*) AS TOTAL_LEAD,
-                    SUM(CASE WHEN UPPER(TRIM("CURRENTSTATUS")) = ? THEN 1 ELSE 0 END) AS TOTAL_ONGOING,
-                    SUM(CASE WHEN "CURRENTSTATUS" = \'Closed\' THEN 1 ELSE 0 END) AS TOTAL_CLOSED,
-                    SUM(CASE WHEN UPPER(TRIM("CURRENTSTATUS")) = ? THEN 1 ELSE 0 END) AS TOTAL_FAILED
-                 FROM "LEAD"
-                 WHERE "ASSIGNED_TO" IS NOT NULL AND TRIM(CAST("ASSIGNED_TO" AS VARCHAR(50))) <> \'\'
-                 GROUP BY TRIM(CAST("ASSIGNED_TO" AS VARCHAR(50)))',
-                [AppConstants::STATUS_ONGOING, AppConstants::STATUS_FAILED]
+                    SUM(CASE WHEN ls."LATEST_STATUS" IN (\'PENDING\', \'FOLLOWUP\', \'FOLLOW UP\', \'DEMO\', \'CONFIRMED\') THEN 1 ELSE 0 END) AS TOTAL_ONGOING,
+                    SUM(CASE WHEN ls."LATEST_STATUS" IN (\'COMPLETED\', \'REWARDED\') THEN 1 ELSE 0 END) AS TOTAL_CLOSED,
+                    SUM(CASE WHEN ls."LATEST_STATUS" = \'FAILED\' THEN 1 ELSE 0 END) AS TOTAL_FAILED
+                 FROM "LEAD" l
+                 LEFT JOIN (
+                     SELECT a."LEADID", UPPER(TRIM(a."STATUS")) AS "LATEST_STATUS"
+                     FROM "LEAD_ACT" a
+                     JOIN (
+                         SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
+                         FROM "LEAD_ACT"
+                         GROUP BY "LEADID"
+                     ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
+                 ) ls ON ls."LEADID" = l."LEADID"
+                 WHERE l."ASSIGNEDTO" IS NOT NULL AND TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) <> \'\'
+                 GROUP BY TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50)))'
             );
 
             foreach ($statsRows as $sr) {
@@ -140,7 +148,10 @@ class AdminController extends Controller
                             continue;
                         }
 
-                        $lookup[$normalizedPostcode] = $cityName;
+                        $lookup[$normalizedPostcode] = [
+                            'city' => $cityName,
+                            'state' => $state['name'] ?? ''
+                        ];
                     }
                 }
             }
@@ -269,7 +280,7 @@ class AdminController extends Controller
     private function getLeadCurrentActionState(int $leadId): ?array
     {
         $lead = DB::selectOne(
-            'SELECT "LEADID","ASSIGNED_TO","CURRENTSTATUS" FROM "LEAD" WHERE "LEADID" = ?',
+            'SELECT "LEADID","ASSIGNEDTO" AS "assignedTo" FROM "LEAD" WHERE "LEADID" = ?',
             [$leadId]
         );
 
@@ -285,15 +296,12 @@ class AdminController extends Controller
             [$leadId]
         );
 
-        $assignedTo = StringHelper::normalize($lead->ASSIGNED_TO ?? '');
-        $leadStatus = strtoupper(StringHelper::normalize($lead->CURRENTSTATUS ?? ''));
+        $assignedTo = StringHelper::normalize($lead->assignedTo ?? '');
         $latestStatus = strtoupper(StringHelper::normalize($latest->STATUS ?? ''));
 
         return [
-            'assigned_to' => $assignedTo,
-            'status' => $assignedTo === ''
-                ? ($leadStatus !== '' ? $leadStatus : $latestStatus)
-                : ($latestStatus !== '' ? $latestStatus : 'PENDING'),
+            'assignedTo' => $assignedTo,
+            'status' => $latestStatus !== '' ? $latestStatus : ($assignedTo !== '' ? 'PENDING' : 'CREATED'),
         ];
     }
 
@@ -305,7 +313,7 @@ class AdminController extends Controller
         }
 
         $status = strtoupper(StringHelper::normalize($state['status'] ?? ''));
-        $assignedTo = StringHelper::normalize($state['assigned_to'] ?? '');
+        $assignedTo = StringHelper::normalize($state['assignedTo'] ?? '');
         if ($assignedTo !== '') {
             if ($allowPendingWhileAssigned && in_array($status, ['', 'OPEN', 'CREATED', 'PENDING'], true)) {
                 return null;
@@ -422,9 +430,15 @@ class AdminController extends Controller
         );
         $totalClosed = (int) ($closedRow->cnt ?? $closedRow->CNT ?? current((array) $closedRow) ?? 0);
 
-        // Active inquiries: LEAD with CURRENTSTATUS = 'Ongoing'
+        // Active inquiries: leads whose latest LEAD_ACT status is ongoing
         $activeRow = DB::selectOne(
-            'SELECT COUNT(*) as cnt FROM "LEAD" WHERE "CURRENTSTATUS" = \'Ongoing\''
+            'SELECT COUNT(*) as cnt FROM "LEAD" l
+             WHERE l."ASSIGNEDTO" IS NOT NULL
+               AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
+                    FROM "LEAD_ACT" la
+                    WHERE la."LEADID" = l."LEADID"
+                    ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
+                   ) IN (\'PENDING\', \'FOLLOWUP\', \'FOLLOW UP\', \'DEMO\', \'CONFIRMED\')'
         );
         $activeInquiries = (int) ($activeRow->cnt ?? $activeRow->CNT ?? current((array) $activeRow) ?? 0);
 
@@ -547,13 +561,7 @@ class AdminController extends Controller
                          ) m ON m."LEADID" = a."LEADID" AND m.max_created = a."CREATIONDATE"
                      ) la ON la."LEADID" = l."LEADID"
                      WHERE l."CREATEDAT" <= ?
-                       AND (
-                           UPPER(TRIM(COALESCE(la."STATUS", \'\'))) IN (\'PENDING\', \'FOLLOWUP\', \'DEMO\', \'CONFIRMED\')
-                           OR (
-                               TRIM(COALESCE(la."STATUS", \'\')) = \'\'
-                               AND UPPER(TRIM(COALESCE(l."CURRENTSTATUS", \'\'))) = \'ONGOING\'
-                           )
-                       )',
+                       AND UPPER(TRIM(COALESCE(la."STATUS", \'\'))) IN (\'PENDING\', \'FOLLOWUP\', \'DEMO\', \'CONFIRMED\')',
                     [$cutoff, $cutoff]
                 );
 
@@ -696,8 +704,8 @@ class AdminController extends Controller
         $dealerStats = [];
         try {
             // Top Active Dealers (USERS + LEAD) per requested logic:
-            // Leads: COUNT(*) from LEAD where ASSIGNED_TO = dealer
-            // Closed: COUNT(*) where ASSIGNED_TO = dealer and CURRENTSTATUS = 'Closed'
+            // Leads: COUNT(*) from LEAD where assignedTo = dealer
+            // Closed: leads whose latest LEAD_ACT status is COMPLETED or REWARDED
             // Conversion: Closed / Leads
             // Pull dealer list first so we can build a readable company/alias label.
             // Older schemas may not expose every profile column; still return rows.
@@ -865,17 +873,14 @@ class AdminController extends Controller
     {
         $rows = DB::select(
             'SELECT FIRST 200
-                "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL","ADDRESS1","ADDRESS2","CITY","POSTCODE",
+                "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL","ADDRESS1","ADDRESS2","CITY","STATE","COUNTRY","POSTCODE",
                 "BUSINESSNATURE","USERCOUNT","EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION","REFERRALCODE",
-                "CURRENTSTATUS","CREATEDAT","CREATEDBY","ASSIGNED_TO","LASTMODIFIED"
+                "CREATEDAT","CREATEDBY","ASSIGNEDTO" AS "assignedTo","LASTMODIFIED"
             FROM "LEAD"
             ORDER BY "LEADID" DESC'
         );
-        foreach ($rows as $r) {
-            $r->LEAD_CURRENTSTATUS = trim((string) ($r->CURRENTSTATUS ?? ''));
-        }
 
-        // Override CURRENTSTATUS from latest LEAD_ACT status per LEADID
+        // Derive CURRENTSTATUS from latest LEAD_ACT status per LEADID
         try {
             $leadIds = [];
             foreach ($rows as $r) {
@@ -887,7 +892,6 @@ class AdminController extends Controller
             $leadIds = array_keys($leadIds);
             if (!empty($leadIds)) {
                 $placeholders = implode(',', array_fill(0, count($leadIds), '?'));
-                // Get latest LEAD_ACT row per LEADID by CREATIONDATE
                 $acts = DB::select(
                     'SELECT a."LEADID", a."STATUS"
                      FROM "LEAD_ACT" a
@@ -895,12 +899,10 @@ class AdminController extends Controller
                          SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
                          FROM "LEAD_ACT"
                          WHERE "LEADID" IN (' . $placeholders . ')
-                           AND UPPER(TRIM(COALESCE("STATUS", \'\'))) <> \'CREATED\'
                          GROUP BY "LEADID"
                      ) x
                        ON x."LEADID" = a."LEADID" AND x.MAXCD = a."CREATIONDATE"
-                     WHERE a."LEADID" IN (' . $placeholders . ')
-                       AND UPPER(TRIM(COALESCE(a."STATUS", \'\'))) <> \'CREATED\'',
+                     WHERE a."LEADID" IN (' . $placeholders . ')',
                     array_merge($leadIds, $leadIds)
                 );
                 $statusMap = [];
@@ -910,26 +912,30 @@ class AdminController extends Controller
                         $statusMap[$lid] = trim((string)($a->STATUS ?? ''));
                     }
                 }
-                if (!empty($statusMap)) {
-                    foreach ($rows as $r) {
-                        $lid = (int)($r->LEADID ?? 0);
-                        if ($lid > 0 && isset($statusMap[$lid]) && $statusMap[$lid] !== '') {
-                            $r->CURRENTSTATUS = $statusMap[$lid];
-                        }
+                foreach ($rows as $r) {
+                    $lid = (int)($r->LEADID ?? 0);
+                    if ($lid > 0 && isset($statusMap[$lid]) && $statusMap[$lid] !== '') {
+                        $r->CURRENTSTATUS = $statusMap[$lid];
+                    } else {
+                        $r->CURRENTSTATUS = 'Created';
                     }
                 }
             }
         } catch (\Throwable $e) {
-            // If LEAD_ACT lookup fails, keep CURRENTSTATUS from LEAD
+            // If LEAD_ACT lookup fails, default to Created
+            foreach ($rows as $r) {
+                if (!isset($r->CURRENTSTATUS)) {
+                    $r->CURRENTSTATUS = 'Created';
+                }
+            }
         }
 
         $unassigned = [];
         $assigned = [];
         foreach ($rows as $r) {
-            $assignedTo = trim((string) ($r->ASSIGNED_TO ?? ''));
-            $leadStatus = strtoupper(trim((string) ($r->LEAD_CURRENTSTATUS ?? $r->CURRENTSTATUS ?? '')));
+            $assignedTo = trim((string) ($r->assignedTo ?? ''));
+            $leadStatus = strtoupper(trim((string) ($r->CURRENTSTATUS ?? '')));
             if ($assignedTo === '' && in_array($leadStatus, ['OPEN', 'CREATED'], true)) {
-                $r->CURRENTSTATUS = $r->LEAD_CURRENTSTATUS ?? $r->CURRENTSTATUS;
                 $unassigned[] = $r;
             } elseif ($assignedTo !== '') {
                 $assigned[] = $r;
@@ -963,7 +969,7 @@ class AdminController extends Controller
             ));
             $ids = [];
             foreach ($rows as $r) {
-                $to = trim((string) ($r->ASSIGNED_TO ?? ''));
+                $to = trim((string) ($r->assignedTo ?? ''));
                 $by = trim((string) ($r->CREATEDBY ?? ''));
                 if ($to !== '') $ids[$to] = true;
                 if ($by !== '') $ids[$by] = true;
@@ -976,11 +982,11 @@ class AdminController extends Controller
             $actorMap = $maps['actorMap'];
             if (!empty($assignedToMap) || !empty($actorMap)) {
                 foreach ($rows as $r) {
-                    $to = trim((string) ($r->ASSIGNED_TO ?? ''));
+                    $to = trim((string) ($r->assignedTo ?? ''));
                     $by = trim((string) ($r->CREATEDBY ?? ''));
                     $leadId = (int) ($r->LEADID ?? 0);
                     $assignerId = $leadId > 0 ? trim((string) ($assignmentByLeadMap[$leadId] ?? '')) : '';
-                    if ($to !== '' && isset($assignedToMap[$to])) $r->ASSIGNED_TO_NAME = $assignedToMap[$to];
+                    if ($to !== '' && isset($assignedToMap[$to])) $r->assignedToName = $assignedToMap[$to];
                     if ($by !== '' && isset($actorMap[$by])) $r->CREATEDBY_NAME = $actorMap[$by];
                     if ($assignerId !== '') $r->ASSIGNEDBY = $assignerId;
                     if ($assignerId !== '' && isset($actorMap[$assignerId])) {
@@ -1019,12 +1025,16 @@ class AdminController extends Controller
             try {
                 $statsRows = DB::select(
                     'SELECT
-                        TRIM(CAST("ASSIGNED_TO" AS VARCHAR(50))) AS UID,
+                        TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) AS UID,
                         COUNT(*) AS TOTAL_LEAD,
-                        SUM(CASE WHEN "CURRENTSTATUS" = \'Closed\' THEN 1 ELSE 0 END) AS TOTAL_CLOSED
-                     FROM "LEAD"
-                     WHERE "ASSIGNED_TO" IS NOT NULL AND TRIM(CAST("ASSIGNED_TO" AS VARCHAR(50))) <> \'\'
-                     GROUP BY TRIM(CAST("ASSIGNED_TO" AS VARCHAR(50)))'
+                        SUM(CASE WHEN (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
+                                       FROM "LEAD_ACT" la
+                                       WHERE la."LEADID" = l."LEADID"
+                                       ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
+                                      ) IN (\'COMPLETED\', \'REWARDED\') THEN 1 ELSE 0 END) AS TOTAL_CLOSED
+                     FROM "LEAD" l
+                     WHERE l."ASSIGNEDTO" IS NOT NULL AND TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) <> \'\'
+                     GROUP BY TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50)))'
                 );
                 foreach ($statsRows as $sr) {
                     $uid = trim((string)($sr->UID ?? $sr->uid ?? ''));
@@ -1087,15 +1097,15 @@ class AdminController extends Controller
 
         $rows = DB::select(
             'SELECT FIRST 200
-                "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL","ADDRESS1","ADDRESS2","CITY","POSTCODE",
+                "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL","ADDRESS1","ADDRESS2","CITY","STATE","COUNTRY","POSTCODE",
                 "BUSINESSNATURE","USERCOUNT","EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION","REFERRALCODE",
-                "CURRENTSTATUS","CREATEDAT","CREATEDBY","ASSIGNED_TO","LASTMODIFIED"
+                "CREATEDAT","CREATEDBY","ASSIGNEDTO" AS "assignedTo","LASTMODIFIED"
             FROM "LEAD"
             ORDER BY "LEADID" DESC'
         );
         $assigned = [];
         foreach ($rows as $r) {
-            if (trim((string) ($r->ASSIGNED_TO ?? '')) !== '') {
+            if (trim((string) ($r->assignedTo ?? '')) !== '') {
                 $assigned[] = $r;
             }
         }
@@ -1116,12 +1126,10 @@ class AdminController extends Controller
                          SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
                          FROM "LEAD_ACT"
                          WHERE "LEADID" IN (' . $placeholders . ')
-                           AND UPPER(TRIM(COALESCE("STATUS", \'\'))) <> \'CREATED\'
                          GROUP BY "LEADID"
                      ) x
                        ON x."LEADID" = a."LEADID" AND x.MAXCD = a."CREATIONDATE"
-                     WHERE a."LEADID" IN (' . $placeholders . ')
-                       AND UPPER(TRIM(COALESCE(a."STATUS", \'\'))) <> \'CREATED\'',
+                     WHERE a."LEADID" IN (' . $placeholders . ')',
                     array_merge($leadIds, $leadIds)
                 );
                 $statusMap = [];
@@ -1131,12 +1139,14 @@ class AdminController extends Controller
                 }
                 foreach ($rows as $r) {
                     $lid = (int)($r->LEADID ?? 0);
-                    if ($lid > 0 && isset($statusMap[$lid]) && $statusMap[$lid] !== '') {
-                        $r->CURRENTSTATUS = $statusMap[$lid];
-                    }
+                    $r->CURRENTSTATUS = ($lid > 0 && isset($statusMap[$lid]) && $statusMap[$lid] !== '')
+                        ? $statusMap[$lid]
+                        : 'Created';
                 }
             } catch (\Throwable $e) {
-                // keep CURRENTSTATUS from LEAD
+                foreach ($rows as $r) {
+                    if (!isset($r->CURRENTSTATUS)) $r->CURRENTSTATUS = 'Created';
+                }
             }
         }
 
@@ -1154,7 +1164,7 @@ class AdminController extends Controller
             ));
             $ids = [];
             foreach ($rows as $r) {
-                $to = trim((string) ($r->ASSIGNED_TO ?? ''));
+                $to = trim((string) ($r->assignedTo ?? ''));
                 $by = trim((string) ($r->CREATEDBY ?? ''));
                 if ($to !== '') $ids[$to] = true;
                 if ($by !== '') $ids[$by] = true;
@@ -1166,11 +1176,11 @@ class AdminController extends Controller
             $assignedToMap = $maps['assignedToMap'];
             $actorMap = $maps['actorMap'];
             foreach ($rows as $r) {
-                $to = trim((string) ($r->ASSIGNED_TO ?? ''));
+                $to = trim((string) ($r->assignedTo ?? ''));
                 $by = trim((string) ($r->CREATEDBY ?? ''));
                 $leadId = (int) ($r->LEADID ?? 0);
                 $assignerId = $leadId > 0 ? trim((string) ($assignmentByLeadMap[$leadId] ?? '')) : '';
-                if ($to !== '' && isset($assignedToMap[$to])) $r->ASSIGNED_TO_NAME = $assignedToMap[$to];
+                if ($to !== '' && isset($assignedToMap[$to])) $r->assignedToName = $assignedToMap[$to];
                 if ($by !== '' && isset($actorMap[$by])) $r->CREATEDBY_NAME = $actorMap[$by];
                 if ($assignerId !== '') $r->ASSIGNEDBY = $assignerId;
                 if ($assignerId !== '' && isset($actorMap[$assignerId])) {
@@ -1228,11 +1238,11 @@ class AdminController extends Controller
     {
         $validated = $request->validate([
             'LEADID' => 'required',
-            'ASSIGNED_TO' => 'required',
+            'assignedTo' => 'required',
         ]);
 
         $leadId = (int) $validated['LEADID'];
-        $assignedTo = trim((string) $validated['ASSIGNED_TO']);
+        $assignedTo = trim((string) $validated['assignedTo']);
         $fromUserId = trim((string) ($request->session()->get('user_id') ?? ''));
 
         if ($leadId <= 0 || $assignedTo === '') {
@@ -1264,11 +1274,11 @@ class AdminController extends Controller
         $prevLastModified = null;
         try {
             $current = DB::selectOne(
-                'SELECT "ASSIGNED_TO", "LASTMODIFIED" FROM "LEAD" WHERE "LEADID" = ?',
+                'SELECT "ASSIGNEDTO" AS "assignedTo", "LASTMODIFIED" FROM "LEAD" WHERE "LEADID" = ?',
                 [$leadId]
             );
             if ($current) {
-                $prevAssignedTo = trim((string) ($current->ASSIGNED_TO ?? ''));
+                $prevAssignedTo = trim((string) ($current->assignedTo ?? ''));
                 $prevLastModified = $current->LASTMODIFIED ?? null;
             }
         } catch (\Throwable $e) {
@@ -1287,19 +1297,19 @@ class AdminController extends Controller
             }
             $updated = DB::update(
                 'UPDATE "LEAD"
-                 SET "ASSIGNED_TO" = ?, "LASTMODIFIED" = CURRENT_TIMESTAMP
+                 SET "ASSIGNEDTO" = ?, "LASTMODIFIED" = CURRENT_TIMESTAMP
                  WHERE "LEADID" = ?
-                   AND ("ASSIGNED_TO" IS NULL OR TRIM(CAST("ASSIGNED_TO" AS VARCHAR(50))) = \'\')',
+                   AND ("ASSIGNEDTO" IS NULL OR TRIM(CAST("ASSIGNEDTO" AS VARCHAR(50))) = \'\')',
                 [$assignedTo, $leadId]
             );
             if ((int) $updated < 1) {
                 $currentAssignedRow = DB::selectOne(
-                    'SELECT "ASSIGNED_TO" FROM "LEAD" WHERE "LEADID" = ?',
+                    'SELECT "ASSIGNEDTO" AS "assignedTo" FROM "LEAD" WHERE "LEADID" = ?',
                     [$leadId]
                 );
                 DB::rollBack();
 
-                $currentAssigned = trim((string) ($currentAssignedRow->ASSIGNED_TO ?? ''));
+                $currentAssigned = trim((string) ($currentAssignedRow->assignedTo ?? ''));
                 if ($currentAssigned !== '') {
                     $maps = $this->userDisplayMaps([$currentAssigned]);
                     $assignedToMap = $maps['assignedToMap'] ?? [];
@@ -1318,8 +1328,8 @@ class AdminController extends Controller
 
         $undoPayload = [
             'lead_id' => $leadId,
-            'prev_assigned_to' => $prevAssignedTo,
-            'new_assigned_to' => $assignedTo,
+            'prevAssignedTo' => $prevAssignedTo,
+            'new_assignedTo' => $assignedTo,
             'prev_lastmodified' => $prevLastModified,
         ];
 
@@ -1336,16 +1346,16 @@ class AdminController extends Controller
     {
         $validated = $request->validate([
             'lead_id' => 'required|integer|min:1',
-            'assigned_to' => 'required|string|max:50',
+            'assignedTo' => 'required|string|max:50',
         ]);
         $leadId = (int) $validated['lead_id'];
-        $assignedTo = trim((string) $validated['assigned_to']);
+        $assignedTo = trim((string) $validated['assignedTo']);
 
-        $row = DB::selectOne('SELECT "ASSIGNED_TO" FROM "LEAD" WHERE "LEADID" = ?', [$leadId]);
+        $row = DB::selectOne('SELECT "ASSIGNEDTO" AS "assignedTo" FROM "LEAD" WHERE "LEADID" = ?', [$leadId]);
         if (!$row) {
             return response()->json(['success' => false, 'message' => 'Lead not found.'], 404);
         }
-        $currentAssigned = trim((string) ($row->ASSIGNED_TO ?? ''));
+        $currentAssigned = trim((string) ($row->assignedTo ?? ''));
         if ($currentAssigned !== $assignedTo) {
             return response()->json(['success' => true, 'message' => 'Assignment was undone, email not sent.']);
         }
@@ -1358,11 +1368,11 @@ class AdminController extends Controller
     {
         $validated = $request->validate([
             'LEADID' => 'required|integer|min:1',
-            'PREV_ASSIGNED_TO' => 'nullable|string|max:50',
+            'prevAssignedTo' => 'nullable|string|max:50',
             'PREV_LASTMODIFIED' => 'nullable|string|max:50',
         ]);
         $leadId = (int) $validated['LEADID'];
-        $prev = trim((string) ($validated['PREV_ASSIGNED_TO'] ?? ''));
+        $prev = trim((string) ($validated['prevAssignedTo'] ?? ''));
         $prevLastModified = trim((string) ($validated['PREV_LASTMODIFIED'] ?? ''));
 
         try {
@@ -1374,14 +1384,14 @@ class AdminController extends Controller
             if ($prev === '') {
                 $updated = DB::update(
                     'UPDATE "LEAD"
-                     SET "ASSIGNED_TO" = ?, "CURRENTSTATUS" = ?, "LASTMODIFIED" = ?
+                     SET "ASSIGNEDTO" = ?, "LASTMODIFIED" = ?
                      WHERE "LEADID" = ?',
-                    [$assignedTo, 'Open', $restoredLastModified, $leadId]
+                    [$assignedTo, $restoredLastModified, $leadId]
                 );
             } else {
                 $updated = DB::update(
                     'UPDATE "LEAD"
-                     SET "ASSIGNED_TO" = ?, "LASTMODIFIED" = ?
+                     SET "ASSIGNEDTO" = ?, "LASTMODIFIED" = ?
                      WHERE "LEADID" = ?',
                     [$assignedTo, $restoredLastModified, $leadId]
                 );
@@ -1402,9 +1412,9 @@ class AdminController extends Controller
 
                   DB::update(
                       'UPDATE "LEAD"
-                       SET "CURRENTSTATUS" = ?, "LASTMODIFIED" = ?
+                       SET "LASTMODIFIED" = ?
                        WHERE "LEADID" = ?',
-                      ['Open', $restoredLastModified, $leadId]
+                      [$restoredLastModified, $leadId]
                   );
               }
 
@@ -1575,7 +1585,7 @@ class AdminController extends Controller
             $row = DB::selectOne(
                 'SELECT FIRST 1
                     "LEADID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL",
-                    "ADDRESS1","ADDRESS2","CITY","POSTCODE","BUSINESSNATURE",
+                    "ADDRESS1","ADDRESS2","CITY","STATE","COUNTRY","POSTCODE","BUSINESSNATURE",
                     "EXISTINGSOFTWARE","USERCOUNT","DEMOMODE"
                  FROM "LEAD"
                  WHERE UPPER(TRIM("COMPANYNAME")) = UPPER(TRIM(?))
@@ -1596,6 +1606,8 @@ class AdminController extends Controller
                 'address1' => (string) ($row->ADDRESS1 ?? ''),
                 'address2' => (string) ($row->ADDRESS2 ?? ''),
                 'city' => (string) ($row->CITY ?? ''),
+                'state' => (string) ($row->STATE ?? ''),
+                'country' => (string) ($row->COUNTRY ?? ''),
                 'postcode' => (string) ($row->POSTCODE ?? ''),
                 'businessnature' => (string) ($row->BUSINESSNATURE ?? ''),
                 'existingsoftware' => (string) ($row->EXISTINGSOFTWARE ?? ''),
@@ -1621,7 +1633,7 @@ class AdminController extends Controller
 
         $row = DB::selectOne(
             'SELECT "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL",
-                "ADDRESS1","ADDRESS2","CITY","POSTCODE","BUSINESSNATURE","USERCOUNT",
+                "ADDRESS1","ADDRESS2","CITY","STATE","COUNTRY","POSTCODE","BUSINESSNATURE","USERCOUNT",
                 "EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION","REFERRALCODE",
                 COALESCE("LASTMODIFIED", "CREATEDAT") AS "SNAPSHOT_MODIFIED_AT"
              FROM "LEAD" WHERE "LEADID" = ?',
@@ -1645,6 +1657,8 @@ class AdminController extends Controller
                 'ADDRESS1' => 'nullable|string|max:255',
                 'ADDRESS2' => 'nullable|string|max:255',
                 'CITY' => 'required|string|max:100',
+                'STATE' => 'nullable|string|max:100',
+                'COUNTRY' => 'nullable|string|max:100',
                 'POSTCODE' => 'required|string|digits:5',
                 'BUSINESSNATURE' => 'required|string|max:255',
                 'USERCOUNT' => 'nullable|string|max:50',
@@ -1654,7 +1668,7 @@ class AdminController extends Controller
                 'product_interested.*' => 'integer|in:1,2,3,4,5,6,7,8,9,10,11',
                 'DESCRIPTION' => 'nullable|string|max:4000',
                 'REFERRALCODE' => 'nullable|string|max:100',
-                'ASSIGNED_TO' => 'nullable|string|max:50',
+                'assignedTo' => 'nullable|string|max:50',
             ],
             [
                 'CONTACTNO.min'          => 'Invalid Contact Number.',
@@ -1675,16 +1689,30 @@ class AdminController extends Controller
         if (!$request->boolean('duplicate_ok')) {
             try {
                 $existing = DB::selectOne(
-                    'SELECT FIRST 1 "LEADID","COMPANYNAME","CONTACTNAME","EMAIL","CURRENTSTATUS","CREATEDAT"
-                     FROM "LEAD"
-                     WHERE UPPER(TRIM("COMPANYNAME")) = UPPER(TRIM(?))
+                    'SELECT FIRST 1 l."LEADID",l."COMPANYNAME",l."CONTACTNAME",l."EMAIL",
+                        COALESCE(
+                            (SELECT FIRST 1 la."STATUS"
+                             FROM "LEAD_ACT" la
+                             WHERE la."LEADID" = l."LEADID"
+                             ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC),
+                            \'Created\'
+                        ) AS "CURRENTSTATUS",
+                        l."CREATEDAT"
+                     FROM "LEAD" l
+                     WHERE UPPER(TRIM(l."COMPANYNAME")) = UPPER(TRIM(?))
                      ORDER BY
                         CASE
-                            WHEN UPPER(TRIM(COALESCE("CURRENTSTATUS", \'\'))) = \'FAILED\' THEN 1
+                            WHEN UPPER(TRIM(COALESCE(
+                                (SELECT FIRST 1 la2."STATUS"
+                                 FROM "LEAD_ACT" la2
+                                 WHERE la2."LEADID" = l."LEADID"
+                                 ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC),
+                                \'\'
+                            ))) = \'FAILED\' THEN 1
                             ELSE 0
                         END ASC,
-                        COALESCE("LASTMODIFIED", "CREATEDAT") DESC,
-                        "LEADID" DESC',
+                        COALESCE(l."LASTMODIFIED", l."CREATEDAT") DESC,
+                        l."LEADID" DESC',
                     [$validated['COMPANYNAME']]
                 );
                 if ($existing) {
@@ -1731,10 +1759,10 @@ class AdminController extends Controller
             DB::insert(
                 'INSERT INTO "LEAD" (
                     "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL",
-                    "ADDRESS1","ADDRESS2","CITY","POSTCODE","BUSINESSNATURE","USERCOUNT",
+                    "ADDRESS1","ADDRESS2","CITY","STATE","COUNTRY","POSTCODE","BUSINESSNATURE","USERCOUNT",
                     "EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION","REFERRALCODE",
-                    "CURRENTSTATUS","CREATEDAT","CREATEDBY","ASSIGNED_TO","LASTMODIFIED"
-                ) VALUES (GEN_ID(GEN_LEADID, 1),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,?,?,CURRENT_TIMESTAMP)',
+                    "CREATEDAT","CREATEDBY","ASSIGNEDTO","LASTMODIFIED"
+                ) VALUES (GEN_ID(GEN_LEADID, 1),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,?,?,CURRENT_TIMESTAMP)',
                 [
                     $productIdValue,
                     $validated['COMPANYNAME'],
@@ -1744,6 +1772,8 @@ class AdminController extends Controller
                     $validated['ADDRESS1'] ?? null,
                     $validated['ADDRESS2'] ?? null,
                     $validated['CITY'],
+                    $validated['STATE'] ?? null,
+                    $validated['COUNTRY'] ?? null,
                     $validated['POSTCODE'],
                     $validated['BUSINESSNATURE'],
                     $validated['USERCOUNT'] ?? null,
@@ -1751,22 +1781,21 @@ class AdminController extends Controller
                     $validated['DEMOMODE'],
                     $descriptionValue,
                     $validated['REFERRALCODE'] ?? null,
-                    'Open',
                     $userId,
-                    $validated['ASSIGNED_TO'] ?? null,
+                    $validated['assignedTo'] ?? null,
                 ]
             );
         } catch (\Throwable $e) {
             return back()->withInput($request->only(array_keys($validated)))->with('error', 'Could not save the inquiry. Please try again.');
         }
 
-        $assignedTo = trim((string) ($validated['ASSIGNED_TO'] ?? ''));
+        $assignedTo = trim((string) ($validated['assignedTo'] ?? ''));
         $assignEmailPending = null;
         if ($assignedTo !== '') {
             $newLeadIdRow = DB::selectOne('SELECT GEN_ID(GEN_LEADID, 0) AS "ID" FROM RDB$DATABASE');
             $newLeadId = (int) ($newLeadIdRow->ID ?? $newLeadIdRow->id ?? 0);
             if ($newLeadId > 0) {
-                $assignEmailPending = ['lead_id' => $newLeadId, 'assigned_to' => $assignedTo];
+                $assignEmailPending = ['lead_id' => $newLeadId, 'assignedTo' => $assignedTo];
             }
         }
 
@@ -1788,6 +1817,8 @@ class AdminController extends Controller
                 'ADDRESS1' => 'nullable|string|max:255',
                 'ADDRESS2' => 'nullable|string|max:255',
                 'CITY' => 'required|string|max:100',
+                'STATE' => 'nullable|string|max:100',
+                'COUNTRY' => 'nullable|string|max:100',
                 'POSTCODE' => 'required|string|digits:5',
                 'BUSINESSNATURE' => 'required|string|max:255',
                 'USERCOUNT' => 'nullable|string|max:50',
@@ -1835,16 +1866,30 @@ class AdminController extends Controller
         if (!$request->boolean('duplicate_ok')) {
             try {
                 $existing = DB::selectOne(
-                    'SELECT FIRST 1 "LEADID","COMPANYNAME","CONTACTNAME","EMAIL","CURRENTSTATUS","CREATEDAT"
-                     FROM "LEAD"
-                     WHERE UPPER(TRIM("COMPANYNAME")) = UPPER(TRIM(?)) AND "LEADID" <> ?
+                    'SELECT FIRST 1 l."LEADID",l."COMPANYNAME",l."CONTACTNAME",l."EMAIL",
+                        COALESCE(
+                            (SELECT FIRST 1 la."STATUS"
+                             FROM "LEAD_ACT" la
+                             WHERE la."LEADID" = l."LEADID"
+                             ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC),
+                            \'Created\'
+                        ) AS "CURRENTSTATUS",
+                        l."CREATEDAT"
+                     FROM "LEAD" l
+                     WHERE UPPER(TRIM(l."COMPANYNAME")) = UPPER(TRIM(?)) AND l."LEADID" <> ?
                      ORDER BY
                         CASE
-                            WHEN UPPER(TRIM(COALESCE("CURRENTSTATUS", \'\'))) = \'FAILED\' THEN 1
+                            WHEN UPPER(TRIM(COALESCE(
+                                (SELECT FIRST 1 la2."STATUS"
+                                 FROM "LEAD_ACT" la2
+                                 WHERE la2."LEADID" = l."LEADID"
+                                 ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC),
+                                \'\'
+                            ))) = \'FAILED\' THEN 1
                             ELSE 0
                         END ASC,
-                        COALESCE("LASTMODIFIED", "CREATEDAT") DESC,
-                        "LEADID" DESC',
+                        COALESCE(l."LASTMODIFIED", l."CREATEDAT") DESC,
+                        l."LEADID" DESC',
                     [$validated['COMPANYNAME'], $leadId]
                 );
                 if ($existing) {
@@ -1891,7 +1936,7 @@ class AdminController extends Controller
             DB::update(
                 'UPDATE "LEAD" SET
                     "PRODUCTID" = ?, "COMPANYNAME" = ?, "CONTACTNAME" = ?, "CONTACTNO" = ?, "EMAIL" = ?,
-                    "ADDRESS1" = ?, "ADDRESS2" = ?, "CITY" = ?, "POSTCODE" = ?, "BUSINESSNATURE" = ?,
+                    "ADDRESS1" = ?, "ADDRESS2" = ?, "CITY" = ?, "STATE" = ?, "COUNTRY" = ?, "POSTCODE" = ?, "BUSINESSNATURE" = ?,
                     "USERCOUNT" = ?, "EXISTINGSOFTWARE" = ?, "DEMOMODE" = ?, "DESCRIPTION" = ?, "REFERRALCODE" = ?,
                     "LASTMODIFIED" = CURRENT_TIMESTAMP
                  WHERE "LEADID" = ?',
@@ -1904,6 +1949,8 @@ class AdminController extends Controller
                     $validated['ADDRESS1'] ?? null,
                     $validated['ADDRESS2'] ?? null,
                     $validated['CITY'],
+                    $validated['STATE'] ?? null,
+                    $validated['COUNTRY'] ?? null,
                     $validated['POSTCODE'],
                     $validated['BUSINESSNATURE'],
                     $validated['USERCOUNT'] ?? null,
@@ -1920,8 +1967,8 @@ class AdminController extends Controller
 
         $activeTab = $request->input('return_tab');
         if (!$activeTab) {
-            $leadAfterUpdate = DB::selectOne('SELECT "ASSIGNED_TO" FROM "LEAD" WHERE "LEADID" = ?', [$leadId]);
-            $activeTab = (!empty($leadAfterUpdate->ASSIGNED_TO)) ? 'assigned' : 'incoming';
+            $leadAfterUpdate = DB::selectOne('SELECT "ASSIGNEDTO" AS "assignedTo" FROM "LEAD" WHERE "LEADID" = ?', [$leadId]);
+            $activeTab = (!empty($leadAfterUpdate->assignedTo)) ? 'assigned' : 'incoming';
         }
 
         return redirect()->route('admin.inquiries', ['tab' => $activeTab])->with('success', 'Inquiry updated.');
@@ -1931,9 +1978,9 @@ class AdminController extends Controller
     {
         $row = DB::selectOne(
             'SELECT "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL",
-                "ADDRESS1","ADDRESS2","CITY","POSTCODE","BUSINESSNATURE","USERCOUNT",
+                "ADDRESS1","ADDRESS2","CITY","STATE","COUNTRY","POSTCODE","BUSINESSNATURE","USERCOUNT",
                 "EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION","REFERRALCODE",
-                "CURRENTSTATUS","CREATEDAT","CREATEDBY","ASSIGNED_TO","LASTMODIFIED"
+                "CREATEDAT","CREATEDBY","ASSIGNEDTO" AS "assignedTo","LASTMODIFIED"
              FROM "LEAD" WHERE "LEADID" = ?',
             [$leadId]
         );
@@ -1995,10 +2042,10 @@ class AdminController extends Controller
             DB::insert(
                 'INSERT INTO "LEAD" (
                     "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL",
-                    "ADDRESS1","ADDRESS2","CITY","POSTCODE","BUSINESSNATURE","USERCOUNT",
+                    "ADDRESS1","ADDRESS2","CITY","STATE","COUNTRY","POSTCODE","BUSINESSNATURE","USERCOUNT",
                     "EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION","REFERRALCODE",
-                    "CURRENTSTATUS","CREATEDAT","CREATEDBY","ASSIGNED_TO","LASTMODIFIED"
-                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+                    "CREATEDAT","CREATEDBY","ASSIGNEDTO","LASTMODIFIED"
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
                 [
                     $leadId,
                     $lead['PRODUCTID'] ?? null,
@@ -2009,6 +2056,8 @@ class AdminController extends Controller
                     $lead['ADDRESS1'] ?? null,
                     $lead['ADDRESS2'] ?? null,
                     $lead['CITY'] ?? null,
+                    $lead['STATE'] ?? null,
+                    $lead['COUNTRY'] ?? null,
                     $lead['POSTCODE'] ?? null,
                     $lead['BUSINESSNATURE'] ?? null,
                     $lead['USERCOUNT'] ?? null,
@@ -2016,10 +2065,9 @@ class AdminController extends Controller
                     $lead['DEMOMODE'] ?? null,
                     $lead['DESCRIPTION'] ?? null,
                     $lead['REFERRALCODE'] ?? null,
-                    $lead['CURRENTSTATUS'] ?? 'Open',
                     $lead['CREATEDAT'] ?? null,
                     $lead['CREATEDBY'] ?? null,
-                    $lead['ASSIGNED_TO'] ?? null,
+                    $lead['assignedTo'] ?? null,
                     $lead['LASTMODIFIED'] ?? null,
                 ]
             );
@@ -2046,13 +2094,12 @@ class AdminController extends Controller
 
             DB::update(
                 'UPDATE "LEAD"
-                 SET "CURRENTSTATUS" = ?, "CREATEDAT" = ?, "CREATEDBY" = ?, "ASSIGNED_TO" = ?, "LASTMODIFIED" = ?
+                 SET "CREATEDAT" = ?, "CREATEDBY" = ?, "ASSIGNEDTO" = ?, "LASTMODIFIED" = ?
                  WHERE "LEADID" = ?',
                 [
-                    $lead['CURRENTSTATUS'] ?? 'Open',
                     $lead['CREATEDAT'] ?? null,
                     $lead['CREATEDBY'] ?? null,
-                    $lead['ASSIGNED_TO'] ?? null,
+                    $lead['assignedTo'] ?? null,
                     $lead['LASTMODIFIED'] ?? null,
                     $leadId,
                 ]
@@ -2150,7 +2197,7 @@ class AdminController extends Controller
 
     /**
      * Send email to the dealer (assigned user) for a completed payout (uses SMTP).
-     * Dealer email is taken from USERS table by ASSIGNED_TO.
+     * Dealer email is taken from USERS table by assignedTo.
      */
     public function sendPayoutEmail(Request $request): JsonResponse
     {
@@ -2158,7 +2205,7 @@ class AdminController extends Controller
 
         $leadId = (int) $request->input('lead_id');
         $lead = DB::selectOne(
-            'SELECT "LEADID","COMPANYNAME","CONTACTNAME","ASSIGNED_TO","REFERRALCODE" FROM "LEAD" WHERE "LEADID" = ?',
+            'SELECT "LEADID","COMPANYNAME","CONTACTNAME","ASSIGNEDTO" AS "assignedTo","REFERRALCODE" FROM "LEAD" WHERE "LEADID" = ?',
             [$leadId]
         );
         if (!$lead) {
@@ -2186,7 +2233,7 @@ class AdminController extends Controller
             return response()->json(['success' => false, 'message' => 'Referral code is required before sending this email.'], 400);
         }
 
-        $assignedTo = trim((string) ($lead->ASSIGNED_TO ?? ''));
+        $assignedTo = trim((string) ($lead->assignedTo ?? ''));
         if ($assignedTo === '') {
             return response()->json(['success' => false, 'message' => 'No dealer assigned to this lead.'], 400);
         }
@@ -2326,7 +2373,7 @@ class AdminController extends Controller
                      WHERE EXISTS (
                          SELECT 1
                          FROM "LEAD" l
-                         WHERE TRIM(CAST(l."ASSIGNED_TO" AS VARCHAR(50))) = TRIM(CAST(u."USERID" AS VARCHAR(50)))
+                         WHERE TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) = TRIM(CAST(u."USERID" AS VARCHAR(50)))
                      )
                      ORDER BY UPPER(TRIM(COALESCE("COMPANY", \'\'))),
                               UPPER(TRIM(COALESCE("ALIAS", \'\'))),
@@ -2503,7 +2550,7 @@ class AdminController extends Controller
 
         [$leadScopeSql, $leadScopeBindings] = $this->buildAdminReportScopeSql(
             $selectedReportScope,
-            'l."ASSIGNED_TO"',
+            'l."ASSIGNEDTO"',
             'u."COMPANY"',
             true
         );
@@ -2530,14 +2577,36 @@ class AdminController extends Controller
             return null;
         };
 
-        // Lead status summary
+        // Lead status summary (derived from LEAD_ACT)
         $leadStatusRows = DB::select(
-            'SELECT l."CURRENTSTATUS" AS status, COUNT(*) AS c
+            'SELECT
+                CASE
+                    WHEN ls.latest_status IN (\'PENDING\', \'FOLLOWUP\', \'FOLLOW UP\', \'DEMO\', \'CONFIRMED\') THEN \'Ongoing\'
+                    WHEN ls.latest_status IN (\'COMPLETED\', \'REWARDED\') THEN \'Closed\'
+                    WHEN ls.latest_status = \'FAILED\' THEN \'Failed\'
+                    ELSE \'Open\'
+                END AS status,
+                COUNT(*) AS c
              FROM "LEAD" l
-             LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
+             LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
+             LEFT JOIN (
+                 SELECT a."LEADID", UPPER(TRIM(a."STATUS")) AS latest_status
+                 FROM "LEAD_ACT" a
+                 JOIN (
+                     SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
+                     FROM "LEAD_ACT"
+                     GROUP BY "LEADID"
+                 ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
+             ) ls ON ls."LEADID" = l."LEADID"
              WHERE EXTRACT(YEAR FROM l."CREATEDAT") = ? AND EXTRACT(MONTH FROM l."CREATEDAT") = ?
              ' . $leadScopeSql . '
-             GROUP BY l."CURRENTSTATUS"',
+             GROUP BY
+                CASE
+                    WHEN ls.latest_status IN (\'PENDING\', \'FOLLOWUP\', \'FOLLOW UP\', \'DEMO\', \'CONFIRMED\') THEN \'Ongoing\'
+                    WHEN ls.latest_status IN (\'COMPLETED\', \'REWARDED\') THEN \'Closed\'
+                    WHEN ls.latest_status = \'FAILED\' THEN \'Failed\'
+                    ELSE \'Open\'
+                END',
             array_merge([$selectedYear, $selectedMonth], $leadScopeBindings)
         );
         $leadStatus = [
@@ -2555,12 +2624,34 @@ class AdminController extends Controller
 
         // Last month lead status summary for month-over-month status comparisons.
         $lastMonthLeadStatusRows = DB::select(
-            'SELECT l."CURRENTSTATUS" AS status, COUNT(*) AS c
+            'SELECT
+                CASE
+                    WHEN ls.latest_status IN (\'PENDING\', \'FOLLOWUP\', \'FOLLOW UP\', \'DEMO\', \'CONFIRMED\') THEN \'Ongoing\'
+                    WHEN ls.latest_status IN (\'COMPLETED\', \'REWARDED\') THEN \'Closed\'
+                    WHEN ls.latest_status = \'FAILED\' THEN \'Failed\'
+                    ELSE \'Open\'
+                END AS status,
+                COUNT(*) AS c
              FROM "LEAD" l
-             LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
+             LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
+             LEFT JOIN (
+                 SELECT a."LEADID", UPPER(TRIM(a."STATUS")) AS latest_status
+                 FROM "LEAD_ACT" a
+                 JOIN (
+                     SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
+                     FROM "LEAD_ACT"
+                     GROUP BY "LEADID"
+                 ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
+             ) ls ON ls."LEADID" = l."LEADID"
              WHERE EXTRACT(YEAR FROM l."CREATEDAT") = ? AND EXTRACT(MONTH FROM l."CREATEDAT") = ?
              ' . $leadScopeSql . '
-             GROUP BY l."CURRENTSTATUS"',
+             GROUP BY
+                CASE
+                    WHEN ls.latest_status IN (\'PENDING\', \'FOLLOWUP\', \'FOLLOW UP\', \'DEMO\', \'CONFIRMED\') THEN \'Ongoing\'
+                    WHEN ls.latest_status IN (\'COMPLETED\', \'REWARDED\') THEN \'Closed\'
+                    WHEN ls.latest_status = \'FAILED\' THEN \'Failed\'
+                    ELSE \'Open\'
+                END',
             array_merge([$prevYear, $prevMonth], $leadScopeBindings)
         );
         $lastMonthLeadStatus = [
@@ -2610,7 +2701,7 @@ class AdminController extends Controller
                  GROUP BY "LEADID"
              ) m ON m."LEADID" = a."LEADID" AND m.max_created = a."CREATIONDATE"
              JOIN "LEAD" l ON l."LEADID" = a."LEADID"
-             LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
+             LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
              WHERE 1 = 1
              ' . $leadScopeSql . '
              GROUP BY a."STATUS"',
@@ -2644,7 +2735,7 @@ class AdminController extends Controller
                  GROUP BY "LEADID"
              ) m ON m."LEADID" = a."LEADID" AND m.max_created = a."CREATIONDATE"
              JOIN "LEAD" l ON l."LEADID" = a."LEADID"
-             LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
+             LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
              WHERE 1 = 1
              ' . $leadScopeSql . '
              GROUP BY a."STATUS"',
@@ -2715,7 +2806,7 @@ class AdminController extends Controller
         $trendRows = DB::select(
             'SELECT EXTRACT(DAY FROM l."CREATEDAT") AS d, COUNT(*) AS c
              FROM "LEAD" l
-             LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
+             LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
              WHERE EXTRACT(MONTH FROM l."CREATEDAT") = ? AND EXTRACT(YEAR FROM l."CREATEDAT") = ?
              ' . $leadScopeSql . '
              GROUP BY EXTRACT(DAY FROM l."CREATEDAT")
@@ -2735,7 +2826,7 @@ class AdminController extends Controller
         $lastMonthRows = DB::select(
             'SELECT COUNT(*) AS c
              FROM "LEAD" l
-             LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
+             LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
              WHERE EXTRACT(YEAR FROM l."CREATEDAT") = ? AND EXTRACT(MONTH FROM l."CREATEDAT") = ?
              ' . $leadScopeSql,
             array_merge([$prevYear, $prevMonth], $leadScopeBindings)
@@ -2783,7 +2874,7 @@ class AdminController extends Controller
             'SELECT a."DEALTPRODUCT" AS dealt
              FROM "LEAD_ACT" a
              JOIN "LEAD" l ON l."LEADID" = a."LEADID"
-             LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
+             LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
              WHERE a."DEALTPRODUCT" IS NOT NULL
                AND TRIM(a."DEALTPRODUCT") <> \'\'
                AND EXTRACT(MONTH FROM a."CREATIONDATE") = ?
@@ -2847,7 +2938,7 @@ class AdminController extends Controller
         $reportScopeOptions = $this->adminReportScopeOptions();
         [$dealerScopeSql, $dealerScopeBindings] = $this->buildAdminReportExistsScopeSql(
             $selectedReportScope,
-            'l."ASSIGNED_TO"'
+            'l."ASSIGNEDTO"'
         );
 
         $useCustomPrimary = $primaryFrom !== '' && $primaryTo !== '';
@@ -2904,31 +2995,39 @@ class AdminController extends Controller
         // Build primary period filter: either DATEADD (preset) or timestamp bounds (custom)
         if ($useCustomPrimary) {
             $dealerTotals = DB::select(
-                'SELECT l."ASSIGNED_TO" AS dealer_id,
+                'SELECT l."ASSIGNEDTO" AS dealer_id,
                         COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL") AS name,
                         COUNT(*) AS total_c,
-                        SUM(CASE WHEN l."CURRENTSTATUS" = ? THEN 1 ELSE 0 END) AS closed_c
+                        SUM(CASE WHEN (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
+                                       FROM "LEAD_ACT" la
+                                       WHERE la."LEADID" = l."LEADID"
+                                       ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
+                                      ) IN (\'COMPLETED\', \'REWARDED\') THEN 1 ELSE 0 END) AS closed_c
                  FROM "LEAD" l
-                 JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
-                 WHERE l."ASSIGNED_TO" IS NOT NULL
+                 JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
+                 WHERE l."ASSIGNEDTO" IS NOT NULL
                    AND l."CREATEDAT" >= CAST(? AS TIMESTAMP) AND l."CREATEDAT" <= CAST(? AS TIMESTAMP)
                    ' . $dealerScopeSql . '
-                 GROUP BY l."ASSIGNED_TO", COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL")',
-                array_merge(['Closed', $primaryStartStr, $primaryEndStr], $dealerScopeBindings)
+                 GROUP BY l."ASSIGNEDTO", COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL")',
+                array_merge([$primaryStartStr, $primaryEndStr], $dealerScopeBindings)
             );
         } else {
             $dealerTotals = DB::select(
-                'SELECT l."ASSIGNED_TO" AS dealer_id,
+                'SELECT l."ASSIGNEDTO" AS dealer_id,
                         COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL") AS name,
                         COUNT(*) AS total_c,
-                        SUM(CASE WHEN l."CURRENTSTATUS" = ? THEN 1 ELSE 0 END) AS closed_c
+                        SUM(CASE WHEN (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
+                                       FROM "LEAD_ACT" la
+                                       WHERE la."LEADID" = l."LEADID"
+                                       ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
+                                      ) IN (\'COMPLETED\', \'REWARDED\') THEN 1 ELSE 0 END) AS closed_c
                  FROM "LEAD" l
-                 JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
-                 WHERE l."ASSIGNED_TO" IS NOT NULL
+                 JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
+                 WHERE l."ASSIGNEDTO" IS NOT NULL
                    AND l."CREATEDAT" >= DATEADD(DAY, ?, CURRENT_DATE)
                    ' . $dealerScopeSql . '
-                 GROUP BY l."ASSIGNED_TO", COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL")',
-                array_merge(['Closed', -$days], $dealerScopeBindings)
+                 GROUP BY l."ASSIGNEDTO", COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL")',
+                array_merge([-$days], $dealerScopeBindings)
             );
         }
 
@@ -2957,27 +3056,35 @@ class AdminController extends Controller
         // "Rejection" proxy: Closed leads without any Completed activity record (primary period)
         if ($useCustomPrimary) {
             $rejectedRows = DB::select(
-                'SELECT l."ASSIGNED_TO" AS dealer_id, COUNT(*) AS c
+                'SELECT l."ASSIGNEDTO" AS dealer_id, COUNT(*) AS c
                  FROM "LEAD" l
-                 WHERE l."ASSIGNED_TO" IS NOT NULL
+                 WHERE l."ASSIGNEDTO" IS NOT NULL
                    AND l."CREATEDAT" >= CAST(? AS TIMESTAMP) AND l."CREATEDAT" <= CAST(? AS TIMESTAMP)
-                   AND l."CURRENTSTATUS" = ?
-                   AND NOT EXISTS (SELECT 1 FROM "LEAD_ACT" a WHERE a."LEADID" = l."LEADID" AND a."STATUS" = ?)
+                   AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
+                        FROM "LEAD_ACT" la
+                        WHERE la."LEADID" = l."LEADID"
+                        ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
+                       ) IN (\'COMPLETED\', \'REWARDED\')
+                   AND NOT EXISTS (SELECT 1 FROM "LEAD_ACT" a WHERE a."LEADID" = l."LEADID" AND UPPER(TRIM(a."STATUS")) = \'COMPLETED\')
                    ' . $dealerScopeSql . '
-                 GROUP BY l."ASSIGNED_TO"',
-                array_merge([$primaryStartStr, $primaryEndStr, 'Closed', 'Completed'], $dealerScopeBindings)
+                 GROUP BY l."ASSIGNEDTO"',
+                array_merge([$primaryStartStr, $primaryEndStr], $dealerScopeBindings)
             );
         } else {
             $rejectedRows = DB::select(
-                'SELECT l."ASSIGNED_TO" AS dealer_id, COUNT(*) AS c
+                'SELECT l."ASSIGNEDTO" AS dealer_id, COUNT(*) AS c
                  FROM "LEAD" l
-                 WHERE l."ASSIGNED_TO" IS NOT NULL
+                 WHERE l."ASSIGNEDTO" IS NOT NULL
                    AND l."CREATEDAT" >= DATEADD(DAY, ?, CURRENT_DATE)
-                   AND l."CURRENTSTATUS" = ?
-                   AND NOT EXISTS (SELECT 1 FROM "LEAD_ACT" a WHERE a."LEADID" = l."LEADID" AND a."STATUS" = ?)
+                   AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
+                        FROM "LEAD_ACT" la
+                        WHERE la."LEADID" = l."LEADID"
+                        ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
+                       ) IN (\'COMPLETED\', \'REWARDED\')
+                   AND NOT EXISTS (SELECT 1 FROM "LEAD_ACT" a WHERE a."LEADID" = l."LEADID" AND UPPER(TRIM(a."STATUS")) = \'COMPLETED\')
                    ' . $dealerScopeSql . '
-                 GROUP BY l."ASSIGNED_TO"',
-                array_merge([-$days, 'Closed', 'Completed'], $dealerScopeBindings)
+                 GROUP BY l."ASSIGNEDTO"',
+                array_merge([-$days], $dealerScopeBindings)
             );
         }
         foreach ($rejectedRows as $r) {
@@ -2989,28 +3096,36 @@ class AdminController extends Controller
             $totalsByDealer[$id]['rejection_rate'] = $total > 0 ? ($rej / $total * 100) : 0;
         }
 
-        // Failed count (CURRENTSTATUS = Failed) in primary period
+        // Failed count in primary period
         if ($useCustomPrimary) {
             $failedCountRows = DB::select(
-                'SELECT l."ASSIGNED_TO" AS dealer_id, COUNT(*) AS failed_c
+                'SELECT l."ASSIGNEDTO" AS dealer_id, COUNT(*) AS failed_c
                  FROM "LEAD" l
-                 WHERE l."ASSIGNED_TO" IS NOT NULL
+                 WHERE l."ASSIGNEDTO" IS NOT NULL
                    AND l."CREATEDAT" >= CAST(? AS TIMESTAMP) AND l."CREATEDAT" <= CAST(? AS TIMESTAMP)
-                   AND TRIM(COALESCE(l."CURRENTSTATUS", \'\')) = ?
+                   AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
+                        FROM "LEAD_ACT" la
+                        WHERE la."LEADID" = l."LEADID"
+                        ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
+                       ) = \'FAILED\'
                    ' . $dealerScopeSql . '
-                 GROUP BY l."ASSIGNED_TO"',
-                array_merge([$primaryStartStr, $primaryEndStr, 'Failed'], $dealerScopeBindings)
+                 GROUP BY l."ASSIGNEDTO"',
+                array_merge([$primaryStartStr, $primaryEndStr], $dealerScopeBindings)
             );
         } else {
             $failedCountRows = DB::select(
-                'SELECT l."ASSIGNED_TO" AS dealer_id, COUNT(*) AS failed_c
+                'SELECT l."ASSIGNEDTO" AS dealer_id, COUNT(*) AS failed_c
                 FROM "LEAD" l
-                WHERE l."ASSIGNED_TO" IS NOT NULL
+                WHERE l."ASSIGNEDTO" IS NOT NULL
                    AND l."CREATEDAT" >= DATEADD(DAY, ?, CURRENT_DATE)
-                   AND TRIM(COALESCE(l."CURRENTSTATUS", \'\')) = ?
+                   AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
+                        FROM "LEAD_ACT" la
+                        WHERE la."LEADID" = l."LEADID"
+                        ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
+                       ) = \'FAILED\'
                    ' . $dealerScopeSql . '
-                GROUP BY l."ASSIGNED_TO"',
-                array_merge([-$days, 'Failed'], $dealerScopeBindings)
+                GROUP BY l."ASSIGNEDTO"',
+                array_merge([-$days], $dealerScopeBindings)
             );
         }
         foreach ($failedCountRows as $r) {
@@ -3030,28 +3145,36 @@ class AdminController extends Controller
         // Comparison period: total and failed per dealer for increase fail rate
         if ($useCustomCompare) {
             $compareTotals = DB::select(
-                'SELECT l."ASSIGNED_TO" AS dealer_id,
+                'SELECT l."ASSIGNEDTO" AS dealer_id,
                         COUNT(*) AS total_c,
-                        SUM(CASE WHEN TRIM(COALESCE(l."CURRENTSTATUS", \'\')) = ? THEN 1 ELSE 0 END) AS failed_c
+                        SUM(CASE WHEN (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
+                                       FROM "LEAD_ACT" la
+                                       WHERE la."LEADID" = l."LEADID"
+                                       ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
+                                      ) = \'FAILED\' THEN 1 ELSE 0 END) AS failed_c
                  FROM "LEAD" l
-                 WHERE l."ASSIGNED_TO" IS NOT NULL
+                 WHERE l."ASSIGNEDTO" IS NOT NULL
                    AND l."CREATEDAT" >= CAST(? AS TIMESTAMP) AND l."CREATEDAT" <= CAST(? AS TIMESTAMP)
                    ' . $dealerScopeSql . '
-                 GROUP BY l."ASSIGNED_TO"',
-                array_merge(['Failed', $compareStartStr, $compareEndStr], $dealerScopeBindings)
+                 GROUP BY l."ASSIGNEDTO"',
+                array_merge([$compareStartStr, $compareEndStr], $dealerScopeBindings)
             );
         } else {
             $compareTotals = DB::select(
-                'SELECT l."ASSIGNED_TO" AS dealer_id,
+                'SELECT l."ASSIGNEDTO" AS dealer_id,
                         COUNT(*) AS total_c,
-                        SUM(CASE WHEN TRIM(COALESCE(l."CURRENTSTATUS", \'\')) = ? THEN 1 ELSE 0 END) AS failed_c
+                        SUM(CASE WHEN (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
+                                       FROM "LEAD_ACT" la
+                                       WHERE la."LEADID" = l."LEADID"
+                                       ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
+                                      ) = \'FAILED\' THEN 1 ELSE 0 END) AS failed_c
                  FROM "LEAD" l
-                 WHERE l."ASSIGNED_TO" IS NOT NULL
+                 WHERE l."ASSIGNEDTO" IS NOT NULL
                    AND l."CREATEDAT" >= DATEADD(DAY, ?, CURRENT_DATE)
                    AND l."CREATEDAT" <= CURRENT_DATE
                    ' . $dealerScopeSql . '
-                 GROUP BY l."ASSIGNED_TO"',
-                array_merge(['Failed', -$compareDays], $dealerScopeBindings)
+                 GROUP BY l."ASSIGNEDTO"',
+                array_merge([-$compareDays], $dealerScopeBindings)
             );
         }
         $compareByDealer = [];
@@ -3081,24 +3204,24 @@ class AdminController extends Controller
         // Variance %: primary vs compare period
         if ($useCustomPrimary && $useCustomCompare) {
             $varianceRows = DB::select(
-                'SELECT l."ASSIGNED_TO" AS dealer_id,
+                'SELECT l."ASSIGNEDTO" AS dealer_id,
                         SUM(CASE WHEN l."CREATEDAT" >= CAST(? AS TIMESTAMP) AND l."CREATEDAT" <= CAST(? AS TIMESTAMP) THEN 1 ELSE 0 END) AS curr_c,
                         SUM(CASE WHEN l."CREATEDAT" >= CAST(? AS TIMESTAMP) AND l."CREATEDAT" <= CAST(? AS TIMESTAMP) THEN 1 ELSE 0 END) AS last_c
                  FROM "LEAD" l
-                 WHERE l."ASSIGNED_TO" IS NOT NULL
+                 WHERE l."ASSIGNEDTO" IS NOT NULL
                    ' . $dealerScopeSql . '
-                 GROUP BY l."ASSIGNED_TO"',
+                 GROUP BY l."ASSIGNEDTO"',
                 array_merge([$primaryStartStr, $primaryEndStr, $compareStartStr, $compareEndStr], $dealerScopeBindings)
             );
         } else {
             $varianceRows = DB::select(
-                'SELECT l."ASSIGNED_TO" AS dealer_id,
+                'SELECT l."ASSIGNEDTO" AS dealer_id,
                         SUM(CASE WHEN l."CREATEDAT" >= DATEADD(DAY, ?, CURRENT_DATE) AND l."CREATEDAT" <= CURRENT_DATE THEN 1 ELSE 0 END) AS curr_c,
                         SUM(CASE WHEN l."CREATEDAT" >= DATEADD(DAY, ?, DATEADD(YEAR, -1, CURRENT_DATE)) AND l."CREATEDAT" <= DATEADD(YEAR, -1, CURRENT_DATE) THEN 1 ELSE 0 END) AS last_c
                  FROM "LEAD" l
-                 WHERE l."ASSIGNED_TO" IS NOT NULL
+                 WHERE l."ASSIGNEDTO" IS NOT NULL
                    ' . $dealerScopeSql . '
-                 GROUP BY l."ASSIGNED_TO"',
+                 GROUP BY l."ASSIGNEDTO"',
                 array_merge([-$days, -$days], $dealerScopeBindings)
             );
         }
@@ -3116,13 +3239,13 @@ class AdminController extends Controller
 
         // Last activity per dealer (any lead activity)
         $lastActivityRows = DB::select(
-            'SELECT l."ASSIGNED_TO" AS dealer_id,
+            'SELECT l."ASSIGNEDTO" AS dealer_id,
                     MAX(a."CREATIONDATE") AS last_at
              FROM "LEAD_ACT" a
              JOIN "LEAD" l ON l."LEADID" = a."LEADID"
-             WHERE l."ASSIGNED_TO" IS NOT NULL
+             WHERE l."ASSIGNEDTO" IS NOT NULL
                ' . $dealerScopeSql . '
-             GROUP BY l."ASSIGNED_TO"'
+             GROUP BY l."ASSIGNEDTO"'
             ,
             $dealerScopeBindings
         );
@@ -3141,7 +3264,7 @@ class AdminController extends Controller
         }
 
         // Action list (at-risk): dealers with increase in fail rate (same period filter as bar chart)
-        // Dealer name from USERS via ASSIGNED_TO; fail count & fail rate from LEAD (Failed) in period
+        // Dealer name from USERS via assignedTo; fail count & fail rate from LEAD (Failed) in period
         $atRiskRows = [];
         foreach ($totalsByDealer as $id => $d) {
             $currentFailRate = (float) ($d['fail_rate'] ?? 0);
@@ -3179,33 +3302,41 @@ class AdminController extends Controller
         // Top 10 dealers by Failed count (CurrentStatus = Failed), primary period
         if ($useCustomPrimary) {
             $failedRows = DB::select(
-                'SELECT l."ASSIGNED_TO" AS dealer_id,
+                'SELECT l."ASSIGNEDTO" AS dealer_id,
                         COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL") AS name,
                         COUNT(*) AS failed_c
                  FROM "LEAD" l
-                 JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
-                 WHERE l."ASSIGNED_TO" IS NOT NULL
+                 JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
+                 WHERE l."ASSIGNEDTO" IS NOT NULL
                    AND l."CREATEDAT" >= CAST(? AS TIMESTAMP) AND l."CREATEDAT" <= CAST(? AS TIMESTAMP)
-                   AND TRIM(COALESCE(l."CURRENTSTATUS", \'\')) = ?
+                   AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
+                        FROM "LEAD_ACT" la
+                        WHERE la."LEADID" = l."LEADID"
+                        ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
+                       ) = \'FAILED\'
                    ' . $dealerScopeSql . '
-                 GROUP BY l."ASSIGNED_TO", COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL")
+                 GROUP BY l."ASSIGNEDTO", COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL")
                  ORDER BY failed_c DESC',
-                array_merge([$primaryStartStr, $primaryEndStr, 'Failed'], $dealerScopeBindings)
+                array_merge([$primaryStartStr, $primaryEndStr], $dealerScopeBindings)
             );
         } else {
             $failedRows = DB::select(
-                'SELECT l."ASSIGNED_TO" AS dealer_id,
+                'SELECT l."ASSIGNEDTO" AS dealer_id,
                         COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL") AS name,
                         COUNT(*) AS failed_c
                  FROM "LEAD" l
-                 JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
-                 WHERE l."ASSIGNED_TO" IS NOT NULL
+                 JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
+                 WHERE l."ASSIGNEDTO" IS NOT NULL
                    AND l."CREATEDAT" >= DATEADD(DAY, ?, CURRENT_DATE)
-                   AND TRIM(COALESCE(l."CURRENTSTATUS", \'\')) = ?
+                   AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
+                        FROM "LEAD_ACT" la
+                        WHERE la."LEADID" = l."LEADID"
+                        ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
+                       ) = \'FAILED\'
                    ' . $dealerScopeSql . '
-                 GROUP BY l."ASSIGNED_TO", COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL")
+                 GROUP BY l."ASSIGNEDTO", COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL")
                  ORDER BY failed_c DESC',
-                array_merge([-$days, 'Failed'], $dealerScopeBindings)
+                array_merge([-$days], $dealerScopeBindings)
             );
         }
         $top10Failed = [];
@@ -3225,33 +3356,41 @@ class AdminController extends Controller
         // Top 10 dealers by Closed count (CurrentStatus = Closed), primary period
         if ($useCustomPrimary) {
             $closedRows = DB::select(
-                'SELECT l."ASSIGNED_TO" AS dealer_id,
+                'SELECT l."ASSIGNEDTO" AS dealer_id,
                         COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL") AS name,
                         COUNT(*) AS closed_c
                  FROM "LEAD" l
-                 JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
-                 WHERE l."ASSIGNED_TO" IS NOT NULL
+                 JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
+                 WHERE l."ASSIGNEDTO" IS NOT NULL
                    AND l."CREATEDAT" >= CAST(? AS TIMESTAMP) AND l."CREATEDAT" <= CAST(? AS TIMESTAMP)
-                   AND TRIM(COALESCE(l."CURRENTSTATUS", \'\')) = ?
+                   AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
+                        FROM "LEAD_ACT" la
+                        WHERE la."LEADID" = l."LEADID"
+                        ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
+                       ) IN (\'COMPLETED\', \'REWARDED\')
                    ' . $dealerScopeSql . '
-                 GROUP BY l."ASSIGNED_TO", COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL")
+                 GROUP BY l."ASSIGNEDTO", COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL")
                  ORDER BY closed_c DESC',
-                array_merge([$primaryStartStr, $primaryEndStr, 'Closed'], $dealerScopeBindings)
+                array_merge([$primaryStartStr, $primaryEndStr], $dealerScopeBindings)
             );
         } else {
             $closedRows = DB::select(
-                'SELECT l."ASSIGNED_TO" AS dealer_id,
+                'SELECT l."ASSIGNEDTO" AS dealer_id,
                         COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL") AS name,
                         COUNT(*) AS closed_c
                  FROM "LEAD" l
-                 JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
-                 WHERE l."ASSIGNED_TO" IS NOT NULL
+                 JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
+                 WHERE l."ASSIGNEDTO" IS NOT NULL
                    AND l."CREATEDAT" >= DATEADD(DAY, ?, CURRENT_DATE)
-                   AND TRIM(COALESCE(l."CURRENTSTATUS", \'\')) = ?
+                   AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
+                        FROM "LEAD_ACT" la
+                        WHERE la."LEADID" = l."LEADID"
+                        ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
+                       ) IN (\'COMPLETED\', \'REWARDED\')
                    ' . $dealerScopeSql . '
-                 GROUP BY l."ASSIGNED_TO", COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL")
+                 GROUP BY l."ASSIGNEDTO", COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL")
                  ORDER BY closed_c DESC',
-                array_merge([-$days, 'Closed'], $dealerScopeBindings)
+                array_merge([-$days], $dealerScopeBindings)
             );
         }
         $top10Closed = [];
@@ -3293,7 +3432,7 @@ class AdminController extends Controller
         $rows = DB::select(
             'SELECT a."LEAD_ACTID", a."LEADID", a."USERID", a."CREATIONDATE", a."SUBJECT", a."DESCRIPTION", a."STATUS"
              FROM "LEAD_ACT" a
-             INNER JOIN "LEAD" l ON l."LEADID" = a."LEADID" AND l."ASSIGNED_TO" = ?
+             INNER JOIN "LEAD" l ON l."LEADID" = a."LEADID" AND l."ASSIGNEDTO" = ?
              ORDER BY a."CREATIONDATE" DESC, a."LEAD_ACTID" DESC',
             [$userid]
         );
@@ -3334,7 +3473,7 @@ class AdminController extends Controller
         $endStr = $end->format('Y-m-d H:i:s');
         [$leadScopeSql, $leadScopeBindings] = $this->buildAdminReportScopeSql(
             $selectedReportScope,
-            'l."ASSIGNED_TO"',
+            'l."ASSIGNEDTO"',
             'u."COMPANY"'
         );
         [$productScopeSql, $productScopeBindings] = $this->buildAdminReportScopeSql(
@@ -3343,28 +3482,36 @@ class AdminController extends Controller
             'u."COMPANY"'
         );
 
-        // Dealer performance: total/closed/failed from LEAD; rewarded from LEAD_ACT (STATUS = Rewarded)
+        // Dealer performance: total/closed/failed from LEAD_ACT; rewarded from LEAD_ACT (STATUS = Rewarded)
         $rowsSql = 'SELECT u."USERID" AS dealer_id,
                     u."EMAIL" AS email,
                     TRIM(COALESCE(u."COMPANY", \'\')) AS company,
                     TRIM(COALESCE(u."ALIAS", \'\')) AS alias,
                     COUNT(*) AS total_leads,
-                    SUM(CASE WHEN TRIM(COALESCE(l."CURRENTSTATUS", \'\')) = ? THEN 1 ELSE 0 END) AS closed_leads,
-                    SUM(CASE WHEN TRIM(COALESCE(l."CURRENTSTATUS", \'\')) = ? THEN 1 ELSE 0 END) AS failed_leads,
+                    SUM(CASE WHEN (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
+                                   FROM "LEAD_ACT" la
+                                   WHERE la."LEADID" = l."LEADID"
+                                   ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
+                                  ) IN (\'COMPLETED\', \'REWARDED\') THEN 1 ELSE 0 END) AS closed_leads,
+                    SUM(CASE WHEN (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
+                                   FROM "LEAD_ACT" la
+                                   WHERE la."LEADID" = l."LEADID"
+                                   ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
+                                  ) = \'FAILED\' THEN 1 ELSE 0 END) AS failed_leads,
                     (SELECT COUNT(DISTINCT a."LEADID")
                      FROM "LEAD_ACT" a
-                     INNER JOIN "LEAD" l2 ON l2."LEADID" = a."LEADID" AND l2."ASSIGNED_TO" = u."USERID"
+                     INNER JOIN "LEAD" l2 ON l2."LEADID" = a."LEADID" AND l2."ASSIGNEDTO" = u."USERID"
                        AND l2."CREATEDAT" >= ? AND l2."CREATEDAT" <= ?
                      WHERE UPPER(TRIM(COALESCE(a."STATUS", \'\'))) = ?) AS rewarded_leads
              FROM "LEAD" l
-              JOIN "USERS" u ON u."USERID" = l."ASSIGNED_TO"
-               WHERE l."ASSIGNED_TO" IS NOT NULL
+              JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
+               WHERE l."ASSIGNEDTO" IS NOT NULL
                 AND l."CREATEDAT" >= ?
                 AND l."CREATEDAT" <= ?
                 ' . $leadScopeSql . '
               GROUP BY u."USERID", u."EMAIL", u."COMPANY", u."ALIAS"
               ORDER BY total_leads DESC';
-        $rowsBindings = ['Closed', 'Failed', $startStr, $endStr, 'REWARDED', $startStr, $endStr];
+        $rowsBindings = [$startStr, $endStr, 'REWARDED', $startStr, $endStr];
         $rowsBindings = array_merge($rowsBindings, $leadScopeBindings);
         $rows = DB::select($rowsSql, $rowsBindings);
 
@@ -3414,7 +3561,7 @@ class AdminController extends Controller
              JOIN "LEAD" l ON l."LEADID" = a."LEADID"
              LEFT JOIN "USERS" u ON u."USERID" = a."USERID"
              WHERE a."USERID" IS NOT NULL
-               AND UPPER(TRIM(COALESCE(a."USERID", \'\'))) = UPPER(TRIM(COALESCE(l."ASSIGNED_TO", \'\')))
+               AND UPPER(TRIM(COALESCE(a."USERID", \'\'))) = UPPER(TRIM(COALESCE(l."ASSIGNEDTO", \'\')))
                AND a."DEALTPRODUCT" IS NOT NULL
                AND TRIM(a."DEALTPRODUCT") <> \'\'
                AND UPPER(TRIM(COALESCE(a."STATUS", \'\'))) = ?
@@ -4200,6 +4347,7 @@ class AdminController extends Controller
         }
     }
 }
+
 
 
 

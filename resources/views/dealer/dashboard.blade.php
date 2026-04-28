@@ -96,7 +96,7 @@
                                 'COMPLETED' => 'COMPLETED', 'CASE COMPLETED' => 'COMPLETED',
                                 'REWARD' => 'REWARDED', 'REWARDED' => 'REWARDED', 'REWARD DISTRIBUTED' => 'REWARDED'
                             ];
-                            $rawStatus = strtoupper(trim($r->ACT_STATUS ?? $r->CURRENTSTATUS ?? 'PENDING'));
+                            $rawStatus = strtoupper(trim($r->ACT_STATUS ?? 'PENDING'));
                             $status = $statusMap[$rawStatus] ?? 'PENDING';
                             $stages = ['PENDING', 'FOLLOW UP', 'DEMO', 'CONFIRMED', 'COMPLETED', 'REWARDED'];
                             $idx = array_search($status, $stages);

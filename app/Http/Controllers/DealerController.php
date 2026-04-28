@@ -59,15 +59,14 @@ class DealerController extends Controller
                 'SELECT FIRST 200
                     l."LEADID", l."PRODUCTID", l."COMPANYNAME", l."CONTACTNAME", l."CONTACTNO", l."EMAIL",
                     l."CITY", l."POSTCODE", l."BUSINESSNATURE", l."USERCOUNT", l."EXISTINGSOFTWARE", l."DEMOMODE",
-                    l."DESCRIPTION", l."REFERRALCODE", l."CREATEDAT", l."CREATEDBY",
-                    l."ASSIGNED_TO", l."LASTMODIFIED",
+                    l."CREATEDAT", l."CREATEDBY",
+                    l."ASSIGNEDTO" AS "assignedTo", l."LASTMODIFIED",
                     u."EMAIL" AS "ASSIGNED_BY_EMAIL",
                     COALESCE(
                         (SELECT FIRST 1 la."STATUS"
                            FROM "LEAD_ACT" la
                           WHERE la."LEADID" = l."LEADID"
                           ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC),
-                        l."CURRENTSTATUS",
                         \'Pending\'
                     ) AS "ACT_STATUS",
                     (SELECT FIRST 1 la."CREATIONDATE"
@@ -76,27 +75,26 @@ class DealerController extends Controller
                       ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC) AS "ACT_LAST_UPDATE"
                 FROM "LEAD" l
                 LEFT JOIN "USERS" u ON u."USERID" = l."CREATEDBY"
-                WHERE l."ASSIGNED_TO" = ?
+                WHERE l."ASSIGNEDTO" = ?
                 ORDER BY l."LEADID" DESC',
                 [$dealerId]
             );
             $allAssignedLeads = array_values(array_filter($leadsRaw, function ($l) {
-                $s = strtoupper(trim($l->ACT_STATUS ?? $l->CURRENTSTATUS ?? ''));
+                $s = strtoupper(trim($l->ACT_STATUS ?? ''));
                 return $s !== 'FAILED';
             }));
             $leads = DB::select(
                 'SELECT FIRST 200
                     l."LEADID", l."PRODUCTID", l."COMPANYNAME", l."CONTACTNAME", l."CONTACTNO", l."EMAIL",
                     l."CITY", l."POSTCODE", l."BUSINESSNATURE", l."USERCOUNT", l."EXISTINGSOFTWARE", l."DEMOMODE",
-                    l."DESCRIPTION", l."REFERRALCODE", l."CREATEDAT", l."CREATEDBY",
-                    l."ASSIGNED_TO", l."LASTMODIFIED",
+                    l."CREATEDAT", l."CREATEDBY",
+                    l."ASSIGNEDTO" AS "assignedTo", l."LASTMODIFIED",
                     u."EMAIL" AS "ASSIGNED_BY_EMAIL",
                     COALESCE(
                         (SELECT FIRST 1 la."STATUS"
                            FROM "LEAD_ACT" la
                           WHERE la."LEADID" = l."LEADID"
                           ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC),
-                        l."CURRENTSTATUS",
                         \'Pending\'
                     ) AS "ACT_STATUS",
                     (SELECT FIRST 1 la."CREATIONDATE"
@@ -105,19 +103,27 @@ class DealerController extends Controller
                       ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC) AS "ACT_LAST_UPDATE"
                 FROM "LEAD" l
                 LEFT JOIN "USERS" u ON u."USERID" = l."CREATEDBY"
-                WHERE l."ASSIGNED_TO" = ?
-                  AND UPPER(TRIM(COALESCE(l."CURRENTSTATUS", \'\'))) = ?
+                WHERE l."ASSIGNEDTO" = ?
+                  AND (SELECT FIRST 1 UPPER(TRIM(la2."STATUS"))
+                       FROM "LEAD_ACT" la2
+                       WHERE la2."LEADID" = l."LEADID"
+                       ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC
+                      ) IN (\'PENDING\', \'FOLLOWUP\', \'FOLLOW UP\', \'DEMO\', \'CONFIRMED\')
                 ORDER BY l."LEADID" DESC',
-                [$dealerId, 'ONGOING']
+                [$dealerId]
             );
 
             $activeCountRow = DB::selectOne(
-                'SELECT COUNT(*) AS "CNT" FROM "LEAD"
-                WHERE "ASSIGNED_TO" = ? AND UPPER(TRIM(COALESCE("CURRENTSTATUS", \'\'))) = ?',
-                [$dealerId, 'ONGOING']
+                'SELECT COUNT(*) AS "CNT" FROM "LEAD" l
+                WHERE l."ASSIGNEDTO" = ?
+                  AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
+                       FROM "LEAD_ACT" la
+                       WHERE la."LEADID" = l."LEADID"
+                       ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
+                      ) IN (\'PENDING\', \'FOLLOWUP\', \'FOLLOW UP\', \'DEMO\', \'CONFIRMED\')',
+                [$dealerId]
             );
             $activeInquiriesCount = (int) ($activeCountRow->CNT ?? 0);
-            $dealerClosedLeadStatus = 'CLOSED';
             $dealerClosedLeadDateSql = 'COALESCE(l."LASTMODIFIED", l."CREATEDAT")';
 
             $countMetricRow = static function ($row): int {
@@ -126,15 +132,18 @@ class DealerController extends Controller
 
             $countClosedLeads = function (?string $start = null, ?string $end = null) use (
                 $dealerId,
-                $dealerClosedLeadStatus,
                 $dealerClosedLeadDateSql,
                 $countMetricRow
             ): int {
                 $sql = 'SELECT COUNT(*) AS "CNT"
                         FROM "LEAD" l
-                        WHERE l."ASSIGNED_TO" = ?
-                          AND UPPER(TRIM(COALESCE(l."CURRENTSTATUS", \'\'))) = ?';
-                $params = [$dealerId, $dealerClosedLeadStatus];
+                        WHERE l."ASSIGNEDTO" = ?
+                          AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
+                               FROM "LEAD_ACT" la
+                               WHERE la."LEADID" = l."LEADID"
+                               ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
+                              ) IN (\'COMPLETED\', \'REWARDED\')';
+                $params = [$dealerId];
 
                 if ($start !== null && $end !== null) {
                     $sql .= '
@@ -153,7 +162,7 @@ class DealerController extends Controller
             ): int {
                 $sql = 'SELECT COUNT(*) AS "CNT"
                         FROM "LEAD" l
-                        WHERE l."ASSIGNED_TO" = ?';
+                        WHERE l."ASSIGNEDTO" = ?';
                 $params = [$dealerId];
 
                 if ($cutoff !== null) {
@@ -190,14 +199,13 @@ class DealerController extends Controller
                                          WHERE la."LEADID" = l."LEADID"
                                            AND la."CREATIONDATE" <= ?
                                          ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC),
-                                        l."CURRENTSTATUS",
                                         \'Pending\'
                                     ) AS "LATEST_STATUS"
                              FROM "LEAD" l
-                             WHERE l."ASSIGNED_TO" = ?
+                             WHERE l."ASSIGNEDTO" = ?
                                AND l."CREATEDAT" <= ?
                          ) x
-                         WHERE UPPER(TRIM(COALESCE(x."LATEST_STATUS", \'\'))) IN (\'PENDING\', \'FOLLOWUP\', \'FOLLOW UP\', \'DEMO\', \'CONFIRMED\', \'CASE CONFIRMED\', \'ONGOING\')',
+                         WHERE UPPER(TRIM(COALESCE(x."LATEST_STATUS", \'\'))) IN (\'PENDING\', \'FOLLOWUP\', \'FOLLOW UP\', \'DEMO\', \'CONFIRMED\')',
                         [$cutoff, $dealerId, $cutoff]
                     );
 
@@ -244,12 +252,21 @@ class DealerController extends Controller
             }
 
             $pendingFollowupsSql = $dealerEmail
-                ? 'SELECT COUNT(*) AS "CNT" FROM "LEAD"
-                  WHERE "ASSIGNED_TO" = (SELECT "USERID" FROM "USERS" WHERE "EMAIL" = ?)
-                  AND UPPER(TRIM(COALESCE("CURRENTSTATUS", \'\'))) = ?'
-                : 'SELECT COUNT(*) AS "CNT" FROM "LEAD"
-                  WHERE "ASSIGNED_TO" = ? AND UPPER(TRIM(COALESCE("CURRENTSTATUS", \'\'))) = ?';
-            $pendingFollowupsParams = $dealerEmail ? [$dealerEmail, 'ONGOING'] : [$dealerId, 'ONGOING'];
+                ? 'SELECT COUNT(*) AS "CNT" FROM "LEAD" l
+                  WHERE l."ASSIGNEDTO" = (SELECT "USERID" FROM "USERS" WHERE "EMAIL" = ?)
+                  AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
+                       FROM "LEAD_ACT" la
+                       WHERE la."LEADID" = l."LEADID"
+                       ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
+                      ) IN (\'PENDING\', \'FOLLOWUP\', \'FOLLOW UP\', \'DEMO\', \'CONFIRMED\')'
+                : 'SELECT COUNT(*) AS "CNT" FROM "LEAD" l
+                  WHERE l."ASSIGNEDTO" = ?
+                  AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
+                       FROM "LEAD_ACT" la
+                       WHERE la."LEADID" = l."LEADID"
+                       ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
+                      ) IN (\'PENDING\', \'FOLLOWUP\', \'FOLLOW UP\', \'DEMO\', \'CONFIRMED\')';
+            $pendingFollowupsParams = $dealerEmail ? [$dealerEmail] : [$dealerId];
             $pendingFollowupsRow = DB::selectOne($pendingFollowupsSql, $pendingFollowupsParams);
             $pendingFollowupsCount = (int) ($pendingFollowupsRow->CNT ?? 0);
 
@@ -334,7 +351,7 @@ class DealerController extends Controller
             $now = time();
             $highPriorityFollowups = collect($leads)
                 ->filter(function ($l) use ($stages, $statusMap) {
-                    $raw = strtoupper(trim($l->ACT_STATUS ?? $l->CURRENTSTATUS ?? 'PENDING'));
+                    $raw = strtoupper(trim($l->ACT_STATUS ?? 'PENDING'));
                     $status = $statusMap[$raw] ?? 'PENDING';
                     $idx = array_search($status, $stages);
                     $idx = $idx !== false ? $idx : 0;
@@ -430,21 +447,20 @@ class DealerController extends Controller
         if ($dealerId) {
             $dealerInquiriesSql = 'SELECT FIRST 200
                     l."LEADID", l."PRODUCTID", l."COMPANYNAME", l."CONTACTNAME", l."CONTACTNO", l."EMAIL",
-                    l."ADDRESS1", l."ADDRESS2", l."CITY", l."POSTCODE", l."BUSINESSNATURE", l."USERCOUNT",
+                    l."ADDRESS1", l."ADDRESS2", l."CITY", l."STATE", l."COUNTRY", l."POSTCODE", l."BUSINESSNATURE", l."USERCOUNT",
                     l."EXISTINGSOFTWARE", l."DEMOMODE", l."DESCRIPTION", l."REFERRALCODE", l."CREATEDAT", l."CREATEDBY",
-                    l."ASSIGNED_TO", l."LASTMODIFIED",
+                    l."ASSIGNEDTO" AS "assignedTo", l."LASTMODIFIED",
                     u."EMAIL" AS "ASSIGNED_BY_EMAIL",
                     COALESCE(
                         (SELECT FIRST 1 la."STATUS"
                            FROM "LEAD_ACT" la
                           WHERE la."LEADID" = l."LEADID"
                           ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC),
-                        l."CURRENTSTATUS",
                         \'Pending\'
                     ) AS "ACT_STATUS"
                 FROM "LEAD" l
                 LEFT JOIN "USERS" u ON u."USERID" = l."CREATEDBY"
-                WHERE l."ASSIGNED_TO" = ?
+                WHERE l."ASSIGNEDTO" = ?
                 ORDER BY l."LEADID" DESC';
             $leads = DB::select(
                 $dealerInquiriesSql,
@@ -464,21 +480,20 @@ class DealerController extends Controller
                     $focusLeadRows = DB::select(
                         'SELECT FIRST 1
                             l."LEADID", l."PRODUCTID", l."COMPANYNAME", l."CONTACTNAME", l."CONTACTNO", l."EMAIL",
-                            l."ADDRESS1", l."ADDRESS2", l."CITY", l."POSTCODE", l."BUSINESSNATURE", l."USERCOUNT",
+                            l."ADDRESS1", l."ADDRESS2", l."CITY", l."STATE", l."COUNTRY", l."POSTCODE", l."BUSINESSNATURE", l."USERCOUNT",
                             l."EXISTINGSOFTWARE", l."DEMOMODE", l."DESCRIPTION", l."REFERRALCODE", l."CREATEDAT", l."CREATEDBY",
-                            l."ASSIGNED_TO", l."LASTMODIFIED",
+                            l."ASSIGNEDTO" AS "assignedTo", l."LASTMODIFIED",
                             u."EMAIL" AS "ASSIGNED_BY_EMAIL",
                             COALESCE(
                                 (SELECT FIRST 1 la."STATUS"
                                    FROM "LEAD_ACT" la
                                   WHERE la."LEADID" = l."LEADID"
                                   ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC),
-                                l."CURRENTSTATUS",
                                 \'Pending\'
                             ) AS "ACT_STATUS"
                         FROM "LEAD" l
                         LEFT JOIN "USERS" u ON u."USERID" = l."CREATEDBY"
-                        WHERE l."ASSIGNED_TO" = ?
+                        WHERE l."ASSIGNEDTO" = ?
                           AND l."LEADID" = ?
                         ORDER BY l."LEADID" DESC',
                         [$dealerId, $focusLeadId]
@@ -760,7 +775,7 @@ class DealerController extends Controller
         }
 
         $lead = DB::selectOne(
-            'SELECT "LEADID", "REFERRALCODE" FROM "LEAD" WHERE "LEADID" = ? AND "ASSIGNED_TO" = ?',
+            'SELECT "LEADID", "REFERRALCODE" FROM "LEAD" WHERE "LEADID" = ? AND "ASSIGNEDTO" = ?',
             [$leadId, $dealerId]
         );
         if (!$lead) {
@@ -1030,7 +1045,7 @@ class DealerController extends Controller
             return response('', 404);
         }
         $lead = DB::selectOne(
-            'SELECT "LEADID", "REFERRALCODE" FROM "LEAD" WHERE "LEADID" = ? AND "ASSIGNED_TO" = ?',
+            'SELECT "LEADID", "REFERRALCODE" FROM "LEAD" WHERE "LEADID" = ? AND "ASSIGNEDTO" = ?',
             [$leadId, $dealerId]
         );
         if (!$lead) {
@@ -1163,7 +1178,7 @@ class DealerController extends Controller
         }
 
         $lead = DB::selectOne(
-            'SELECT "LEADID", "REFERRALCODE" FROM "LEAD" WHERE "LEADID" = ? AND "ASSIGNED_TO" = ?',
+            'SELECT "LEADID", "REFERRALCODE" FROM "LEAD" WHERE "LEADID" = ? AND "ASSIGNEDTO" = ?',
             [$leadId, $dealerId]
         );
         if (!$lead) {
@@ -1362,16 +1377,16 @@ class DealerController extends Controller
             $rows = DB::select(
                 'SELECT FIRST 200
                     "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL",
-                    "ADDRESS1","ADDRESS2","CITY","POSTCODE","BUSINESSNATURE","USERCOUNT",
+                    "ADDRESS1","ADDRESS2","CITY","STATE","COUNTRY","POSTCODE","BUSINESSNATURE","USERCOUNT",
                     "EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION","REFERRALCODE",
-                    "CURRENTSTATUS","CREATEDAT","CREATEDBY","ASSIGNED_TO","LASTMODIFIED"
+                    "CREATEDAT","CREATEDBY","ASSIGNEDTO" AS "assignedTo","LASTMODIFIED"
                  FROM "LEAD"
-                 WHERE "ASSIGNED_TO" = ?
+                 WHERE "ASSIGNEDTO" = ?
                  ORDER BY "LEADID" DESC',
                 [$dealerId]
             );
 
-            // Override CURRENTSTATUS from latest LEAD_ACT per LEADID (same approach as admin rewards)
+            // Derive CURRENTSTATUS from latest LEAD_ACT per LEADID
             try {
                 $leadIds = array_values(array_unique(array_filter(array_map(
                     fn ($r) => (int) ($r->LEADID ?? 0),
@@ -1399,17 +1414,18 @@ class DealerController extends Controller
                             $statusMap[$lid] = trim((string) ($a->STATUS ?? ''));
                         }
                     }
-                    if (!empty($statusMap)) {
-                        foreach ($rows as $r) {
-                            $lid = (int) ($r->LEADID ?? 0);
-                            if ($lid > 0 && isset($statusMap[$lid])) {
-                                $r->CURRENTSTATUS = $statusMap[$lid];
-                            }
-                        }
+                    foreach ($rows as $r) {
+                        $lid = (int) ($r->LEADID ?? 0);
+                        $r->CURRENTSTATUS = ($lid > 0 && isset($statusMap[$lid]) && $statusMap[$lid] !== '')
+                            ? $statusMap[$lid]
+                            : 'Created';
                     }
                 }
             } catch (\Throwable $e) {
-                // keep CURRENTSTATUS from LEAD if override fails
+                // default to Created if override fails
+                foreach ($rows as $r) {
+                    if (!isset($r->CURRENTSTATUS)) $r->CURRENTSTATUS = 'Created';
+                }
             }
 
             // Attach latest COMPLETED dealt products per lead (for "Dealt Products" column)
@@ -1644,11 +1660,11 @@ class DealerController extends Controller
                 );
             }
 
-            // Resolve CREATEDBY_NAME and ASSIGNED_TO_NAME for display (same as admin rewards)
+            // Resolve CREATEDBY_NAME and assignedToName for display (same as admin rewards)
             try {
                 $ids = [];
                 foreach (array_merge($completed, $rewarded) as $r) {
-                    $to = trim((string) ($r->ASSIGNED_TO ?? ''));
+                    $to = trim((string) ($r->assignedTo ?? ''));
                     $by = trim((string) ($r->CREATEDBY ?? ''));
                     if ($to !== '') {
                         $ids[$to] = true;
@@ -1701,10 +1717,10 @@ class DealerController extends Controller
                     }
 
                     foreach (array_merge($completed, $rewarded) as $r) {
-                        $to = trim((string) ($r->ASSIGNED_TO ?? ''));
+                        $to = trim((string) ($r->assignedTo ?? ''));
                         $by = trim((string) ($r->CREATEDBY ?? ''));
                         if ($to !== '' && isset($assignedToMap[$to])) {
-                            $r->ASSIGNED_TO_NAME = $assignedToMap[$to];
+                            $r->assignedToName = $assignedToMap[$to];
                         }
                         if ($by !== '' && isset($createdByMap[$by])) {
                             $r->CREATEDBY_NAME = $createdByMap[$by];
@@ -1758,14 +1774,13 @@ class DealerController extends Controller
         try {
             $inquiryRow = DB::selectOne(
                 'SELECT COUNT(*) AS "CNT"
-                 FROM "LEAD"
-                 WHERE "ASSIGNED_TO" = ?
+                 FROM "LEAD" l
+                 WHERE l."ASSIGNEDTO" = ?
                    AND UPPER(TRIM(COALESCE(
                        (SELECT FIRST 1 la."STATUS"
                           FROM "LEAD_ACT" la
-                         WHERE la."LEADID" = "LEAD"."LEADID"
+                         WHERE la."LEADID" = l."LEADID"
                          ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC),
-                       "CURRENTSTATUS",
                        \'Pending\'
                    ))) NOT IN (\'COMPLETED\', \'CASE COMPLETED\', \'FAILED\', \'REWARDED\', \'REWARD\', \'REWARD DISTRIBUTED\')',
                 [$dealerId]
@@ -1788,7 +1803,7 @@ class DealerController extends Controller
                      ) m ON m."LEADID" = a."LEADID" AND m.max_created = a."CREATIONDATE"
                  ) latest
                  JOIN "LEAD" l ON l."LEADID" = latest."LEADID"
-                 WHERE l."ASSIGNED_TO" = ?
+                 WHERE l."ASSIGNEDTO" = ?
                    AND UPPER(TRIM(latest."STATUS")) = \'COMPLETED\'
                    AND TRIM(COALESCE(l."REFERRALCODE", \'\')) <> \'\'',
                 [$dealerId]
@@ -1878,11 +1893,10 @@ class DealerController extends Controller
                             AND la."CREATIONDATE" >= ?
                             AND la."CREATIONDATE" <= ?
                           ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC),
-                        l."CURRENTSTATUS",
                         \'Pending\'
                     ) AS "LATEST_STATUS"
                 FROM "LEAD" l
-                WHERE l."ASSIGNED_TO" = ?
+                WHERE l."ASSIGNEDTO" = ?
                   AND EXISTS (
                       SELECT 1
                       FROM "LEAD_ACT" lae
@@ -1898,11 +1912,10 @@ class DealerController extends Controller
                            FROM "LEAD_ACT" la
                           WHERE la."LEADID" = l."LEADID"
                           ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC),
-                        l."CURRENTSTATUS",
                         \'Pending\'
                     ) AS "LATEST_STATUS"
                 FROM "LEAD" l
-                WHERE l."ASSIGNED_TO" = ?';
+                WHERE l."ASSIGNEDTO" = ?';
             $bindings = [$dealerId];
         }
 
@@ -1946,7 +1959,7 @@ class DealerController extends Controller
             'SELECT COUNT(*) AS "CNT"
              FROM "LEAD" l
              JOIN (' . $dealerPendingDateSql . ') p ON p."LEADID" = l."LEADID"
-             WHERE l."ASSIGNED_TO" = ?
+             WHERE l."ASSIGNEDTO" = ?
                AND p."PENDING_AT" >= ?
                AND p."PENDING_AT" <= ?',
             ['PENDING', $dealerId, $df, $dt]
@@ -1962,7 +1975,7 @@ class DealerController extends Controller
                     'SELECT COUNT(*) AS "CNT"
                      FROM "LEAD" l
                      JOIN (' . $dealerPendingDateSql . ') p ON p."LEADID" = l."LEADID"
-                     WHERE l."ASSIGNED_TO" = ?
+                     WHERE l."ASSIGNEDTO" = ?
                        AND CAST(p."PENDING_AT" AS DATE) = ?',
                     ['PENDING', $dealerId, $d]
                 );
@@ -1977,7 +1990,7 @@ class DealerController extends Controller
                     'SELECT COUNT(*) AS "CNT"
                      FROM "LEAD" l
                      JOIN (' . $dealerPendingDateSql . ') p ON p."LEADID" = l."LEADID"
-                     WHERE l."ASSIGNED_TO" = ?
+                     WHERE l."ASSIGNEDTO" = ?
                        AND p."PENDING_AT" IS NOT NULL
                        AND p."PENDING_AT" >= ? AND p."PENDING_AT" <= ?
                        AND EXTRACT(YEAR FROM p."PENDING_AT") = ?
@@ -1997,7 +2010,7 @@ class DealerController extends Controller
                     'SELECT COUNT(*) AS "CNT"
                      FROM "LEAD" l
                      JOIN (' . $dealerPendingDateSql . ') p ON p."LEADID" = l."LEADID"
-                     WHERE l."ASSIGNED_TO" = ?
+                     WHERE l."ASSIGNEDTO" = ?
                        AND p."PENDING_AT" >= ? AND p."PENDING_AT" <= ?',
                     ['PENDING', $dealerId, $bStart, $bEnd]
                 );
@@ -2050,7 +2063,7 @@ class DealerController extends Controller
                 'SELECT la."LEAD_ACTID", la."LEADID", la."CREATIONDATE", la."SUBJECT", la."DESCRIPTION", la."STATUS"
                 FROM "LEAD_ACT" la
                 JOIN "LEAD" l ON l."LEADID" = la."LEADID"
-                WHERE l."ASSIGNED_TO" = ?
+                WHERE l."ASSIGNEDTO" = ?
                 ORDER BY la."LEAD_ACTID" DESC',
                 [$dealerId]
             );
@@ -2074,7 +2087,7 @@ class DealerController extends Controller
              FROM "LEAD_ACT" la
              JOIN "LEAD" l ON l."LEADID" = la."LEADID"
              LEFT JOIN "USERS" u ON u."USERID" = la."USERID"
-             WHERE l."ASSIGNED_TO" = ?
+             WHERE l."ASSIGNEDTO" = ?
                AND (
                     UPPER(TRIM(COALESCE(la."SUBJECT", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
                     OR UPPER(TRIM(COALESCE(la."DESCRIPTION", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
@@ -2117,3 +2130,4 @@ class DealerController extends Controller
         return response()->json(['items' => $items]);
     }
 }
+

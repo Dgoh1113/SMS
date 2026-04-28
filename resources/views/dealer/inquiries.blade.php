@@ -33,6 +33,8 @@
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="email"> EMAIL</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="postcode"> POSTCODE</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="city"> CITY</label>
+                        <label class="inquiries-columns-check"><input type="checkbox" data-col="state"> STATE</label>
+                        <label class="inquiries-columns-check"><input type="checkbox" data-col="country"> COUNTRY</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="address"> ADDRESS</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="contactno"> CONTACT NO</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="businessnature"> BUSINESS NATURE</label>
@@ -68,6 +70,8 @@
                         <x-tables.text-filter-header col="email" label="EMAIL" />
                         <x-tables.text-filter-header col="postcode" label="POSTCODE" />
                         <x-tables.text-filter-header col="city" label="CITY" />
+                        <x-tables.text-filter-header col="state" label="STATE" />
+                        <x-tables.text-filter-header col="country" label="COUNTRY" />
                         <x-tables.text-filter-header col="address" label="ADDRESS" />
                         <x-tables.text-filter-header col="contactno" label="CONTACT NO" />
                         <x-tables.text-filter-header col="businessnature" label="BUSINESS NATURE" />
@@ -177,20 +181,20 @@ function initDealerInquiriesPage() {
     var colsAll = document.getElementById('dealerInquiryColumnsAll');
     var colsNone = document.getElementById('dealerInquiryColumnsNone');
     var colsReset = document.getElementById('dealerInquiryColumnsReset');
-    var storageKey = 'dealer_inquiries_visible_cols_v10';
-    var legacyStorageKey = 'dealer_inquiries_visible_cols_v9';
+    var storageKey = 'dealer_inquiries_visible_cols_v12';
+    var legacyStorageKey = 'dealer_inquiries_visible_cols_v12_disabled';
     var legacyMobileStorageKey = 'dealer_inquiries_visible_cols_mobile_v1';
     var olderLegacyStorageKey = 'dealer_inquiries_visible_cols_v8';
     var oldestLegacyStorageKey = 'dealer_inquiries_visible_cols_v7';
     var oldestLegacyStorageKeyV6 = 'dealer_inquiries_visible_cols_v6';
     var oldestLegacyStorageKeyV5 = 'dealer_inquiries_visible_cols_v5';
     // Dealer defaults should stay the same on desktop and mobile.
-    var legacyDefaultCols = ['inquiryid','date','customer','email','postcode','city','products','assignby','status'];
-    var olderLegacyDefaultCols = ['inquiryid','date','customer','postcode','city','businessnature','products','assignby','status'];
-    var previousDefaultCols = ['inquiryid','date','customer','email','postcode','city','products','status'];
+    var legacyDefaultCols = ['inquiryid','date','customer','email','postcode','city','state','country','products','assignby','status'];
+    var olderLegacyDefaultCols = ['inquiryid','date','customer','postcode','city','state','country','businessnature','products','assignby','status'];
+    var previousDefaultCols = ['inquiryid','date','customer','email','postcode','city','state','country','products','status'];
     var compactMobileLegacyCols = ['inquiryid','date','customer'];
     var defaultCols = ['inquiryid','date','customer','email','postcode','city','products','assigndate','status'];
-    var allCols = ['inquiryid','date','customer','email','postcode','city','address','contactno','businessnature','users','existingsw','demomode','products','assigndate','completiondate','payoutsdate','message','referralcode','attachment','assignby','status'];
+    var allCols = ['inquiryid','date','customer','email','postcode','city','state','country','address','contactno','businessnature','users','existingsw','demomode','products','assigndate','completiondate','payoutsdate','message','referralcode','attachment','assignby','status'];
 
     function getDefaultColsForViewport() {
         return defaultCols.slice();

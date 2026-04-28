@@ -11,7 +11,9 @@
     <td data-col="email">{{ $r->EMAIL ?? '-' }}</td>
     <td data-col="source">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '-') }}</td>
     <td data-col="postcode">{{ $r->POSTCODE ?? '-' }}</td>
-    <td data-col="city">{{ $r->CITY ?? '-' }}</td>
+    <td data-col="city">{{ $r->CITY ?? '—' }}</td>
+    <td data-col="state">{{ $r->STATE ?? '—' }}</td>
+    <td data-col="country">{{ $r->COUNTRY ?? '—' }}</td>
     @php
         $addr1 = trim((string) ($r->ADDRESS1 ?? ''));
         $addr2 = trim((string) ($r->ADDRESS2 ?? ''));
@@ -87,7 +89,7 @@
     </td>
     <td data-col="referralcode">{{ $r->REFERRALCODE ?? '-' }}</td>
     <td data-col="assignedby">{{ $r->ASSIGNEDBY_NAME ?? ($r->ASSIGNEDBY ?? '-') }}</td>
-    <td data-col="assignedto">{{ $r->ASSIGNED_TO_NAME ?? ($r->ASSIGNED_TO ?? '-') }}</td>
+    <td data-col="assignedto">{{ $r->assignedToName ?? ($r->assignedTo ?? '-') }}</td>
     <td data-col="completiondate">{{ !empty($r->COMPLETED_AT) ? date('d/m/Y', strtotime($r->COMPLETED_AT)) : '-' }}</td>
     <td data-col="payoutsdate">{{ !empty($r->REWARDED_AT) ? date('d/m/Y', strtotime($r->REWARDED_AT)) : '-' }}</td>
     <td data-col="attachment">
@@ -139,3 +141,4 @@
 @empty
 <tr><td colspan="25" class="inquiries-empty">No assigned inquiries.</td></tr>
 @endforelse
+

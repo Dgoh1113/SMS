@@ -1,16 +1,17 @@
 @extends('layouts.app')
 @php $isEdit = isset($inquiry); $inquiry = $inquiry ?? null; @endphp
-@section('title', $isEdit ? 'Edit inquiry – Admin' : 'Add new inquiry – Admin')
+@section('title', $isEdit ? 'Edit inquiry - Admin' : 'Add new inquiry - Admin')
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/pages/admin-inquiries.css') }}?v=20260421-01">
     <style>
+        /* ===== Panel Container ===== */
         .inquiry-create-panel {
-            width: min(92vw, 1500px);
-            max-width: 1500px;
-            margin: 20px auto;
+            width: min(97vw, 1700px);
+            max-width: 1700px;
+            margin: 12px auto;
             position: relative;
             overflow: hidden;
-            background: #ffffff;
+            background: #f8f9fc;
             border: 1px solid #e9eaf2;
             border-radius: 16px;
             box-shadow: 0 6px 18px rgba(30, 41, 59, 0.05);
@@ -43,7 +44,7 @@
         }
 
         .inquiry-create-panel .dashboard-panel-body.inquiry-create-body {
-            padding: 18px 22px !important;
+            padding: 14px 20px !important;
         }
 
         .dashboard-root.inquiry-create-scroll {
@@ -77,6 +78,7 @@
         .inquiry-create-layout {
             align-items: flex-start !important;
             gap: 16px !important;
+            position: relative;
         }
 
         .inquiry-create-main {
@@ -85,71 +87,266 @@
         }
 
         .inquiry-create-panel .inquiry-create-fox {
-            display: flex !important;
-            flex: 0 0 136px !important;
-            align-items: flex-start !important;
-            justify-content: center !important;
-            padding-top: 2px;
-        }
-
-        .inquiry-create-panel .inquiry-create-fox-img {
-            display: block !important;
-            max-width: 136px !important;
-            height: auto !important;
-        }
-
-        .inquiry-create-panel #inquiryFormGrid {
-            display: grid;
-            grid-template-columns: repeat(12, minmax(0, 1fr));
-            gap: 10px 14px !important;
-            max-width: 100%;
-        }
-
-        .inquiry-create-panel #inquiryFormGrid > .company-name { grid-column: 1 / span 10 !important; }
-        .inquiry-create-panel #inquiryFormGrid > .email { grid-column: 1 / span 4 !important; }
-        .inquiry-create-panel #inquiryFormGrid > .contact-name { grid-column: 5 / span 4 !important; }
-        .inquiry-create-panel #inquiryFormGrid > .contact-no { grid-column: 9 / span 4 !important; }
-        .inquiry-create-panel #inquiryFormGrid > .business-nature { grid-column: 1 / span 4 !important; }
-        .inquiry-create-panel #inquiryFormGrid > .existing-software { grid-column: 5 / span 3 !important; }
-        .inquiry-create-panel #inquiryFormGrid > .user-count { grid-column: 9.5 / span 1 !important; }
-        .inquiry-create-panel #inquiryFormGrid > .demo-mode { grid-column: 10 / span 3 !important; }
-        .inquiry-create-panel #inquiryFormGrid > .address1 { grid-column: 1 / span 10 !important; }
-        .inquiry-create-panel #inquiryFormGrid > .address2 { grid-column: 1 / span 10 !important; }
-        .inquiry-create-panel #inquiryFormGrid > .post-code { grid-column: 1 / span 3 !important; }
-        .inquiry-create-panel #inquiryFormGrid > .city { grid-column: 4 / span 5 !important; }
-        .inquiry-create-panel #inquiryFormGrid > .map-btn-col { grid-column: 9 / span 1 !important; display: flex; flex-direction: column; gap: 4px; }
-        .inquiry-create-panel #inquiryFormGrid > .product-interested { grid-column: 1 / span 12 !important; }
-        .inquiry-create-panel #inquiryFormGrid > .referral-code { grid-column: 1 / span 12 !important; }
-        .inquiry-create-panel #inquiryFormGrid > .message { grid-column: 1 / span 12 !important; }
-
-        .inquiry-create-panel #inquiryFormGrid > .company-name,
-        .inquiry-create-panel #inquiryFormGrid > .email,
-        .inquiry-create-panel #inquiryFormGrid > .contact-name,
-        .inquiry-create-panel #inquiryFormGrid > .contact-no,
-        .inquiry-create-panel #inquiryFormGrid > .business-nature,
-        .inquiry-create-panel #inquiryFormGrid > .existing-software,
-        .inquiry-create-panel #inquiryFormGrid > .user-count,
-        .inquiry-create-panel #inquiryFormGrid > .demo-mode,
-        .inquiry-create-panel #inquiryFormGrid > .address1,
-        .inquiry-create-panel #inquiryFormGrid > .address2,
-        .inquiry-create-panel #inquiryFormGrid > .post-code,
-        .inquiry-create-panel #inquiryFormGrid > .city,
-        .inquiry-create-panel #inquiryFormGrid > .map-btn-col,
-        .inquiry-create-panel #inquiryFormGrid > .product-interested,
-        .inquiry-create-panel #inquiryFormGrid > .referral-code,
-        .inquiry-create-panel #inquiryFormGrid > .message,
-        .inquiry-create-panel #inquiryFormGrid > .inquiry-actions-field {
-            order: initial !important;
-        }
-
-        .inquiry-create-panel #inquiryFormGrid .inquiry-form-section-title {
             display: none !important;
         }
+        /* --- Section Styling --- */
+        .inquiry-form-section {
+            background: #fff;
+            border-radius: 14px;
+            padding: 18px 20px;
+            margin-bottom: 0;
+            border: 1px solid #f0f0f5;
+        }
 
-        .inquiry-create-panel #inquiryFormGrid .inquiry-form-label,
-        .inquiry-create-panel #inquiryFormGrid .inquiry-address2-inner,
-        .inquiry-create-panel #inquiryFormGrid .inquiry-postcode-mini-field,
-        .inquiry-create-panel #inquiryFormGrid .inquiry-city-mini-field {
+        .inquiry-form-section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .inquiry-form-section-icon {
+            width: 34px;
+            height: 34px;
+            background: #f3f0ff;
+            color: #6366f1;
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .inquiry-form-section-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin: 0;
+        }
+
+        .inquiry-form-section-subtitle {
+            font-size: 0.8rem;
+            color: #666;
+            margin: 1px 0 0 0;
+        }
+
+        /* --- Input Wrapper with Icons --- */
+        .inquiry-form-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .inquiry-input-icon {
+            position: absolute;
+            left: 12px;
+            color: #999;
+            font-size: 1.1rem;
+            pointer-events: none;
+        }
+
+        .inquiry-form-input.has-icon {
+            padding-left: 40px !important;
+        }
+
+        /* --- Product Grid --- */
+        .inquiry-form-checkboxes {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            width: 100%;
+        }
+
+        .inquiry-form-checkbox-label {
+            background: #fff;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #444;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .inquiry-form-checkbox-label::before {
+            content: "";
+            min-width: 20px;
+            height: 20px;
+            border: 2px solid #d1d5db;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            background: #fff;
+        }
+
+        .inquiry-form-checkbox-label:hover {
+            border-color: #6366f1;
+            background: #f8faff;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.08);
+        }
+
+        .inquiry-form-checkbox-label.is-checked {
+            background: #f3f0ff;
+            border-color: #6366f1;
+            color: #4f46e5;
+        }
+
+        .inquiry-form-checkbox-label.is-checked::before {
+            background: #6366f1;
+            border-color: #6366f1;
+            content: "\F26E"; /* bi-check */
+            font-family: "bootstrap-icons" !important;
+            color: #fff;
+            font-size: 14px;
+        }
+
+        /* --- Demo Mode Toggle --- */
+        .inquiry-toggle {
+            display: flex;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 4px;
+            gap: 4px;
+        }
+
+        .inquiry-toggle-option {
+            flex: 1;
+            border: none;
+            background: transparent;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #666;
+        }
+
+        .inquiry-toggle-option.is-active {
+            background: #6366f1;
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+        }
+
+        /* REFINED MASCOT - 200px */
+        img.inquiry-create-fox-img {
+            position: absolute !important;
+            top: 5px !important;
+            right: 12px !important;
+            width: 200px !important;
+            height: auto !important;
+            max-width: none !important;
+            z-index: 5 !important;
+            pointer-events: none !important;
+            display: block !important;
+        }
+
+        .inquiry-form-section {
+            width: 100% !important;
+            box-sizing: border-box !important;
+            position: relative !important;
+            overflow: visible !important;
+        }
+
+        .inquiry-lookup-btn {
+            display: none;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            position: absolute;
+            background: #f3f0ff;
+            color: #6366f1;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            z-index: 10;
+            box-shadow: 0 2px 6px rgba(99, 102, 241, 0.2);
+        }
+
+        .inquiry-lookup-btn:hover {
+            background: #6366f1;
+            color: #fff;
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .inquiry-lookup-btn.is-visible {
+            display: flex;
+        }
+
+        .inquiry-form-section {
+            width: 100% !important;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        /* --- Custom Grid Layout for Sections --- */
+        .inquiry-form-section .inquiry-form-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 14px;
+        }
+
+        .inquiry-form-section .full { grid-column: span 12; }
+        .inquiry-form-section .half { grid-column: span 6; }
+        .inquiry-form-section .third { grid-column: span 4; }
+        .inquiry-form-section .quarter { grid-column: span 3; }
+
+        /* City icon overlap adjustment */
+        .inquiry-city-input-wrap .inquiry-input-icon {
+            z-index: 6;
+        }
+        .inquiry-city-input-wrap .inquiry-form-input {
+            padding-left: 40px !important;
+            padding-right: 40px !important;
+        }
+
+        .inquiry-create-panel #inquiryFormGrid .google-maps-btn {
+            right: 6px;
+            bottom: 6px;
+        }
+
+        /* ===== Form Body ===== */
+        /* Stack top sections, but split Inquiry Details */
+        /* Force stack top sections, but keep split in Inquiry Details */
+        .inquiry-create-panel .inquiry-form-body {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 16px !important;
+            width: 100% !important;
+        }
+
+        .inquiry-details-split {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 24px;
+            align-items: start;
+        }
+
+        .inquiry-details-right {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .inquiry-form-label {
             display: flex;
             flex-direction: column;
             gap: 4px;
@@ -157,12 +354,7 @@
             color: #2f3654;
         }
 
-        .inquiry-create-panel #inquiryFormGrid > .post-code,
-        .inquiry-create-panel #inquiryFormGrid > .city {
-            min-width: 0;
-        }
-
-        .inquiry-create-panel #inquiryFormGrid .inquiry-form-label-title {
+        .inquiry-form-label-title {
             display: inline-flex;
             align-items: center;
             gap: 3px;
@@ -173,76 +365,67 @@
             line-height: 1.2;
         }
 
-        .inquiry-create-panel #inquiryFormGrid .required {
-            color: #ef4444;
-        }
+        .required { color: #ef4444; }
 
-        .inquiry-create-panel #inquiryFormGrid .inquiry-form-input {
+        .inquiry-form-input {
             width: 100%;
-            height: 38px;
+            height: 36px;
             box-sizing: border-box;
             border: 1px solid #d8dce8;
             border-radius: 10px;
             background: #fff;
-            font-size: 14px;
+            font-size: 13px;
             color: #2f3654;
-            padding: 6px 12px;
+            padding: 5px 12px;
             transition: all 0.2s ease;
         }
 
-        .inquiry-create-panel #inquiryFormGrid .inquiry-form-input:focus {
+        .inquiry-form-input:focus {
             outline: none;
             border-color: #7c5cff;
             box-shadow: 0 0 0 3px rgba(124, 92, 255, 0.10);
         }
 
-        .inquiry-create-panel #inquiryFormGrid .google-maps-btn {
-            display: none;
-            align-items: center;
-            justify-content: center;
-            height: 38px;
-            width: 38px;
-            border-radius: 10px;
-            border: 1px solid #d8dce8;
-            background: #fff;
-            text-decoration: none;
-            transition: all 0.2s ease;
-            box-sizing: border-box;
-        }
-
-        .inquiry-create-panel #inquiryFormGrid .google-maps-btn:hover {
-            background: #f8f9fc;
-            border-color: #c9cfdf;
-        }
-
-        .inquiry-create-panel #inquiryFormGrid textarea.inquiry-form-input {
-            min-height: 72px !important;
-            height: 72px !important;
-            padding: 10px 12px 8px !important;
-            resize: none;
-        }
-
-        .inquiry-create-panel #inquiryFormGrid.has-address2 {
-            gap: 8px 14px !important;
-        }
-
-        .inquiry-create-panel #inquiryFormGrid.has-address2 .inquiry-form-label,
-        .inquiry-create-panel #inquiryFormGrid.has-address2 .inquiry-address2-inner,
-        .inquiry-create-panel #inquiryFormGrid.has-address2 .inquiry-postcode-mini-field,
-        .inquiry-create-panel #inquiryFormGrid.has-address2 .inquiry-city-mini-field {
-            gap: 3px;
-        }
-
-        .inquiry-create-panel #inquiryFormGrid.has-address2 textarea.inquiry-form-input {
+        textarea.inquiry-form-input {
             min-height: 60px !important;
             height: 60px !important;
-            padding-top: 8px !important;
+            padding: 8px 12px 6px !important;
+            resize: vertical;
         }
 
-        .inquiry-create-panel #inquiryFormGrid .inquiry-inline-toggle {
+        .inquiry-city-input-wrap {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+
+        #googleMapsWrap {
+            position: absolute;
+            right: 4px;
+            bottom: 4px;
+            z-index: 5;
+        }
+
+        .google-maps-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 30px !important;
+            width: 30px !important;
+            border-radius: 8px;
+            border: none !important;
+            background: transparent !important;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .google-maps-btn:hover {
+            background: rgba(0,0,0,0.05) !important;
+        }
+
+        .inquiry-inline-toggle {
             display: inline-block;
-            align-self: flex-start;
-            margin-top: 2px;
             padding: 0;
             border: none;
             background: transparent;
@@ -253,867 +436,252 @@
             cursor: pointer;
         }
 
-        .inquiry-create-panel #inquiryFormGrid .inquiry-inline-toggle:hover,
-        .inquiry-create-panel #inquiryFormGrid .inquiry-inline-toggle:focus-visible {
+        .inquiry-inline-toggle:hover {
             color: #6847f5;
             text-decoration: underline;
         }
 
-        .inquiry-create-panel #inquiryFormGrid .inquiry-toggle {
-            display: inline-flex;
-            align-items: center;
-            width: fit-content;
-            height: 38px;
-            padding: 3px;
-            gap: 4px;
-            border: 1px solid #d8dce8;
-            border-radius: 10px;
-            background: #f3f4f8;
-            max-width: none;
+        .inquiry-address2-wrap {
+            display: none;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
         }
 
-        .inquiry-create-panel #inquiryFormGrid .inquiry-toggle-option {
-            border: none;
-            background: transparent;
-            color: #4b5563;
-            font-size: 12px;
-            font-weight: 600;
-            padding: 5px 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            box-shadow: none;
-            transition: all 0.2s ease;
+        .inquiry-address2-wrap.is-visible {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
         }
 
-        .inquiry-create-panel #inquiryFormGrid .inquiry-toggle-option.is-active {
-            background: linear-gradient(135deg, #8b5cf6, #6d3df2);
-            color: #ffffff;
-            box-shadow: none;
-        }
-
-        .inquiry-create-panel #inquiryFormGrid .inquiry-form-checkboxes {
+        /* When inside grid, use grid display instead of block */
+        .inquiry-form-grid .inquiry-address2-wrap.is-visible {
             display: grid;
-            grid-template-columns: repeat(6, minmax(0, 1fr));
-            gap: 8px 16px;
-            margin-top: 4px;
         }
 
-        .inquiry-create-panel #inquiryFormGrid.has-address2 .inquiry-form-checkboxes {
-            gap: 6px 14px;
-            margin-top: 2px;
-        }
-
-        .inquiry-create-panel #inquiryFormGrid .inquiry-form-checkbox-label {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-bottom: 0;
-            font-size: 14px;
-            font-weight: 500;
-            color: #374151;
-            line-height: 1.2;
-            cursor: pointer;
-        }
-
-        .inquiry-create-panel #inquiryFormGrid .inquiry-form-checkbox {
-            width: 15px;
-            height: 15px;
-            accent-color: #7c5cff;
-            margin: 0;
-            flex-shrink: 0;
-            cursor: pointer;
-        }
-
-        .inquiry-create-panel #inquiryFormGrid > .inquiry-actions-field {
-            grid-column: 1 / -1;
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: nowrap;
-            margin-top: 14px;
-        }
-
-        .inquiry-create-panel #inquiryFormGrid.has-address2 > .inquiry-actions-field {
-            margin-top: 8px;
-        }
-
-        .inquiry-create-panel.inquiry-create-panel--phone-stack .inquiry-create-layout {
-            flex-direction: column !important;
-            gap: 14px !important;
-        }
-
-        .inquiry-create-panel.inquiry-create-panel--phone-stack .inquiry-create-main,
-        .inquiry-create-panel.inquiry-create-panel--phone-stack .inquiry-create-fox {
-            width: 100% !important;
-            min-width: 0 !important;
-        }
-
-        .inquiry-create-panel.inquiry-create-panel--phone-stack .inquiry-create-fox {
-            display: none !important;
-        }
-
-        .inquiry-create-panel #inquiryFormGrid.is-phone-stack {
-            display: grid !important;
-            grid-template-columns: minmax(0, 1fr) !important;
-            gap: 12px !important;
-            width: 100% !important;
-        }
-
-        .inquiry-create-panel #inquiryFormGrid.is-phone-stack > * {
-            grid-column: 1 / -1 !important;
-            width: 100% !important;
-            max-width: 100% !important;
-            min-width: 0 !important;
-        }
-
-        .inquiry-create-panel #inquiryFormGrid.is-phone-stack .inquiry-form-label-title {
-            font-size: 13px;
-            white-space: normal !important;
-        }
-
-        .inquiry-create-panel #inquiryFormGrid.is-phone-stack .inquiry-company-wrapper {
-            display: grid !important;
-            grid-template-columns: minmax(0, 1fr) !important;
-            gap: 8px;
-            width: 100% !important;
-        }
-
-        .inquiry-create-panel #inquiryFormGrid.is-phone-stack .inquiry-company-copy-btn:not([hidden]) {
-            width: 100%;
-        }
-
-        .inquiry-create-panel #inquiryFormGrid.is-phone-stack .inquiry-toggle {
-            display: grid !important;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            width: 100% !important;
-            max-width: 100% !important;
-            height: auto;
-        }
-
-        .inquiry-create-panel #inquiryFormGrid.is-phone-stack .inquiry-toggle-option {
-            min-width: 0;
-            padding: 8px 10px;
-            white-space: normal;
-        }
-
-        .inquiry-create-panel #inquiryFormGrid.is-phone-stack .inquiry-form-checkboxes {
-            grid-template-columns: 1fr !important;
-            gap: 8px !important;
-        }
-
-        .inquiry-create-panel #inquiryFormGrid.is-phone-stack > .inquiry-actions-field {
-            flex-direction: column;
-            align-items: stretch;
-        }
-
-        .inquiry-create-panel #inquiryFormGrid.is-phone-stack > .inquiry-actions-field .login-primary-btn,
-        .inquiry-create-panel #inquiryFormGrid.is-phone-stack > .inquiry-actions-field .inquiry-form-cancel {
-            width: 100%;
-            text-align: center;
-        }
-
-        @media (min-width: 860px) {
-            .inquiry-create-panel #inquiryFormGrid > .inquiry-actions-field {
-                width: calc(100% + 152px);
-                margin-right: -152px;
-                box-sizing: border-box;
-                padding-right: 4px;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .dashboard-root:has(.inquiry-create-panel) .dashboard-main {
-                height: auto !important;
-                min-height: 100vh !important;
-                overflow-y: auto !important;
-            }
-
-            .dashboard-root:has(.inquiry-create-panel) .dashboard-main-body {
-                flex: 0 0 auto !important;
-                overflow: visible !important;
-                padding-bottom: 28px !important;
-            }
-
-            .inquiry-create-panel {
-                overflow: visible;
-            }
-
-            .inquiry-create-panel .inquiry-create-fox {
-                display: none !important;
-            }
-
-            .vertical-title {
-                display: none;
-            }
-
-            .inquiry-create-panel--new .dashboard-panel-body.inquiry-create-body {
-                padding-left: 22px !important;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid > .company-name,
-            .inquiry-create-panel #inquiryFormGrid > .address1,
-            .inquiry-create-panel #inquiryFormGrid > .address2 {
-                grid-column: 1 / -1 !important;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid > .inquiry-actions-field {
-                width: 100% !important;
-                margin-right: 0 !important;
-                padding-right: 0 !important;
-            }
-        }
-
-        .inquiry-create-panel #inquiryFormGrid > .inquiry-actions-field .login-primary-btn {
+        .inquiry-form-actions .login-primary-btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
             min-width: 150px;
-            height: 40px;
-            padding: 0 18px;
+            height: 42px;
+            padding: 0 24px;
             border: none;
-            border-radius: 999px;
+            border-radius: 10px;
             background: linear-gradient(135deg, #8b5cf6, #6d3df2);
             box-shadow: 0 4px 12px rgba(109, 61, 242, 0.16);
-            font-size: 13px;
+            color: #fff;
+            font-size: 14px;
             font-weight: 600;
-            line-height: 1;
             white-space: nowrap;
-            margin: 0;
             transition: all 0.2s ease;
+            cursor: pointer;
         }
 
-        .inquiry-create-panel #inquiryFormGrid > .inquiry-actions-field .login-primary-btn:hover {
+        .inquiry-form-actions .login-primary-btn:hover {
             transform: translateY(-1px);
             box-shadow: 0 6px 14px rgba(109, 61, 242, 0.20);
         }
 
-        .inquiry-create-panel #inquiryFormGrid > .inquiry-actions-field .inquiry-form-cancel {
+        .inquiry-form-actions .inquiry-form-cancel {
             display: inline-flex;
             align-items: center;
             justify-content: center;
             min-width: 110px;
-            height: 40px;
-            padding: 0 18px;
+            height: 42px;
+            padding: 0 24px;
             border: 1px solid #d8dce8;
-            border-radius: 999px;
-            background: #ffffff;
+            border-radius: 10px;
+            background: #fff;
             color: #4b5563;
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 600;
-            line-height: 1;
             white-space: nowrap;
-            margin: 0;
             text-decoration: none;
             transition: all 0.2s ease;
         }
 
-        .inquiry-create-panel #inquiryFormGrid > .inquiry-actions-field .inquiry-form-cancel:hover {
+        .inquiry-form-actions .inquiry-form-cancel:hover {
             border-color: #c9cfdf;
             background: #f8f9fc;
-            color: #374151;
             text-decoration: none;
         }
 
-        @media (min-width: 1441px) and (max-height: 980px) {
-            .dashboard-root.inquiry-create-scroll .dashboard-main-body {
-                padding-top: 14px !important;
-                padding-bottom: 8px !important;
-            }
-
-            .dashboard-root.inquiry-create-scroll .dashboard-topbar {
-                padding-top: 6px;
-                padding-bottom: 6px;
-            }
-
-            .dashboard-root.inquiry-create-scroll .dashboard-bottombar {
-                padding-top: 8px !important;
-                padding-bottom: 8px !important;
-            }
-
+        /* ===== Wide Desktop Compact ===== */
+        @media (min-width: 1280px) {
             .inquiry-create-panel {
-                margin: 8px auto 10px;
+                margin: 4px auto;
             }
 
             .inquiry-create-panel .dashboard-panel-body.inquiry-create-body {
-                padding-top: 14px !important;
-                padding-bottom: 14px !important;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid {
-                gap: 8px 14px !important;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid textarea.inquiry-form-input {
-                min-height: 60px !important;
-                height: 60px !important;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid > .inquiry-actions-field {
-                margin-top: 8px;
-            }
-        }
-
-        @media (min-width: 1024px) and (max-width: 1440px) and (max-height: 920px) {
-            .dashboard-root.inquiry-create-scroll .dashboard-main-body {
-                padding-bottom: 8px !important;
-            }
-
-            .inquiry-create-panel {
-                margin: 6px auto;
+                padding: 8px 14px 8px !important;
             }
 
             .inquiry-create-panel--new .dashboard-panel-body.inquiry-create-body {
-                padding-left: 58px !important;
+                padding-left: 68px !important;
             }
 
-            .vertical-title {
-                top: 12px;
-                left: 10px;
-                padding: 10px 6px;
-                font-size: 10px;
-                letter-spacing: 0.14em;
-            }
-
-            .inquiry-create-panel .dashboard-panel-body.inquiry-create-body {
-                padding: 12px 16px !important;
-            }
-
-            .inquiry-create-layout {
-                gap: 10px !important;
-            }
-
-            .inquiry-create-panel .inquiry-create-fox {
-                flex: 0 0 96px !important;
-                padding-top: 0;
-            }
-
-            .inquiry-create-panel .inquiry-create-fox-img {
-                max-width: 96px !important;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid {
-                gap: 6px 10px !important;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid .inquiry-form-label,
-            .inquiry-create-panel #inquiryFormGrid .inquiry-address2-inner,
-            .inquiry-create-panel #inquiryFormGrid .inquiry-postcode-mini-field,
-            .inquiry-create-panel #inquiryFormGrid .inquiry-city-mini-field {
-                gap: 2px;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid .inquiry-form-label-title {
-                font-size: 12px;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid .inquiry-form-input {
-                height: 32px;
-                padding: 4px 9px;
-                font-size: 12px;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid .google-maps-btn {
-                height: 32px;
-                width: 32px;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid textarea.inquiry-form-input {
-                min-height: 48px !important;
-                height: 48px !important;
-                padding: 7px 9px 5px !important;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid.has-address2 {
-                gap: 5px 10px !important;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid.has-address2 textarea.inquiry-form-input {
-                min-height: 42px !important;
-                height: 42px !important;
-                padding-top: 5px !important;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid .inquiry-inline-toggle {
-                margin-top: 0;
-                font-size: 10px;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid .inquiry-toggle {
-                height: 32px;
-                padding: 2px;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid .inquiry-toggle-option {
-                font-size: 10px;
-                padding: 3px 9px;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid .inquiry-form-checkboxes {
-                gap: 4px 10px;
-                margin-top: 1px;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid .inquiry-form-checkbox-label {
-                gap: 4px;
-                font-size: 12px;
-                line-height: 1.1;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid .inquiry-form-checkbox {
-                width: 13px;
-                height: 13px;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid > .inquiry-actions-field {
-                width: calc(100% + 120px);
-                margin-right: -120px;
+            .inquiry-form-body {
                 gap: 8px;
-                margin-top: 4px;
-                padding-right: 0;
             }
 
-            .inquiry-create-panel #inquiryFormGrid > .inquiry-actions-field .login-primary-btn {
-                min-width: 130px;
-                height: 34px;
-                padding: 0 15px;
-                font-size: 12px;
+            .inquiry-details-split {
+                grid-template-columns: 1fr 260px;
+                gap: 16px;
             }
 
-            .inquiry-create-panel #inquiryFormGrid > .inquiry-actions-field .inquiry-form-cancel {
-                min-width: 96px;
-                height: 34px;
-                padding: 0 14px;
-                font-size: 12px;
-            }
-        }
-
-        @media (min-width: 1024px) and (max-width: 1440px) and (max-height: 820px) {
-            .dashboard-root.inquiry-create-scroll .dashboard-main-body {
-                padding-bottom: 2px !important;
+            .inquiry-form-section {
+                padding: 12px 14px;
             }
 
-            .inquiry-create-panel.inquiry-create-panel--edit {
-                margin: 2px auto;
+            .inquiry-form-section-header {
+                margin-bottom: 8px;
+                gap: 8px;
             }
 
-            .inquiry-create-panel.inquiry-create-panel--edit .dashboard-panel-body.inquiry-create-body {
-                padding: 10px 14px !important;
-            }
-
-            .inquiry-create-panel.inquiry-create-panel--edit .vertical-title {
-                top: 10px;
-                left: 8px;
-                padding: 8px 5px;
-                font-size: 9px;
-                letter-spacing: 0.12em;
-            }
-
-            .inquiry-create-panel.inquiry-create-panel--edit .inquiry-create-layout {
-                gap: 8px !important;
-            }
-
-            .inquiry-create-panel.inquiry-create-panel--edit .inquiry-create-fox {
-                flex: 0 0 82px !important;
-            }
-
-            .inquiry-create-panel.inquiry-create-panel--edit .inquiry-create-fox-img {
-                max-width: 82px !important;
-            }
-
-            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid {
-                gap: 4px 8px !important;
-            }
-
-            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid.has-address2 {
-                gap: 4px 8px !important;
-            }
-
-            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid .inquiry-form-label,
-            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid .inquiry-address2-inner,
-            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid .inquiry-postcode-mini-field,
-            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid .inquiry-city-mini-field {
-                gap: 1px;
-            }
-
-            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid .inquiry-form-label-title {
-                font-size: 11px;
-            }
-
-            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid .inquiry-form-input {
-                height: 30px;
-                padding: 3px 8px;
-                font-size: 11.5px;
-            }
-
-            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid .google-maps-btn {
-                height: 30px;
+            .inquiry-form-section-icon {
                 width: 30px;
-            }
-
-            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid textarea.inquiry-form-input {
-                min-height: 40px !important;
-                height: 40px !important;
-                padding: 6px 8px 4px !important;
-            }
-
-            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid.has-address2 textarea.inquiry-form-input {
-                min-height: 36px !important;
-                height: 36px !important;
-                padding-top: 4px !important;
-            }
-
-            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid .inquiry-inline-toggle {
-                font-size: 9px;
-            }
-
-            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid .inquiry-toggle {
                 height: 30px;
-                padding: 2px;
-                gap: 3px;
-            }
-
-            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid .inquiry-toggle-option {
-                font-size: 9.5px;
-                padding: 3px 8px;
-            }
-
-            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid .inquiry-form-checkboxes {
-                gap: 3px 9px;
-                margin-top: 0;
-            }
-
-            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid .inquiry-form-checkbox-label {
-                gap: 4px;
-                font-size: 11px;
-                line-height: 1.05;
-            }
-
-            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid .inquiry-form-checkbox {
-                width: 12px;
-                height: 12px;
-            }
-
-            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid > .inquiry-actions-field {
-                width: calc(100% + 96px);
-                margin-right: -96px;
-                gap: 7px;
-                margin-top: 2px;
-            }
-
-            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid > .inquiry-actions-field .login-primary-btn {
-                min-width: 122px;
-                height: 32px;
-                padding: 0 14px;
-                font-size: 11.5px;
-            }
-
-            .inquiry-create-panel.inquiry-create-panel--edit #inquiryFormGrid > .inquiry-actions-field .inquiry-form-cancel {
-                min-width: 90px;
-                height: 32px;
-                padding: 0 13px;
-                font-size: 11.5px;
-            }
-        }
-
-        @media (min-width: 1024px) and (max-height: 820px) {
-            .dashboard-root.inquiry-create-scroll .dashboard-main-body {
-                padding-top: 4px !important;
-                padding-bottom: 0 !important;
-            }
-
-            .dashboard-root.inquiry-create-scroll .dashboard-topbar {
-                padding-top: 2px;
-                padding-bottom: 2px;
-            }
-
-            .dashboard-root.inquiry-create-scroll .dashboard-topbar-actions-cluster {
-                gap: 7px;
-                padding-top: 3px;
-                padding-bottom: 3px;
-            }
-
-            .dashboard-root.inquiry-create-scroll .top-right-btn {
-                width: 34px;
-                height: 34px;
-                min-width: 34px;
-                min-height: 34px;
-                border-radius: 11px;
-            }
-
-            .dashboard-root.inquiry-create-scroll .dashboard-topbar-icon-symbol,
-            .dashboard-root.inquiry-create-scroll .top-right-btn .bi {
-                font-size: 17px;
-            }
-
-            .dashboard-root.inquiry-create-scroll .dashboard-bottombar {
-                padding-top: 5px !important;
-                padding-bottom: 5px !important;
-                font-size: 12px !important;
-            }
-
-            .inquiry-create-panel {
-                width: min(calc(100vw - 96px), 1280px);
-                max-width: 1280px;
-                margin: 10px auto 8px;
-            }
-
-            .inquiry-create-panel .dashboard-panel-body.inquiry-create-body {
-                padding: 14px 16px !important;
-            }
-
-            .inquiry-create-panel--new .dashboard-panel-body.inquiry-create-body {
-                padding-left: 52px !important;
-            }
-
-            .vertical-title {
-                top: 12px;
-                left: 9px;
-                padding: 8px 5px;
-                border-radius: 14px;
-                font-size: 9px;
-                letter-spacing: 0.12em;
-            }
-
-            .inquiry-create-layout {
-                gap: 14px !important;
-            }
-
-            .inquiry-create-panel .inquiry-create-fox {
-                flex: 0 0 118px !important;
-                width: 118px !important;
-                min-width: 118px !important;
-                padding-top: 0;
-            }
-
-            .inquiry-create-panel .inquiry-create-fox-img {
-                max-width: 112px !important;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid {
-                gap: 6px 10px !important;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid.has-address2 {
-                gap: 5px 10px !important;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid .inquiry-form-label,
-            .inquiry-create-panel #inquiryFormGrid .inquiry-address2-inner,
-            .inquiry-create-panel #inquiryFormGrid .inquiry-postcode-mini-field,
-            .inquiry-create-panel #inquiryFormGrid .inquiry-city-mini-field {
-                gap: 1px;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid .inquiry-form-label-title {
-                font-size: 11px;
-                line-height: 1.1;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid .inquiry-form-input {
-                height: 31px;
-                padding: 4px 8px;
-                border-radius: 8px;
-                font-size: 11.5px;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid textarea.inquiry-form-input {
-                min-height: 48px !important;
-                height: 48px !important;
-                padding: 6px 8px 5px !important;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid.has-address2 textarea.inquiry-form-input {
-                min-height: 42px !important;
-                height: 42px !important;
-                padding-top: 5px !important;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid .inquiry-inline-toggle {
-                margin-top: 0;
-                font-size: 9px;
-                line-height: 1.1;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid .inquiry-toggle {
-                height: 31px;
-                padding: 2px;
-                gap: 3px;
+                font-size: 16px;
                 border-radius: 8px;
             }
 
-            .inquiry-create-panel #inquiryFormGrid .inquiry-toggle-option {
-                padding: 3px 8px;
-                border-radius: 7px;
-                font-size: 9.75px;
+            .inquiry-form-section-title {
+                font-size: 0.9rem;
             }
 
-            .inquiry-create-panel #inquiryFormGrid .inquiry-form-checkboxes {
-                grid-template-columns: repeat(6, minmax(0, 1fr));
-                justify-content: stretch;
-                gap: 4px 12px;
-                margin-top: 1px;
+            .inquiry-form-section-subtitle {
+                font-size: 0.75rem;
             }
 
-            .inquiry-create-panel #inquiryFormGrid .inquiry-form-checkbox-label {
-                gap: 4px;
-                font-size: 11px;
-                line-height: 1.1;
+            .inquiry-form-section .inquiry-form-grid {
+                gap: 10px;
             }
 
-            .inquiry-create-panel #inquiryFormGrid .inquiry-form-checkbox {
-                width: 12px;
-                height: 12px;
+            .inquiry-form-label-title {
+                font-size: 12px;
             }
 
-            .inquiry-create-panel #inquiryFormGrid > .inquiry-actions-field {
-                width: 100%;
-                margin-top: 4px;
-                margin-right: 0;
-                gap: 8px;
-                padding-right: 0;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid > .inquiry-actions-field .login-primary-btn {
-                min-width: 124px;
+            .inquiry-form-input {
                 height: 34px;
-                padding: 0 14px;
-                font-size: 11.75px;
+                font-size: 12.5px;
+                padding: 4px 10px;
             }
 
-            .inquiry-create-panel #inquiryFormGrid > .inquiry-actions-field .inquiry-form-cancel {
-                min-width: 92px;
-                height: 34px;
-                padding: 0 13px;
-                font-size: 11.75px;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .inquiry-create-panel {
-                max-width: none;
-                margin: 12px;
+            .inquiry-form-input.has-icon {
+                padding-left: 36px !important;
             }
 
-            .inquiry-create-panel--new .dashboard-panel-body.inquiry-create-body {
-                padding-left: 18px !important;
+            .inquiry-input-icon {
+                left: 10px;
+                font-size: 1rem;
             }
 
-            .vertical-title {
-                display: none;
+            textarea.inquiry-form-input {
+                min-height: 50px !important;
+                height: 50px !important;
+                padding: 6px 10px 4px !important;
             }
 
-            .inquiry-create-panel .dashboard-panel-body.inquiry-create-body {
-                padding: 18px !important;
+            .inquiry-form-checkboxes {
+                gap: 6px;
             }
 
-            .inquiry-create-panel .inquiry-create-layout {
-                flex-direction: column !important;
-                gap: 14px !important;
-            }
-
-            .inquiry-create-panel .inquiry-create-main,
-            .inquiry-create-panel .inquiry-create-fox {
-                width: 100% !important;
-                min-width: 0 !important;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid {
-                display: grid !important;
-                grid-template-columns: minmax(0, 1fr) !important;
-                gap: 12px !important;
-                width: 100% !important;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid > * {
-                grid-column: 1 / -1 !important;
-                width: 100% !important;
-                max-width: 100% !important;
-                min-width: 0 !important;
-            }
-
-            .inquiry-create-panel .inquiry-create-fox {
-                display: none !important;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid .inquiry-form-checkboxes {
-                grid-template-columns: 1fr;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid > .inquiry-actions-field {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .inquiry-create-panel #inquiryFormGrid > .inquiry-actions-field .login-primary-btn,
-            .inquiry-create-panel #inquiryFormGrid > .inquiry-actions-field .inquiry-form-cancel {
-                width: 100%;
-                text-align: center;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .inquiry-create-panel--new {
-                margin: 8px 0 16px;
-                border-radius: 14px;
-            }
-
-            .inquiry-create-panel--new .dashboard-panel-body.inquiry-create-body {
-                padding: 16px 14px 18px !important;
-            }
-
-            .inquiry-create-panel--new #inquiryFormGrid {
-                grid-template-columns: minmax(0, 1fr) !important;
-                gap: 12px !important;
-                width: 100%;
-            }
-
-            .inquiry-create-panel--new #inquiryFormGrid > * {
-                grid-column: 1 / -1 !important;
-                width: 100% !important;
-                min-width: 0 !important;
-                max-width: 100% !important;
-            }
-
-            .inquiry-create-panel--new #inquiryFormGrid .inquiry-form-label-title {
-                font-size: 13px;
-                white-space: normal !important;
-            }
-
-            .inquiry-create-panel--new #inquiryFormGrid .inquiry-company-wrapper {
-                display: grid;
-                grid-template-columns: minmax(0, 1fr);
-                gap: 8px;
-                width: 100%;
-            }
-
-            .inquiry-create-panel--new #inquiryFormGrid .inquiry-company-copy-btn:not([hidden]) {
-                width: 100%;
-            }
-
-            .inquiry-create-panel--new #inquiryFormGrid .inquiry-toggle {
-                display: grid !important;
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-                width: 100% !important;
-                max-width: 100% !important;
-                height: auto;
-            }
-
-            .inquiry-create-panel--new #inquiryFormGrid .inquiry-toggle-option {
-                min-width: 0;
+            .inquiry-form-checkbox-label {
                 padding: 8px 10px;
-                white-space: normal;
+                font-size: 0.8rem;
+                gap: 8px;
+                border-radius: 8px;
             }
 
-            .inquiry-create-panel--new #inquiryFormGrid .inquiry-form-checkboxes {
-                grid-template-columns: 1fr !important;
-                gap: 8px !important;
+            .inquiry-form-checkbox-label::before {
+                min-width: 16px;
+                height: 16px;
+                border-radius: 5px;
             }
 
-            .inquiry-create-panel--new #inquiryFormGrid > .inquiry-actions-field {
-                margin-top: 4px;
+            .inquiry-toggle-option {
+                padding: 6px 12px;
+                font-size: 0.8rem;
+            }
+
+            .inquiry-form-actions .login-primary-btn {
+                height: 36px;
+                padding: 0 20px;
+                font-size: 13px;
+            }
+
+            .inquiry-form-actions .inquiry-form-cancel {
+                height: 36px;
+                padding: 0 18px;
+                font-size: 13px;
+            }
+
+            img.inquiry-create-fox-img {
+                width: 200px !important;
+                top: 5px !important;
+                right: 12px !important;
+            }
+
+            .vertical-title {
+                padding: 10px 6px;
+                font-size: 11px;
+                border-radius: 14px;
+                top: 14px;
+                left: 12px;
             }
         }
+
+        /* ===== Responsive: Tablet ===== */
+        @media (max-width: 1024px) {
+            .inquiry-details-split {
+                grid-template-columns: 1fr !important;
+                gap: 16px !important;
+            }
+            .inquiry-form-section .inquiry-form-grid {
+                grid-template-columns: repeat(6, 1fr) !important;
+            }
+            .inquiry-form-section .third { grid-column: span 3; }
+            .inquiry-form-section .quarter { grid-column: span 3; }
+            .inquiry-form-checkboxes {
+                grid-template-columns: repeat(3, 1fr) !important;
+            }
+        }
+
+        /* ===== Responsive: Mobile ===== */
+        @media (max-width: 768px) {
+            .inquiry-create-panel { margin: 12px; max-width: none; width: auto; }
+            .inquiry-create-panel--new .dashboard-panel-body.inquiry-create-body { padding-left: 18px !important; }
+            .vertical-title { display: none; }
+            .inquiry-create-fox-img { display: none !important; }
+            .inquiry-details-split {
+                grid-template-columns: 1fr !important;
+            }
+            .inquiry-form-section { padding: 16px; }
+            .inquiry-form-section .inquiry-form-grid {
+                grid-template-columns: 1fr !important;
+                gap: 14px !important;
+            }
+            .inquiry-form-section .full,
+            .inquiry-form-section .half,
+            .inquiry-form-section .third,
+            .inquiry-form-section .quarter { grid-column: span 1 !important; }
+            .inquiry-form-checkboxes { grid-template-columns: repeat(2, 1fr) !important; }
+            .inquiry-form-actions { flex-direction: column !important; }
+            .inquiry-form-actions .login-primary-btn,
+            .inquiry-form-actions .inquiry-form-cancel { width: 100%; justify-content: center; }
+        }
+
+        @media (max-width: 480px) {
+            .inquiry-form-checkboxes { grid-template-columns: 1fr !important; }
+        }
+
+
+
+
+
+
+
 
     </style>
 @endpush
@@ -1153,146 +721,252 @@
                             <input type="hidden" name="return_tab" value="{{ request()->query('tab') }}">
                         @endif
                     @endif
-            <div class="inquiry-form-grid form-grid" id="inquiryFormGrid">
-                <label class="inquiry-form-label inquiry-company-field company-name">
-                    <span class="inquiry-form-label-title">Company name <span class="required">*</span></span>
-                    <div class="inquiry-company-wrapper">
-                        <input type="text" name="COMPANYNAME" id="companyInput" value="{{ old('COMPANYNAME', $inquiry->COMPANYNAME ?? '') }}" required maxlength="255" class="inquiry-form-input">
-                        <button type="button" class="inquiry-company-copy-btn" id="copyCompanyBtn" title="Copy from existing lead" hidden>
-                            <i class="bi bi-arrow-counterclockwise"></i>
-                        </button>
+            <div class="inquiry-form-body" id="inquiryFormGrid">
+                <!-- Section 1: Company Information -->
+                <div class="inquiry-form-section" style="position: relative;">
+                    <img src="{{ asset('NewInquiries-FoxIcon.png') }}" class="inquiry-create-fox-img" alt="Mascot">
+                    <div class="inquiry-form-section-header">
+                        <div class="inquiry-form-section-icon"><i class="bi bi-building"></i></div>
+                        <div>
+                            <h3 class="inquiry-form-section-title">Company Information</h3>
+                            <p class="inquiry-form-section-subtitle">Tell us about your company</p>
+                        </div>
                     </div>
-                </label>
-                <label class="inquiry-form-label inquiry-email-field email">
-                    <span class="inquiry-form-label-title">Email <span class="required">*</span></span>
-                    <input type="email" name="EMAIL" value="{{ old('EMAIL', $inquiry->EMAIL ?? '') }}" required maxlength="255" class="inquiry-form-input">
-                </label>
+                    <div class="inquiry-form-grid">
+                        <div class="inquiry-form-label" style="grid-column: span 10 !important;">
+                            <label for="companyInput" class="inquiry-form-label-title">Company name <span class="required">*</span></label>
+                            <div class="inquiry-form-input-wrapper">
+                                <i class="bi bi-building inquiry-input-icon"></i>
+                                <input type="text" name="COMPANYNAME" id="companyInput" value="{{ old('COMPANYNAME', $inquiry->COMPANYNAME ?? '') }}" maxlength="200" required class="inquiry-form-input has-icon" placeholder="Enter company name" autocomplete="off">
+                                <button type="button" class="inquiry-lookup-btn" id="lookupCompanyBtn" title="Load existing company data">
+                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div style="grid-column: span 2 !important;"></div>
+                        <label class="inquiry-form-label" style="grid-column: span 4 !important;">
+                            <span class="inquiry-form-label-title">Business nature <span class="required">*</span></span>
+                            <div class="inquiry-form-input-wrapper">
+                                <i class="bi bi-briefcase inquiry-input-icon"></i>
+                                <input type="text" name="BUSINESSNATURE" value="{{ old('BUSINESSNATURE', $inquiry->BUSINESSNATURE ?? '') }}" required maxlength="255" class="inquiry-form-input has-icon" placeholder="Enter business nature">
+                            </div>
+                        </label>
 
-                <label class="inquiry-form-label inquiry-contactname-field contact-name">
-                    <span class="inquiry-form-label-title">Contact name <span class="required">*</span></span>
-                    <input type="text" name="CONTACTNAME" value="{{ old('CONTACTNAME', $inquiry->CONTACTNAME ?? '') }}" required maxlength="255" class="inquiry-form-input">
-                </label>
-                <label class="inquiry-form-label inquiry-contactno-field contact-no">
-                    <span class="inquiry-form-label-title">Contact no <span class="required">*</span></span>
-                    <input type="text" name="CONTACTNO" value="{{ old('CONTACTNO', $inquiry->CONTACTNO ?? '') }}" required maxlength="15" class="inquiry-form-input @error('CONTACTNO') inquiry-input-error @enderror">
-                    @error('CONTACTNO')
-                        <div class="inquiry-field-error">{{ $message }}</div>
-                    @enderror
-                </label>
+                        <label class="inquiry-form-label" style="grid-column: span 3 !important;">
+                            <span class="inquiry-form-label-title">Existing software <span class="required">*</span></span>
+                            <div class="inquiry-form-input-wrapper">
+                                <i class="bi bi-window-stack inquiry-input-icon"></i>
+                                <input type="text" name="EXISTINGSOFTWARE" value="{{ old('EXISTINGSOFTWARE', $inquiry->EXISTINGSOFTWARE ?? '') }}" required maxlength="255" class="inquiry-form-input has-icon" placeholder="Enter existing software">
+                            </div>
+                        </label>
 
-                <label class="inquiry-form-label inquiry-businessnature-field business-nature">
-                    <span class="inquiry-form-label-title">Business nature <span class="required">*</span></span>
-                    <input type="text" name="BUSINESSNATURE" value="{{ old('BUSINESSNATURE', $inquiry->BUSINESSNATURE ?? '') }}" required maxlength="255" class="inquiry-form-input">
-                </label>
-                <label class="inquiry-form-label inquiry-existingsoftware-field existing-software">
-                    <span class="inquiry-form-label-title">Existing software <span class="required">*</span></span>
-                    <input type="text" name="EXISTINGSOFTWARE" value="{{ old('EXISTINGSOFTWARE', $inquiry->EXISTINGSOFTWARE ?? '') }}" required maxlength="255" class="inquiry-form-input">
-                </label>
-                <label class="inquiry-form-label inquiry-usercount-field user-count">
-                    <span class="inquiry-form-label-title">User count</span>
-                    @php
-                        $ucDefault = $isEdit && isset($inquiry->USERCOUNT) ? (int) $inquiry->USERCOUNT : 1;
-                        if ($ucDefault < 1) $ucDefault = 1;
-                        $uc = (int) old('USERCOUNT', $ucDefault);
-                        if ($uc < 1) $uc = 1;
-                    @endphp
-                    <input type="number" name="USERCOUNT" value="{{ $uc }}" min="1" class="inquiry-form-input">
-                </label>
-                <label class="inquiry-form-label inquiry-demomode-field demo-mode">
-                    <span class="inquiry-form-label-title">Demo mode</span>
-                    @php
-                        $demoDefault = $isEdit && isset($inquiry->DEMOMODE) ? trim((string) $inquiry->DEMOMODE) : 'Zoom';
-                        if ($demoDefault !== 'Zoom' && $demoDefault !== 'On-site') $demoDefault = 'Zoom';
-                        $demoOld = old('DEMOMODE', $demoDefault);
-                    @endphp
-                    <div class="inquiry-toggle" data-toggle="demomode">
-                        <button type="button" class="inquiry-toggle-option {{ $demoOld === 'Zoom' ? 'is-active' : '' }}" data-value="Zoom">Zoom</button>
-                        <button type="button" class="inquiry-toggle-option {{ $demoOld === 'On-site' ? 'is-active' : '' }}" data-value="On-site">On-site</button>
+                        <label class="inquiry-form-label" style="grid-column: span 3 !important;">
+                            <span class="inquiry-form-label-title">User count <span class="required">*</span></span>
+                            <div class="inquiry-form-input-wrapper">
+                                <i class="bi bi-people inquiry-input-icon"></i>
+                                <input type="number" name="USERCOUNT" value="{{ old('USERCOUNT', $inquiry->USERCOUNT ?? '1') }}" required min="1" class="inquiry-form-input has-icon" placeholder="1">
+                            </div>
+                        </label>
+                        <div style="grid-column: span 2 !important;"></div>
                     </div>
-                    <input type="hidden" name="DEMOMODE" id="demoModeInput" value="{{ $demoOld }}">
-                </label>
-                @php
-                    $address2Value = old('ADDRESS2', $inquiry->ADDRESS2 ?? '');
-                    $hasAddress2Value = trim((string) $address2Value) !== '';
-                @endphp
-                <div class="inquiry-form-label inquiry-address-field inquiry-address1-field address1">
-                    <label for="address1Input" class="inquiry-form-label-title">Address 1</label>
-                    <input type="text" id="address1Input" name="ADDRESS1" value="{{ old('ADDRESS1', $inquiry->ADDRESS1 ?? '') }}" maxlength="255" class="inquiry-form-input">
-                    <button type="button"
-                            class="inquiry-inline-toggle"
-                            id="address2ToggleBtn"
-                            aria-controls="address2FieldWrap"
-                            aria-expanded="{{ $hasAddress2Value ? 'true' : 'false' }}">
-                        {{ $hasAddress2Value ? '– Remove Address 2' : '+ Add Address 2' }}
+                </div>
+
+                <!-- Section 2: Contact Details -->
+                <div class="inquiry-form-section">
+                    <div class="inquiry-form-section-header">
+                        <div class="inquiry-form-section-icon" style="background: #eef2ff; color: #4f46e5;"><i class="bi bi-person-badge"></i></div>
+                        <div>
+                            <h3 class="inquiry-form-section-title">Contact Details</h3>
+                            <p class="inquiry-form-section-subtitle">Provide the primary contact information</p>
+                        </div>
+                    </div>
+                    <div class="inquiry-form-grid">
+                        <label class="inquiry-form-label third">
+                            <span class="inquiry-form-label-title">Email <span class="required">*</span></span>
+                            <div class="inquiry-form-input-wrapper">
+                                <i class="bi bi-envelope inquiry-input-icon"></i>
+                                <input type="email" name="EMAIL" value="{{ old('EMAIL', $inquiry->EMAIL ?? '') }}" required maxlength="255" class="inquiry-form-input has-icon" placeholder="example@company.com">
+                            </div>
+                        </label>
+                        <label class="inquiry-form-label third">
+                            <span class="inquiry-form-label-title">Contact name <span class="required">*</span></span>
+                            <div class="inquiry-form-input-wrapper">
+                                <i class="bi bi-person inquiry-input-icon"></i>
+                                <input type="text" name="CONTACTNAME" value="{{ old('CONTACTNAME', $inquiry->CONTACTNAME ?? '') }}" required maxlength="255" class="inquiry-form-input has-icon" placeholder="Enter contact name">
+                            </div>
+                        </label>
+                        <label class="inquiry-form-label third">
+                            <span class="inquiry-form-label-title">Contact no <span class="required">*</span></span>
+                            <div class="inquiry-form-input-wrapper">
+                                <i class="bi bi-telephone inquiry-input-icon"></i>
+                                <input type="text" name="CONTACTNO" value="{{ old('CONTACTNO', $inquiry->CONTACTNO ?? '') }}" required maxlength="15" class="inquiry-form-input has-icon @error('CONTACTNO') inquiry-input-error @enderror" placeholder="012-3456789">
+                            </div>
+                            @error('CONTACTNO')
+                                <div class="inquiry-field-error">{{ $message }}</div>
+                            @enderror
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Section 3: Address -->
+                <div class="inquiry-form-section">
+                    <div class="inquiry-form-section-header">
+                        <div class="inquiry-form-section-icon" style="background: #fff1f2; color: #e11d48;"><i class="bi bi-geo-alt"></i></div>
+                        <div>
+                            <h3 class="inquiry-form-section-title">Address</h3>
+                            <p class="inquiry-form-section-subtitle">Where is your business located?</p>
+                        </div>
+                    </div>
+                    <div class="inquiry-form-grid">
+                        <div class="inquiry-form-label full">
+                            <label for="address1Input" class="inquiry-form-label-title">Address 1 <span class="required">*</span></label>
+                            <div class="inquiry-form-input-wrapper">
+                                <i class="bi bi-building inquiry-input-icon"></i>
+                                <input type="text" id="address1Input" name="ADDRESS1" value="{{ old('ADDRESS1', $inquiry->ADDRESS1 ?? '') }}" maxlength="255" class="inquiry-form-input has-icon" placeholder="Enter address line 1">
+                                @php
+                                    $address2Value = old('ADDRESS2', $inquiry->ADDRESS2 ?? '');
+                                    $hasAddress2Value = trim((string) $address2Value) !== '';
+                                @endphp
+                                <button type="button" class="inquiry-inline-toggle" id="address2ToggleBtn" aria-controls="address2FieldWrap" aria-expanded="{{ $hasAddress2Value ? 'true' : 'false' }}" style="right: 12px; top: 50%; transform: translateY(-50%); position: absolute; font-size: 0.8rem; font-weight: 600;">
+                                    {{ $hasAddress2Value ? '- Remove Address 2' : '+ Add Address 2' }}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="inquiry-address2-wrap full{{ $hasAddress2Value ? ' is-visible' : '' }}" id="address2FieldWrap" {{ $hasAddress2Value ? '' : 'hidden' }}>
+                            <div class="inquiry-form-label" style="width: 100%;">
+                                <label for="address2Input" class="inquiry-form-label-title">Address 2</label>
+                                <div class="inquiry-form-input-wrapper">
+                                    <i class="bi bi-building inquiry-input-icon"></i>
+                                    <input type="text" name="ADDRESS2" id="address2Input" value="{{ $address2Value }}" maxlength="255" class="inquiry-form-input has-icon" placeholder="Enter address line 2">
+                                </div>
+                            </div>
+                        </div>
+
+                        <label class="inquiry-form-label quarter" for="postcodeInput">
+                            <span class="inquiry-form-label-title">Post code <span class="required">*</span></span>
+                            <div class="inquiry-form-input-wrapper">
+                                <i class="bi bi-mailbox inquiry-input-icon"></i>
+                                <input type="text" id="postcodeInput" name="POSTCODE" value="{{ old('POSTCODE', $inquiry->POSTCODE ?? '') }}" required maxlength="5" inputmode="numeric" class="inquiry-form-input has-icon" placeholder="e.g. 53300">
+                            </div>
+                        </label>
+
+                        <div class="inquiry-form-label quarter">
+                            <span class="inquiry-form-label-title">City <span class="required">*</span></span>
+                            <div class="inquiry-city-input-wrap">
+                                <div class="inquiry-form-input-wrapper">
+                                    <i class="bi bi-geo inquiry-input-icon"></i>
+                                    <input type="text" id="cityInput" name="CITY" value="{{ old('CITY', $inquiry->CITY ?? '') }}" required maxlength="100" class="inquiry-form-input has-icon" placeholder="Enter city">
+                                </div>
+                                <div id="googleMapsWrap" style="display: none;">
+                                    <a href="#" id="googleMapsBtn" target="_blank" title="View on Google Maps" class="google-maps-btn">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92.3 132.3" style="height: 18px; width: auto;"><path fill="#1a73e8" d="M60.2 2.2C55.8.8 51 0 46.1 0 32 0 19.3 6.4 10.8 16.5l21.8 18.3L60.2 2.2z"/><path fill="#ea4335" d="M10.8 16.5C4.1 24.5 0 34.9 0 46.1c0 8.7 1.7 15.7 4.6 22l28-33.3-21.8-18.3z"/><path fill="#4285f4" d="M46.2 28.5c9.8 0 17.7 7.9 17.7 17.7 0 4.3-1.6 8.3-4.2 11.4 0 0 13.9-16.6 27.5-32.7-5.6-10.8-15.3-19-27-22.7L32.6 34.8c3.3-3.8 8.1-6.3 13.6-6.3"/><path fill="#fbbc04" d="M46.2 63.8c-9.8 0-17.7-7.9-17.7-17.7 0-4.3 1.5-8.3 4.1-11.3l-28 33.3c4.8 10.6 12.8 19.2 21 29.9l34.1-40.5c-3.3 3.9-8.1 6.3-13.5 6.3"/><path fill="#34a853" d="M59.1 109.2c15.4-24.1 33.3-35 33.3-63 0-7.7-1.9-14.9-5.2-21.3L25.6 98c2.6 3.4 5.3 7.3 7.9 11.3 9.4 14.5 6.8 23.1 12.8 23.1s3.4-8.7 12.8-23.2"/></svg>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <label class="inquiry-form-label quarter">
+                            <span class="inquiry-form-label-title">State</span>
+                            <div class="inquiry-form-input-wrapper">
+                                <i class="bi bi-map inquiry-input-icon"></i>
+                                <input type="text" id="stateInput" name="STATE" value="{{ old('STATE', $inquiry->STATE ?? '') }}" maxlength="100" class="inquiry-form-input has-icon" placeholder="Enter state">
+                            </div>
+                        </label>
+
+                        <label class="inquiry-form-label quarter">
+                            <span class="inquiry-form-label-title">Country <span class="required">*</span></span>
+                            <div class="inquiry-form-input-wrapper">
+                                <i class="bi bi-globe inquiry-input-icon"></i>
+                                <select id="countryInput" name="COUNTRY" class="inquiry-form-input has-icon">
+                                    @php
+                                        $currentCountry = old('COUNTRY', $inquiry->COUNTRY ?? '');
+                                        if ($currentCountry === '' && !$isEdit) $currentCountry = 'Malaysia';
+                                    @endphp
+                                    <option value="Malaysia" {{ $currentCountry === 'Malaysia' ? 'selected' : '' }}>Malaysia</option>
+                                    <option value="Singapore" {{ $currentCountry === 'Singapore' ? 'selected' : '' }}>Singapore</option>
+                                </select>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Section 4: Inquiry Details -->
+                <div class="inquiry-form-section" style="z-index: 20; position: relative;">
+                    <div class="inquiry-form-section-header">
+                        <div class="inquiry-form-section-icon" style="background: #f0fdf4; color: #16a34a;"><i class="bi bi-chat-left-text"></i></div>
+                        <div>
+                            <h3 class="inquiry-form-section-title">Inquiry Details</h3>
+                            <p class="inquiry-form-section-subtitle">Tell us more about your inquiry</p>
+                        </div>
+                    </div>
+                    <div class="inquiry-form-grid">
+                        <!-- Left Side: Products (9 columns) -->
+                        <div class="inquiry-form-label" style="grid-column: span 9;">
+                            <span class="inquiry-form-label-title">Product interested <span class="required">*</span></span>
+                            <div class="inquiry-form-checkboxes @error('product_interested') inquiry-input-error @enderror">
+                                @php
+                                    $defaultProducts = [];
+                                    if ($isEdit && $inquiry && !empty($inquiry->PRODUCTID)) {
+                                        $defaultProducts = array_map('intval', array_filter(explode(',', (string) $inquiry->PRODUCTID)));
+                                    }
+                                    $selectedProducts = old('product_interested', $defaultProducts);
+                                @endphp
+                                @foreach($productInterestedList ?? [] as $num => $label)
+                                    <label class="inquiry-form-checkbox-label {{ in_array($num, $selectedProducts) ? 'is-checked' : '' }}">
+                                        <input type="checkbox" name="product_interested[]" value="{{ $num }}" {{ in_array($num, $selectedProducts) ? 'checked' : '' }} class="inquiry-form-checkbox" hidden>
+                                        {{ $label }}
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        <!-- Right Side: Demo & Referral (3 columns) -->
+                        <div style="grid-column: span 3; display: flex; flex-direction: column; gap: 16px;">
+                            <div class="inquiry-form-label">
+                                <span class="inquiry-form-label-title">Demo mode <span class="required">*</span></span>
+                                @php
+                                    $demoDefault = $isEdit && isset($inquiry->DEMOMODE) ? trim((string) $inquiry->DEMOMODE) : 'Zoom';
+                                    if ($demoDefault !== 'Zoom' && $demoDefault !== 'On-site') $demoDefault = 'Zoom';
+                                    $demoOld = old('DEMOMODE', $demoDefault);
+                                @endphp
+                                <div class="inquiry-toggle" data-toggle="demomode">
+                                    <button type="button" class="inquiry-toggle-option {{ $demoOld === 'Zoom' ? 'is-active' : '' }}" data-value="Zoom">
+                                        <i class="bi bi-camera-video"></i> Zoom
+                                    </button>
+                                    <button type="button" class="inquiry-toggle-option {{ $demoOld === 'On-site' ? 'is-active' : '' }}" data-value="On-site">
+                                        <i class="bi bi-geo-alt"></i> On-site
+                                    </button>
+                                </div>
+                                <input type="hidden" name="DEMOMODE" id="demoModeInput" value="{{ $demoOld }}">
+                            </div>
+
+                            <label class="inquiry-form-label">
+                                <span class="inquiry-form-label-title">Referral code</span>
+                                <div class="inquiry-form-input-wrapper">
+                                    <i class="bi bi-ticket-perforated inquiry-input-icon"></i>
+                                    <input type="text" name="REFERRALCODE" value="{{ old('REFERRALCODE', $inquiry->REFERRALCODE ?? '') }}" maxlength="100" class="inquiry-form-input has-icon" placeholder="Enter referral code">
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- Bottom: Message (12 columns) -->
+                        <label class="inquiry-form-label full" style="margin-top: 8px;">
+                            <span class="inquiry-form-label-title">Message</span>
+                            <div class="inquiry-form-input-wrapper">
+                                <i class="bi bi-chat-left-text inquiry-input-icon" style="top: 14px;"></i>
+                                <textarea name="DESCRIPTION" rows="4" maxlength="4000" class="inquiry-form-input has-icon" placeholder="Type the customer message / notes..." style="padding-top: 10px;">{{ old('DESCRIPTION', $inquiry->DESCRIPTION ?? '') }}</textarea>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="inquiry-form-actions" style="margin-top: 4px; display: flex; justify-content: flex-end; gap: 12px; align-items: center;">
+                    <a href="{{ route('admin.inquiries') }}" class="inquiry-form-cancel" style="padding: 12px 24px; border-radius: 10px; font-weight: 600; color: #666; text-decoration: none; transition: all 0.2s;">Cancel</a>
+                    <button type="submit" class="login-primary-btn" style="padding: 12px 32px; border-radius: 10px; display: flex; align-items: center; gap: 8px; font-weight: 600; border: none; transition: all 0.2s;">
+                        <i class="bi bi-send"></i> {{ $isEdit ? 'Update inquiry' : 'Save inquiry' }}
                     </button>
                 </div>
-                <div class="inquiry-address2-wrap inquiry-address2-field address2{{ $hasAddress2Value ? ' is-visible' : '' }}"
-                     id="address2FieldWrap"
-                     {{ $hasAddress2Value ? '' : 'hidden' }}>
-                    <div class="inquiry-address2-inner inquiry-form-label">
-                        <label for="address2Input" class="inquiry-form-label-title">Address 2</label>
-                        <input type="text"
-                               name="ADDRESS2"
-                               id="address2Input"
-                               value="{{ $address2Value }}"
-                               maxlength="255"
-                               class="inquiry-form-input">
-                    </div>
-                </div>
-                <div class="inquiry-postcode-city-row post-code">
-                    <label class="inquiry-postcode-mini-field" for="postcodeInput">
-                        <span class="inquiry-form-label-title">Post code <span class="required">*</span></span>
-                        <input type="text" id="postcodeInput" name="POSTCODE" value="{{ old('POSTCODE', $inquiry->POSTCODE ?? '') }}" required maxlength="5" inputmode="numeric" autocomplete="postal-code" class="inquiry-form-input @error('POSTCODE') inquiry-input-error @enderror">
-                        @error('POSTCODE')
-                            <div class="inquiry-field-error">{{ $message }}</div>
-                        @enderror
-                    </label>
-                </div>
-                <div class="inquiry-postcode-city-row city">
-                    <label class="inquiry-city-mini-field" for="cityInput">
-                        <span class="inquiry-form-label-title">City <span class="required">*</span></span>
-                        <input type="text" id="cityInput" name="CITY" value="{{ old('CITY', $inquiry->CITY ?? '') }}" required maxlength="100" autocomplete="address-level2" class="inquiry-form-input">
-                    </label>
-                </div>
-                <div class="map-btn-col" id="googleMapsWrap" style="display: none;">
-                    <span class="inquiry-form-label-title" style="visibility: hidden;">Map</span>
-                    <a href="#" id="googleMapsBtn" target="_blank" title="View on Google Maps" class="google-maps-btn">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92.3 132.3" style="height: 18px; width: auto;"><path fill="#1a73e8" d="M60.2 2.2C55.8.8 51 0 46.1 0 32 0 19.3 6.4 10.8 16.5l21.8 18.3L60.2 2.2z"/><path fill="#ea4335" d="M10.8 16.5C4.1 24.5 0 34.9 0 46.1c0 8.7 1.7 15.7 4.6 22l28-33.3-21.8-18.3z"/><path fill="#4285f4" d="M46.2 28.5c9.8 0 17.7 7.9 17.7 17.7 0 4.3-1.6 8.3-4.2 11.4 0 0 13.9-16.6 27.5-32.7-5.6-10.8-15.3-19-27-22.7L32.6 34.8c3.3-3.8 8.1-6.3 13.6-6.3"/><path fill="#fbbc04" d="M46.2 63.8c-9.8 0-17.7-7.9-17.7-17.7 0-4.3 1.5-8.3 4.1-11.3l-28 33.3c4.8 10.6 12.8 19.2 21 29.9l34.1-40.5c-3.3 3.9-8.1 6.3-13.5 6.3"/><path fill="#34a853" d="M59.1 109.2c15.4-24.1 33.3-35 33.3-63 0-7.7-1.9-14.9-5.2-21.3L25.6 98c2.6 3.4 5.3 7.3 7.9 11.3 9.4 14.5 6.8 23.1 12.8 23.1s3.4-8.7 12.8-23.2"/></svg>
-                    </a>
-                </div>
-                <div class="inquiry-form-label inquiry-form-products inquiry-products-field product-interested">
-                    <span class="inquiry-form-label-title">Product interested <span class="required">*</span></span>
-                    <div class="inquiry-form-checkboxes @error('product_interested') inquiry-input-error @enderror" role="group" aria-required="true">
-                        @php
-                            $defaultProducts = [];
-                            if ($isEdit && $inquiry && !empty($inquiry->PRODUCTID)) {
-                                $defaultProducts = array_map('intval', array_filter(explode(',', (string) $inquiry->PRODUCTID)));
-                            }
-                            $selectedProducts = old('product_interested', $defaultProducts);
-                        @endphp
-                        @foreach($productInterestedList ?? [] as $num => $label)
-                            <label class="inquiry-form-checkbox-label">
-                                <input type="checkbox" name="product_interested[]" value="{{ $num }}" {{ in_array($num, $selectedProducts) ? 'checked' : '' }} class="inquiry-form-checkbox">
-                                {{ $label }}
-                            </label>
-                        @endforeach
-                    </div>
-                    @error('product_interested')
-                        <div class="inquiry-field-error">Please select at least one product.</div>
-                    @enderror
-                </div>
-                <label class="inquiry-form-label inquiry-referral-field referral-code">
-                    <span class="inquiry-form-label-title">Referral code</span>
-                    <input type="text" name="REFERRALCODE" value="{{ old('REFERRALCODE', $inquiry->REFERRALCODE ?? '') }}" maxlength="100" class="inquiry-form-input">
-                </label>
-                <label class="inquiry-form-label inquiry-message-field message">
-                    <span class="inquiry-form-label-title">Message</span>
-                    <textarea name="DESCRIPTION" rows="5" maxlength="4000" class="inquiry-form-input" placeholder="Type the customer message / notes...">{{ old('DESCRIPTION', $inquiry->DESCRIPTION ?? '') }}</textarea>
-                </label>
-                <div class="inquiry-form-actions inquiry-form-actions-grid inquiry-actions-field">
-                <a href="{{ route('admin.inquiries') }}" class="inquiry-form-cancel">Cancel</a>
-                <button type="submit" class="login-primary-btn">{{ $isEdit ? 'Update inquiry' : 'Save inquiry' }}</button>
-            </div>
             </div>
         </form>
             </div>
@@ -1317,8 +991,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     var postcodeInput = document.getElementById('postcodeInput');
     var cityInput = document.getElementById('cityInput');
+    var stateInput = document.getElementById('stateInput');
+    var countryInput = document.getElementById('countryInput');
     var postcodeCityLookup = @json($postcodeCityLookup ?? []);
     var lastAutoFilledCity = '';
+    var lastAutoFilledState = '';
+    var lastAutoFilledCountry = '';
 
     function normalizePostcodeValue(value) {
         return String(value || '').replace(/\D+/g, '').slice(0, 5);
@@ -1343,7 +1021,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    function syncCityFromPostcode() {
+    function syncLocationFromPostcode() {
         if (!postcodeInput || !cityInput) return;
 
         var normalizedPostcode = normalizePostcodeValue(postcodeInput.value);
@@ -1352,23 +1030,48 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         if (normalizedPostcode.length !== 5) {
-            if (lastAutoFilledCity && cityInput.value === lastAutoFilledCity) {
-                cityInput.value = '';
-            }
+            if (lastAutoFilledCity && cityInput.value === lastAutoFilledCity) { cityInput.value = ''; }
+            if (lastAutoFilledState && stateInput && stateInput.value === lastAutoFilledState) { stateInput.value = ''; }
+            if (lastAutoFilledCountry && countryInput && countryInput.value === lastAutoFilledCountry) { countryInput.value = ''; }
             lastAutoFilledCity = '';
+            lastAutoFilledState = '';
+            lastAutoFilledCountry = '';
         } else {
-            var matchedCity = postcodeCityLookup[normalizedPostcode] || '';
-            if (!matchedCity) {
-                if (lastAutoFilledCity && cityInput.value === lastAutoFilledCity) {
-                    cityInput.value = '';
-                }
+            var matched = postcodeCityLookup[normalizedPostcode] || null;
+            if (!matched) {
+                if (lastAutoFilledCity && cityInput.value === lastAutoFilledCity) { cityInput.value = ''; }
+                if (lastAutoFilledState && stateInput && stateInput.value === lastAutoFilledState) { stateInput.value = ''; }
+                if (lastAutoFilledCountry && countryInput && countryInput.value === lastAutoFilledCountry) { countryInput.value = ''; }
                 lastAutoFilledCity = '';
+                lastAutoFilledState = '';
+                lastAutoFilledCountry = '';
             } else {
+                var matchedCity = matched.city || '';
+                var matchedState = matched.state || '';
+                var matchedCountry = 'Malaysia';
+
+                // City
                 if (cityInput.value.trim() === '' || cityInput.value === lastAutoFilledCity) {
                     cityInput.value = matchedCity;
                     lastAutoFilledCity = matchedCity;
                 } else if (cityInput.value.trim().toLowerCase() === matchedCity.toLowerCase()) {
                     lastAutoFilledCity = cityInput.value;
+                }
+
+                // State
+                if (stateInput) {
+                    if (stateInput.value.trim() === '' || stateInput.value === lastAutoFilledState) {
+                        stateInput.value = matchedState;
+                        lastAutoFilledState = matchedState;
+                    } else if (stateInput.value.trim().toLowerCase() === matchedState.toLowerCase()) {
+                        lastAutoFilledState = stateInput.value;
+                    }
+                }
+
+                // Country
+                if (countryInput) {
+                    countryInput.value = matchedCountry;
+                    lastAutoFilledCountry = matchedCountry;
                 }
             }
         }
@@ -1448,10 +1151,72 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Company duplicate lookup + copy existing data
     var companyInput = document.getElementById('companyInput');
-    var copyBtn = document.getElementById('copyCompanyBtn');
+    var lookupBtn = document.getElementById('lookupCompanyBtn');
     var lastCompanyData = null;
     var lookupTimer = null;
     var lookupUrl = "{{ route('admin.inquiries.company-lookup') }}";
+
+    function performLookup() {
+        var val = (companyInput.value || '').trim();
+        if (val.length < 2) {
+            if (lookupBtn) lookupBtn.classList.remove('is-visible');
+            return;
+        }
+
+        if (lookupTimer) clearTimeout(lookupTimer);
+        lookupTimer = setTimeout(function() {
+            fetch(lookupUrl + '?q=' + encodeURIComponent(val))
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.status === 'success' && data.data) {
+                        lastCompanyData = data.data;
+                        if (lookupBtn) lookupBtn.classList.add('is-visible');
+                    } else {
+                        lastCompanyData = null;
+                        if (lookupBtn) lookupBtn.classList.remove('is-visible');
+                    }
+                })
+                .catch(err => {
+                    console.error('Lookup error:', err);
+                    if (lookupBtn) lookupBtn.classList.remove('is-visible');
+                });
+        }, 500);
+    }
+
+    if (companyInput) {
+        companyInput.addEventListener('input', performLookup);
+    }
+
+    if (lookupBtn) {
+        lookupBtn.addEventListener('click', function() {
+            if (!lastCompanyData) return;
+            
+            // Auto-fill fields if they are empty
+            var fields = {
+                'BUSINESSNATURE': 'BUSINESSNATURE',
+                'EXISTINGSOFTWARE': 'EXISTINGSOFTWARE',
+                'USERCOUNT': 'USERCOUNT',
+                'ADDRESS1': 'ADDRESS1',
+                'POSTCODE': 'POSTCODE',
+                'CITY': 'CITY',
+                'STATE': 'STATE',
+                'COUNTRY': 'COUNTRY'
+            };
+
+            for (var key in fields) {
+                var input = document.querySelector('[name="' + key + '"]');
+                if (input && lastCompanyData[fields[key]]) {
+                    input.value = lastCompanyData[fields[key]];
+                    // Trigger events for postcode lookup etc.
+                    input.dispatchEvent(new Event('input'));
+                    input.dispatchEvent(new Event('change'));
+                }
+            }
+            
+            // Hide button after loading
+            lookupBtn.classList.remove('is-visible');
+        });
+    }
 
     var inquiryPanelBody = document.querySelector('.inquiry-create-panel .dashboard-panel-body.inquiry-create-body');
     var inquiryFormGrid = document.getElementById('inquiryFormGrid');
@@ -1477,7 +1242,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function setAddress2Expanded(expanded) {
         if (!address2ToggleBtn || !address2FieldWrap) return;
 
-        address2ToggleBtn.textContent = expanded ? '– Remove Address 2' : '+ Add Address 2';
+        address2ToggleBtn.textContent = expanded ? 'â€“ Remove Address 2' : '+ Add Address 2';
         address2ToggleBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
         address2ToggleBtn.textContent = expanded ? '- Remove Address 2' : '+ Add Address 2';
 
@@ -1524,11 +1289,10 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    if (postcodeInput && cityInput) {
-        postcodeInput.addEventListener('input', syncCityFromPostcode);
-        postcodeInput.addEventListener('change', syncCityFromPostcode);
-        postcodeInput.addEventListener('blur', syncCityFromPostcode);
-        syncCityFromPostcode();
+    if (postcodeInput) {
+        postcodeInput.addEventListener('input', syncLocationFromPostcode);
+        postcodeInput.addEventListener('change', syncLocationFromPostcode);
+        syncLocationFromPostcode();
     }
 
     function scheduleCompanyLookup() {
@@ -1569,6 +1333,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 CONTACTNAME: 'contactname',
                 CONTACTNO: 'contactno',
                 CITY: 'city',
+                STATE: 'state',
+                COUNTRY: 'country',
                 POSTCODE: 'postcode',
                 BUSINESSNATURE: 'businessnature',
                 ADDRESS1: 'address1',
@@ -1615,6 +1381,16 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+
+    // Checkbox visual feedback for product cards
+    document.querySelectorAll('.inquiry-form-checkbox-label input[type="checkbox"]').forEach(function(cb) {
+        cb.addEventListener('change', function() {
+            var label = this.closest('.inquiry-form-checkbox-label');
+            if (label) {
+                label.classList.toggle('is-checked', this.checked);
+            }
+        });
+    });
 });
 </script>
 @endpush
