@@ -1,4 +1,4 @@
-﻿:root {
+:root {
   --bg: #f5f4ff;
   --card-bg: #ffffff;
   --primary: #6d3df5;
@@ -4926,12 +4926,14 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
+  padding: 6px 14px;
   border-radius: 20px;
   font-size: 12px;
-  font-weight: 600;
-  background: #e5e7eb;
-  color: #6b7280;
+  font-weight: 700;
+  background: rgba(15, 23, 42, 0.02);
+  border: 1px solid rgba(15, 23, 42, 0.05);
+  color: rgba(100, 116, 139, 0.4);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* PENDING always orange-red; others grey until updated */
@@ -4944,36 +4946,43 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
   flex: 1;
   min-width: 16px;
   height: 2px;
-  background: #d1d5db;
+  background: rgba(15, 23, 42, 0.04);
   margin: 0 4px;
+  transition: background 0.2s ease;
 }
 
 /* Done/updated steps: color + tick (added by JS) */
 .inquiry-step--done.inquiry-step--red {
   background: #FF4500;
   color: #ffffff;
+  border-color: transparent;
 }
 .inquiry-step--done.inquiry-step--red[data-step="FOLLOW UP"] {
   background: #FF8C00;
   color: #ffffff;
+  border-color: transparent;
 }
 
 .inquiry-step--done.inquiry-step--yellow {
   background: #FFD700;
   color: #ffffff;
+  border-color: transparent;
 }
 .inquiry-step--done.inquiry-step--yellow[data-step="CONFIRMED"] {
   background: #9ACD32;
   color: #ffffff;
+  border-color: transparent;
 }
 
 .inquiry-step--done.inquiry-step--green {
   background: #32CD32;
   color: #ffffff;
+  border-color: transparent;
 }
 .inquiry-step--done.inquiry-step--green[data-step="REWARDED"] {
   background: #008000;
   color: #ffffff;
+  border-color: transparent;
 }
 
 .inquiry-step--done.inquiry-step--failed,
@@ -4987,28 +4996,34 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
 .inquiry-step--active.inquiry-step--red {
   background: #FF4500;
   color: #ffffff;
+  border-color: transparent;
 }
 .inquiry-step--active.inquiry-step--red[data-step="FOLLOW UP"] {
   background: #FF8C00;
   color: #ffffff;
+  border-color: transparent;
 }
 
 .inquiry-step--active.inquiry-step--yellow {
   background: #FFD700;
   color: #ffffff;
+  border-color: transparent;
 }
 .inquiry-step--active.inquiry-step--yellow[data-step="CONFIRMED"] {
   background: #9ACD32;
   color: #ffffff;
+  border-color: transparent;
 }
 
 .inquiry-step--active.inquiry-step--green {
   background: #32CD32;
   color: #ffffff;
+  border-color: transparent;
 }
 .inquiry-step--active.inquiry-step--green[data-step="REWARDED"] {
   background: #008000;
   color: #ffffff;
+  border-color: transparent;
 }
 
 .inquiry-step--active.inquiry-step--selected {
@@ -9808,6 +9823,16 @@ html.theme-dark .inquiry-progression-label,
 html.theme-dark .inquiries-assign-label,
 html.theme-dark .inquiries-assign-value {
   color: var(--text-muted) !important;
+}
+
+html.theme-dark .inquiry-step {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.05);
+  color: rgba(148, 163, 184, 0.35);
+}
+
+html.theme-dark .inquiry-connector {
+  background: rgba(255, 255, 255, 0.06);
 }
 
 html.theme-dark .dashboard-nav-item {
