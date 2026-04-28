@@ -131,7 +131,7 @@
                 <a href="{{ route('admin.inquiries.edit', ['leadId' => $r->LEADID, 'tab' => 'all']) }}" class="inquiries-btn inquiries-btn-assign inquiries-edit-inquiry-btn" data-lead-id="{{ $r->LEADID }}" title="Edit" aria-label="Edit"><i class="bi bi-pencil-square" aria-hidden="true"></i></a>
             @endif
             <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-view-status-btn" data-lead-id="{{ $r->LEADID }}" title="View Status" aria-label="View Status"><i class="bi bi-eye" aria-hidden="true"></i></button>
-            <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-btn-assign-danger inquiries-mark-failed-btn" data-lead-id="{{ $r->LEADID }}" data-status="{{ $statusDisplay }}" title="Mark As Failed" aria-label="Mark As Failed"><i class="bi bi-flag" aria-hidden="true"></i></button>
+            <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-btn-assign-danger inquiries-mark-failed-btn" data-lead-id="{{ $r->LEADID }}" data-status="{{ $statusDisplay }}" title="Mark As Failed" aria-label="Mark As Failed"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
         @else
             @if($canAssignRow)
                 <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-incoming-assign-btn" data-assign-lead="{{ $r->LEADID }}" data-assign-name="{{ e($assignLeadLabel) }}" title="Assign" aria-label="Assign"><i class="bi bi-person-check" aria-hidden="true"></i></button>

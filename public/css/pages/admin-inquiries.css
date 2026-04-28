@@ -649,6 +649,10 @@
     border-radius: 6px;
   }
 
+  .inquiries-page-wrap .inquiries-action-cell .inquiries-mark-failed-btn .bi {
+    -webkit-text-stroke: 1.5px currentColor;
+  }
+
   .inquiries-page-wrap .inquiries-action-cell .inquiries-view-status-btn .bi,
   .inquiries-page-wrap .inquiries-action-cell .inquiries-mark-failed-btn .bi,
   .inquiries-page-wrap .inquiries-action-cell .rewards-email-btn .bi,
