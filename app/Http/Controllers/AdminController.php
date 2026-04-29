@@ -2608,7 +2608,7 @@ class AdminController extends Controller
                      GROUP BY "LEADID"
                  ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
              ) ls ON ls."LEADID" = l."LEADID"
-             WHERE EXTRACT(YEAR FROM l."CREATEDAT") = ? AND EXTRACT(MONTH FROM l."CREATEDAT") = ?
+             WHERE l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
              ' . $leadScopeSql . '
              GROUP BY
                 CASE
@@ -2617,7 +2617,7 @@ class AdminController extends Controller
                     WHEN ls.latest_status = \'FAILED\' THEN \'Failed\'
                     ELSE \'Open\'
                 END',
-            array_merge([$selectedYear, $selectedMonth], $leadScopeBindings)
+            array_merge([$startStr, $endStr], $leadScopeBindings)
         );
         $leadStatus = [
             'Open' => 0,
@@ -2653,7 +2653,7 @@ class AdminController extends Controller
                      GROUP BY "LEADID"
                  ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
              ) ls ON ls."LEADID" = l."LEADID"
-             WHERE EXTRACT(YEAR FROM l."CREATEDAT") = ? AND EXTRACT(MONTH FROM l."CREATEDAT") = ?
+             WHERE l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
              ' . $leadScopeSql . '
              GROUP BY
                 CASE
@@ -2662,7 +2662,7 @@ class AdminController extends Controller
                     WHEN ls.latest_status = \'FAILED\' THEN \'Failed\'
                     ELSE \'Open\'
                 END',
-            array_merge([$prevYear, $prevMonth], $leadScopeBindings)
+            array_merge([$prevStartStr, $prevEndStr], $leadScopeBindings)
         );
         $lastMonthLeadStatus = [
             'Open' => 0,
@@ -2818,7 +2818,7 @@ class AdminController extends Controller
             'SELECT CAST(l."CREATEDAT" AS DATE) AS d, COUNT(*) AS c
              FROM "LEAD" l
              LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
-             WHERE EXTRACT(MONTH FROM l."CREATEDAT") = ? AND EXTRACT(YEAR FROM l."CREATEDAT") = ?
+             WHERE l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
              ' . $leadScopeSql . '
              GROUP BY CAST(l."CREATEDAT" AS DATE)
              ORDER BY CAST(l."CREATEDAT" AS DATE)',
@@ -2848,7 +2848,7 @@ class AdminController extends Controller
             'SELECT COUNT(*) AS c
              FROM "LEAD" l
              LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
-             WHERE EXTRACT(YEAR FROM l."CREATEDAT") = ? AND EXTRACT(MONTH FROM l."CREATEDAT") = ?
+             WHERE l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
              ' . $leadScopeSql,
             array_merge([$prevStartStr, $prevEndStr], $leadScopeBindings)
         );
