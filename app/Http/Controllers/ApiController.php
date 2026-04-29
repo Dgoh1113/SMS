@@ -93,11 +93,11 @@ class ApiController extends Controller
     {
         $validated = $request->validate([
             'LEADID' => 'required|integer',
-            'USERID' => 'required|integer',
-            'SUBJECT' => 'nullable|string',
-            'DESCRIPTION' => 'nullable|string',
+            'USERID' => 'required|string|max:10',
+            'SUBJECT' => 'nullable|string|max:50',
+            'DESCRIPTION' => 'nullable|string|max:150',
             'ATTACHMENT' => 'nullable|string',
-            'STATUS' => 'nullable|string',
+            'STATUS' => 'nullable|string|max:15',
         ]);
 
         $row = DB::selectOne(

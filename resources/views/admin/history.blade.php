@@ -49,6 +49,9 @@
                         <th data-col="id" class="inquiries-header-cell"><span class="inquiries-header-label">ID</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="id"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="inquiryid" class="inquiries-header-cell"><span class="inquiries-header-label">Inquiry ID</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="inquiryid"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="user" class="inquiries-header-cell"><span class="inquiries-header-label">User</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="user"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="customer" class="inquiries-header-cell"><span class="inquiries-header-label">Customer Name</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="customer"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="postcode" class="inquiries-header-cell"><span class="inquiries-header-label">Postcode</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="postcode"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
+                        <th data-col="city" class="inquiries-header-cell"><span class="inquiries-header-label">City</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="city"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="subject" class="inquiries-header-cell"><span class="inquiries-header-label">Subject</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="subject"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="description" class="inquiries-header-cell"><span class="inquiries-header-label">Description</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="description"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
                         <th data-col="status" class="inquiries-header-cell"><span class="inquiries-header-label">Status</span><span class="inquiries-filter-wrap"><input type="text" class="inquiries-grid-filter" data-col="status"><i class="bi bi-search inquiries-filter-icon"></i></span></th>
@@ -68,25 +71,34 @@
                             $isSystemMarkedFail = in_array(strtoupper($subjectText), ['STATUS CHANGED TO FAILED (AUTO AFTER 8 MONTHS)', 'LEAD FAILED'], true)
                                 || in_array(strtoupper($fullDescTrim), ['STATUS CHANGED TO FAILED (AUTO AFTER 8 MONTHS)', 'LEAD IS EXPIRED AFTER 8 MONTHS OF INQUIRY DATE'], true)
                                 || str_contains(strtolower($fullDescTrim), 'expired automatically because it has been open for more than 8 months');
-                            $searchHaystack = strtolower(($r->LEAD_ACTID ?? '').' '.$inquiryId.' '.($r->USERID ?? '').' '.$subjectText.' '.$fullDescTrim.' '.($r->STATUS ?? '').' '.$dateStr);
+                            $company = trim((string) ($r->COMPANYNAME ?? ''));
+                            $contact = trim((string) ($r->CONTACTNAME ?? ''));
+                            $customerDisplay = $company !== '' && $contact !== '' ? ($company . ' - ' . $contact) : ($company !== '' ? $company : ($contact !== '' ? $contact : '-'));
+                            $userDisplay = trim((string) ($r->ALIAS ?? '')) !== '' ? $r->ALIAS : $r->USERID;
+                            $searchHaystack = strtolower(($r->LEAD_ACTID ?? '').' '.$inquiryId.' '.$userDisplay.' '.$customerDisplay.' '.($r->POSTCODE ?? '').' '.($r->CITY ?? '').' '.$subjectText.' '.$fullDescTrim.' '.($r->STATUS ?? '').' '.$dateStr);
                         @endphp
                         <tr class="history-row inquiry-row"
                             data-search="{{ $searchHaystack }}"
                             data-system-marked-fail="{{ $isSystemMarkedFail ? '1' : '0' }}">
                             <td data-col="id">{{ $r->LEAD_ACTID }}</td>
                             <td data-col="inquiryid">{{ $inquiryId }}</td>
-                            <td data-col="user">{{ $r->USERID }}</td>
+                            <td data-col="user">{{ $userDisplay }}</td>
+                            <td data-col="customer">{{ $customerDisplay }}</td>
+                            <td data-col="postcode">{{ $r->POSTCODE ?? '-' }}</td>
+                            <td data-col="city">{{ $r->CITY ?? '-' }}</td>
                             <td data-col="subject">{{ $subjectText !== '' ? $subjectText : '-' }}</td>
                             <td data-col="description"
-                                class="inquiries-msg-cell {{ $isLongDesc ? 'inquiries-msg-clickable' : '' }}"
-                                @if($isLongDesc) data-full-message="{{ e($fullDescTrim) }}" @endif>
-                                {{ $descPreview }}
+                                class="inquiries-msg-cell {{ $isLongDesc ? 'expandable-desc' : '' }}">
+                                <div class="desc-preview">{{ $descPreview }}</div>
+                                @if($isLongDesc)
+                                    <div class="desc-full">{!! nl2br(e($fullDescTrim)) !!}</div>
+                                @endif
                             </td>
                             <td data-col="status">{{ $r->STATUS ?? '-' }}</td>
                             <td data-col="date">{{ $dateStr ?: '-' }}</td>
                         </tr>
                     @empty
-                        <tr><td colspan="7">No activities found for the selected date range.</td></tr>
+                        <tr><td colspan="10">No activities found for the selected date range.</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -186,43 +198,58 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    (function initMessageModal() {
-        if (document.getElementById('inquiryMessageModal')) return;
-        var modal = document.createElement('div');
-        modal.id = 'inquiryMessageModal';
-        modal.className = 'inquiries-msg-modal';
-        modal.hidden = true;
-        modal.innerHTML = ''
-            + '<div class="inquiries-msg-modal-backdrop" data-close="1"></div>'
-            + '<div class="inquiries-msg-modal-window" role="dialog" aria-modal="true" aria-labelledby="inquiriesMsgModalTitle">'
-            + '  <div class="inquiries-msg-modal-header">'
-            + '    <div class="inquiries-msg-modal-title" id="inquiriesMsgModalTitle">Description</div>'
-            + '    <button type="button" class="inquiries-msg-modal-close" aria-label="Close" data-close="1">&times;</button>'
-            + '  </div>'
-            + '  <div class="inquiries-msg-modal-body"><pre class="inquiries-msg-modal-text" id="inquiriesMsgModalText"></pre></div>'
-            + '</div>';
-        document.body.appendChild(modal);
-
-        function close() { modal.hidden = true; }
-        function open(text) {
-            var el = document.getElementById('inquiriesMsgModalText');
-            if (el) el.textContent = text || '';
-            modal.hidden = false;
+    // Row Click to Expand
+    table.addEventListener('click', function(e) {
+        var row = e.target.closest('tr.history-row');
+        if (!row) return;
+        var descCell = row.querySelector('.expandable-desc');
+        if (descCell) {
+            descCell.classList.toggle('expanded');
         }
+    });
 
-        document.addEventListener('click', function(e) {
-            var cell = e.target && e.target.closest ? e.target.closest('.inquiries-msg-clickable[data-full-message]') : null;
-            if (cell) {
-                open(cell.getAttribute('data-full-message') || '');
-                return;
-            }
-            var closer = e.target && e.target.closest ? e.target.closest('[data-close="1"]') : null;
-            if (closer && modal && !modal.hidden && modal.contains(closer)) close();
+    // Context Menu for "Full Expand"
+    var contextMenu = document.createElement('div');
+    contextMenu.className = 'history-context-menu hidden';
+    contextMenu.innerHTML = ''
+        + '<div class="context-menu-item" id="menuExpandAll"><i class="bi bi-arrows-expand"></i> Full Expand All</div>'
+        + '<div class="context-menu-item" id="menuCollapseAll"><i class="bi bi-arrows-collapse"></i> Collapse All</div>';
+    document.body.appendChild(contextMenu);
+
+    table.addEventListener('contextmenu', function(e) {
+        var row = e.target.closest('tr.history-row');
+        if (!row) return;
+
+        e.preventDefault();
+        
+        var rect = contextMenu.getBoundingClientRect();
+        var x = e.clientX;
+        var y = e.clientY;
+        
+        contextMenu.style.left = x + 'px';
+        contextMenu.style.top = y + 'px';
+        contextMenu.classList.remove('hidden');
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!contextMenu.contains(e.target)) {
+            contextMenu.classList.add('hidden');
+        }
+    });
+
+    document.getElementById('menuExpandAll').addEventListener('click', function() {
+        table.querySelectorAll('.expandable-desc').forEach(function(cell) {
+            cell.classList.add('expanded');
         });
-        window.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && !modal.hidden) close();
+        contextMenu.classList.add('hidden');
+    });
+
+    document.getElementById('menuCollapseAll').addEventListener('click', function() {
+        table.querySelectorAll('.expandable-desc').forEach(function(cell) {
+            cell.classList.remove('expanded');
         });
-    })();
+        contextMenu.classList.add('hidden');
+    });
 });
 </script>
 @endpush

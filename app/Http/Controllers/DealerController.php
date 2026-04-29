@@ -1088,8 +1088,8 @@ class DealerController extends Controller
         if ($isMultipart) {
             $request->validate([
                 'lead_id' => 'required|integer',
-                'status' => 'required|string|max:50',
-                'remark' => 'nullable|string|max:4000',
+                'status' => 'required|string|max:15',
+                'remark' => 'nullable|string|max:150',
                 'attachments' => 'nullable|array',
                 'attachments.*' => 'image|max:5120',
             ]);
@@ -1102,8 +1102,8 @@ class DealerController extends Controller
         } else {
             $validated = $request->validate([
                 'lead_id' => 'required|integer',
-                'status' => 'required|string|max:50',
-                'remark' => 'nullable|string|max:4000',
+                'status' => 'required|string|max:15',
+                'remark' => 'nullable|string|max:150',
                 'products' => 'nullable|array',
                 'products.*.id' => 'nullable',
                 'products.*.name' => 'nullable|string|max:100',
@@ -1819,14 +1819,14 @@ class DealerController extends Controller
     public function reports(Request $request): View
     {
         $dealerId = $request->session()->get('user_id');
-        $period = $request->get('period', 'month');
+        $period = $request->get('period', '60_days');
         $fromInput = $request->get('from');
         $toInput = $request->get('to');
 
     $dateFrom = null;
     $dateTo = null;
-    $periodLabel = 'Current Month';
-    $trendLabels = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+    $periodLabel = 'Last 60 Days';
+    $trendLabels = [];
 
     $days = 0;
     if ($period === 'range' && !empty($fromInput) && !empty($toInput)) {
@@ -1837,26 +1837,33 @@ class DealerController extends Controller
             : $dateFrom->format('M j, Y') . ' – ' . $dateTo->format('M j, Y');
         $days = (int) ($dateFrom->diffInDays($dateTo) + 1);
         $days = max(1, $days);
-        $trendLabels = $days <= 7
-            ? array_map(fn($i) => $dateFrom->copy()->addDays($i)->format('D'), range(0, $days - 1))
-            : ($days <= 31 ? ['Week 1', 'Week 2', 'Week 3', 'Week 4'] : array_map(fn($m) => Carbon::create()->month($m)->format('M'), range(1, 12)));
-    } elseif ($period === 'week') {
-        $dateFrom = Carbon::now()->startOfWeek(Carbon::MONDAY);
-        $dateTo = Carbon::now()->endOfWeek(Carbon::SUNDAY);
-        $periodLabel = 'Current Week';
-        $trendLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-        $days = 7;
-    } elseif ($period === 'year') {
-        $dateFrom = Carbon::now()->startOfYear();
-        $dateTo = Carbon::now()->endOfYear();
-        $periodLabel = 'Current Year';
-        $trendLabels = array_map(fn($m) => Carbon::create()->month($m)->format('M'), range(1, 12));
+        
+        if ($days <= 7) {
+            $trendLabels = array_map(fn($i) => $dateFrom->copy()->addDays($i)->format('D'), range(0, $days - 1));
+        } elseif ($days <= 31) {
+            $trendLabels = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+        } else {
+            $trendLabels = ['Month 1', 'Month 2', 'Month 3', 'Month 4', 'Month 5', 'Month 6'];
+        }
+    } elseif ($period === '30_days') {
+        $dateFrom = Carbon::now()->subDays(29)->startOfDay();
+        $dateTo = Carbon::now()->endOfDay();
+        $periodLabel = 'Last 30 Days';
+        $days = 30;
+        $trendLabels = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+    } elseif ($period === '90_days') {
+        $dateFrom = Carbon::now()->subDays(89)->startOfDay();
+        $dateTo = Carbon::now()->endOfDay();
+        $periodLabel = 'Last 90 Days';
+        $days = 90;
+        $trendLabels = ['Month 1', 'Month 2', 'Month 3'];
     } else {
-        $period = 'month';
-        $dateFrom = Carbon::now()->startOfMonth();
-        $dateTo = Carbon::now()->endOfMonth();
-        $periodLabel = 'Current Month';
-        $trendLabels = array_map(fn($i) => str_pad((string) $i, 2, '0', STR_PAD_LEFT), range(1, $dateFrom->daysInMonth));
+        $period = '60_days';
+        $dateFrom = Carbon::now()->subDays(59)->startOfDay();
+        $dateTo = Carbon::now()->endOfDay();
+        $periodLabel = 'Last 60 Days';
+        $days = 60;
+        $trendLabels = ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Week 7', 'Week 8'];
     }
 
     $statusMap = [
@@ -1967,7 +1974,7 @@ class DealerController extends Controller
         $totalInquiry = (int) ($totalRow->CNT ?? 0);
 
         $numBuckets = count($trendLabels);
-        if ($period === 'week' || $period === 'month' || ($period === 'range' && $days <= 7)) {
+        if ($days <= 7) {
             $dayCounts = [];
             for ($i = 0; $i < $numBuckets; $i++) {
                 $d = $dateFrom->copy()->addDays($i)->format('Y-m-d');
@@ -2014,9 +2021,9 @@ class DealerController extends Controller
                        AND p."PENDING_AT" >= ? AND p."PENDING_AT" <= ?',
                     ['PENDING', $dealerId, $bStart, $bEnd]
                 );
-                $weekCounts[] = (int) ($row->CNT ?? 0);
+                $bucketCounts[] = (int) ($row->CNT ?? 0);
             }
-            $inquiryTrendData = $weekCounts;
+            $inquiryTrendData = $bucketCounts;
         }
 
         $statusCounts = $buildStatusCounts($dateFrom, $dateTo);

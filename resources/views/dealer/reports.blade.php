@@ -129,19 +129,29 @@
     <header class="reports-header reports-header--dealer">
         <div class="reports-header-actions">
             <form method="get" action="{{ route('dealer.reports') }}" class="reports-period-form reports-period-form-compact reports-period-form--dealer" id="reportsPeriodForm">
-                <div class="reports-period-quick-group">
-                    <select name="period" id="reportsPeriodSelect" class="reports-period-select reports-period-select--dealer" aria-label="Report period">
-                        <option value="week" {{ ($period ?? 'month') === 'week' ? 'selected' : '' }}>Current Week</option>
-                        <option value="month" {{ ($period ?? 'month') === 'month' ? 'selected' : '' }}>Current Month</option>
-                        <option value="year" {{ ($period ?? 'month') === 'year' ? 'selected' : '' }}>Current Year</option>
-                        <option value="range" {{ ($period ?? 'month') === 'range' ? 'selected' : '' }}>Range</option>
+                <div class="reports-period-date-group-wrapper reports-filter-container">
+                    <div class="reports-range-label">PERIOD</div>
+                    <select name="period" id="reportsPeriodSelect" class="reports-period-select reports-period-select--dealer" aria-label="Report period" style="display: {{ ($period ?? '60_days') === 'range' ? 'none' : 'block' }};">
+                        <option value="30_days" {{ ($period ?? '60_days') === '30_days' ? 'selected' : '' }}>Last 30 Days</option>
+                        <option value="60_days" {{ ($period ?? '60_days') === '60_days' ? 'selected' : '' }}>Last 60 Days</option>
+                        <option value="90_days" {{ ($period ?? '60_days') === '90_days' ? 'selected' : '' }}>Last 90 Days</option>
+                        <option value="range" {{ ($period ?? '60_days') === 'range' ? 'selected' : '' }}>Custom range…</option>
                     </select>
+                    <div id="reportsRangeInline" class="reports-range-grid" style="display: {{ ($period ?? '60_days') === 'range' ? 'grid' : 'none' }};">
+                        <div class="reports-range-col">
+                            <label class="reports-range-label">Starting</label>
+                            <input type="date" name="from" id="reportsRangeFrom" value="{{ $from ?? '' }}" class="reports-range-input" aria-label="From date">
+                        </div>
+                        <div class="reports-range-col">
+                            <label class="reports-range-label">Ending</label>
+                            <input type="date" name="to" id="reportsRangeTo" value="{{ $to ?? '' }}" class="reports-range-input" aria-label="To date">
+                        </div>
+                        <button type="button" class="reports-range-back-btn" id="reportsRangeReset">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
                 </div>
-                <div class="reports-period-range-inline{{ ($period ?? 'month') === 'range' ? '' : ' is-hidden' }}" id="reportsRangeInline">
-                    <input type="date" name="from" id="reportsRangeFrom" class="reports-period-select reports-period-select--dealer reports-period-date" value="{{ $from ?? '' }}" aria-label="From date">
-                    <input type="date" name="to" id="reportsRangeTo" class="reports-period-select reports-period-select--dealer reports-period-date" value="{{ $to ?? '' }}" aria-label="To date">
-                </div>
-                <button type="button" class="report-filter-export reports-period-export" data-export-report-pdf data-export-title="Dealer Performance Report - {{ $periodLabel ?? 'Current Month' }}" data-export-target=".dashboard-content.reports-page">Export PDF</button>
+                <button type="button" class="report-filter-export reports-period-export" data-export-report-pdf data-export-title="Dealer Performance Report - {{ $periodLabel ?? 'Current Month' }}" data-export-target=".dashboard-content.reports-page" style="flex-shrink: 0;">Export PDF</button>
             </form>
         </div>
     </header>
@@ -365,7 +375,8 @@ function initDealerReportsPage() {
     function syncRangeInputs() {
         if (!periodSelect || !rangeWrap || !rangeFrom || !rangeTo) return;
         var isRange = periodSelect.value === 'range';
-        rangeWrap.classList.toggle('is-hidden', !isRange);
+        rangeWrap.style.display = isRange ? 'grid' : 'none';
+        periodSelect.style.display = isRange ? 'none' : 'block';
         rangeFrom.disabled = !isRange;
         rangeTo.disabled = !isRange;
         rangeFrom.required = isRange;
@@ -420,13 +431,26 @@ function initDealerReportsPage() {
             rangeTo.value = '';
             submitReportFilter();
         });
-        rangeFrom.addEventListener('change', function() {
+        rangeFrom.addEventListener('change', scheduleRangeSubmit);
+        rangeFrom.addEventListener('input', function() {
             rangeTo.min = rangeFrom.value || '';
+            if (rangeTo.value && rangeFrom.value && rangeTo.value < rangeFrom.value) {
+                rangeTo.value = rangeFrom.value;
+            }
             scheduleRangeSubmit();
         });
         rangeTo.addEventListener('change', scheduleRangeSubmit);
-        rangeFrom.addEventListener('input', scheduleRangeSubmit);
         rangeTo.addEventListener('input', scheduleRangeSubmit);
+
+        var rangeReset = document.getElementById('reportsRangeReset');
+        if (rangeReset) {
+            rangeReset.addEventListener('click', function() {
+                periodSelect.value = '60_days';
+                syncRangeInputs();
+                submitReportFilter();
+            });
+        }
+
         syncRangeInputs();
     }
 

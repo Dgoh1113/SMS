@@ -727,7 +727,7 @@
         ['label' => 'Failed', 'value' => (int) ($activityStatus['Failed'] ?? 0), 'color' => '#374151'],
     ];
     $totalStatus = max(array_sum(array_column($statusReportData, 'value')), 1);
-    $selectedDays = max((int) ($selectedDaysInMonth ?? now()->daysInMonth), 1);
+    $selectedDays = max((int) ($days ?? 60), 1);
     $trendByDay = collect($inquiryTrend ?? [])->mapWithKeys(function ($item) {
         return [
             (int) ($item['day'] ?? 0) => (int) ($item['count'] ?? 0),
@@ -746,7 +746,7 @@
 <div class="reports-period-row">
     @php
         $exportScopeLabel = $reportScopeOptions[$selectedReportScope ?? 'all']['label'] ?? 'All';
-        $monthlyExportTitle = 'Monthly Performance Report - ' . $selectedMonthName . ' ' . $selectedYear;
+        $monthlyExportTitle = 'Performance Report - ' . ($periodLabel ?? 'Current Period');
         if ($exportScopeLabel !== 'All') {
             $monthlyExportTitle .= ' - ' . $exportScopeLabel;
         }
@@ -759,37 +759,49 @@
                 9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December',
             ];
         @endphp
-        <div class="reports-period-date-group" aria-label="Report date filter">
-            <select name="month" class="reports-period-select reports-period-select--month" aria-label="Select month">
-                @foreach ($months as $m => $label)
-                    <option value="{{ $m }}" {{ (int) ($selectedMonth ?? now()->format('n')) === (int) $m ? 'selected' : '' }}>
-                        {{ $label }}
-                    </option>
-                @endforeach
+        <div class="reports-period-date-group-wrapper reports-filter-container">
+            <div class="reports-range-label">PERIOD</div>
+            <select name="days" class="reports-period-select" aria-label="Select period" id="reportsPeriodSelect" style="display: {{ request('from') || request('to') ? 'none' : 'block' }};">
+                @php $daysParam = request('days', '60'); @endphp
+                <option value="30" {{ $daysParam == '30' ? 'selected' : '' }}>Last 30 Days</option>
+                <option value="60" {{ $daysParam == '60' ? 'selected' : '' }}>Last 60 Days</option>
+                <option value="90" {{ $daysParam == '90' ? 'selected' : '' }}>Last 90 Days</option>
+                <option value="custom" {{ request('from') || request('to') ? 'selected' : '' }}>Custom range…</option>
             </select>
-            <select name="year" class="reports-period-select reports-period-select--year" aria-label="Select year">
-                @foreach (($yearOptions ?? []) as $y)
-                    <option value="{{ $y }}" {{ (int) ($selectedYear ?? now()->format('Y')) === (int) $y ? 'selected' : '' }}>
-                        {{ $y }}
-                    </option>
-                @endforeach
-            </select>
+            <div id="reportsRangeInline" class="reports-range-grid" style="display: {{ request('from') || request('to') ? 'grid' : 'none' }};">
+                <div class="reports-range-col">
+                    <label class="reports-range-label">Starting</label>
+                    <input type="date" name="from" id="reportsRangeFrom" value="{{ request('from') }}" class="reports-range-input" aria-label="From date">
+                </div>
+                <div class="reports-range-col">
+                    <label class="reports-range-label">Ending</label>
+                    <input type="date" name="to" id="reportsRangeTo" value="{{ request('to') }}" class="reports-range-input" aria-label="To date">
+                </div>
+                <button type="button" class="reports-range-back-btn" id="reportsRangeReset">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
         </div>
-        @include('admin.partials.report_scope_picker', [
-            'options' => $reportScopeOptions ?? [],
-            'selected' => $selectedReportScope ?? 'all',
-        ])
-        @include('admin.partials.report_filter_actions', [
-            'wrapperClass' => 'reports-period-actions report-filter-actions',
-            'applyClass' => 'report-filter-apply',
-            'exportClass' => 'report-filter-export',
-            'clearClass' => 'report-filter-clear',
-            'showApply' => false,
-            'showExport' => true,
-            'showClear' => false,
-            'exportTitle' => $monthlyExportTitle,
-            'exportTarget' => '.reports-page',
-        ])
+        <div class="reports-filter-container">
+            <div class="reports-range-label">DEALER SCOPE</div>
+            @include('admin.partials.report_scope_picker', [
+                'options' => $reportScopeOptions ?? [],
+                'selected' => $selectedReportScope ?? 'all',
+            ])
+        </div>
+        <div class="reports-period-actions report-filter-actions" style="flex-shrink: 0;">
+            @include('admin.partials.report_filter_actions', [
+                'wrapperClass' => 'reports-period-actions-inner',
+                'applyClass' => 'report-filter-apply',
+                'exportClass' => 'report-filter-export',
+                'clearClass' => 'report-filter-clear',
+                'showApply' => false,
+                'showExport' => true,
+                'showClear' => false,
+                'exportTitle' => $monthlyExportTitle,
+                'exportTarget' => '.dashboard-content.reports-page',
+            ])
+        </div>
     </form>
 </div>
 
@@ -843,7 +855,7 @@
         <div class="dashboard-panel-header">
             <div class="reports-inquiry-heading">
                 <div class="dashboard-panel-title">Inquiry Trends</div>
-                <div class="reports-inquiry-subtitle">Inquiries for {{ $selectedMonthName }} {{ $selectedYear }}</div>
+                <div class="reports-inquiry-subtitle">Inquiries for {{ $periodLabel ?? 'selected period' }}</div>
             </div>
             <div class="reports-inquiry-meta">
                 <span class="reports-inquiry-chip">
@@ -886,7 +898,7 @@
         <div class="dashboard-panel-header">
             <div class="reports-status-heading">
                 <div class="dashboard-panel-title">Status Report</div>
-                <div class="reports-status-subtitle">Current status distribution for {{ $selectedMonthName }} {{ $selectedYear }}</div>
+                <div class="reports-status-subtitle">Current status distribution for {{ $periodLabel ?? 'selected period' }}</div>
             </div>
         </div>
         <div class="dashboard-panel-body report-status-body">
@@ -969,7 +981,7 @@
     <div class="dashboard-panel-header">
         <div class="reports-product-heading">
             <div class="dashboard-panel-title">Product Conversion Rate</div>
-            <div class="reports-product-subtitle">Closed-case conversions by product for {{ $selectedMonthName }} {{ $selectedYear }}</div>
+            <div class="reports-product-subtitle">Closed-case conversions by product for {{ $periodLabel ?? 'selected period' }}</div>
         </div>
         <div class="reports-product-scale" aria-hidden="true">
             <span class="reports-product-scale-chip">
@@ -1078,8 +1090,59 @@
 
                 form.addEventListener('submit', markReportFiltersSubmitting);
 
+                const getRangeWrapper = function (select) {
+                    if (select.name !== 'days') return null;
+                    return document.getElementById('reportsRangeInline');
+                };
+
+                const syncRange = function (select) {
+                    const wrapper = getRangeWrapper(select);
+                    if (!wrapper) return;
+                    const isCustom = select.value === 'custom';
+                    wrapper.style.display = isCustom ? 'grid' : 'none';
+                    select.style.display = isCustom ? 'none' : 'block';
+                    
+                    const inputs = wrapper.querySelectorAll('input[type="date"]');
+                    const fromInput = inputs[0];
+                    const toInput = inputs[1];
+
+                    if (fromInput && toInput) {
+                        fromInput.disabled = !isCustom;
+                        toInput.disabled = !isCustom;
+                        fromInput.required = isCustom;
+                        toInput.required = isCustom;
+
+                        if (!isCustom) {
+                            fromInput.value = '';
+                            toInput.value = '';
+                            toInput.min = '';
+                        } else {
+                            toInput.min = fromInput.value || '';
+                        }
+                    }
+                };
+
+                const isFormReadyToSubmit = function () {
+                    const daysSelect = form.querySelector('select[name="days"]');
+                    if (daysSelect && daysSelect.value === 'custom') {
+                        const wrapper = getRangeWrapper(daysSelect);
+                        if (wrapper) {
+                            const inputs = wrapper.querySelectorAll('input[type="date"]');
+                            const from = inputs[0] ? inputs[0].value : '';
+                            const to = inputs[1] ? inputs[1].value : '';
+                            if (from === '' || to === '' || from > to) {
+                                return false;
+                            }
+                        }
+                    }
+                    return true;
+                };
+
                 const submitReportFilters = function () {
                     window.clearTimeout(autoSubmitTimer);
+                    if (!isFormReadyToSubmit()) {
+                        return;
+                    }
                     autoSubmitTimer = window.setTimeout(function () {
                         markReportFiltersSubmitting();
 
@@ -1092,8 +1155,15 @@
                     }, 80);
                 };
 
-                form.querySelectorAll('select[name="month"], select[name="year"], select[name="report_scope"]').forEach(function (select) {
-                    select.addEventListener('change', submitReportFilters);
+                form.querySelectorAll('select[name="days"], select[name="report_scope"]').forEach(function (select) {
+                    if (select.name === 'days') {
+                        select.addEventListener('change', function() {
+                            syncRange(select);
+                            submitReportFilters();
+                        });
+                    } else {
+                        select.addEventListener('change', submitReportFilters);
+                    }
 
                     const bindTomSelectChange = function () {
                         if (!select.tomselect || select.dataset.autoSubmitTomSelectReady === '1') {
@@ -1108,6 +1178,39 @@
                     window.setTimeout(bindTomSelectChange, 120);
                     window.setTimeout(bindTomSelectChange, 360);
                 });
+
+                const rangeWrapper = document.getElementById('reportsRangeInline');
+                if (rangeWrapper) {
+                    const inputs = rangeWrapper.querySelectorAll('input[type="date"]');
+                    if (inputs.length === 2) {
+                        const fromInput = inputs[0];
+                        const toInput = inputs[1];
+
+                        fromInput.addEventListener('input', function() {
+                            toInput.min = fromInput.value || '';
+                            if (toInput.value && fromInput.value && toInput.value < fromInput.value) {
+                                toInput.value = fromInput.value;
+                            }
+                            submitReportFilters();
+                        });
+
+                        fromInput.addEventListener('change', submitReportFilters);
+                        toInput.addEventListener('input', submitReportFilters);
+                        toInput.addEventListener('change', submitReportFilters);
+                    }
+
+                    const rangeReset = document.getElementById('reportsRangeReset');
+                    if (rangeReset) {
+                        rangeReset.addEventListener('click', function() {
+                            const daysSelect = form.querySelector('select[name="days"]');
+                            if (daysSelect) {
+                                daysSelect.value = '60';
+                                syncRange(daysSelect);
+                                submitReportFilters();
+                            }
+                        });
+                    }
+                }
             });
 
             const showChartFallback = function (wrapper, fallback, message) {
@@ -1146,9 +1249,9 @@
                 try {
                     const rawInquiryLabels = @json($adminInquiryTrendLabels ?? []);
                     const rawInquiryValues = @json($adminInquiryTrendData ?? []);
-                    const reportPeriod = 'month';
-                    const currentMonthName = @json($selectedMonthName ?? now()->format('F'));
-                    const currentYear = @json((int) ($selectedYear ?? now()->year));
+                    const reportPeriod = 'days';
+                    const currentMonthName = @json(now()->format('F'));
+                    const currentYear = @json((int) now()->year);
                     const brandColor = '#7f5af0';
                     const columnColor = 'rgba(127, 90, 240, 0.32)';
                     const gridColor = 'rgba(148, 163, 184, 0.25)';
@@ -1166,7 +1269,7 @@
                     });
 
                     function buildMonthlyWeekBuckets(labels, values) {
-                        const monthNumber = Number(@json((int) ($selectedMonth ?? now()->format('n'))));
+                        const monthNumber = Number(@json((int) now()->format('n')));
                         const yearNumber = Number(currentYear);
                         const monthStart = new Date(Date.UTC(yearNumber, Math.max(monthNumber - 1, 0), 1));
                         const daysInMonth = new Date(Date.UTC(yearNumber, monthNumber, 0)).getUTCDate();
