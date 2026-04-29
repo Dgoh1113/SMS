@@ -217,9 +217,9 @@
 
 .inquiries-page-wrap #allTable.inquiries-table--fit th[data-col="customername"],
 .inquiries-page-wrap #allTable.inquiries-table--fit td[data-col="customername"] {
-  width: 360px;
-  min-width: 360px;
-  max-width: 360px;
+  width: 345px;
+  min-width: 345px;
+  max-width: 345px;
 }
 
 .inquiries-page-wrap #allTable.inquiries-table--fit th[data-col="email"],
@@ -268,9 +268,9 @@
 
 .inquiries-page-wrap #allTable.inquiries-table--fit th.inquiries-col-action,
 .inquiries-page-wrap #allTable.inquiries-table--fit td.inquiries-col-action {
-  width: 126px;
-  min-width: 126px;
-  max-width: 126px;
+  width: 141px;
+  min-width: 141px;
+  max-width: 141px;
 }
 
 .inquiries-page-wrap #allTable:not(.inquiries-table--fit) th[data-col="customername"],
@@ -2256,6 +2256,10 @@
   color: #374151;
   font-size: 13px;
   font-weight: 500;
+}
+
+.inquiry-company-field {
+  margin-top: 6px;
 }
 
 .inquiry-form-label-title {
