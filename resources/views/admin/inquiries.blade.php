@@ -126,7 +126,7 @@
                     <x-tables.text-filter-header col="products" label="PRODUCTS" />
                     <x-tables.text-filter-header col="message" label="MESSAGE" />
                     <x-tables.text-filter-header col="referralcode" label="REFERRAL CODE" />
-                    <x-tables.select-filter-header col="status" label="STATUS" :options="$incomingStatusFilterOptions" />
+                    <x-tables.status-multi-filter-header col="status" label="STATUS" :options="$incomingStatusFilterOptions" select-class="inquiries-grid-filter inquiries-grid-filter-select" />
                     <x-tables.clear-filter-header button-id="inquiryClearFilters" />
                 </tr>
             </thead>
@@ -348,7 +348,7 @@
                     <x-tables.text-filter-header col="payoutsdate" label="PAYOUTS DATE" input-class="inquiries-grid-filter-assigned" />
                     <x-tables.text-filter-header col="attachment" label="ATTACHMENT" input-class="inquiries-grid-filter-assigned" />
                     <x-tables.text-filter-header col="assigndate" label="ASSIGN DATE" input-class="inquiries-grid-filter-assigned" />
-                    <x-tables.select-filter-header col="status" label="STATUS" :options="$assignedStatusFilterOptions" select-class="inquiries-grid-filter-assigned inquiries-grid-filter-select" />
+                    <x-tables.status-multi-filter-header col="status" label="STATUS" :options="$assignedStatusFilterOptions" select-class="inquiries-grid-filter-assigned inquiries-grid-filter-select" />
                     <x-tables.clear-filter-header button-id="assignedClearFilters" />
                 </tr>
                 </thead>
@@ -595,7 +595,7 @@
                     <x-tables.text-filter-header col="payoutsdate" label="PAYOUTS DATE" input-class="inquiries-grid-filter-all" />
                     <x-tables.text-filter-header col="attachment" label="ATTACHMENT" input-class="inquiries-grid-filter-all" />
                     <x-tables.text-filter-header col="assigndate" label="ASSIGN DATE" input-class="inquiries-grid-filter-all" />
-                    <x-tables.select-filter-header col="status" label="STATUS" :options="$allStatusFilterOptions" select-class="inquiries-grid-filter-all inquiries-grid-filter-select" />
+                    <x-tables.status-multi-filter-header col="status" label="STATUS" :options="$allStatusFilterOptions" select-class="inquiries-grid-filter-all inquiries-grid-filter-select" />
                     <x-tables.clear-filter-header button-id="allClearFilters" />
                 </tr>
             </thead>
@@ -1585,8 +1585,20 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!tableEl) return filters;
         tableEl.querySelectorAll(inputSelector).forEach(function(inp) {
             var col = inp.getAttribute('data-col');
+            if (!col) return;
+
+            if (inp.type === 'checkbox') {
+                if (!filters[col]) {
+                    filters[col] = { numeric: false, isArray: true, val: [] };
+                }
+                if (inp.checked) {
+                    filters[col].val.push(normalizeInquiryStatusFilterValue(inp.value));
+                }
+                return;
+            }
+
             var val = (inp.value || '').trim();
-            if (!col || val === '') return;
+            if (val === '') return;
             if (col === 'status') {
                 val = normalizeInquiryStatusFilterValue(val);
                 if (val === '') return;
@@ -1620,12 +1632,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (filter.op === '<' && cellNum >= filterNum) return false;
                 if (filter.op === '<=' && cellNum > filterNum) return false;
             } else if (col === 'status') {
-                var normalizedStatusFilter = normalizeInquiryStatusFilterValue(filter.val);
-                if (!normalizedStatusFilter) {
-                    continue;
-                }
-                if (normalizeInquiryStatusFilterValue(cellText) !== normalizedStatusFilter) {
-                    return false;
+                var rowStatus = normalizeInquiryStatusFilterValue(cellText);
+                if (filter.isArray) {
+                    if (filter.val.indexOf(rowStatus) === -1) {
+                        return false;
+                    }
+                } else {
+                    var normalizedStatusFilter = normalizeInquiryStatusFilterValue(filter.val);
+                    if (normalizedStatusFilter && rowStatus !== normalizedStatusFilter) {
+                        return false;
+                    }
                 }
             } else if (cellText.toLowerCase().indexOf(filter.val) === -1) {
                 return false;
@@ -1775,7 +1791,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (clearFiltersBtn) {
         clearFiltersBtn.addEventListener('click', function() {
             var t = document.getElementById('unassignedTable');
-            if (t) t.querySelectorAll('.inquiries-grid-filter').forEach(function(inp) { inp.value = ''; });
+            if (t) {
+                t.querySelectorAll('.inquiries-grid-filter').forEach(function(inp) { inp.value = ''; });
+                t.querySelectorAll('.status-multi-filter').forEach(function(f) { if (f._resetStatusFilter) f._resetStatusFilter(); });
+            }
             resetInquiryOperatorMenus(t);
             applyGridFilters();
             if (typeof clearInquiriesSort === 'function') clearInquiriesSort('unassignedTable');
@@ -1795,7 +1814,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (assignedClearBtn) {
         assignedClearBtn.addEventListener('click', function() {
             var t = document.getElementById('assignedTable');
-            if (t) t.querySelectorAll('.inquiries-grid-filter-assigned').forEach(function(inp) { inp.value = ''; });
+            if (t) {
+                t.querySelectorAll('.inquiries-grid-filter-assigned').forEach(function(inp) { inp.value = ''; });
+                t.querySelectorAll('.status-multi-filter').forEach(function(f) { if (f._resetStatusFilter) f._resetStatusFilter(); });
+            }
             resetInquiryOperatorMenus(t);
             applyAssignedGridFilters();
             if (typeof clearInquiriesSort === 'function') clearInquiriesSort('assignedTable');
@@ -1814,7 +1836,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (allClearBtn) {
         allClearBtn.addEventListener('click', function() {
             var t = document.getElementById('allTable');
-            if (t) t.querySelectorAll('.inquiries-grid-filter-all').forEach(function(inp) { inp.value = ''; });
+            if (t) {
+                t.querySelectorAll('.inquiries-grid-filter-all').forEach(function(inp) { inp.value = ''; });
+                t.querySelectorAll('.status-multi-filter').forEach(function(f) { if (f._resetStatusFilter) f._resetStatusFilter(); });
+            }
             resetInquiryOperatorMenus(t);
             applyAllGridFilters();
             if (typeof clearInquiriesSort === 'function') clearInquiriesSort('allTable');

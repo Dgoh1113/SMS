@@ -1277,6 +1277,7 @@ class DealerController extends Controller
 
         $toStatus = $statusDb;
         $description = $remark !== '' ? $remark : ('Update Status from ' . $fromStatus . ' to ' . $toStatus);
+
         if (! empty($products)) {
             $productNames = array_map(fn ($p) => $p['name'] ?? 'Product ' . ($p['id'] ?? ''), $products);
             $description = 'Products: ' . implode(', ', $productNames) . "\n\n" . $description;

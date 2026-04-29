@@ -86,7 +86,7 @@
                         <x-tables.text-filter-header col="referralcode" label="REFERRAL CODE" />
                         <x-tables.text-filter-header col="attachment" label="ATTACHMENT" />
                         <x-tables.text-filter-header col="assignby" label="ASSIGN BY" />
-                        <x-tables.select-filter-header col="status" label="STATUS" :options="$statusFilterOptions" />
+                        <x-tables.status-multi-filter-header col="status" label="STATUS" :options="$statusFilterOptions" select-class="inquiries-grid-filter inquiries-grid-filter-select" />
                         <x-tables.clear-filter-header button-id="dealerInquiryClearFilters" />
                     </tr>
                 </thead>
@@ -495,8 +495,19 @@ function initDealerInquiriesPage() {
         var filters = {};
         table.querySelectorAll('.inquiries-grid-filter').forEach(function(inp) {
             var col = inp.getAttribute('data-col');
-            var val = (inp.value || '').trim();
             if (!col) return;
+
+            if (inp.type === 'checkbox') {
+                if (!filters[col]) {
+                    filters[col] = { numeric: false, isArray: true, val: [] };
+                }
+                if (inp.checked) {
+                    filters[col].val.push(normalizeDealerInquiryStatus(inp.value));
+                }
+                return;
+            }
+
+            var val = (inp.value || '').trim();
             if (val === '') return;
             if (col === 'status') {
                 val = normalizeDealerInquiryStatus(val);
@@ -534,13 +545,18 @@ function initDealerInquiriesPage() {
                     continue;
                 }
                 if (col === 'status') {
-                    var normalizedStatusFilter = normalizeDealerInquiryStatus(filter.val);
-                    if (!normalizedStatusFilter) {
-                        continue;
-                    }
-                    if (normalizeDealerInquiryStatus(cellText.toLowerCase()) !== normalizedStatusFilter) {
-                        colMatch = false;
-                        break;
+                    var rowStatus = normalizeDealerInquiryStatus(cellText);
+                    if (filter.isArray) {
+                        if (filter.val.indexOf(rowStatus) === -1) {
+                            colMatch = false;
+                            break;
+                        }
+                    } else {
+                        var normalizedStatusFilter = normalizeDealerInquiryStatus(filter.val);
+                        if (normalizedStatusFilter && rowStatus !== normalizedStatusFilter) {
+                            colMatch = false;
+                            break;
+                        }
                     }
                     continue;
                 }
@@ -570,6 +586,7 @@ function initDealerInquiriesPage() {
     if (clearBtn) {
         clearBtn.addEventListener('click', function() {
             table.querySelectorAll('.inquiries-grid-filter').forEach(function(inp) { inp.value = ''; });
+            table.querySelectorAll('.status-multi-filter').forEach(function(f) { if (f._resetStatusFilter) f._resetStatusFilter(); });
             resetDealerInquiryOperatorMenus(table);
             applyDealerGridFilters();
             clearDealerInquiriesSort();
@@ -1421,7 +1438,7 @@ if (document.readyState === 'loading') {
         
         if (attachmentLabel) {
             if (status === 'COMPLETED') {
-                attachmentLabel.innerHTML = 'UPLOAD INVOICE <span class="inquiry-field-required">*</span>';
+                attachmentLabel.innerHTML = 'Upload Your own company\'s invoice <span class="inquiry-field-required">*</span>';
             } else if (status === 'REWARDED') {
                 attachmentLabel.innerHTML = 'UPLOAD REFERRAL PAYOUT PROOF <span class="inquiry-field-required">*</span>';
             } else {
@@ -2342,7 +2359,7 @@ if (document.readyState === 'loading') {
             }
         }
         if (toStatus === 'COMPLETED' && attachmentFiles.length === 0) {
-            showDealerInquiryToast('Please upload the Invoice for COMPLETED status.');
+            showDealerInquiryToast('Please upload your own company\'s invoice for COMPLETED status.');
             if (attachmentInput) attachmentInput.focus();
             return;
         }
