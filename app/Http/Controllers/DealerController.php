@@ -26,14 +26,15 @@ class DealerController extends Controller
             'pctClosed' => 0,
             'pendingFollowups' => 0,
         ];
-        $closedCaseChartData = [
-            'chartLabels' => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-            'chartData' => array_fill(0, 7, 0),
-            'chartMonthLabels' => range(1, 30),
-            'chartMonthData' => array_fill(0, 30, 0),
-            'chartYearLabels' => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-            'chartYearData' => array_fill(0, 12, 0),
-        ];
+        $dealerClosedCaseRanges = [];
+        foreach ([30, 60, 90] as $rangeDays) {
+            $rangeKey = (string) $rangeDays;
+            $dealerClosedCaseRanges[$rangeKey] = [
+                'labels' => array_fill(0, $rangeDays, ''),
+                'data' => array_fill(0, $rangeDays, 0),
+                'tooltipTitles' => array_fill(0, $rangeDays, ''),
+            ];
+        }
         $highPriorityFollowups = [];
         $leadsTotal = 0;
         $inquiriesPage = 1;
@@ -270,66 +271,37 @@ class DealerController extends Controller
             $pendingFollowupsRow = DB::selectOne($pendingFollowupsSql, $pendingFollowupsParams);
             $pendingFollowupsCount = (int) ($pendingFollowupsRow->CNT ?? 0);
 
-            $now = time();
-            $weekStart = date('Y-m-d', strtotime('monday this week', $now));
-            $weekEnd = date('Y-m-d 23:59:59', strtotime('sunday this week', $now));
-            $monthStart = date('Y-m-d', strtotime('first day of this month', $now));
-            $monthEnd = date('Y-m-d 23:59:59', strtotime('last day of this month', $now));
-            $yearStart = date('Y') . '-01-01';
-            $yearEnd = date('Y') . '-12-31 23:59:59';
+            $dealerClosedCaseRanges = [];
+            foreach ([30, 60, 90] as $rangeDays) {
+                $rangeKey = (string) $rangeDays;
+                $labels = [];
+                $closedData = [];
+                $tooltipTitles = [];
 
-            $chartLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-            $chartData = array_fill(0, 7, 0);
-            $chartMonthLabels = [];
-            $chartMonthData = [];
-            $chartYearLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            $chartYearData = array_fill(0, 12, 0);
+                try {
+                    $rangeEnd = Carbon::today();
+                    $rangeStart = $rangeEnd->copy()->subDays($rangeDays - 1);
 
-            try {
-                $startOfWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
-                for ($i = 0; $i < 7; $i++) {
-                    $day = $startOfWeek->copy()->addDays($i)->format('Y-m-d');
-                    $chartData[$i] = $countClosedLeads($day . ' 00:00:00', $day . ' 23:59:59');
+                    for ($d = 0; $d < $rangeDays; $d++) {
+                        $day = $rangeStart->copy()->addDays($d);
+                        $dayStr = $day->format('Y-m-d');
+                        $labels[] = $day->format('d M');
+                        $tooltipTitles[] = $day->format('d M Y');
+
+                        $closedData[] = $countClosedLeads($dayStr . ' 00:00:00', $dayStr . ' 23:59:59');
+                    }
+                } catch (\Throwable $e) {
+                    $labels = array_fill(0, $rangeDays, '');
+                    $closedData = array_fill(0, $rangeDays, 0);
+                    $tooltipTitles = $labels;
                 }
-            } catch (\Throwable $e) {
-                // keep zeros
-            }
 
-            try {
-                $start = Carbon::now()->startOfMonth();
-                $daysInMonth = $start->daysInMonth;
-                for ($i = 1; $i <= $daysInMonth; $i++) {
-                    $chartMonthLabels[] = (string) $i;
-                    $day = $start->copy()->day($i)->format('Y-m-d');
-                    $chartMonthData[] = $countClosedLeads($day . ' 00:00:00', $day . ' 23:59:59');
-                }
-            } catch (\Throwable $e) {
-                $chartMonthLabels = range(1, 30);
-                $chartMonthData = array_fill(0, count($chartMonthLabels), 0);
+                $dealerClosedCaseRanges[$rangeKey] = [
+                    'labels' => $labels,
+                    'data' => $closedData,
+                    'tooltipTitles' => $tooltipTitles,
+                ];
             }
-
-            try {
-                $yearStart = Carbon::now()->startOfYear();
-                for ($m = 0; $m < 12; $m++) {
-                    $monthStart = $yearStart->copy()->addMonths($m);
-                    $monthEnd = $monthStart->copy()->endOfMonth();
-                    $chartYearData[$m] = $countClosedLeads(
-                        $monthStart->format('Y-m-d 00:00:00'),
-                        $monthEnd->format('Y-m-d 23:59:59')
-                    );
-                }
-            } catch (\Throwable $e) {
-                $chartYearData = array_fill(0, 12, 0);
-            }
-
-            $closedCaseChartData = [
-                'chartLabels' => $chartLabels,
-                'chartData' => $chartData,
-                'chartMonthLabels' => $chartMonthLabels,
-                'chartMonthData' => $chartMonthData,
-                'chartYearLabels' => $chartYearLabels,
-                'chartYearData' => $chartYearData,
-            ];
 
             $metrics = [
                 'activeInquiries' => $activeInquiriesCount,
@@ -432,7 +404,7 @@ class DealerController extends Controller
             'inquiriesTotalPages' => $inquiriesTotalPages,
             'inquiriesPerPage' => $inquiriesPerPage,
             'metrics' => $metrics,
-            'closedCaseChartData' => $closedCaseChartData,
+            'dealerClosedCaseRanges' => $dealerClosedCaseRanges,
             'highPriorityFollowups' => $highPriorityFollowups,
             'currentPage' => 'dashboard',
         ]);
