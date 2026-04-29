@@ -715,6 +715,15 @@
 
 
 
+        .inquiry-form-input:focus {
+            background-color: #fff !important;
+        }
+
+        .inquiry-form-input:not(:placeholder-shown):not(:focus) {
+            background-color: #f6faff !important;
+            border-color: #d1e4ff !important;
+        }
+
     </style>
 @endpush
 @section('content')
