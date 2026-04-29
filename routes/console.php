@@ -28,7 +28,7 @@ Artisan::command('leads:auto-fail', function () {
                 \'Pending\'
             ) AS "LATEST_STATUS"
          FROM "LEAD" l
-         WHERE l."CREATEDAT" <= ?',
+         WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."CREATEDAT" <= ?',
         [$cutoff->format('Y-m-d H:i:s')]
     );
 

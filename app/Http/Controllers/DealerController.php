@@ -75,7 +75,7 @@ class DealerController extends Controller
                       ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC) AS "ACT_LAST_UPDATE"
                 FROM "LEAD" l
                 LEFT JOIN "USERS" u ON u."USERID" = l."CREATEDBY"
-                WHERE l."ASSIGNEDTO" = ?
+                WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                 ORDER BY l."LEADID" DESC',
                 [$dealerId]
             );
@@ -103,7 +103,7 @@ class DealerController extends Controller
                       ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC) AS "ACT_LAST_UPDATE"
                 FROM "LEAD" l
                 LEFT JOIN "USERS" u ON u."USERID" = l."CREATEDBY"
-                WHERE l."ASSIGNEDTO" = ?
+                WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                   AND (SELECT FIRST 1 UPPER(TRIM(la2."STATUS"))
                        FROM "LEAD_ACT" la2
                        WHERE la2."LEADID" = l."LEADID"
@@ -115,7 +115,7 @@ class DealerController extends Controller
 
             $activeCountRow = DB::selectOne(
                 'SELECT COUNT(*) AS "CNT" FROM "LEAD" l
-                WHERE l."ASSIGNEDTO" = ?
+                WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                   AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
                        FROM "LEAD_ACT" la
                        WHERE la."LEADID" = l."LEADID"
@@ -137,7 +137,7 @@ class DealerController extends Controller
             ): int {
                 $sql = 'SELECT COUNT(*) AS "CNT"
                         FROM "LEAD" l
-                        WHERE l."ASSIGNEDTO" = ?
+                        WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                           AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
                                FROM "LEAD_ACT" la
                                WHERE la."LEADID" = l."LEADID"
@@ -162,7 +162,7 @@ class DealerController extends Controller
             ): int {
                 $sql = 'SELECT COUNT(*) AS "CNT"
                         FROM "LEAD" l
-                        WHERE l."ASSIGNEDTO" = ?';
+                        WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?';
                 $params = [$dealerId];
 
                 if ($cutoff !== null) {
@@ -202,7 +202,7 @@ class DealerController extends Controller
                                         \'Pending\'
                                     ) AS "LATEST_STATUS"
                              FROM "LEAD" l
-                             WHERE l."ASSIGNEDTO" = ?
+                             WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                                AND l."CREATEDAT" <= ?
                          ) x
                          WHERE UPPER(TRIM(COALESCE(x."LATEST_STATUS", \'\'))) IN (\'PENDING\', \'FOLLOWUP\', \'FOLLOW UP\', \'DEMO\', \'CONFIRMED\')',
@@ -253,14 +253,15 @@ class DealerController extends Controller
 
             $pendingFollowupsSql = $dealerEmail
                 ? 'SELECT COUNT(*) AS "CNT" FROM "LEAD" l
-                  WHERE l."ASSIGNEDTO" = (SELECT "USERID" FROM "USERS" WHERE "EMAIL" = ?)
+                  WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
+                    AND l."ASSIGNEDTO" = (SELECT "USERID" FROM "USERS" WHERE "EMAIL" = ?)
                   AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
                        FROM "LEAD_ACT" la
                        WHERE la."LEADID" = l."LEADID"
                        ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
                       ) IN (\'PENDING\', \'FOLLOWUP\', \'FOLLOW UP\', \'DEMO\', \'CONFIRMED\')'
                 : 'SELECT COUNT(*) AS "CNT" FROM "LEAD" l
-                  WHERE l."ASSIGNEDTO" = ?
+                  WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                   AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
                        FROM "LEAD_ACT" la
                        WHERE la."LEADID" = l."LEADID"
@@ -460,7 +461,7 @@ class DealerController extends Controller
                     ) AS "ACT_STATUS"
                 FROM "LEAD" l
                 LEFT JOIN "USERS" u ON u."USERID" = l."CREATEDBY"
-                WHERE l."ASSIGNEDTO" = ?
+                WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                 ORDER BY l."LEADID" DESC';
             $leads = DB::select(
                 $dealerInquiriesSql,
@@ -493,7 +494,7 @@ class DealerController extends Controller
                             ) AS "ACT_STATUS"
                         FROM "LEAD" l
                         LEFT JOIN "USERS" u ON u."USERID" = l."CREATEDBY"
-                        WHERE l."ASSIGNEDTO" = ?
+                        WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                           AND l."LEADID" = ?
                         ORDER BY l."LEADID" DESC',
                         [$dealerId, $focusLeadId]
@@ -1388,7 +1389,7 @@ class DealerController extends Controller
                     "EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION","REFERRALCODE",
                     "CREATEDAT","CREATEDBY","ASSIGNEDTO" AS "assignedTo","LASTMODIFIED"
                  FROM "LEAD"
-                 WHERE "ASSIGNEDTO" = ?
+                 WHERE COALESCE("ISDELETED", FALSE) = FALSE AND "ASSIGNEDTO" = ?
                  ORDER BY "LEADID" DESC',
                 [$dealerId]
             );
@@ -1782,7 +1783,7 @@ class DealerController extends Controller
             $inquiryRow = DB::selectOne(
                 'SELECT COUNT(*) AS "CNT"
                  FROM "LEAD" l
-                 WHERE l."ASSIGNEDTO" = ?
+                 WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                    AND UPPER(TRIM(COALESCE(
                        (SELECT FIRST 1 la."STATUS"
                           FROM "LEAD_ACT" la
@@ -1810,7 +1811,7 @@ class DealerController extends Controller
                      ) m ON m."LEADID" = a."LEADID" AND m.max_created = a."CREATIONDATE"
                  ) latest
                  JOIN "LEAD" l ON l."LEADID" = latest."LEADID"
-                 WHERE l."ASSIGNEDTO" = ?
+                 WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                    AND UPPER(TRIM(latest."STATUS")) = \'COMPLETED\'
                    AND TRIM(COALESCE(l."REFERRALCODE", \'\')) <> \'\'',
                 [$dealerId]
@@ -1910,7 +1911,7 @@ class DealerController extends Controller
                         \'Pending\'
                     ) AS "LATEST_STATUS"
                 FROM "LEAD" l
-                WHERE l."ASSIGNEDTO" = ?
+                WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                   AND EXISTS (
                       SELECT 1
                       FROM "LEAD_ACT" lae
@@ -1929,7 +1930,7 @@ class DealerController extends Controller
                         \'Pending\'
                     ) AS "LATEST_STATUS"
                 FROM "LEAD" l
-                WHERE l."ASSIGNEDTO" = ?';
+                WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?';
             $bindings = [$dealerId];
         }
 
@@ -1973,7 +1974,7 @@ class DealerController extends Controller
             'SELECT COUNT(*) AS "CNT"
              FROM "LEAD" l
              JOIN (' . $dealerPendingDateSql . ') p ON p."LEADID" = l."LEADID"
-             WHERE l."ASSIGNEDTO" = ?
+             WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                AND p."PENDING_AT" >= ?
                AND p."PENDING_AT" <= ?',
             ['PENDING', $dealerId, $df, $dt]
@@ -1989,7 +1990,7 @@ class DealerController extends Controller
                     'SELECT COUNT(*) AS "CNT"
                      FROM "LEAD" l
                      JOIN (' . $dealerPendingDateSql . ') p ON p."LEADID" = l."LEADID"
-                     WHERE l."ASSIGNEDTO" = ?
+                     WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                        AND CAST(p."PENDING_AT" AS DATE) = ?',
                     ['PENDING', $dealerId, $d]
                 );
@@ -2004,7 +2005,7 @@ class DealerController extends Controller
                     'SELECT COUNT(*) AS "CNT"
                      FROM "LEAD" l
                      JOIN (' . $dealerPendingDateSql . ') p ON p."LEADID" = l."LEADID"
-                     WHERE l."ASSIGNEDTO" = ?
+                     WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                        AND p."PENDING_AT" IS NOT NULL
                        AND p."PENDING_AT" >= ? AND p."PENDING_AT" <= ?
                        AND EXTRACT(YEAR FROM p."PENDING_AT") = ?
@@ -2024,7 +2025,7 @@ class DealerController extends Controller
                     'SELECT COUNT(*) AS "CNT"
                      FROM "LEAD" l
                      JOIN (' . $dealerPendingDateSql . ') p ON p."LEADID" = l."LEADID"
-                     WHERE l."ASSIGNEDTO" = ?
+                     WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                        AND p."PENDING_AT" >= ? AND p."PENDING_AT" <= ?',
                     ['PENDING', $dealerId, $bStart, $bEnd]
                 );
@@ -2077,7 +2078,7 @@ class DealerController extends Controller
                 'SELECT la."LEAD_ACTID", la."LEADID", la."CREATIONDATE", la."SUBJECT", la."DESCRIPTION", la."STATUS"
                 FROM "LEAD_ACT" la
                 JOIN "LEAD" l ON l."LEADID" = la."LEADID"
-                WHERE l."ASSIGNEDTO" = ?
+                WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                 ORDER BY la."LEAD_ACTID" DESC',
                 [$dealerId]
             );
@@ -2101,7 +2102,7 @@ class DealerController extends Controller
              FROM "LEAD_ACT" la
              JOIN "LEAD" l ON l."LEADID" = la."LEADID"
              LEFT JOIN "USERS" u ON u."USERID" = la."USERID"
-             WHERE l."ASSIGNEDTO" = ?
+             WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                AND (
                     UPPER(TRIM(COALESCE(la."SUBJECT", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
                     OR UPPER(TRIM(COALESCE(la."DESCRIPTION", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
