@@ -1165,6 +1165,13 @@ class DealerController extends Controller
                     : $activityTime;
                 $parsed = Carbon::createFromFormat('Y-m-d H:i:s', $activityDate . ' ' . $timeForSave);
                 if ($parsed !== false) {
+                    $maxFuture = $requestNow->copy()->addDays(3)->endOfDay();
+                    if ($parsed->gt($maxFuture)) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'The activity date cannot be more than 3 days in the future.',
+                        ], 422);
+                    }
                     $creationDate = $parsed->format('Y-m-d H:i:s') . '.' . substr($requestNow->format('u'), 0, 3);
                 }
             } catch (\Throwable $e) {

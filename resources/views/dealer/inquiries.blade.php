@@ -1358,6 +1358,20 @@ if (document.readyState === 'loading') {
             };
         }
 
+        if (activityDate !== '') {
+            var maxFuture = new Date();
+            maxFuture.setDate(maxFuture.getDate() + 3);
+            maxFuture.setHours(23, 59, 59, 999);
+            var selected = new Date(activityDate + 'T00:00:00');
+            if (selected > maxFuture) {
+                return {
+                    valid: false,
+                    field: dateEl,
+                    message: 'Date cannot be more than 3 days in the future.'
+                };
+            }
+        }
+
         return {
             valid: true,
             field: null,
@@ -1903,9 +1917,17 @@ if (document.readyState === 'loading') {
         attachmentInput.addEventListener('change', function() {
             var files = this.files;
             if (!files || !files.length) return;
+            var maxSizeBytes = 5 * 1024 * 1024; // 5MB
             for (var i = 0; i < files.length; i++) {
-                if (files[i].type && files[i].type.indexOf('image/') === 0) {
-                    attachmentFiles.push(files[i]);
+                var file = files[i];
+                if (file.type && file.type.indexOf('image/') === 0) {
+                    if (file.size > maxSizeBytes) {
+                        showDealerInquiryToast('File "' + file.name + '" exceeds the 5MB limit.');
+                        continue;
+                    }
+                    attachmentFiles.push(file);
+                } else {
+                    showDealerInquiryToast('File "' + file.name + '" is not a valid image.');
                 }
             }
             renderAttachmentPreviews();
@@ -1978,8 +2000,14 @@ if (document.readyState === 'loading') {
         var dateEl = document.getElementById('inquiryFollowupDate');
         var timeEl = document.getElementById('inquiryFollowupTime');
         if (remarkEl) remarkEl.value = '';
-        if (dateEl) dateEl.value = '';
-        if (timeEl) timeEl.value = '';
+         if (dateEl) {
+             dateEl.value = '';
+             var maxD = new Date();
+             maxD.setDate(maxD.getDate() + 3);
+             var dateD = maxD.toISOString().split('T')[0];
+             dateEl.setAttribute('max', dateD);
+         }
+         if (timeEl) timeEl.value = '';
         var productBoxes = document.querySelectorAll('.inquiry-product-checkbox');
         if (productBoxes.length) productBoxes.forEach(function(b) { b.checked = false; });
         clearAttachmentPreviews();
@@ -2372,10 +2400,21 @@ if (document.readyState === 'loading') {
             headers: headers,
             body: body
         })
-        .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+        .then(function(r) {
+            return r.text().then(function(text) {
+                var data;
+                try {
+                    data = JSON.parse(text);
+                } catch (e) {
+                    console.error('Non-JSON response:', text);
+                    return { ok: r.ok, data: { message: 'Server error: ' + r.status + ' ' + r.statusText } };
+                }
+                return { ok: r.ok, data: data };
+            });
+        })
         .then(function(res) {
             updateBtn.disabled = false;
-            if (res.ok && res.data.success) {
+            if (res.ok && res.data && res.data.success) {
                 // Refresh only the Update Inquiry Status form/modal state instead of reloading the whole page
                 var leadIdNow = currentLeadId;
                 var newStatus = toStatus;
@@ -2399,13 +2438,15 @@ if (document.readyState === 'loading') {
                     applyRowStatusUpdate(currentUpdateButtonEl, newStatus, meta);
                 }
 
-                // Re‑evaluate controls for the new status
+                // Re-evaluate controls for the new status
                 showDealerInquiryToast(res.data.message || 'Status updated successfully');
             } else {
-                showDealerInquiryToast(res.data.message || 'Update failed');
+                var errMsg = (res.data && res.data.message) ? res.data.message : 'Update failed';
+                showDealerInquiryToast(errMsg);
             }
         })
-        .catch(function() {
+        .catch(function(err) {
+            console.error('Update request error:', err);
             updateBtn.disabled = false;
             showDealerInquiryToast('Update failed. Please try again.');
         });
