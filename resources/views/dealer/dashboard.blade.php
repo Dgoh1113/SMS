@@ -170,8 +170,8 @@
         </div>
 
         @php
-            $dealerClosedWeekData = $closedCaseChartData['chartData'] ?? [0, 0, 0, 0, 0, 0, 0];
-            $dealerClosedWeekHasData = collect($dealerClosedWeekData)->contains(function ($value) {
+            $dealerClosed30Data = $dealerClosedCaseRanges['30']['data'] ?? [];
+            $dealerClosed30HasData = collect($dealerClosed30Data)->contains(function ($value) {
                 return (int) $value > 0;
             });
         @endphp
@@ -185,18 +185,18 @@
                            title="Count of leads turned into close cases."></i>
                     </div>
                     <div class="dashboard-chart-tabs" id="dealerClosedCaseRangeTabs">
-                        <button type="button" class="dashboard-chart-tab active" data-range="week" onclick="window.setDealerClosedCaseRange && window.setDealerClosedCaseRange('week')">Week</button>
-                        <button type="button" class="dashboard-chart-tab" data-range="month" onclick="window.setDealerClosedCaseRange && window.setDealerClosedCaseRange('month')">Month</button>
-                        <button type="button" class="dashboard-chart-tab" data-range="year" onclick="window.setDealerClosedCaseRange && window.setDealerClosedCaseRange('year')">Year</button>
+                        <button type="button" class="dashboard-chart-tab active" data-range="30" onclick="window.setDealerClosedCaseRange && window.setDealerClosedCaseRange('30')">30 Days</button>
+                        <button type="button" class="dashboard-chart-tab" data-range="60" onclick="window.setDealerClosedCaseRange && window.setDealerClosedCaseRange('60')">60 Days</button>
+                        <button type="button" class="dashboard-chart-tab" data-range="90" onclick="window.setDealerClosedCaseRange && window.setDealerClosedCaseRange('90')">90 Days</button>
                     </div>
                 </div>
                 <div class="dashboard-panel-body">
-                    <div class="dashboard-chart-container dealer-chart-shell{{ $dealerClosedWeekHasData ? '' : ' is-empty' }}" id="dealerClosedCaseChartShell">
+                    <div class="dashboard-chart-container dealer-chart-shell{{ $dealerClosed30HasData ? '' : ' is-empty' }}" id="dealerClosedCaseChartShell">
                         <canvas id="dealerClosedCaseChart"></canvas>
-                        <div class="dealer-chart-empty-state" id="dealerClosedCaseEmpty"{{ $dealerClosedWeekHasData ? ' hidden' : '' }}>
+                        <div class="dealer-chart-empty-state" id="dealerClosedCaseEmpty"{{ $dealerClosed30HasData ? ' hidden' : '' }}>
                             <span class="dealer-chart-empty-icon" aria-hidden="true"><i class="bi bi-bar-chart-line"></i></span>
-                            <strong class="dealer-chart-empty-title" id="dealerClosedCaseEmptyTitle">No closed cases this week</strong>
-                            <span class="dealer-chart-empty-text" id="dealerClosedCaseEmptyText">Closed inquiries completed this week will appear here once there is activity.</span>
+                            <strong class="dealer-chart-empty-title" id="dealerClosedCaseEmptyTitle">No closed cases in the last 30 days</strong>
+                            <span class="dealer-chart-empty-text" id="dealerClosedCaseEmptyText">Closed inquiries completed in the last 30 days will appear here once there is activity.</span>
                         </div>
                     </div>
                 </div>
@@ -330,34 +330,53 @@
 
 // Chart Logic
 (function() {
-    @php
-        $closedLabels = $closedCaseChartData['chartLabels'] ?? ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-        $closedData = $closedCaseChartData['chartData'] ?? [0,0,0,0,0,0,0];
-        $closedMonthLabels = $closedCaseChartData['chartMonthLabels'] ?? range(1, 30);
-        $closedMonthData = $closedCaseChartData['chartMonthData'] ?? array_fill(0, 30, 0);
-        $closedYearLabels = $closedCaseChartData['chartYearLabels'] ?? ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-        $closedYearData = $closedCaseChartData['chartYearData'] ?? array_fill(0, 12, 0);
-    @endphp
     var ctx = document.getElementById('dealerClosedCaseChart')?.getContext('2d');
-    var weekLabels = @json($closedLabels);
-    var weekData = @json($closedData);
-    var monthLabels = @json($closedMonthLabels);
-    var monthData = @json($closedMonthData);
-    var yearLabels = @json($closedYearLabels);
-    var yearData = @json($closedYearData);
-    var closedCaseNow = {
-        year: {{ now()->year }},
-        month: {{ now()->month }},
-        day: {{ now()->day }}
-    };
-    var monthWeekRange = buildClosedCaseMonthRange(monthLabels, monthData);
+    var rangesRaw = @json($dealerClosedCaseRanges ?? []);
 
-    var ranges = {
-        week: { labels: weekLabels, data: weekData },
-        month: monthWeekRange,
-        year: { labels: yearLabels, data: yearData }
-    };
-    var activeClosedCaseRange = 'week';
+    function buildWeeklyRange(range) {
+        if (!range || !Array.isArray(range.data) || !Array.isArray(range.tooltipTitles)) {
+            return { labels: [], data: [], tooltipTitles: [] };
+        }
+
+        var labels = [];
+        var data = [];
+        var tooltipTitles = [];
+        var titles = range.tooltipTitles;
+        var values = range.data;
+
+        for (var startIndex = 0; startIndex < values.length; startIndex += 7) {
+            var endIndex = Math.min(startIndex + 6, values.length - 1);
+            var bucketTotal = 0;
+
+            for (var index = startIndex; index <= endIndex; index++) {
+                bucketTotal += Number(values[index] || 0);
+            }
+
+            labels.push('Week ' + (labels.length + 1));
+            tooltipTitles.push((titles[startIndex] || '') + ' - ' + (titles[endIndex] || ''));
+            data.push(bucketTotal);
+        }
+
+        return {
+            labels: labels,
+            data: data,
+            tooltipTitles: tooltipTitles
+        };
+    }
+
+    function buildDisplayRanges(sourceRanges) {
+        var displayRanges = {};
+        Object.keys(sourceRanges || {}).forEach(function(rangeKey) {
+            var rawRange = sourceRanges[rangeKey];
+            displayRanges[rangeKey] = (rangeKey === '60' || rangeKey === '90')
+                ? buildWeeklyRange(rawRange)
+                : rawRange;
+        });
+        return displayRanges;
+    }
+
+    var ranges = buildDisplayRanges(rangesRaw);
+    var activeClosedCaseRange = '30';
     var closedCaseRangeTabs = document.getElementById('dealerClosedCaseRangeTabs');
     var closedCaseRangeButtons = closedCaseRangeTabs
         ? Array.prototype.slice.call(closedCaseRangeTabs.querySelectorAll('.dashboard-chart-tab[data-range]'))
@@ -367,253 +386,89 @@
     var closedChartEmptyTitle = document.getElementById('dealerClosedCaseEmptyTitle');
     var closedChartEmptyText = document.getElementById('dealerClosedCaseEmptyText');
     var emptyStateMeta = {
-        week: {
-            title: 'No closed cases this week',
-            text: 'Closed inquiries completed this week will appear here once there is activity.'
+        '30': {
+            title: 'No closed cases in the last 30 days',
+            text: 'Closed inquiries completed in the last 30 days will appear here once there is activity.'
         },
-        month: {
-            title: 'No closed cases this month',
-            text: 'Closed inquiries completed this month will appear here once there is activity.'
+        '60': {
+            title: 'No closed cases in the last 60 days',
+            text: 'Closed inquiries completed in the last 60 days will appear here once there is activity.'
         },
-        year: {
-            title: 'No closed cases this year',
-            text: 'Closed inquiries completed this year will appear here once there is activity.'
+        '90': {
+            title: 'No closed cases in the last 90 days',
+            text: 'Closed inquiries completed in the last 90 days will appear here once there is activity.'
         }
     };
 
     function hasClosedCaseData(values) {
-        if (!values) {
-            return false;
-        }
-
-        var normalizedValues = Array.isArray(values)
-            ? values
-            : Object.keys(values).map(function(key) { return values[key]; });
-
-        return normalizedValues.some(function(value) {
-            return Number(value || 0) > 0;
-        });
-    }
-
-    function buildClosedCaseMonthRange(labels, data) {
-        var bucketLabels = [];
-        var bucketData = [];
-        var bucketTooltips = [];
-        var monthStart = new Date(Date.UTC(closedCaseNow.year, closedCaseNow.month - 1, 1));
-        var firstWeekday = monthStart.getUTCDay();
-        var mondayOffset = firstWeekday === 0 ? 6 : firstWeekday - 1;
-        var daysInMonth = new Date(Date.UTC(closedCaseNow.year, closedCaseNow.month, 0)).getUTCDate();
-        var totalWeeks = Math.floor((mondayOffset + daysInMonth - 1) / 7) + 1;
-        var weekTotals = Array(totalWeeks).fill(0);
-
-        for (var i = 0; i < labels.length; i++) {
-            var dayNumber = parseInt(labels[i], 10);
-            if (!Number.isFinite(dayNumber)) {
-                continue;
-            }
-            var weekIndex = Math.floor((mondayOffset + dayNumber - 1) / 7);
-            if (weekIndex >= 0 && weekIndex < totalWeeks) {
-                weekTotals[weekIndex] += Number(data[i] || 0);
-            }
-        }
-
-        for (var weekIndex = 0; weekIndex < totalWeeks; weekIndex++) {
-            var calendarStartDay = 1 + (weekIndex * 7) - mondayOffset;
-            var calendarEndDay = calendarStartDay + 6;
-            var displayStartDay = Math.max(1, calendarStartDay);
-            var displayEndDay = Math.min(daysInMonth, calendarEndDay);
-            var rangeStartDate = new Date(Date.UTC(
-                closedCaseNow.year,
-                closedCaseNow.month - 1,
-                displayStartDay
-            ));
-            var rangeEndDate = new Date(Date.UTC(
-                closedCaseNow.year,
-                closedCaseNow.month - 1,
-                displayEndDay
-            ));
-
-            bucketLabels.push('Week ' + (weekIndex + 1));
-            bucketData.push(weekTotals[weekIndex]);
-            bucketTooltips.push(
-                rangeStartDate.toLocaleDateString('en-US', {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric',
-                    timeZone: 'UTC'
-                }) + ' - ' +
-                rangeEndDate.toLocaleDateString('en-US', {
-                    day: 'numeric',
-                    month: 'short',
-                    year: 'numeric',
-                    timeZone: 'UTC'
-                })
-            );
-        }
-
-        return {
-            labels: bucketLabels,
-            data: bucketData,
-            tooltipLabels: bucketTooltips
-        };
-    }
-
-    function getClosedCaseWeekTooltipDate(index) {
-        var today = new Date(Date.UTC(
-            closedCaseNow.year,
-            closedCaseNow.month - 1,
-            closedCaseNow.day
-        ));
-        var weekday = today.getUTCDay();
-        var mondayOffset = weekday === 0 ? -6 : 1 - weekday;
-        var monday = new Date(today);
-        monday.setUTCDate(today.getUTCDate() + mondayOffset);
-        monday.setUTCDate(monday.getUTCDate() + index);
-        return monday;
+        if (!values) return false;
+        var normalizedValues = Array.isArray(values) ? values : Object.keys(values).map(function(k) { return values[k]; });
+        return normalizedValues.some(function(v) { return Number(v || 0) > 0; });
     }
 
     function formatClosedCaseTooltipTitle(item, range) {
-        var scaleRange = range || activeClosedCaseRange || 'week';
-        if (!item) {
-            return '';
+        var scaleRange = range || activeClosedCaseRange || '30';
+        if (!item) return '';
+        var titles = ranges[scaleRange] && ranges[scaleRange].tooltipTitles ? ranges[scaleRange].tooltipTitles : [];
+        if (Number.isInteger(item.dataIndex) && titles[item.dataIndex]) {
+            return titles[item.dataIndex];
         }
-
-        if (scaleRange === 'week' && Number.isInteger(item.dataIndex)) {
-            var fullDate = getClosedCaseWeekTooltipDate(item.dataIndex);
-            return fullDate.toLocaleDateString('en-US', {
-                weekday: 'short',
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric',
-                timeZone: 'UTC'
-            });
-        }
-
-        if (scaleRange === 'month') {
-            return ranges.month.tooltipLabels[item.dataIndex] || ranges.month.labels[item.dataIndex] || '';
-        }
-
-        if (scaleRange === 'year') {
-            var monthIndex = item.dataIndex;
-            if (Number.isInteger(monthIndex) && monthIndex >= 0 && monthIndex < 12) {
-                var monthDate = new Date(Date.UTC(closedCaseNow.year, monthIndex, 1));
-                return monthDate.toLocaleDateString('en-US', {
-                    month: 'long',
-                    year: 'numeric',
-                    timeZone: 'UTC'
-                });
-            }
-        }
-
         return ranges[scaleRange].labels[item.dataIndex] || '';
     }
 
     function getClosedCaseTickConfig(range, theme) {
-        var fontSize = 11;
-        var padding = 10;
-        var callback = null;
-        var fontWeight = '600';
-
-        if (range === 'year') {
-            fontSize = 11;
-            padding = 10;
-            callback = function(value) {
-                var label = this.getLabelForValue(value);
-                return typeof label === 'string' && label.length ? label.charAt(0) : label;
-            };
-        }
-
-        var config = {
+        return {
             color: theme.tick,
-            autoSkip: false,
+            autoSkip: true,
+            maxTicksLimit: 10,
             maxRotation: 0,
             minRotation: 0,
-            padding: padding,
+            padding: 10,
             crossAlign: 'far',
-            font: {
-                size: fontSize,
-                weight: fontWeight
-            }
+            font: { size: 11, weight: '600' }
         };
-
-        if (callback) {
-            config.callback = callback;
-        }
-
-        return config;
     }
 
     function buildClosedCaseChartOptions(range) {
         var theme = getClosedCaseTheme();
-        var scaleRange = range || activeClosedCaseRange || 'week';
+        var scaleRange = range || activeClosedCaseRange || '30';
 
         return {
             responsive: true,
             maintainAspectRatio: false,
-            interaction: {
-                mode: 'index',
-                intersect: false
-            },
-            hover: {
-                mode: 'index',
-                intersect: false
-            },
-            layout: {
-                padding: {
-                    top: 4,
-                    bottom: 0
-                }
-            },
+            interaction: { mode: 'index', intersect: false },
+            hover: { mode: 'index', intersect: false },
+            layout: { padding: { top: 4, bottom: 0 } },
             plugins: {
                 legend: { display: false },
                 tooltip: {
                     backgroundColor: theme.tooltipBg,
                     titleColor: theme.tooltipTitle,
                     bodyColor: theme.tooltipBody,
+                    borderColor: theme.tooltipBorder,
+                    borderWidth: 1,
                     cornerRadius: 10,
                     padding: 10,
                     callbacks: {
-                    title: function(items) {
-                        if (!items || !items.length) {
-                            return '';
+                        title: function(items) {
+                            if (!items || !items.length) return '';
+                            return formatClosedCaseTooltipTitle(items[0], scaleRange);
                         }
-
-                        return formatClosedCaseTooltipTitle(items[0], scaleRange);
                     }
                 }
-            }
             },
             scales: {
                 x: {
                     offset: true,
-                    border: {
-                        display: true,
-                        color: theme.grid
-                    },
-                    grid: {
-                        display: false,
-                        drawBorder: false
-                    },
+                    border: { display: true, color: theme.grid },
+                    grid: { display: false, drawBorder: false },
                     ticks: getClosedCaseTickConfig(scaleRange, theme)
                 },
                 y: {
                     beginAtZero: true,
-                    grid: {
-                        color: theme.grid,
-                        drawBorder: false,
-                        drawTicks: false
-                    },
-                    border: {
-                        display: false
-                    },
-                    ticks: {
-                        color: theme.tick,
-                        font: {
-                            size: 11,
-                            weight: '500'
-                        },
-                        precision: 0
-                    }
+                    grid: { color: theme.grid, drawBorder: false, drawTicks: false },
+                    border: { display: false },
+                    ticks: { color: theme.tick, font: { size: 11, weight: '500' }, precision: 0 }
                 }
             }
         };
@@ -621,7 +476,7 @@
 
     function renderClosedCaseChart(range) {
         if (!ctx) return;
-        var activeRange = range && ranges[range] ? range : 'week';
+        var activeRange = range && ranges[range] ? range : '30';
         var theme = getClosedCaseTheme();
 
         if (window.closedChart) {
@@ -630,7 +485,7 @@
         }
 
         window.closedChart = new Chart(ctx, {
-            type: 'line',
+            type: 'bar',
             data: {
                 labels: ranges[activeRange].labels,
                 datasets: [{
@@ -638,51 +493,31 @@
                     data: ranges[activeRange].data,
                     backgroundColor: theme.lineFill,
                     borderColor: theme.lineBorder,
-                    borderWidth: 3,
-                    pointBackgroundColor: theme.pointFill,
-                    pointBorderColor: theme.pointBorder,
-                    pointBorderWidth: 2,
-                    pointRadius: activeRange === 'year' ? 3 : 4,
-                    pointHoverRadius: activeRange === 'year' ? 5 : 6,
-                    pointHitRadius: 16,
-                    fill: true,
-                    tension: 0.35,
-                    cubicInterpolationMode: 'monotone',
-                    spanGaps: true
+                    borderWidth: 1,
+                    borderRadius: 10,
+                    maxBarThickness: 42,
+                    hoverBackgroundColor: theme.lineBorder
                 }]
             },
             options: buildClosedCaseChartOptions(activeRange)
         });
 
         requestAnimationFrame(function() {
-            if (window.closedChart) {
-                window.closedChart.resize();
-            }
-
+            if (window.closedChart) window.closedChart.resize();
             requestAnimationFrame(function() {
-                if (window.closedChart) {
-                    window.closedChart.resize();
-                }
+                if (window.closedChart) window.closedChart.resize();
             });
         });
     }
 
     function syncClosedCaseEmptyState(range) {
-        var activeRange = range && ranges[range] ? range : 'week';
+        var activeRange = range && ranges[range] ? range : '30';
         var isEmpty = !hasClosedCaseData(ranges[activeRange].data);
-        var meta = emptyStateMeta[activeRange] || emptyStateMeta.week;
-        if (closedChartShell) {
-            closedChartShell.classList.toggle('is-empty', isEmpty);
-        }
-        if (closedChartEmpty) {
-            closedChartEmpty.hidden = !isEmpty;
-        }
-        if (closedChartEmptyTitle) {
-            closedChartEmptyTitle.textContent = meta.title;
-        }
-        if (closedChartEmptyText) {
-            closedChartEmptyText.textContent = meta.text;
-        }
+        var meta = emptyStateMeta[activeRange] || emptyStateMeta['30'];
+        if (closedChartShell) closedChartShell.classList.toggle('is-empty', isEmpty);
+        if (closedChartEmpty) closedChartEmpty.hidden = !isEmpty;
+        if (closedChartEmptyTitle) closedChartEmptyTitle.textContent = meta.title;
+        if (closedChartEmptyText) closedChartEmptyText.textContent = meta.text;
     }
 
     function setClosedCaseRange(range) {
@@ -698,7 +533,6 @@
         }
 
         renderClosedCaseChart(range);
-
         syncClosedCaseEmptyState(range);
     }
 
@@ -707,38 +541,36 @@
     function getClosedCaseTheme() {
         var dark = document.documentElement.classList.contains('theme-dark');
         return dark ? {
-            lineFill: 'rgba(139, 92, 246, 0.14)',
-            lineBorder: 'rgba(191, 171, 255, 0.98)',
-            pointFill: 'rgba(191, 171, 255, 1)',
-            pointBorder: 'rgba(139, 92, 246, 0.95)',
-            tick: '#9fb4d8',
-            grid: 'rgba(148, 163, 184, 0.12)',
-            tooltipBg: 'rgba(10, 18, 32, 0.96)',
-            tooltipTitle: '#f8fafc',
-            tooltipBody: '#dbe6ff'
+            lineFill: 'rgba(124, 92, 255, 0.72)',
+            lineBorder: 'rgba(173, 157, 255, 0.96)',
+            tick: '#8ea2c8',
+            grid: 'rgba(90, 109, 149, 0.16)',
+            tooltipBg: 'rgba(8, 17, 31, 0.94)',
+            tooltipTitle: '#eef4ff',
+            tooltipBody: '#eef4ff',
+            tooltipBorder: 'rgba(155, 135, 255, 0.36)'
         } : {
-            lineFill: 'rgba(127, 90, 240, 0.12)',
-            lineBorder: 'rgba(127, 90, 240, 0.96)',
-            pointFill: 'rgba(127, 90, 240, 1)',
-            pointBorder: 'rgba(238, 231, 255, 1)',
-            tick: '#64748b',
+            lineFill: 'rgba(127, 90, 240, 0.6)',
+            lineBorder: 'rgba(127, 90, 240, 1)',
+            tick: '#6b7280',
             grid: 'rgba(148, 163, 184, 0.18)',
-            tooltipBg: 'rgba(15, 23, 42, 0.94)',
+            tooltipBg: 'rgba(17, 24, 39, 0.92)',
             tooltipTitle: '#ffffff',
-            tooltipBody: '#ffffff'
+            tooltipBody: '#ffffff',
+            tooltipBorder: 'rgba(127, 90, 240, 0.18)'
         };
     }
 
     function applyClosedChartTheme(range) {
-        renderClosedCaseChart(range || activeClosedCaseRange || 'week');
+        renderClosedCaseChart(range || activeClosedCaseRange || '30');
     }
 
     window.closedChart = null; // Made global so toggle function can resize it
-    if (ctx && weekData) {
-        renderClosedCaseChart('week');
+    if (ctx && ranges['30']) {
+        renderClosedCaseChart('30');
     }
 
-    setClosedCaseRange('week');
+    setClosedCaseRange('30');
 
     if (closedCaseRangeTabs) {
         closedCaseRangeTabs.addEventListener('click', function(event) {
