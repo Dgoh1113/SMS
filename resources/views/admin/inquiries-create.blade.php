@@ -24,7 +24,7 @@
         .vertical-title {
             position: absolute;
             top: 20px;
-            left: 42px;
+            left: 27px;
             z-index: 2;
             writing-mode: vertical-rl;
             transform: rotate(180deg);
@@ -660,7 +660,7 @@
                 font-size: 14px;
                 border-radius: 14px;
                 top: 10px;
-                left: 54px;
+                left: 39px;
                 z-index: 10;
             }
         }
@@ -709,12 +709,96 @@
             .inquiry-form-checkboxes { grid-template-columns: 1fr !important; }
         }
 
-
-
-
-
-
-
+        /* ===== Laptop Compact: fit form in one screen ===== */
+        @media (min-width: 1280px) and (max-height: 900px) {
+            .dashboard-root.inquiry-create-scroll .dashboard-main-body {
+                padding-bottom: 4px !important;
+            }
+            .inquiry-create-panel {
+                margin: 2px 10px 2px -2px !important;
+            }
+            .inquiry-create-panel .dashboard-panel-body.inquiry-create-body {
+                padding: 0px 14px 2px !important;
+            }
+            .inquiry-form-body {
+                gap: 4px !important;
+            }
+            .inquiry-form-section {
+                padding: 3px 14px !important;
+            }
+            .inquiry-form-section-header {
+                margin-bottom: 1px !important;
+            }
+            .inquiry-form-section-title {
+                font-size: 0.82rem !important;
+            }
+            .inquiry-form-section .inquiry-form-grid {
+                gap: 5px !important;
+            }
+            .inquiry-form-label-title {
+                font-size: 11px !important;
+                margin-bottom: 0px !important;
+            }
+            .inquiry-form-input {
+                height: 27px !important;
+                font-size: 12px !important;
+                padding: 2px 10px !important;
+            }
+            .inquiry-form-input.has-icon {
+                padding-left: 30px !important;
+            }
+            .inquiry-input-icon {
+                font-size: 0.9rem !important;
+                left: 9px !important;
+            }
+            textarea.inquiry-form-input {
+                min-height: 32px !important;
+                height: 32px !important;
+                padding: 4px 10px 3px !important;
+            }
+            .inquiry-form-checkboxes {
+                gap: 2px !important;
+            }
+            .inquiry-form-checkbox-label {
+                padding: 2px 6px !important;
+                font-size: 0.72rem !important;
+                gap: 4px !important;
+                border-radius: 6px !important;
+            }
+            .inquiry-form-checkbox-label::before {
+                min-width: 14px !important;
+                height: 14px !important;
+                border-radius: 4px !important;
+            }
+            .inquiry-toggle-option {
+                padding: 2px 8px !important;
+                font-size: 0.75rem !important;
+            }
+            .inquiry-form-actions .login-primary-btn,
+            .inquiry-form-actions .inquiry-form-cancel {
+                height: 30px !important;
+                font-size: 12px !important;
+            }
+            .inquiry-form-actions {
+                padding-top: 3px !important;
+            }
+            .inquiry-form-label {
+                gap: 1px !important;
+            }
+            img.inquiry-create-fox-img {
+                width: 90px !important;
+                top: 0px !important;
+            }
+            .vertical-title {
+                font-size: 12px !important;
+                padding: 10px 3px !important;
+                top: 6px !important;
+                left: 35px !important;
+            }
+            .inquiry-form-label[style*="margin-top: 8px"] {
+                margin-top: 2px !important;
+            }
+        }
 
         .inquiry-form-input:focus {
             background-color: #fff !important;

@@ -656,6 +656,23 @@
     margin-left: 4px;
   }
 
+  /* Reduce Customer Name width on laptop to save space */
+  .inquiries-page-wrap #unassignedTable.inquiries-table--fit th[data-col="customername"],
+  .inquiries-page-wrap #unassignedTable.inquiries-table--fit td[data-col="customername"],
+  .inquiries-page-wrap #allTable.inquiries-table--fit th[data-col="customername"],
+  .inquiries-page-wrap #allTable.inquiries-table--fit td[data-col="customername"] {
+    width: 260px !important;
+    min-width: 260px !important;
+    max-width: 260px !important;
+  }
+
+  .inquiries-page-wrap #assignedTable th[data-col="customername"],
+  .inquiries-page-wrap #assignedTable td[data-col="customername"] {
+    width: 170px !important;
+    min-width: 170px !important;
+    max-width: 170px !important;
+  }
+
   .inquiries-page-wrap .inquiries-action-cell .inquiries-view-status-btn,
   .inquiries-page-wrap .inquiries-action-cell .inquiries-mark-failed-btn,
   .inquiries-page-wrap .inquiries-action-cell .rewards-email-btn,
@@ -665,10 +682,6 @@
     min-width: 30px;
     padding: 3px;
     border-radius: 6px;
-  }
-
-  .inquiries-page-wrap .inquiries-action-cell .inquiries-mark-failed-btn .bi {
-    -webkit-text-stroke: 1.5px currentColor;
   }
 
   .inquiries-page-wrap .inquiries-action-cell .inquiries-view-status-btn .bi,

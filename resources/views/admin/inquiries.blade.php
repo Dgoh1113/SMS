@@ -2407,6 +2407,18 @@ document.addEventListener('DOMContentLoaded', function() {
         var mainBodyRect = mainBody ? mainBody.getBoundingClientRect() : null;
         var tableWrapTop = tableWrapRect ? Math.round(tableWrapRect.top || 0) : 0;
         var tbodyTop = tbodyRect ? Math.round(tbodyRect.top || 0) : 0;
+
+        if (tableWrapTop <= 0) {
+            var activeWrap = document.querySelector('.inquiries-tab-panel.active .inquiries-table-wrap');
+            var activeTbody = document.querySelector('.inquiries-tab-panel.active tbody');
+            if (activeWrap && activeTbody) {
+                var aWrapRect = activeWrap.getBoundingClientRect();
+                var aTbodyRect = activeTbody.getBoundingClientRect();
+                tableWrapTop = Math.round(aWrapRect.top || 0);
+                tbodyTop = Math.round(aTbodyRect.top || 0);
+            }
+        }
+
         var bodyOffset = Math.max(tbodyTop - tableWrapTop, 0);
         var paginationHeight = pagination ? Math.round((pagination.getBoundingClientRect().height || pagination.offsetHeight || 0)) : 46;
         var compactBottomBuffer = viewportHeight <= 760 ? 13 : 17;
@@ -2572,6 +2584,18 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!skipUrlUpdate) {
             updateInquiriesTabUrl(tabName);
         }
+        // Re-render the newly-visible tab's pagination so placeholder rows
+        // are recalculated for the current viewport size (fixes resize-then-switch).
+        requestAnimationFrame(function() {
+            if (showIncoming && typeof window.refreshIncomingPagination === 'function') {
+                window.refreshIncomingPagination();
+            } else if (showAssigned && typeof window.refreshAssignedPagination === 'function') {
+                window.refreshAssignedPagination();
+            } else if (showAll && typeof window.refreshAllPagination === 'function') {
+                window.refreshAllPagination();
+            }
+            if (typeof syncEmptyTabHeights === 'function') syncEmptyTabHeights();
+        });
     }
 
     document.querySelectorAll('.inquiries-tab').forEach(function(tab) {
