@@ -49,7 +49,9 @@
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="referralcode"> REFERRAL CODE</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="attachment"> ATTACHMENT</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="assignby"> ASSIGN BY</label>
-                        <label class="inquiries-columns-check"><input type="checkbox" data-col="status"> STATUS</label>
+                        @if(($dealerConsoleTab ?? 'inquiries') === 'inquiries')
+                            <label class="inquiries-columns-check"><input type="checkbox" data-col="status"> STATUS</label>
+                        @endif
                         <div class="inquiries-columns-actions">
                             <button type="button" class="inquiries-columns-action-btn" id="dealerInquiryColumnsAll">All</button>
                             <button type="button" class="inquiries-columns-action-btn" id="dealerInquiryColumnsNone">None</button>
@@ -86,7 +88,9 @@
                         <x-tables.text-filter-header col="referralcode" label="REFERRAL CODE" />
                         <x-tables.text-filter-header col="attachment" label="ATTACHMENT" />
                         <x-tables.text-filter-header col="assignby" label="ASSIGN BY" />
-                        <x-tables.select-filter-header col="status" label="STATUS" :options="$statusFilterOptions" />
+                        @if(($dealerConsoleTab ?? 'inquiries') === 'inquiries')
+                            <x-tables.select-filter-header col="status" label="STATUS" :options="$statusFilterOptions" />
+                        @endif
                         <x-tables.clear-filter-header button-id="dealerInquiryClearFilters" />
                     </tr>
                 </thead>
@@ -193,8 +197,8 @@ function initDealerInquiriesPage() {
     var olderLegacyDefaultCols = ['inquiryid','date','customer','postcode','city','state','country','businessnature','products','assignby','status'];
     var previousDefaultCols = ['inquiryid','date','customer','email','postcode','city','state','country','products','status'];
     var compactMobileLegacyCols = ['inquiryid','date','customer'];
-    var defaultCols = ['inquiryid','date','customer','email','postcode','city','products','assigndate','status'];
-    var allCols = ['inquiryid','date','customer','email','postcode','city','state','country','address','contactno','businessnature','users','existingsw','demomode','products','assigndate','completiondate','payoutsdate','message','referralcode','attachment','assignby','status'];
+    var defaultCols = ['inquiryid','date','customer','email','postcode','city','products','assigndate'{!! ($dealerConsoleTab ?? 'inquiries') === 'inquiries' ? ",'status'" : "" !!}];
+    var allCols = ['inquiryid','date','customer','email','postcode','city','state','country','address','contactno','businessnature','users','existingsw','demomode','products','assigndate','completiondate','payoutsdate','message','referralcode','attachment','assignby'{!! ($dealerConsoleTab ?? 'inquiries') === 'inquiries' ? ",'status'" : "" !!}];
 
     function getDefaultColsForViewport() {
         return defaultCols.slice();
@@ -1845,6 +1849,42 @@ if (document.readyState === 'loading') {
         statusCell.textContent = label;
         statusCell.className = 'inquiries-status ' + cls;
 
+        // If we are in a specific status tab (not 'inquiries' or 'all'), and the status changed, 
+        // the row should be removed because it no longer belongs here.
+        var currentTab = '{{ $dealerConsoleTab ?? 'inquiries' }}';
+        var activeStatuses = ['PENDING', 'FOLLOWUP', 'FOLLOW UP', 'DEMO', 'CONFIRMED'];
+        
+        var shouldRemove = false;
+        if (currentTab === 'inquiries') {
+            if (activeStatuses.indexOf(rawUpper) === -1) shouldRemove = true;
+        } else if (currentTab === 'pending-payouts') {
+            // Payouts handles its own logic
+        } else {
+            var tabStatuses = [];
+            switch (currentTab) {
+                case 'pending': tabStatuses = ['PENDING']; break;
+                case 'followup': tabStatuses = ['FOLLOWUP', 'FOLLOW UP']; break;
+                case 'demo': tabStatuses = ['DEMO']; break;
+                case 'confirmed': tabStatuses = ['CONFIRMED']; break;
+                case 'completed': tabStatuses = ['COMPLETED', 'CASE COMPLETED']; break;
+                case 'failed': tabStatuses = ['FAILED']; break;
+                case 'cancelled': tabStatuses = ['CANCELLED']; break;
+                case 'rewarded': tabStatuses = ['REWARDED', 'REWARD', 'REWARD DISTRIBUTED']; break;
+            }
+            if (tabStatuses.indexOf(rawUpper) === -1) shouldRemove = true;
+        }
+
+        if (shouldRemove) {
+            row.style.transition = 'opacity 0.3s ease';
+            row.style.opacity = '0';
+            setTimeout(function() {
+                row.remove();
+                if (typeof window.dealerApplyPagination === 'function') {
+                    window.dealerApplyPagination();
+                }
+            }, 300);
+        }
+
         // Optionally show saved data (date/time/remark) as a tooltip on the status badge
         if (meta && (meta.date || meta.time || meta.remark)) {
             var parts = [];
@@ -1852,6 +1892,45 @@ if (document.readyState === 'loading') {
             if (meta.time) parts.push('Time: ' + meta.time);
             if (meta.remark) parts.push('Remark: ' + meta.remark);
             statusCell.title = parts.join(' | ');
+        }
+    }
+
+    function refreshDealerConsoleCounts(counts) {
+        if (!counts) return;
+        var tabsNav = document.querySelector('.dealer-console-tabs');
+        if (!tabsNav) return;
+
+        var tabMap = {
+            'inquiries': counts.inquiries,
+            'pending': counts.pending,
+            'followup': counts.followup,
+            'demo': counts.demo,
+            'confirmed': counts.confirmed,
+            'completed': counts.completed,
+            'failed': counts.failed,
+            'cancelled': counts.cancelled,
+            'rewarded': counts.rewarded,
+            'pending-payouts': counts.pending_payouts
+        };
+
+        for (var tabId in tabMap) {
+            var count = tabMap[tabId];
+            var tabLink = tabsNav.querySelector('a[href*="tab=' + tabId + '"]');
+            if (tabId === 'pending-payouts') {
+                tabLink = tabsNav.querySelector('a[href*="/payouts"]');
+            } else if (tabId === 'inquiries') {
+                tabLink = tabsNav.querySelector('a[href$="/inquiries"]') || tabsNav.querySelector('a[href*="tab=inquiries"]');
+            }
+
+            if (tabLink) {
+                var countEl = tabLink.querySelector('.inquiries-tab-count');
+                if (countEl) {
+                    countEl.textContent = new Intl.NumberFormat().format(count);
+                    countEl.hidden = (count === 0);
+                    if (count === 0) countEl.setAttribute('aria-hidden', 'true');
+                    else countEl.removeAttribute('aria-hidden');
+                }
+            }
         }
     }
 
@@ -2400,6 +2479,9 @@ if (document.readyState === 'loading') {
                 }
 
                 // Re‑evaluate controls for the new status
+                if (res.data.counts) {
+                    refreshDealerConsoleCounts(res.data.counts);
+                }
                 showDealerInquiryToast(res.data.message || 'Status updated successfully');
             } else {
                 showDealerInquiryToast(res.data.message || 'Update failed');

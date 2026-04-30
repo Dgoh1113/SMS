@@ -137,15 +137,12 @@
   box-shadow: 0 12px 32px rgba(15, 23, 42, 0.045);
   overflow: hidden;
 }
-.rv2-filtered-layer-head {
-  padding: 10px 14px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  flex-wrap: wrap;
+.rv2-filtered-layer-head.reports-filter-bar {
+  border: none;
   border-bottom: 1px solid #e5e7eb;
-  background: rgba(255, 255, 255, 0.88);
+  border-radius: 0;
+  margin-bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
 }
 .rv2-filtered-layer-label {
   font-size: 12px;
@@ -218,11 +215,7 @@
   padding: 8px 10px;
   flex: 0 0 auto;
 }
-.rv2-filters-form.rv2-has-custom-range .rv2-filter .reports-range-grid {
-  gap: 8px;
-  min-width: 280px;
-  max-width: 280px;
-}
+
 .rv2-filters-form.rv2-has-custom-range .rv2-filter .reports-range-input {
   height: 34px !important;
   font-size: 12px;
@@ -317,7 +310,6 @@
   min-width: 0;
   gap: 4px;
   margin-top: 7px;
-  grid-template-columns: 1fr 1fr;
 }
 .rv2-filter .reports-range-col {
   gap: 2px;

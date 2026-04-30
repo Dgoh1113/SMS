@@ -124,23 +124,7 @@
   border-color: rgba(124, 91, 255, 0.46);
   box-shadow: 0 0 0 3px rgba(124, 91, 255, 0.14), 0 12px 24px rgba(91, 63, 215, 0.12);
 }
-.reports-period-select {
-  height: 44px;
-  min-width: 0;
-  padding: 0 13px;
-  border: 1px solid rgba(124, 91, 255, 0.2);
-  border-radius: 999px;
-  background: linear-gradient(180deg, #ffffff 0%, #fcfbff 100%);
-  box-sizing: border-box;
-  font-family: "Public Sans", sans-serif;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.015em;
-  color: #111827;
-  box-shadow: 0 8px 18px rgba(91, 63, 215, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95);
-  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease;
-  cursor: pointer;
-}
+/* Removed Monthly-specific overrides to follow shared v2-style standard */
 .reports-period-select:hover {
   transform: translateY(-1px);
   border-color: rgba(124, 91, 255, 0.35);
@@ -177,20 +161,7 @@
   width: 96px;
   border-left: 1px solid rgba(124, 91, 255, 0.14) !important;
 }
-.reports-period-form-compact .report-scope-field {
-  display: flex;
-  align-items: center;
-  height: 44px;
-  min-width: 0;
-  width: var(--report-scope-picker-width);
-  overflow: visible;
-  border: 1px solid rgba(124, 91, 255, 0.2);
-  border-radius: 999px;
-  background: linear-gradient(180deg, #ffffff 0%, #fcfbff 100%);
-  box-shadow: 0 8px 18px rgba(91, 63, 215, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95);
-  transition: border-color 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease;
-  cursor: pointer;
-}
+/* Removed Monthly-specific overrides to follow shared v2-style standard */
 .reports-period-form-compact .report-scope-field .report-scope-ts-wrapper {
   position: relative;
   height: 100%;
@@ -202,9 +173,9 @@
 .reports-period-form-compact .report-scope-field .report-scope-ts-wrapper.single.input-active .ts-control {
   height: 100%;
   min-height: 100%;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
+  border: 1px solid #d6d9e8;
+  border-radius: 9px;
+  background: #fff;
   box-shadow: none;
 }
 .reports-period-form-compact .report-scope-field .report-scope-ts-wrapper:hover,
