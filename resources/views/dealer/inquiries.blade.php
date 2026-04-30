@@ -17,15 +17,11 @@
 <div class="dashboard-content inquiries-page-wrap">
     @include('dealer.partials.console-inquiries-tabs', ['dealerConsoleTab' => $dealerConsoleTab ?? 'inquiries'])
     <section class="inquiries-mgmt-panel dealer-inquiries-panel">
-        <div class="inquiries-panel-header">
-        <div class="inquiries-panel-title-wrap">
-            <i class="bi bi-folder2-open inquiries-panel-icon"></i>
-            <h2 class="inquiries-panel-title">My Inquiries</h2>
-        </div>
-        <div class="inquiries-panel-actions">
-            <div class="inquiries-columns-dropdown">
-                <button type="button" class="inquiries-btn inquiries-btn-secondary" id="dealerInquiryColumnsBtn" aria-haspopup="true" aria-expanded="false">Columns</button>
-                <div class="inquiries-columns-menu" id="dealerInquiryColumnsMenu" hidden>
+        @include('dealer.partials.console-panel-header', [
+            'actions' => '
+                <div class="inquiries-columns-dropdown">
+                    <button type="button" class="inquiries-btn inquiries-btn-secondary" id="dealerInquiryColumnsBtn" aria-haspopup="true" aria-expanded="false">Columns</button>
+                    <div class="inquiries-columns-menu" id="dealerInquiryColumnsMenu" hidden>
                         <div class="inquiries-columns-menu-title">Show columns</div>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="inquiryid"> INQUIRY ID</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="date"> INQUIRY DATE</label>
@@ -49,9 +45,7 @@
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="referralcode"> REFERRAL CODE</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="attachment"> ATTACHMENT</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="assignby"> ASSIGN BY</label>
-                        @if(($dealerConsoleTab ?? 'inquiries') === 'inquiries')
-                            <label class="inquiries-columns-check"><input type="checkbox" data-col="status"> STATUS</label>
-                        @endif
+                        '.(($dealerConsoleTab ?? 'inquiries') === 'inquiries' ? '<label class="inquiries-columns-check"><input type="checkbox" data-col="status"> STATUS</label>' : '').'
                         <div class="inquiries-columns-actions">
                             <button type="button" class="inquiries-columns-action-btn" id="dealerInquiryColumnsAll">All</button>
                             <button type="button" class="inquiries-columns-action-btn" id="dealerInquiryColumnsNone">None</button>
@@ -59,8 +53,8 @@
                         <button type="button" class="inquiries-columns-reset" id="dealerInquiryColumnsReset">Reset to default</button>
                     </div>
                 </div>
-            </div>
-        </div>
+            '
+        ])
         <div class="inquiries-table-wrap">
             <div class="inquiries-table-scroll">
             <table class="inquiries-table" id="dealerInquiriesTable">
@@ -1957,10 +1951,19 @@ if (document.readyState === 'loading') {
                 var countEl = tabLink.querySelector('.inquiries-tab-count');
                 if (countEl) {
                     countEl.textContent = new Intl.NumberFormat().format(count);
-                    countEl.hidden = (count === 0);
-                    if (count === 0) countEl.setAttribute('aria-hidden', 'true');
-                    else countEl.removeAttribute('aria-hidden');
+                    countEl.hidden = false;
+                    countEl.removeAttribute('aria-hidden');
                 }
+            }
+        }
+
+        // Also update current panel header title count
+        var currentTabId = '{{ $dealerConsoleTab ?? "inquiries" }}';
+        var currentCount = tabMap[currentTabId];
+        if (typeof currentCount !== 'undefined') {
+            var titleCountEl = document.querySelector('.inquiries-panel-title .inquiries-title-count');
+            if (titleCountEl) {
+                titleCountEl.textContent = '(' + new Intl.NumberFormat().format(currentCount) + ')';
             }
         }
     }

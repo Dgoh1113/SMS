@@ -1025,3 +1025,15 @@ html.theme-dark .inquiries-tab-count[data-tooltip]::after {
 .status-multi-filter-option .status-multi-filter-option-label {
     flex: 1;
 }
+
+.inquiries-title-count {
+  color: #94a3b8;
+  font-size: 0.85em;
+  margin-left: 6px;
+  font-weight: 500;
+}
+
+html.theme-dark .inquiries-title-count {
+  color: #64748b;
+}
+

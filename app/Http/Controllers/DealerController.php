@@ -431,7 +431,7 @@ class DealerController extends Controller
                 case 'completed': $statusFilter = ['COMPLETED', 'CASE COMPLETED']; break;
                 case 'failed': $statusFilter = ['FAILED']; break;
                 case 'cancelled': $statusFilter = ['CANCELLED']; break;
-                case 'rewarded': $statusFilter = ['REWARDED', 'REWARD', 'REWARD DISTRIBUTED']; break;
+                case 'rewarded': $statusFilter = ['REWARDED', 'REWARD']; break;
                 case 'inquiries':
                 default:
                     $statusFilter = $activeStatuses;
@@ -1773,6 +1773,7 @@ class DealerController extends Controller
             'productLabels' => $productLabels,
             'dealerInquiryCount' => $dealerConsoleCounts['inquiries'],
             'dealerPendingPayoutCount' => $dealerConsoleCounts['pending_payouts'],
+            'dealerConsoleCounts' => $dealerConsoleCounts,
             'dealerConsoleTab' => 'pending-payouts',
             'currentPage' => 'inquiries',
         ]);
@@ -1813,19 +1814,28 @@ class DealerController extends Controller
             );
 
             foreach ($rows as $row) {
-                $s = $row->LATEST_STATUS;
-                if (in_array($s, ['PENDING', 'FOLLOWUP', 'FOLLOW UP', 'DEMO', 'CONFIRMED'])) {
+                $status = $row->LATEST_STATUS ?? '';
+                if (in_array($status, ['PENDING', 'FOLLOWUP', 'FOLLOW UP', 'DEMO', 'CONFIRMED'])) {
                     $counts['inquiries']++;
                 }
                 
-                if ($s === 'PENDING') $counts['pending']++;
-                elseif ($s === 'FOLLOWUP' || $s === 'FOLLOW UP') $counts['followup']++;
-                elseif ($s === 'DEMO') $counts['demo']++;
-                elseif ($s === 'CONFIRMED') $counts['confirmed']++;
-                elseif ($s === 'COMPLETED' || $s === 'CASE COMPLETED') $counts['completed']++;
-                elseif ($s === 'FAILED') $counts['failed']++;
-                elseif ($s === 'CANCELLED') $counts['cancelled']++;
-                elseif ($s === 'REWARDED' || $s === 'REWARD' || $s === 'REWARD DISTRIBUTED') $counts['rewarded']++;
+                if ($status === 'PENDING') {
+                    $counts['pending']++;
+                } elseif ($status === 'FOLLOWUP' || $status === 'FOLLOW UP') {
+                    $counts['followup']++;
+                } elseif ($status === 'DEMO') {
+                    $counts['demo']++;
+                } elseif ($status === 'CONFIRMED') {
+                    $counts['confirmed']++;
+                } elseif ($status === 'COMPLETED' || $status === 'CASE COMPLETED') {
+                    $counts['completed']++;
+                } elseif ($status === 'FAILED') {
+                    $counts['failed']++;
+                } elseif ($status === 'CANCELLED') {
+                    $counts['cancelled']++;
+                } elseif (in_array($status, ['REWARDED', 'REWARD', 'REWARD DISTRIBUTED'])) {
+                    $counts['rewarded']++;
+                }
             }
         } catch (\Throwable $e) {
             // ignore

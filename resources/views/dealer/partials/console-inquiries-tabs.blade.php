@@ -24,8 +24,7 @@
                 {{ $tabItem['label'] }}
                 <span class="inquiries-tab-count"
                       title="{{ $tabItem['tooltip'] }}"
-                      aria-label="{{ $tabItem['label'] }} count: {{ number_format($tabItem['count']) }}. {{ $tabItem['tooltip'] }}"
-                      @if($tabItem['count'] === 0) hidden aria-hidden="true" @endif>{{ number_format($tabItem['count']) }}</span>
+                      aria-label="{{ $tabItem['label'] }} count: {{ number_format($tabItem['count']) }}. {{ $tabItem['tooltip'] }}">{{ number_format($tabItem['count']) }}</span>
             </span>
         </a>
     @endforeach
