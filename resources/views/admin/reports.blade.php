@@ -659,6 +659,120 @@
                 min-width: 0;
             }
         }
+        @media print {
+            @page {
+                size: A4 landscape;
+                margin: 3mm;
+            }
+            body {
+                background: white !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                font-size: 9px !important;
+            }
+            .sidebar-nav, .top-nav, .reports-page-tabs-shell, .reports-filter-bar, .reports-page-filters-shell form, .admin-inquiry-trend-legend {
+                display: none !important;
+            }
+            .dashboard-content {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+                zoom: 0.42 !important;
+            }
+            .reports-page {
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .reports-page-layout {
+                gap: 4px !important;
+            }
+            .reports-metrics--admin {
+                grid-template-columns: repeat(8, 1fr) !important;
+                gap: 4px !important;
+                margin-bottom: 4px !important;
+            }
+            .reports-metric-card--admin, .report-metric-link--admin {
+                min-height: 106px !important;
+                padding: 12px !important;
+                border-radius: 10px !important;
+            }
+            .reports-metric-icon {
+                width: 32px !important;
+                height: 32px !important;
+                min-width: 32px !important;
+                font-size: 15px !important;
+            }
+            .reports-metric-card--admin .reports-metric-value {
+                font-size: 29px !important;
+                margin-top: 3px !important;
+            }
+            .reports-metric-card--admin .reports-metric-label {
+                font-size: 11px !important;
+            }
+            .reports-admin-metric-trend, .reports-admin-metric-link-indicator {
+                display: none !important;
+            }
+            .dashboard-panels-two-column {
+                grid-template-columns: 1.25fr 0.75fr !important;
+                gap: 4px !important;
+                margin-bottom: 4px !important;
+            }
+            .dealer-reports-chart-wrapper {
+                height: auto !important;
+                min-height: 120px !important;
+                max-height: none !important;
+                overflow: visible !important;
+            }
+            .reports-product-chart-wrapper {
+                height: auto !important;
+                min-height: 120px !important;
+                max-height: none !important;
+                overflow: visible !important;
+            }
+            .report-donut {
+                width: 150px !important;
+                height: 150px !important;
+            }
+            .report-donut-total {
+                font-size: 25px !important;
+            }
+            .report-status-body {
+                display: grid !important;
+                grid-template-columns: minmax(0, 1fr) !important;
+                grid-template-rows: auto auto !important;
+                justify-items: center !important;
+                gap: 3px !important;
+            }
+            .report-legend {
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                width: 100% !important;
+                max-width: 320px !important;
+                margin: 10px auto 0 !important;
+                gap: 5px 16px !important;
+            }
+            .report-legend li {
+                font-size: 11px !important;
+            }
+            .report-legend-color {
+                width: 10px !important;
+                height: 10px !important;
+            }
+            .dashboard-panel-title {
+                font-size: 10px !important;
+            }
+            .reports-inquiry-subtitle, .reports-status-subtitle, .reports-product-subtitle {
+                font-size: 8px !important;
+            }
+            .reports-product-section {
+                margin-top: 4px !important;
+            }
+            .dashboard-panel-header {
+                padding: 4px 6px 2px !important;
+            }
+            .dashboard-panel-body {
+                padding: 0 6px 4px !important;
+            }
+        }
     </style>
 @endpush
 @section('content')
@@ -708,7 +822,7 @@
             'link' => route('admin.inquiries'),
             'link_aria' => 'View unassigned inquiries'
         ],
-        ['key' => 'Pending', 'label' => 'PENDING', 'value' => $metricActivityStatus['Pending'] ?? 0, 'icon' => 'bi bi-file-earmark', 'icon_class' => 'reports-metric-icon-pending'],
+        ['key' => 'Pending', 'label' => 'ASSIGNED', 'value' => $metricActivityStatus['Pending'] ?? 0, 'icon' => 'bi bi-file-earmark', 'icon_class' => 'reports-metric-icon-pending'],
         ['key' => 'FollowUp', 'label' => 'FOLLOW-UP', 'value' => $metricActivityStatus['FollowUp'] ?? 0, 'icon' => 'bi bi-calendar-event', 'icon_class' => 'reports-metric-icon-followup'],
         ['key' => 'Demo', 'label' => 'DEMO', 'value' => $metricActivityStatus['Demo'] ?? 0, 'icon' => 'bi bi-person-video2', 'icon_class' => 'reports-metric-icon-demo'],
         ['key' => 'Confirmed', 'label' => 'CONFIRMED', 'value' => $metricActivityStatus['Confirmed'] ?? 0, 'icon' => 'bi bi-check-circle', 'icon_class' => 'reports-metric-icon-confirmed'],
@@ -739,7 +853,7 @@
 @php
     $statusReportData = [
         ['label' => 'Unassigned', 'value' => (int) $unassignedLeads, 'color' => '#ef4444'],
-        ['label' => 'Pending', 'value' => (int) ($activityStatus['Pending'] ?? 0), 'color' => '#f97316'],
+        ['label' => 'Assigned', 'value' => (int) ($activityStatus['Pending'] ?? 0), 'color' => '#f97316'],
         ['label' => 'FollowUp', 'value' => (int) ($activityStatus['FollowUp'] ?? 0), 'color' => '#f59e0b'],
         ['label' => 'Demo', 'value' => (int) ($activityStatus['Demo'] ?? 0), 'color' => '#eab308'],
         ['label' => 'Confirmed', 'value' => (int) ($activityStatus['Confirmed'] ?? 0), 'color' => '#84cc16'],
@@ -750,6 +864,7 @@
     $totalStatus = max(array_sum(array_column($statusReportData, 'value')), 1);
     $selectedDays = max((int) ($days ?? 60), 1);
     $adminInquiryTrendLabels = array_column($inquiryTrend ?? [], 'day');
+    $adminInquiryTrendFullDates = array_column($inquiryTrend ?? [], 'full_day');
     $adminInquiryTrendData = array_column($inquiryTrend ?? [], 'count');
     $totalInquiry = array_sum($adminInquiryTrendData);
     $hasInquiryTrendData = $totalInquiry > 0;
@@ -770,7 +885,7 @@
             @endif
         @endforeach
 
-        <div class="reports-filter-container rv2-filter" style="width: 190px; min-height: 90px; display: flex; flex-direction: column; align-self: auto;">
+        <div class="reports-filter-container rv2-filter" style="width: 190px; min-height: 60px; display: flex; flex-direction: column; align-self: auto;">
             <div class="reports-range-label" style="display: flex; align-items: center; font-size: 9px; font-weight: 800; height: 1.6em;">PERIOD</div>
             <div style="flex: 1; display: flex; align-items: flex-end;">
                 <select name="days" class="reports-period-select" aria-label="Select period" id="reportsPeriodSelect" style="display: {{ request('from') || request('to') ? 'none' : 'block' }}; width: 100%;">
@@ -796,7 +911,7 @@
             </div>
         </div>
 
-        <div class="reports-filter-container rv2-filter" style="width: 170px; min-height: 90px; display: flex; flex-direction: column; align-self: auto;">
+        <div class="reports-filter-container rv2-filter" style="width: 170px; min-height: 60px; display: flex; flex-direction: column; align-self: auto;">
             <div class="reports-range-label" style="display: flex; align-items: center; font-size: 9px; font-weight: 800; height: 1.6em;">DEALER SCOPE</div>
             <div style="flex: 1; display: flex; align-items: flex-end;">
                 <div style="width: 100%; max-width: 100%; --report-scope-picker-width: 100%;">
@@ -1022,10 +1137,10 @@
         @else
             @php
                 $itemCount = $productConversionDisplay->count();
-                $barHeightPx = 16;
-                $gapPx = 8;
-                $paddingPx = 28;
-                $chartHeightPx = max(132, $itemCount * ($barHeightPx + $gapPx) + $paddingPx);
+                $barHeightPx = 20;
+                $gapPx = 10;
+                $paddingPx = 44;
+                $chartHeightPx = max(220, $itemCount * ($barHeightPx + $gapPx) + $paddingPx);
             @endphp
             <div class="reports-product-chart-wrapper" style="height: {{ $chartHeightPx }}px;">
                 <p class="reports-product-chart-fallback">Unable to load product conversion chart.</p>
@@ -1296,6 +1411,7 @@
             if (inquiryCanvas) {
                 try {
                     const rawInquiryLabels = @json($adminInquiryTrendLabels ?? []);
+                    const rawInquiryFullDates = @json($adminInquiryTrendFullDates ?? []);
                     const rawInquiryValues = @json($adminInquiryTrendData ?? []);
                     const reportPeriod = 'days';
                     const currentMonthName = @json(now()->format('F'));
@@ -1308,7 +1424,7 @@
                         return String(label || '').trim();
                     });
                     let inquiryValues = rawInquiryValues.slice();
-                    let tooltipLabels = rawInquiryLabels.map(function (label) {
+                    let tooltipLabels = rawInquiryFullDates.map(function (label) {
                         const normalized = String(label || '').trim();
                         if (reportPeriod === 'month' && normalized && /^\d+$/.test(normalized)) {
                             return normalized + ' ' + currentMonthName;
@@ -1907,7 +2023,12 @@
                             border: {
                                 display: false,
                             },
+                            afterFit: function(scale) {
+                                scale.width = Math.max(scale.width, 132);
+                            },
                             ticks: {
+                                autoSkip: false,
+                                maxTicksLimit: labels.length,
                                 padding: 12,
                                 color: '#0f172a',
                                 font: {
