@@ -56,12 +56,13 @@ class DealerStatsAggregator
 
             try {
                 $leadsRow = DB::selectOne(
-                    'SELECT COUNT(*) as c FROM "LEAD" WHERE TRIM(CAST("ASSIGNEDTO" AS VARCHAR(50))) = TRIM(CAST(? AS VARCHAR(50)))',
+                    'SELECT COUNT(*) as c FROM "LEAD" WHERE COALESCE("ISDELETED", FALSE) = FALSE AND TRIM(CAST("ASSIGNEDTO" AS VARCHAR(50))) = TRIM(CAST(? AS VARCHAR(50)))',
                     [$userId]
                 );
                 $closedRow = DB::selectOne(
                     'SELECT COUNT(*) as c FROM "LEAD" l
-                     WHERE TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) = TRIM(CAST(? AS VARCHAR(50)))
+                     WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
+                       AND TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) = TRIM(CAST(? AS VARCHAR(50)))
                        AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
                             FROM "LEAD_ACT" la
                             WHERE la."LEADID" = l."LEADID"
@@ -71,7 +72,8 @@ class DealerStatsAggregator
                 );
                 $failedRow = DB::selectOne(
                     'SELECT COUNT(*) as c FROM "LEAD" l
-                     WHERE TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) = TRIM(CAST(? AS VARCHAR(50)))
+                     WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
+                       AND TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) = TRIM(CAST(? AS VARCHAR(50)))
                        AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
                             FROM "LEAD_ACT" la
                             WHERE la."LEADID" = l."LEADID"
@@ -81,7 +83,8 @@ class DealerStatsAggregator
                 );
                 $ongoingRow = DB::selectOne(
                     'SELECT COUNT(*) as c FROM "LEAD" l
-                     WHERE TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) = TRIM(CAST(? AS VARCHAR(50)))
+                     WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
+                       AND TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) = TRIM(CAST(? AS VARCHAR(50)))
                        AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
                             FROM "LEAD_ACT" la
                             WHERE la."LEADID" = l."LEADID"

@@ -6,9 +6,9 @@
     <style>
         /* ===== Panel Container ===== */
         .inquiry-create-panel {
-            width: min(97vw, 1700px);
-            max-width: 1700px;
-            margin: 12px auto;
+            width: min(92vw, 1500px);
+            max-width: 1500px;
+            margin: 8px auto;
             position: relative;
             overflow: hidden;
             background: #f8f9fc;
@@ -18,24 +18,24 @@
         }
 
         .inquiry-create-panel--new .dashboard-panel-body.inquiry-create-body {
-            padding-left: 76px !important;
+            padding-left: 56px !important;
         }
 
         .vertical-title {
             position: absolute;
             top: 20px;
-            left: 16px;
+            left: 42px;
             z-index: 2;
             writing-mode: vertical-rl;
             transform: rotate(180deg);
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 14px 8px;
+            padding: 15px 7px;
             border-radius: 18px;
             background: linear-gradient(180deg, #f3edff, #ebe4ff);
             color: #7c5cff;
-            font-size: 12px;
+            font-size: 14px;
             font-weight: 700;
             letter-spacing: 0.18em;
             box-shadow: 0 4px 14px rgba(124, 92, 255, 0.12);
@@ -44,7 +44,7 @@
         }
 
         .inquiry-create-panel .dashboard-panel-body.inquiry-create-body {
-            padding: 14px 20px !important;
+            padding: 14px 14px !important;
         }
 
         .dashboard-root.inquiry-create-scroll {
@@ -93,7 +93,7 @@
         .inquiry-form-section {
             background: #fff;
             border-radius: 14px;
-            padding: 18px 20px;
+            padding: 14px 18px;
             margin-bottom: 0;
             border: 1px solid #f0f0f5;
         }
@@ -102,7 +102,7 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-bottom: 14px;
+            margin-bottom: 10px;
         }
 
         .inquiry-form-section-icon {
@@ -194,13 +194,13 @@
             box-shadow: 0 4px 12px rgba(99, 102, 241, 0.08);
         }
 
-        .inquiry-form-checkbox-label.is-checked {
+        .inquiry-form-checkbox-label:has(input:checked) {
             background: #f3f0ff;
             border-color: #6366f1;
             color: #4f46e5;
         }
 
-        .inquiry-form-checkbox-label.is-checked::before {
+        .inquiry-form-checkbox-label:has(input:checked)::before {
             background: #6366f1;
             border-color: #6366f1;
             content: "\F26E"; /* bi-check */
@@ -262,33 +262,37 @@
         }
 
         .inquiry-lookup-btn {
-            display: none;
-            right: 12px;
+            position: absolute;
+            right: 4px;
             top: 50%;
             transform: translateY(-50%);
-            position: absolute;
-            background: #f3f0ff;
+            width: 26px;
+            height: 26px;
+            background: #f5f3ff;
+            border: 1px solid #ddd6fe;
+            border-radius: 6px;
             color: #6366f1;
-            border: none;
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
+            display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all 0.2s;
-            z-index: 10;
-            box-shadow: 0 2px 6px rgba(99, 102, 241, 0.2);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+            visibility: hidden;
+            box-shadow: 0 2px 4px rgba(99, 102, 241, 0.1);
         }
 
         .inquiry-lookup-btn:hover {
             background: #6366f1;
             color: #fff;
-            transform: translateY(-50%) scale(1.1);
+            border-color: #6366f1;
+            box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3);
         }
 
         .inquiry-lookup-btn.is-visible {
             display: flex;
+            opacity: 1;
+            visibility: visible;
         }
 
         .inquiry-form-section {
@@ -510,52 +514,67 @@
         /* ===== Wide Desktop Compact ===== */
         @media (min-width: 1280px) {
             .inquiry-create-panel {
-                margin: 4px auto;
+                margin: 14px 10px 4px -2px !important;
+                width: calc(100% - 12px) !important;
+                max-width: 1800px !important;
             }
 
             .inquiry-create-panel .dashboard-panel-body.inquiry-create-body {
-                padding: 8px 14px 8px !important;
+                padding: 4px 14px 4px !important;
             }
 
             .inquiry-create-panel--new .dashboard-panel-body.inquiry-create-body {
-                padding-left: 68px !important;
+                padding-left: 44px !important;
             }
 
             .inquiry-form-body {
-                gap: 8px;
-            }
-
-            .inquiry-details-split {
-                grid-template-columns: 1fr 260px;
-                gap: 16px;
+                gap: 12px !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: space-between !important;
+                width: 100% !important;
             }
 
             .inquiry-form-section {
-                padding: 12px 14px;
+                padding: 10px 18px !important;
+                border: 1px solid #eef0f7 !important;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.02) !important;
             }
 
             .inquiry-form-section-header {
-                margin-bottom: 8px;
-                gap: 8px;
+                margin-bottom: 6px !important;
+                gap: 8px !important;
             }
 
             .inquiry-form-section-icon {
                 width: 30px;
                 height: 30px;
-                font-size: 16px;
+                font-size: 15px;
                 border-radius: 8px;
             }
 
             .inquiry-form-section-title {
-                font-size: 0.9rem;
+                font-size: 0.95rem;
             }
 
             .inquiry-form-section-subtitle {
                 font-size: 0.75rem;
             }
 
+            /* Balanced spacing when Address 2 is expanded */
+            .inquiry-form-body.has-address2 {
+                gap: 6px !important;
+            }
+            .inquiry-form-body.has-address2 .inquiry-form-section {
+                padding-top: 8px !important;
+                padding-bottom: 8px !important;
+            }
+            .inquiry-form-body.has-address2 .inquiry-form-grid {
+                gap: 8px !important;
+            }
+
             .inquiry-form-section .inquiry-form-grid {
-                gap: 10px;
+                gap: 12px;
             }
 
             .inquiry-form-label-title {
@@ -563,9 +582,9 @@
             }
 
             .inquiry-form-input {
-                height: 34px;
-                font-size: 12.5px;
-                padding: 4px 10px;
+                height: 32px;
+                font-size: 13px;
+                padding: 4px 12px;
             }
 
             .inquiry-form-input.has-icon {
@@ -588,9 +607,9 @@
             }
 
             .inquiry-form-checkbox-label {
-                padding: 8px 10px;
-                font-size: 0.8rem;
-                gap: 8px;
+                padding: 6px 8px;
+                font-size: 0.78rem;
+                gap: 6px;
                 border-radius: 8px;
             }
 
@@ -605,30 +624,43 @@
                 font-size: 0.8rem;
             }
 
-            .inquiry-form-actions .login-primary-btn {
-                height: 36px;
-                padding: 0 20px;
-                font-size: 13px;
+            .inquiry-form-actions .login-primary-btn,
+            .inquiry-form-actions .inquiry-form-cancel {
+                height: 38px !important;
+                width: 150px !important;
+                min-width: 150px !important;
+                padding: 0 24px !important;
+                font-size: 13.5px !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                text-align: center !important;
+                border-radius: 12px !important;
+                font-weight: 700 !important;
+                line-height: 1 !important;
+                gap: 8px !important;
             }
 
             .inquiry-form-actions .inquiry-form-cancel {
-                height: 36px;
-                padding: 0 18px;
-                font-size: 13px;
+                border: 1px solid #e0e0e0 !important;
+                color: #666 !important;
+                background: #fff !important;
+                text-decoration: none !important;
             }
 
             img.inquiry-create-fox-img {
-                width: 200px !important;
-                top: 5px !important;
-                right: 12px !important;
+                width: 140px !important;
+                top: 2px !important;
+                right: 10px !important;
             }
 
             .vertical-title {
-                padding: 10px 6px;
-                font-size: 11px;
+                padding: 16px 5px;
+                font-size: 14px;
                 border-radius: 14px;
-                top: 14px;
-                left: 12px;
+                top: 19px;
+                left: 54px;
+                z-index: 10;
             }
         }
 
@@ -683,6 +715,15 @@
 
 
 
+        .inquiry-form-input:focus {
+            background-color: #fff !important;
+        }
+
+        .inquiry-form-input:not(:placeholder-shown):not(:focus) {
+            background-color: #f6faff !important;
+            border-color: #d1e4ff !important;
+        }
+
     </style>
 @endpush
 @section('content')
@@ -726,20 +767,18 @@
                 <div class="inquiry-form-section" style="position: relative;">
                     <img src="{{ asset('NewInquiries-FoxIcon.png') }}" class="inquiry-create-fox-img" alt="Mascot">
                     <div class="inquiry-form-section-header">
-                        <div class="inquiry-form-section-icon"><i class="bi bi-building"></i></div>
                         <div>
                             <h3 class="inquiry-form-section-title">Company Information</h3>
-                            <p class="inquiry-form-section-subtitle">Tell us about your company</p>
                         </div>
                     </div>
                     <div class="inquiry-form-grid">
-                        <div class="inquiry-form-label" style="grid-column: span 10 !important;">
+                        <div class="inquiry-form-label inquiry-company-field" style="grid-column: span 10 !important;">
                             <label for="companyInput" class="inquiry-form-label-title">Company name <span class="required">*</span></label>
                             <div class="inquiry-form-input-wrapper">
                                 <i class="bi bi-building inquiry-input-icon"></i>
                                 <input type="text" name="COMPANYNAME" id="companyInput" value="{{ old('COMPANYNAME', $inquiry->COMPANYNAME ?? '') }}" maxlength="200" required class="inquiry-form-input has-icon" placeholder="Enter company name" autocomplete="off">
                                 <button type="button" class="inquiry-lookup-btn" id="lookupCompanyBtn" title="Load existing company data">
-                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                    <i class="bi bi-search" style="font-size: 11px; font-weight: 800;"></i>
                                 </button>
                             </div>
                         </div>
@@ -774,10 +813,8 @@
                 <!-- Section 2: Contact Details -->
                 <div class="inquiry-form-section">
                     <div class="inquiry-form-section-header">
-                        <div class="inquiry-form-section-icon" style="background: #eef2ff; color: #4f46e5;"><i class="bi bi-person-badge"></i></div>
                         <div>
                             <h3 class="inquiry-form-section-title">Contact Details</h3>
-                            <p class="inquiry-form-section-subtitle">Provide the primary contact information</p>
                         </div>
                     </div>
                     <div class="inquiry-form-grid">
@@ -811,10 +848,8 @@
                 <!-- Section 3: Address -->
                 <div class="inquiry-form-section">
                     <div class="inquiry-form-section-header">
-                        <div class="inquiry-form-section-icon" style="background: #fff1f2; color: #e11d48;"><i class="bi bi-geo-alt"></i></div>
                         <div>
                             <h3 class="inquiry-form-section-title">Address</h3>
-                            <p class="inquiry-form-section-subtitle">Where is your business located?</p>
                         </div>
                     </div>
                     <div class="inquiry-form-grid">
@@ -894,10 +929,8 @@
                 <!-- Section 4: Inquiry Details -->
                 <div class="inquiry-form-section" style="z-index: 20; position: relative;">
                     <div class="inquiry-form-section-header">
-                        <div class="inquiry-form-section-icon" style="background: #f0fdf4; color: #16a34a;"><i class="bi bi-chat-left-text"></i></div>
                         <div>
                             <h3 class="inquiry-form-section-title">Inquiry Details</h3>
-                            <p class="inquiry-form-section-subtitle">Tell us more about your inquiry</p>
                         </div>
                     </div>
                     <div class="inquiry-form-grid">
@@ -913,8 +946,8 @@
                                     $selectedProducts = old('product_interested', $defaultProducts);
                                 @endphp
                                 @foreach($productInterestedList ?? [] as $num => $label)
-                                    <label class="inquiry-form-checkbox-label {{ in_array($num, $selectedProducts) ? 'is-checked' : '' }}">
-                                        <input type="checkbox" name="product_interested[]" value="{{ $num }}" {{ in_array($num, $selectedProducts) ? 'checked' : '' }} class="inquiry-form-checkbox" hidden>
+                                    <label class="inquiry-form-checkbox-label">
+                                        <input type="checkbox" name="product_interested[]" value="{{ $num }}" {{ in_array($num, $selectedProducts) ? 'checked' : '' }} class="inquiry-form-checkbox" style="position:absolute;opacity:0;width:0;height:0;pointer-events:none;">
                                         {{ $label }}
                                     </label>
                                 @endforeach
@@ -961,9 +994,11 @@
                     </div>
                 </div>
 
-                <div class="inquiry-form-actions" style="margin-top: 4px; display: flex; justify-content: flex-end; gap: 12px; align-items: center;">
-                    <a href="{{ route('admin.inquiries') }}" class="inquiry-form-cancel" style="padding: 12px 24px; border-radius: 10px; font-weight: 600; color: #666; text-decoration: none; transition: all 0.2s;">Cancel</a>
-                    <button type="submit" class="login-primary-btn" style="padding: 12px 32px; border-radius: 10px; display: flex; align-items: center; gap: 8px; font-weight: 600; border: none; transition: all 0.2s;">
+                <div class="inquiry-form-actions" style="margin-top: auto; padding-top: 10px; display: flex; justify-content: flex-end; gap: 12px; align-items: center; width: 100%;">
+                    <a href="{{ route('admin.inquiries') }}" class="inquiry-form-cancel" style="padding: 10px 24px; border-radius: 12px; font-weight: 700; color: #666; text-decoration: none; transition: all 0.2s; min-width: 150px; text-align: center; border: 1px solid #e0e0e0; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <i class="bi bi-x-lg" style="font-size: 14px;"></i> Cancel
+                    </a>
+                    <button type="submit" class="login-primary-btn" style="padding: 10px 24px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; border: none; transition: all 0.2s; min-width: 150px; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);">
                         <i class="bi bi-send"></i> {{ $isEdit ? 'Update inquiry' : 'Save inquiry' }}
                     </button>
                 </div>
@@ -1168,8 +1203,8 @@ document.addEventListener('DOMContentLoaded', function () {
             fetch(lookupUrl + '?q=' + encodeURIComponent(val))
                 .then(response => response.json())
                 .then(data => {
-                    if (data && data.status === 'success' && data.data) {
-                        lastCompanyData = data.data;
+                    if (data && data.found) {
+                        lastCompanyData = data;
                         if (lookupBtn) lookupBtn.classList.add('is-visible');
                     } else {
                         lastCompanyData = null;
@@ -1193,23 +1228,48 @@ document.addEventListener('DOMContentLoaded', function () {
             
             // Auto-fill fields if they are empty
             var fields = {
-                'BUSINESSNATURE': 'BUSINESSNATURE',
-                'EXISTINGSOFTWARE': 'EXISTINGSOFTWARE',
-                'USERCOUNT': 'USERCOUNT',
-                'ADDRESS1': 'ADDRESS1',
-                'POSTCODE': 'POSTCODE',
-                'CITY': 'CITY',
-                'STATE': 'STATE',
-                'COUNTRY': 'COUNTRY'
+                'BUSINESSNATURE': 'businessnature',
+                'EXISTINGSOFTWARE': 'existingsoftware',
+                'USERCOUNT': 'usercount',
+                'ADDRESS1': 'address1',
+                'ADDRESS2': 'address2',
+                'POSTCODE': 'postcode',
+                'CITY': 'city',
+                'STATE': 'state',
+                'COUNTRY': 'country',
+                'CONTACTNAME': 'contactname',
+                'CONTACTNO': 'contactno',
+                'EMAIL': 'email'
             };
 
             for (var key in fields) {
                 var input = document.querySelector('[name="' + key + '"]');
                 if (input && lastCompanyData[fields[key]]) {
-                    input.value = lastCompanyData[fields[key]];
-                    // Trigger events for postcode lookup etc.
-                    input.dispatchEvent(new Event('input'));
-                    input.dispatchEvent(new Event('change'));
+                    // Fill only if empty
+                    if (!input.value || input.value.trim() === '') {
+                        input.value = lastCompanyData[fields[key]];
+                        // Trigger events for postcode lookup etc.
+                        input.dispatchEvent(new Event('input'));
+                        input.dispatchEvent(new Event('change'));
+                    }
+                }
+            }
+
+            // Handle Address 2 visibility specifically
+            if (lastCompanyData.address2 && lastCompanyData.address2.trim() !== '') {
+                setAddress2Expanded(true);
+            }
+
+            // Demo mode toggle (Zoom / On-site) from existing lead
+            if (lastCompanyData.demomode) {
+                var dm = String(lastCompanyData.demomode);
+                var demoInput = document.getElementById('demoModeInput');
+                var toggle = document.querySelector('.inquiry-toggle[data-toggle="demomode"]');
+                if (demoInput && toggle && (dm === 'Zoom' || dm === 'On-site')) {
+                    demoInput.value = dm;
+                    toggle.querySelectorAll('.inquiry-toggle-option').forEach(function (b) {
+                        b.classList.toggle('is-active', b.getAttribute('data-value') === dm);
+                    });
                 }
             }
             
@@ -1295,102 +1355,9 @@ document.addEventListener('DOMContentLoaded', function () {
         syncLocationFromPostcode();
     }
 
-    function scheduleCompanyLookup() {
-        if (!companyInput || !copyBtn || !lookupUrl) return;
-        var val = (companyInput.value || '').trim();
-        if (lookupTimer) clearTimeout(lookupTimer);
-        if (val.length < 3) {
-            lastCompanyData = null;
-            copyBtn.hidden = true;
-            return;
-        }
-        lookupTimer = setTimeout(function () {
-            fetch(lookupUrl + '?q=' + encodeURIComponent(val), {
-                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-            }).then(function (res) {
-                return res.ok ? res.json() : Promise.reject();
-            }).then(function (data) {
-                if (data && data.found) {
-                    lastCompanyData = data;
-                    copyBtn.hidden = false;
-                } else {
-                    lastCompanyData = null;
-                    copyBtn.hidden = true;
-                }
-            }).catch(function () {
-                lastCompanyData = null;
-                copyBtn.hidden = true;
-            });
-        }, 500);
-    }
 
-    if (companyInput && copyBtn) {
-        companyInput.addEventListener('input', scheduleCompanyLookup);
-        copyBtn.addEventListener('click', function () {
-            if (!lastCompanyData) return;
-            var map = {
-                EMAIL: 'email',
-                CONTACTNAME: 'contactname',
-                CONTACTNO: 'contactno',
-                CITY: 'city',
-                STATE: 'state',
-                COUNTRY: 'country',
-                POSTCODE: 'postcode',
-                BUSINESSNATURE: 'businessnature',
-                ADDRESS1: 'address1',
-                ADDRESS2: 'address2',
-                EXISTINGSOFTWARE: 'existingsoftware',
-                USERCOUNT: 'usercount'
-            };
-            Object.keys(map).forEach(function (field) {
-                var key = map[field];
-                var value = lastCompanyData[key];
-                var input = document.querySelector('[name="' + field + '"]');
-                if (!input) return;
-                if (field === 'USERCOUNT') {
-                    var num = parseInt(value, 10);
-                    if (!isNaN(num) && num > 0) {
-                        // Always prefer the existing lead's user count over the default (1)
-                        input.value = String(num);
-                    }
-                    return;
-                }
-                if (typeof value === 'string' && value !== '' && (!input.value || input.value.trim() === '')) {
-                    input.value = value;
-                }
-            });
 
-            if (typeof lastCompanyData.address2 === 'string' && lastCompanyData.address2.trim() !== '') {
-                setAddress2Expanded(true);
-                if (address2Input && (!address2Input.value || address2Input.value.trim() === '')) {
-                    address2Input.value = lastCompanyData.address2;
-                }
-            }
 
-            // Demo mode toggle (Zoom / On-site) from existing lead
-            if (lastCompanyData.demomode) {
-                var dm = String(lastCompanyData.demomode);
-                var demoInput = document.getElementById('demoModeInput');
-                var toggle = document.querySelector('.inquiry-toggle[data-toggle="demomode"]');
-                if (demoInput && toggle && (dm === 'Zoom' || dm === 'On-site')) {
-                    demoInput.value = dm;
-                    toggle.querySelectorAll('.inquiry-toggle-option').forEach(function (b) {
-                        b.classList.toggle('is-active', b.getAttribute('data-value') === dm);
-                    });
-                }
-            }
-        });
-    }
-
-    // Checkbox visual feedback for product cards
-    document.querySelectorAll('.inquiry-form-checkbox-label input[type="checkbox"]').forEach(function(cb) {
-        cb.addEventListener('change', function() {
-            var label = this.closest('.inquiry-form-checkbox-label');
-            if (label) {
-                label.classList.toggle('is-checked', this.checked);
-            }
-        });
-    });
 });
 </script>
 @endpush

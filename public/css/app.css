@@ -6580,6 +6580,7 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
 .inquiries-columns-check input {
   width: 16px;
   height: 16px;
+  accent-color: #6366f1;
 }
 .inquiries-columns-check[hidden] {
   display: none !important;

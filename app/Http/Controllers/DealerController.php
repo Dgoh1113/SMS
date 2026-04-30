@@ -26,14 +26,15 @@ class DealerController extends Controller
             'pctClosed' => 0,
             'pendingFollowups' => 0,
         ];
-        $closedCaseChartData = [
-            'chartLabels' => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-            'chartData' => array_fill(0, 7, 0),
-            'chartMonthLabels' => range(1, 30),
-            'chartMonthData' => array_fill(0, 30, 0),
-            'chartYearLabels' => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-            'chartYearData' => array_fill(0, 12, 0),
-        ];
+        $dealerClosedCaseRanges = [];
+        foreach ([30, 60, 90] as $rangeDays) {
+            $rangeKey = (string) $rangeDays;
+            $dealerClosedCaseRanges[$rangeKey] = [
+                'labels' => array_fill(0, $rangeDays, ''),
+                'data' => array_fill(0, $rangeDays, 0),
+                'tooltipTitles' => array_fill(0, $rangeDays, ''),
+            ];
+        }
         $highPriorityFollowups = [];
         $leadsTotal = 0;
         $inquiriesPage = 1;
@@ -75,7 +76,7 @@ class DealerController extends Controller
                       ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC) AS "ACT_LAST_UPDATE"
                 FROM "LEAD" l
                 LEFT JOIN "USERS" u ON u."USERID" = l."CREATEDBY"
-                WHERE l."ASSIGNEDTO" = ?
+                WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                 ORDER BY l."LEADID" DESC',
                 [$dealerId]
             );
@@ -103,7 +104,7 @@ class DealerController extends Controller
                       ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC) AS "ACT_LAST_UPDATE"
                 FROM "LEAD" l
                 LEFT JOIN "USERS" u ON u."USERID" = l."CREATEDBY"
-                WHERE l."ASSIGNEDTO" = ?
+                WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                   AND (SELECT FIRST 1 UPPER(TRIM(la2."STATUS"))
                        FROM "LEAD_ACT" la2
                        WHERE la2."LEADID" = l."LEADID"
@@ -115,7 +116,7 @@ class DealerController extends Controller
 
             $activeCountRow = DB::selectOne(
                 'SELECT COUNT(*) AS "CNT" FROM "LEAD" l
-                WHERE l."ASSIGNEDTO" = ?
+                WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                   AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
                        FROM "LEAD_ACT" la
                        WHERE la."LEADID" = l."LEADID"
@@ -137,7 +138,7 @@ class DealerController extends Controller
             ): int {
                 $sql = 'SELECT COUNT(*) AS "CNT"
                         FROM "LEAD" l
-                        WHERE l."ASSIGNEDTO" = ?
+                        WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                           AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
                                FROM "LEAD_ACT" la
                                WHERE la."LEADID" = l."LEADID"
@@ -162,7 +163,7 @@ class DealerController extends Controller
             ): int {
                 $sql = 'SELECT COUNT(*) AS "CNT"
                         FROM "LEAD" l
-                        WHERE l."ASSIGNEDTO" = ?';
+                        WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?';
                 $params = [$dealerId];
 
                 if ($cutoff !== null) {
@@ -202,7 +203,7 @@ class DealerController extends Controller
                                         \'Pending\'
                                     ) AS "LATEST_STATUS"
                              FROM "LEAD" l
-                             WHERE l."ASSIGNEDTO" = ?
+                             WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                                AND l."CREATEDAT" <= ?
                          ) x
                          WHERE UPPER(TRIM(COALESCE(x."LATEST_STATUS", \'\'))) IN (\'PENDING\', \'FOLLOWUP\', \'FOLLOW UP\', \'DEMO\', \'CONFIRMED\')',
@@ -253,14 +254,15 @@ class DealerController extends Controller
 
             $pendingFollowupsSql = $dealerEmail
                 ? 'SELECT COUNT(*) AS "CNT" FROM "LEAD" l
-                  WHERE l."ASSIGNEDTO" = (SELECT "USERID" FROM "USERS" WHERE "EMAIL" = ?)
+                  WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
+                    AND l."ASSIGNEDTO" = (SELECT "USERID" FROM "USERS" WHERE "EMAIL" = ?)
                   AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
                        FROM "LEAD_ACT" la
                        WHERE la."LEADID" = l."LEADID"
                        ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
                       ) IN (\'PENDING\', \'FOLLOWUP\', \'FOLLOW UP\', \'DEMO\', \'CONFIRMED\')'
                 : 'SELECT COUNT(*) AS "CNT" FROM "LEAD" l
-                  WHERE l."ASSIGNEDTO" = ?
+                  WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                   AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
                        FROM "LEAD_ACT" la
                        WHERE la."LEADID" = l."LEADID"
@@ -270,66 +272,37 @@ class DealerController extends Controller
             $pendingFollowupsRow = DB::selectOne($pendingFollowupsSql, $pendingFollowupsParams);
             $pendingFollowupsCount = (int) ($pendingFollowupsRow->CNT ?? 0);
 
-            $now = time();
-            $weekStart = date('Y-m-d', strtotime('monday this week', $now));
-            $weekEnd = date('Y-m-d 23:59:59', strtotime('sunday this week', $now));
-            $monthStart = date('Y-m-d', strtotime('first day of this month', $now));
-            $monthEnd = date('Y-m-d 23:59:59', strtotime('last day of this month', $now));
-            $yearStart = date('Y') . '-01-01';
-            $yearEnd = date('Y') . '-12-31 23:59:59';
+            $dealerClosedCaseRanges = [];
+            foreach ([30, 60, 90] as $rangeDays) {
+                $rangeKey = (string) $rangeDays;
+                $labels = [];
+                $closedData = [];
+                $tooltipTitles = [];
 
-            $chartLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-            $chartData = array_fill(0, 7, 0);
-            $chartMonthLabels = [];
-            $chartMonthData = [];
-            $chartYearLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            $chartYearData = array_fill(0, 12, 0);
+                try {
+                    $rangeEnd = Carbon::today();
+                    $rangeStart = $rangeEnd->copy()->subDays($rangeDays - 1);
 
-            try {
-                $startOfWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
-                for ($i = 0; $i < 7; $i++) {
-                    $day = $startOfWeek->copy()->addDays($i)->format('Y-m-d');
-                    $chartData[$i] = $countClosedLeads($day . ' 00:00:00', $day . ' 23:59:59');
+                    for ($d = 0; $d < $rangeDays; $d++) {
+                        $day = $rangeStart->copy()->addDays($d);
+                        $dayStr = $day->format('Y-m-d');
+                        $labels[] = $day->format('d M');
+                        $tooltipTitles[] = $day->format('d M Y');
+
+                        $closedData[] = $countClosedLeads($dayStr . ' 00:00:00', $dayStr . ' 23:59:59');
+                    }
+                } catch (\Throwable $e) {
+                    $labels = array_fill(0, $rangeDays, '');
+                    $closedData = array_fill(0, $rangeDays, 0);
+                    $tooltipTitles = $labels;
                 }
-            } catch (\Throwable $e) {
-                // keep zeros
-            }
 
-            try {
-                $start = Carbon::now()->startOfMonth();
-                $daysInMonth = $start->daysInMonth;
-                for ($i = 1; $i <= $daysInMonth; $i++) {
-                    $chartMonthLabels[] = (string) $i;
-                    $day = $start->copy()->day($i)->format('Y-m-d');
-                    $chartMonthData[] = $countClosedLeads($day . ' 00:00:00', $day . ' 23:59:59');
-                }
-            } catch (\Throwable $e) {
-                $chartMonthLabels = range(1, 30);
-                $chartMonthData = array_fill(0, count($chartMonthLabels), 0);
+                $dealerClosedCaseRanges[$rangeKey] = [
+                    'labels' => $labels,
+                    'data' => $closedData,
+                    'tooltipTitles' => $tooltipTitles,
+                ];
             }
-
-            try {
-                $yearStart = Carbon::now()->startOfYear();
-                for ($m = 0; $m < 12; $m++) {
-                    $monthStart = $yearStart->copy()->addMonths($m);
-                    $monthEnd = $monthStart->copy()->endOfMonth();
-                    $chartYearData[$m] = $countClosedLeads(
-                        $monthStart->format('Y-m-d 00:00:00'),
-                        $monthEnd->format('Y-m-d 23:59:59')
-                    );
-                }
-            } catch (\Throwable $e) {
-                $chartYearData = array_fill(0, 12, 0);
-            }
-
-            $closedCaseChartData = [
-                'chartLabels' => $chartLabels,
-                'chartData' => $chartData,
-                'chartMonthLabels' => $chartMonthLabels,
-                'chartMonthData' => $chartMonthData,
-                'chartYearLabels' => $chartYearLabels,
-                'chartYearData' => $chartYearData,
-            ];
 
             $metrics = [
                 'activeInquiries' => $activeInquiriesCount,
@@ -432,7 +405,7 @@ class DealerController extends Controller
             'inquiriesTotalPages' => $inquiriesTotalPages,
             'inquiriesPerPage' => $inquiriesPerPage,
             'metrics' => $metrics,
-            'closedCaseChartData' => $closedCaseChartData,
+            'dealerClosedCaseRanges' => $dealerClosedCaseRanges,
             'highPriorityFollowups' => $highPriorityFollowups,
             'currentPage' => 'dashboard',
         ]);
@@ -481,7 +454,8 @@ class DealerController extends Controller
                     ) AS "ACT_STATUS"
                 FROM "LEAD" l
                 LEFT JOIN "USERS" u ON u."USERID" = l."CREATEDBY"
-                WHERE l."ASSIGNEDTO" = ?
+                WHERE COALESCE(l."ISDELETED", FALSE) = FALSE 
+                  AND l."ASSIGNEDTO" = ?
                   AND UPPER(TRIM(COALESCE(
                         (SELECT FIRST 1 la2."STATUS"
                            FROM "LEAD_ACT" la2
@@ -522,7 +496,7 @@ class DealerController extends Controller
                             ) AS "ACT_STATUS"
                         FROM "LEAD" l
                         LEFT JOIN "USERS" u ON u."USERID" = l."CREATEDBY"
-                        WHERE l."ASSIGNEDTO" = ?
+                        WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                           AND l."LEADID" = ?
                         ORDER BY l."LEADID" DESC',
                         [$dealerId, $focusLeadId]
@@ -1195,6 +1169,13 @@ class DealerController extends Controller
                     : $activityTime;
                 $parsed = Carbon::createFromFormat('Y-m-d H:i:s', $activityDate . ' ' . $timeForSave);
                 if ($parsed !== false) {
+                    $maxFuture = $requestNow->copy()->addDays(3)->endOfDay();
+                    if ($parsed->gt($maxFuture)) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'The activity date cannot be more than 3 days in the future.',
+                        ], 422);
+                    }
                     $creationDate = $parsed->format('Y-m-d H:i:s') . '.' . substr($requestNow->format('u'), 0, 3);
                 }
             } catch (\Throwable $e) {
@@ -1327,6 +1308,7 @@ class DealerController extends Controller
 
         $toStatus = $statusDb;
         $description = $remark !== '' ? $remark : ('Update Status from ' . $fromStatus . ' to ' . $toStatus);
+
         if (! empty($products)) {
             $productNames = array_map(fn ($p) => $p['name'] ?? 'Product ' . ($p['id'] ?? ''), $products);
             $description = 'Products: ' . implode(', ', $productNames) . "\n\n" . $description;
@@ -1417,7 +1399,7 @@ class DealerController extends Controller
                     "EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION","REFERRALCODE",
                     "CREATEDAT","CREATEDBY","ASSIGNEDTO" AS "assignedTo","LASTMODIFIED"
                  FROM "LEAD"
-                 WHERE "ASSIGNEDTO" = ?
+                 WHERE COALESCE("ISDELETED", FALSE) = FALSE AND "ASSIGNEDTO" = ?
                  ORDER BY "LEADID" DESC',
                 [$dealerId]
             );
@@ -1826,7 +1808,7 @@ class DealerController extends Controller
                         \'Pending\'
                     ))) AS "LATEST_STATUS"
                  FROM "LEAD" l
-                 WHERE l."ASSIGNEDTO" = ?',
+                 WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?',
                 [$dealerId]
             );
 
@@ -1862,7 +1844,7 @@ class DealerController extends Controller
                      ) m ON m."LEADID" = a."LEADID" AND m.max_created = a."CREATIONDATE"
                  ) latest
                  JOIN "LEAD" l ON l."LEADID" = latest."LEADID"
-                 WHERE l."ASSIGNEDTO" = ?
+                 WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                    AND UPPER(TRIM(latest."STATUS")) = \'COMPLETED\'
                    AND TRIM(COALESCE(l."REFERRALCODE", \'\')) <> \'\'',
                 [$dealerId]
@@ -1962,7 +1944,7 @@ class DealerController extends Controller
                         \'Pending\'
                     ) AS "LATEST_STATUS"
                 FROM "LEAD" l
-                WHERE l."ASSIGNEDTO" = ?
+                WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                   AND EXISTS (
                       SELECT 1
                       FROM "LEAD_ACT" lae
@@ -1981,7 +1963,7 @@ class DealerController extends Controller
                         \'Pending\'
                     ) AS "LATEST_STATUS"
                 FROM "LEAD" l
-                WHERE l."ASSIGNEDTO" = ?';
+                WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?';
             $bindings = [$dealerId];
         }
 
@@ -2025,7 +2007,7 @@ class DealerController extends Controller
             'SELECT COUNT(*) AS "CNT"
              FROM "LEAD" l
              JOIN (' . $dealerPendingDateSql . ') p ON p."LEADID" = l."LEADID"
-             WHERE l."ASSIGNEDTO" = ?
+             WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                AND p."PENDING_AT" >= ?
                AND p."PENDING_AT" <= ?',
             ['PENDING', $dealerId, $df, $dt]
@@ -2041,7 +2023,7 @@ class DealerController extends Controller
                     'SELECT COUNT(*) AS "CNT"
                      FROM "LEAD" l
                      JOIN (' . $dealerPendingDateSql . ') p ON p."LEADID" = l."LEADID"
-                     WHERE l."ASSIGNEDTO" = ?
+                     WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                        AND CAST(p."PENDING_AT" AS DATE) = ?',
                     ['PENDING', $dealerId, $d]
                 );
@@ -2056,7 +2038,7 @@ class DealerController extends Controller
                     'SELECT COUNT(*) AS "CNT"
                      FROM "LEAD" l
                      JOIN (' . $dealerPendingDateSql . ') p ON p."LEADID" = l."LEADID"
-                     WHERE l."ASSIGNEDTO" = ?
+                     WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                        AND p."PENDING_AT" IS NOT NULL
                        AND p."PENDING_AT" >= ? AND p."PENDING_AT" <= ?
                        AND EXTRACT(YEAR FROM p."PENDING_AT") = ?
@@ -2076,7 +2058,7 @@ class DealerController extends Controller
                     'SELECT COUNT(*) AS "CNT"
                      FROM "LEAD" l
                      JOIN (' . $dealerPendingDateSql . ') p ON p."LEADID" = l."LEADID"
-                     WHERE l."ASSIGNEDTO" = ?
+                     WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                        AND p."PENDING_AT" >= ? AND p."PENDING_AT" <= ?',
                     ['PENDING', $dealerId, $bStart, $bEnd]
                 );
@@ -2129,7 +2111,7 @@ class DealerController extends Controller
                 'SELECT la."LEAD_ACTID", la."LEADID", la."CREATIONDATE", la."SUBJECT", la."DESCRIPTION", la."STATUS"
                 FROM "LEAD_ACT" la
                 JOIN "LEAD" l ON l."LEADID" = la."LEADID"
-                WHERE l."ASSIGNEDTO" = ?
+                WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                 ORDER BY la."LEAD_ACTID" DESC',
                 [$dealerId]
             );
@@ -2153,7 +2135,7 @@ class DealerController extends Controller
              FROM "LEAD_ACT" la
              JOIN "LEAD" l ON l."LEADID" = la."LEADID"
              LEFT JOIN "USERS" u ON u."USERID" = la."USERID"
-             WHERE l."ASSIGNEDTO" = ?
+             WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                AND (
                     UPPER(TRIM(COALESCE(la."SUBJECT", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
                     OR UPPER(TRIM(COALESCE(la."DESCRIPTION", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
