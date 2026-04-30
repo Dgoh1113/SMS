@@ -17,15 +17,11 @@
 <div class="dashboard-content inquiries-page-wrap">
     @include('dealer.partials.console-inquiries-tabs', ['dealerConsoleTab' => $dealerConsoleTab ?? 'inquiries'])
     <section class="inquiries-mgmt-panel dealer-inquiries-panel">
-        <div class="inquiries-panel-header">
-        <div class="inquiries-panel-title-wrap">
-            <i class="bi bi-folder2-open inquiries-panel-icon"></i>
-            <h2 class="inquiries-panel-title">My Inquiries</h2>
-        </div>
-        <div class="inquiries-panel-actions">
-            <div class="inquiries-columns-dropdown">
-                <button type="button" class="inquiries-btn inquiries-btn-secondary" id="dealerInquiryColumnsBtn" aria-haspopup="true" aria-expanded="false">Columns</button>
-                <div class="inquiries-columns-menu" id="dealerInquiryColumnsMenu" hidden>
+        @include('dealer.partials.console-panel-header', [
+            'actions' => '
+                <div class="inquiries-columns-dropdown">
+                    <button type="button" class="inquiries-btn inquiries-btn-secondary" id="dealerInquiryColumnsBtn" aria-haspopup="true" aria-expanded="false">Columns</button>
+                    <div class="inquiries-columns-menu" id="dealerInquiryColumnsMenu" hidden>
                         <div class="inquiries-columns-menu-title">Show columns</div>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="inquiryid"> INQUIRY ID</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="date"> INQUIRY DATE</label>
@@ -49,7 +45,7 @@
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="referralcode"> REFERRAL CODE</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="attachment"> ATTACHMENT</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="assignby"> ASSIGN BY</label>
-                        <label class="inquiries-columns-check"><input type="checkbox" data-col="status"> STATUS</label>
+                        '.(($dealerConsoleTab ?? 'inquiries') === 'inquiries' ? '<label class="inquiries-columns-check"><input type="checkbox" data-col="status"> STATUS</label>' : '').'
                         <div class="inquiries-columns-actions">
                             <button type="button" class="inquiries-columns-action-btn" id="dealerInquiryColumnsAll">All</button>
                             <button type="button" class="inquiries-columns-action-btn" id="dealerInquiryColumnsNone">None</button>
@@ -57,8 +53,8 @@
                         <button type="button" class="inquiries-columns-reset" id="dealerInquiryColumnsReset">Reset to default</button>
                     </div>
                 </div>
-            </div>
-        </div>
+            '
+        ])
         <div class="inquiries-table-wrap">
             <div class="inquiries-table-scroll">
             <table class="inquiries-table" id="dealerInquiriesTable">
@@ -86,7 +82,9 @@
                         <x-tables.text-filter-header col="referralcode" label="REFERRAL CODE" />
                         <x-tables.text-filter-header col="attachment" label="ATTACHMENT" />
                         <x-tables.text-filter-header col="assignby" label="ASSIGN BY" />
-                        <x-tables.status-multi-filter-header col="status" label="STATUS" :options="$statusFilterOptions" select-class="inquiries-grid-filter inquiries-grid-filter-select" />
+                        @if(($dealerConsoleTab ?? 'inquiries') === 'inquiries')
+                            <x-tables.status-multi-filter-header col="status" label="STATUS" :options="$statusFilterOptions" select-class="inquiries-grid-filter inquiries-grid-filter-select" />
+                        @endif
                         <x-tables.clear-filter-header button-id="dealerInquiryClearFilters" />
                     </tr>
                 </thead>
@@ -193,8 +191,8 @@ function initDealerInquiriesPage() {
     var olderLegacyDefaultCols = ['inquiryid','date','customer','postcode','city','state','country','businessnature','products','assignby','status'];
     var previousDefaultCols = ['inquiryid','date','customer','email','postcode','city','state','country','products','status'];
     var compactMobileLegacyCols = ['inquiryid','date','customer'];
-    var defaultCols = ['inquiryid','date','customer','email','postcode','city','products','assigndate','status'];
-    var allCols = ['inquiryid','date','customer','email','postcode','city','state','country','address','contactno','businessnature','users','existingsw','demomode','products','assigndate','completiondate','payoutsdate','message','referralcode','attachment','assignby','status'];
+    var defaultCols = ['inquiryid','date','customer','email','postcode','city','products','assigndate'{!! ($dealerConsoleTab ?? 'inquiries') === 'inquiries' ? ",'status'" : "" !!}];
+    var allCols = ['inquiryid','date','customer','email','postcode','city','state','country','address','contactno','businessnature','users','existingsw','demomode','products','assigndate','completiondate','payoutsdate','message','referralcode','attachment','assignby'{!! ($dealerConsoleTab ?? 'inquiries') === 'inquiries' ? ",'status'" : "" !!}];
 
     function getDefaultColsForViewport() {
         return defaultCols.slice();
@@ -1876,6 +1874,42 @@ if (document.readyState === 'loading') {
         statusCell.textContent = label;
         statusCell.className = 'inquiries-status ' + cls;
 
+        // If we are in a specific status tab (not 'inquiries' or 'all'), and the status changed, 
+        // the row should be removed because it no longer belongs here.
+        var currentTab = '{{ $dealerConsoleTab ?? 'inquiries' }}';
+        var activeStatuses = ['PENDING', 'FOLLOWUP', 'FOLLOW UP', 'DEMO', 'CONFIRMED'];
+        
+        var shouldRemove = false;
+        if (currentTab === 'inquiries') {
+            if (activeStatuses.indexOf(rawUpper) === -1) shouldRemove = true;
+        } else if (currentTab === 'pending-payouts') {
+            // Payouts handles its own logic
+        } else {
+            var tabStatuses = [];
+            switch (currentTab) {
+                case 'pending': tabStatuses = ['PENDING']; break;
+                case 'followup': tabStatuses = ['FOLLOWUP', 'FOLLOW UP']; break;
+                case 'demo': tabStatuses = ['DEMO']; break;
+                case 'confirmed': tabStatuses = ['CONFIRMED']; break;
+                case 'completed': tabStatuses = ['COMPLETED', 'CASE COMPLETED']; break;
+                case 'failed': tabStatuses = ['FAILED']; break;
+                case 'cancelled': tabStatuses = ['CANCELLED']; break;
+                case 'rewarded': tabStatuses = ['REWARDED', 'REWARD', 'REWARD DISTRIBUTED']; break;
+            }
+            if (tabStatuses.indexOf(rawUpper) === -1) shouldRemove = true;
+        }
+
+        if (shouldRemove) {
+            row.style.transition = 'opacity 0.3s ease';
+            row.style.opacity = '0';
+            setTimeout(function() {
+                row.remove();
+                if (typeof window.dealerApplyPagination === 'function') {
+                    window.dealerApplyPagination();
+                }
+            }, 300);
+        }
+
         // Optionally show saved data (date/time/remark) as a tooltip on the status badge
         if (meta && (meta.date || meta.time || meta.remark)) {
             var parts = [];
@@ -1883,6 +1917,54 @@ if (document.readyState === 'loading') {
             if (meta.time) parts.push('Time: ' + meta.time);
             if (meta.remark) parts.push('Remark: ' + meta.remark);
             statusCell.title = parts.join(' | ');
+        }
+    }
+
+    function refreshDealerConsoleCounts(counts) {
+        if (!counts) return;
+        var tabsNav = document.querySelector('.dealer-console-tabs');
+        if (!tabsNav) return;
+
+        var tabMap = {
+            'inquiries': counts.inquiries,
+            'pending': counts.pending,
+            'followup': counts.followup,
+            'demo': counts.demo,
+            'confirmed': counts.confirmed,
+            'completed': counts.completed,
+            'failed': counts.failed,
+            'cancelled': counts.cancelled,
+            'rewarded': counts.rewarded,
+            'pending-payouts': counts.pending_payouts
+        };
+
+        for (var tabId in tabMap) {
+            var count = tabMap[tabId];
+            var tabLink = tabsNav.querySelector('a[href*="tab=' + tabId + '"]');
+            if (tabId === 'pending-payouts') {
+                tabLink = tabsNav.querySelector('a[href*="/payouts"]');
+            } else if (tabId === 'inquiries') {
+                tabLink = tabsNav.querySelector('a[href$="/inquiries"]') || tabsNav.querySelector('a[href*="tab=inquiries"]');
+            }
+
+            if (tabLink) {
+                var countEl = tabLink.querySelector('.inquiries-tab-count');
+                if (countEl) {
+                    countEl.textContent = new Intl.NumberFormat().format(count);
+                    countEl.hidden = false;
+                    countEl.removeAttribute('aria-hidden');
+                }
+            }
+        }
+
+        // Also update current panel header title count
+        var currentTabId = '{{ $dealerConsoleTab ?? "inquiries" }}';
+        var currentCount = tabMap[currentTabId];
+        if (typeof currentCount !== 'undefined') {
+            var titleCountEl = document.querySelector('.inquiries-panel-title .inquiries-title-count');
+            if (titleCountEl) {
+                titleCountEl.textContent = '(' + new Intl.NumberFormat().format(currentCount) + ')';
+            }
         }
     }
 
@@ -2455,7 +2537,10 @@ if (document.readyState === 'loading') {
                     applyRowStatusUpdate(currentUpdateButtonEl, newStatus, meta);
                 }
 
-                // Re-evaluate controls for the new status
+                // Re‑evaluate controls for the new status
+                if (res.data.counts) {
+                    refreshDealerConsoleCounts(res.data.counts);
+                }
                 showDealerInquiryToast(res.data.message || 'Status updated successfully');
             } else {
                 var errMsg = (res.data && res.data.message) ? res.data.message : 'Update failed';

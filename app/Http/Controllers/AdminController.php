@@ -2368,6 +2368,48 @@ class AdminController extends Controller
         });
     }
 
+    private function adminReportAreaOptions(): array
+    {
+        return QueryCache::remember('admin_report_area_options', function () {
+            $path = base_path('malaysia-postcodes.json');
+            if (!is_file($path)) {
+                return [];
+            }
+
+            try {
+                $data = json_decode((string) file_get_contents($path), true);
+                $allCities = [];
+                if (isset($data['state']) && is_array($data['state'])) {
+                    foreach ($data['state'] as $state) {
+                        if (isset($state['city']) && is_array($state['city'])) {
+                            foreach ($state['city'] as $city) {
+                                $cityName = strtoupper(trim((string) ($city['name'] ?? '')));
+                                if ($cityName !== '') {
+                                    $allCities[] = $cityName;
+                                }
+                            }
+                        }
+                    }
+                }
+                $cities = array_values(array_unique($allCities));
+                sort($cities);
+                return $cities;
+            } catch (\Throwable $e) {
+                return [];
+            }
+        });
+    }
+
+    private function resolveAdminReportArea(Request $request): string
+    {
+        $area = strtoupper(trim((string) $request->query('report_area', '')));
+        if ($area === 'ALL' || $area === '') {
+            return '';
+        }
+        return $area;
+    }
+
+
     private function resolveAdminReportScope(Request $request): string
     {
         $selectedScope = trim((string) $request->query('report_scope', ''));
@@ -2471,6 +2513,8 @@ class AdminController extends Controller
     {
         $selectedReportScope = $this->resolveAdminReportScope($request);
         $reportScopeOptions = $this->adminReportScopeOptions();
+        $selectedArea = $this->resolveAdminReportArea($request);
+        $areaOptions = $this->adminReportAreaOptions();
 
         $daysParam = $request->query('days', '60');
         $fromParam = trim((string) $request->query('from', ''));
@@ -2510,17 +2554,37 @@ class AdminController extends Controller
         $prevStartStr = $prevStartDate->format('Y-m-d H:i:s');
         $prevEndStr = $prevEndDate->format('Y-m-d H:i:s');
 
+        $unassignedCount = 0;
+        if ($selectedReportScope === 'all' && !$selectedArea) {
+            $unassignedRow = DB::selectOne(
+                'SELECT COUNT(*) as c FROM "LEAD" WHERE ("ASSIGNEDTO" IS NULL OR TRIM(CAST("ASSIGNEDTO" AS VARCHAR(50))) = \'\') AND "CREATEDAT" >= ? AND "CREATEDAT" <= ?',
+                [$startStr, $endStr]
+            );
+            $unassignedCount = (int) ($unassignedRow->C ?? $unassignedRow->c ?? 0);
+        }
+
         [$leadScopeSql, $leadScopeBindings] = $this->buildAdminReportScopeSql(
             $selectedReportScope,
             'l."ASSIGNEDTO"',
             'u."COMPANY"',
             true
         );
+
+        if ($selectedArea) {
+            $leadScopeSql .= ' AND UPPER(TRIM(u."CITY")) = ?';
+            $leadScopeBindings[] = $selectedArea;
+        }
+
         [$payoutScopeSql, $payoutScopeBindings] = $this->buildAdminReportScopeSql(
             $selectedReportScope,
             'p."USERID"',
             'u."COMPANY"'
         );
+
+        if ($selectedArea && $selectedArea !== 'ALL') {
+            $payoutScopeSql .= ' AND UPPER(TRIM(u."CITY")) = ?';
+            $payoutScopeBindings[] = $selectedArea;
+        }
 
         $get = function ($row, string $name) {
             if (is_array($row)) {
@@ -2632,7 +2696,6 @@ class AdminController extends Controller
         }
 
         // Unassigned leads: match LEAD status "Open"
-        $unassignedCount = $leadStatus['Open'] ?? 0;
         $lastMonthUnassignedCount = $lastMonthLeadStatus['Open'] ?? 0;
 
         $normalizeActivityStatus = function ($status) {
@@ -2896,8 +2959,9 @@ class AdminController extends Controller
             'periodLabel' => $periodLabel,
             'selectedReportScope' => $selectedReportScope,
             'reportScopeOptions' => $reportScopeOptions,
-            'from' => $useCustom ? $fromParam : null,
             'to' => $useCustom ? $toParam : null,
+            'selectedArea' => $selectedArea,
+            'areaOptions' => $areaOptions,
         ]);
     }
 
@@ -2911,10 +2975,18 @@ class AdminController extends Controller
         $compareTo = trim((string) $request->query('compare_to', ''));
         $selectedReportScope = $this->resolveAdminReportScope($request);
         $reportScopeOptions = $this->adminReportScopeOptions();
+        $selectedArea = $this->resolveAdminReportArea($request);
+        $areaOptions = $this->adminReportAreaOptions();
+
         [$dealerScopeSql, $dealerScopeBindings] = $this->buildAdminReportExistsScopeSql(
             $selectedReportScope,
             'l."ASSIGNEDTO"'
         );
+
+        if ($selectedArea) {
+            $dealerScopeSql .= ' AND EXISTS (SELECT 1 FROM "USERS" uarea WHERE uarea."USERID" = l."ASSIGNEDTO" AND UPPER(TRIM(uarea."CITY")) = ?)';
+            $dealerScopeBindings[] = $selectedArea;
+        }
 
         $useCustomPrimary = $primaryFrom !== '' && $primaryTo !== '';
         $useCustomCompare = $compareFrom !== '' && $compareTo !== '';
@@ -3407,6 +3479,8 @@ class AdminController extends Controller
             'compareFrom' => $useCustomCompare ? $compareFrom : null,
             'compareTo' => $useCustomCompare ? $compareTo : null,
             'compareDays' => $compareDays,
+            'selectedArea' => $selectedArea,
+            'areaOptions' => $areaOptions,
         ]);
     }
 
@@ -3436,6 +3510,8 @@ class AdminController extends Controller
     {
         $selectedReportScope = $this->resolveAdminReportScope($request);
         $reportScopeOptions = $this->adminReportScopeOptions();
+        $selectedArea = $this->resolveAdminReportArea($request);
+        $areaOptions = $this->adminReportAreaOptions();
 
         $daysParam = $request->query('days', '60');
         $fromParam = trim((string) $request->query('from', ''));
@@ -3474,6 +3550,12 @@ class AdminController extends Controller
             'l."ASSIGNEDTO"',
             'u."COMPANY"'
         );
+
+        if ($selectedArea) {
+            $leadScopeSql .= ' AND UPPER(TRIM(u."CITY")) = ?';
+            $leadScopeBindings[] = $selectedArea;
+        }
+
         [$productScopeSql, $productScopeBindings] = $this->buildAdminReportScopeSql(
             $selectedReportScope,
             'a."USERID"',
@@ -3512,6 +3594,9 @@ class AdminController extends Controller
               ORDER BY total_leads DESC';
         $rowsBindings = [$startStr, $endStr, 'REWARDED', $startStr, $endStr];
         $rowsBindings = array_merge($rowsBindings, $leadScopeBindings);
+        if ($selectedArea) {
+            $rowsBindings[] = $selectedArea;
+        }
         $rows = DB::select($rowsSql, $rowsBindings);
 
         $dealers = [];
@@ -3662,6 +3747,8 @@ class AdminController extends Controller
             'chartClosed' => $chartClosed,
             'chartRewarded' => $chartRewarded,
             'rankings' => $rankings,
+            'selectedArea' => $selectedArea,
+            'areaOptions' => $areaOptions,
         ]);
     }
 

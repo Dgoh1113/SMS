@@ -414,11 +414,32 @@ class DealerController extends Controller
     public function inquiries(Request $request): View
     {
         $dealerId = $request->session()->get('user_id');
+        $tab = $request->query('tab', 'inquiries');
         $focusLeadId = (int) $request->query('lead', 0);
         $dealerConsoleCounts = $this->getDealerConsoleCounts($dealerId);
         $leads = [];
+        
         if ($dealerId) {
-            $dealerInquiriesSql = 'SELECT FIRST 200
+            $statusFilter = null;
+            $activeStatuses = ['PENDING', 'FOLLOWUP', 'FOLLOW UP', 'DEMO', 'CONFIRMED'];
+            
+            switch ($tab) {
+                case 'pending': $statusFilter = ['PENDING']; break;
+                case 'followup': $statusFilter = ['FOLLOWUP', 'FOLLOW UP']; break;
+                case 'demo': $statusFilter = ['DEMO']; break;
+                case 'confirmed': $statusFilter = ['CONFIRMED']; break;
+                case 'completed': $statusFilter = ['COMPLETED', 'CASE COMPLETED']; break;
+                case 'failed': $statusFilter = ['FAILED']; break;
+                case 'cancelled': $statusFilter = ['CANCELLED']; break;
+                case 'rewarded': $statusFilter = ['REWARDED', 'REWARD']; break;
+                case 'inquiries':
+                default:
+                    $statusFilter = $activeStatuses;
+                    break;
+            }
+
+            $placeholders = implode(',', array_fill(0, count($statusFilter), '?'));
+            $dealerInquiriesSql = 'SELECT FIRST 500
                     l."LEADID", l."PRODUCTID", l."COMPANYNAME", l."CONTACTNAME", l."CONTACTNO", l."EMAIL",
                     l."ADDRESS1", l."ADDRESS2", l."CITY", l."STATE", l."COUNTRY", l."POSTCODE", l."BUSINESSNATURE", l."USERCOUNT",
                     l."EXISTINGSOFTWARE", l."DEMOMODE", l."DESCRIPTION", l."REFERRALCODE", l."CREATEDAT", l."CREATEDBY",
@@ -433,11 +454,20 @@ class DealerController extends Controller
                     ) AS "ACT_STATUS"
                 FROM "LEAD" l
                 LEFT JOIN "USERS" u ON u."USERID" = l."CREATEDBY"
-                WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
+                WHERE COALESCE(l."ISDELETED", FALSE) = FALSE 
+                  AND l."ASSIGNEDTO" = ?
+                  AND UPPER(TRIM(COALESCE(
+                        (SELECT FIRST 1 la2."STATUS"
+                           FROM "LEAD_ACT" la2
+                          WHERE la2."LEADID" = l."LEADID"
+                          ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC),
+                        \'Pending\'
+                    ))) IN (' . $placeholders . ')
                 ORDER BY l."LEADID" DESC';
+
             $leads = DB::select(
                 $dealerInquiriesSql,
-                [$dealerId]
+                array_merge([$dealerId], $statusFilter)
             );
 
             if ($focusLeadId > 0) {
@@ -672,7 +702,8 @@ class DealerController extends Controller
             'focusLeadId' => $focusLeadId,
             'dealerInquiryCount' => $dealerConsoleCounts['inquiries'],
             'dealerPendingPayoutCount' => $dealerConsoleCounts['pending_payouts'],
-            'dealerConsoleTab' => 'inquiries',
+            'dealerConsoleCounts' => $dealerConsoleCounts,
+            'dealerConsoleTab' => $tab,
             'currentPage' => 'inquiries',
         ]);
     }
@@ -1325,7 +1356,13 @@ class DealerController extends Controller
 
         DB::update('UPDATE "LEAD" SET "LASTMODIFIED" = CURRENT_TIMESTAMP WHERE "LEADID" = ?', [$leadId]);
 
-        return response()->json(['success' => true, 'message' => 'Status updated']);
+        $updatedCounts = $this->getDealerConsoleCounts($dealerId);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status updated',
+            'counts' => $updatedCounts
+        ]);
     }
 
     private function mapStatusToDb(string $status): string
@@ -1736,6 +1773,7 @@ class DealerController extends Controller
             'productLabels' => $productLabels,
             'dealerInquiryCount' => $dealerConsoleCounts['inquiries'],
             'dealerPendingPayoutCount' => $dealerConsoleCounts['pending_payouts'],
+            'dealerConsoleCounts' => $dealerConsoleCounts,
             'dealerConsoleTab' => 'pending-payouts',
             'currentPage' => 'inquiries',
         ]);
@@ -1746,6 +1784,14 @@ class DealerController extends Controller
         $counts = [
             'inquiries' => 0,
             'pending_payouts' => 0,
+            'pending' => 0,
+            'followup' => 0,
+            'demo' => 0,
+            'confirmed' => 0,
+            'completed' => 0,
+            'failed' => 0,
+            'cancelled' => 0,
+            'rewarded' => 0,
         ];
 
         if (!$dealerId) {
@@ -1753,22 +1799,46 @@ class DealerController extends Controller
         }
 
         try {
-            $inquiryRow = DB::selectOne(
-                'SELECT COUNT(*) AS "CNT"
+            $rows = DB::select(
+                'SELECT 
+                    UPPER(TRIM(COALESCE(
+                        (SELECT FIRST 1 la."STATUS"
+                           FROM "LEAD_ACT" la
+                          WHERE la."LEADID" = l."LEADID"
+                          ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC),
+                        \'Pending\'
+                    ))) AS "LATEST_STATUS"
                  FROM "LEAD" l
-                 WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
-                   AND UPPER(TRIM(COALESCE(
-                       (SELECT FIRST 1 la."STATUS"
-                          FROM "LEAD_ACT" la
-                         WHERE la."LEADID" = l."LEADID"
-                         ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC),
-                       \'Pending\'
-                   ))) NOT IN (\'COMPLETED\', \'CASE COMPLETED\', \'FAILED\', \'REWARDED\', \'REWARD\', \'REWARD DISTRIBUTED\')',
+                 WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?',
                 [$dealerId]
             );
-            $counts['inquiries'] = (int) ($inquiryRow->CNT ?? $inquiryRow->cnt ?? current((array) $inquiryRow) ?? 0);
+
+            foreach ($rows as $row) {
+                $status = $row->LATEST_STATUS ?? '';
+                if (in_array($status, ['PENDING', 'FOLLOWUP', 'FOLLOW UP', 'DEMO', 'CONFIRMED'])) {
+                    $counts['inquiries']++;
+                }
+                
+                if ($status === 'PENDING') {
+                    $counts['pending']++;
+                } elseif ($status === 'FOLLOWUP' || $status === 'FOLLOW UP') {
+                    $counts['followup']++;
+                } elseif ($status === 'DEMO') {
+                    $counts['demo']++;
+                } elseif ($status === 'CONFIRMED') {
+                    $counts['confirmed']++;
+                } elseif ($status === 'COMPLETED' || $status === 'CASE COMPLETED') {
+                    $counts['completed']++;
+                } elseif ($status === 'FAILED') {
+                    $counts['failed']++;
+                } elseif ($status === 'CANCELLED') {
+                    $counts['cancelled']++;
+                } elseif (in_array($status, ['REWARDED', 'REWARD', 'REWARD DISTRIBUTED'])) {
+                    $counts['rewarded']++;
+                }
+            }
         } catch (\Throwable $e) {
-            $counts['inquiries'] = 0;
+            // ignore
         }
 
         try {

@@ -94,11 +94,23 @@
   min-width: var(--report-scope-picker-width);
 }
 
+.reports-filter-container .report-scope-field {
+  --report-scope-picker-width: 100%;
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
 .report-scope-field .report-scope-ts-wrapper {
   width: var(--report-scope-picker-width);
   min-width: var(--report-scope-picker-width);
   height: var(--report-scope-picker-height);
-  font-size: 12px;
+  font-size: 13px;
+}
+
+.reports-filter-container .report-scope-field .report-scope-ts-wrapper {
+  width: 100%;
+  min-width: 0;
 }
 
 .report-scope-field .report-scope-select {
@@ -120,19 +132,19 @@
   box-sizing: border-box;
   padding: 0 34px 0 12px;
   border: 1px solid #d6d9e8;
-  border-radius: 12px;
+  border-radius: 9px;
   background: #ffffff;
   box-shadow: none;
   display: flex;
   align-items: center;
   gap: 0;
-  line-height: normal;
-  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background-color 0.16s ease;
 }
 
 .report-scope-field .report-scope-ts-wrapper.single .ts-control:hover {
-  border-color: #cbd5e1;
-  background: #ffffff;
+  border-color: #8b5cf6;
+  background-color: #f8fafc;
 }
 
 .report-scope-field .report-scope-ts-wrapper.focus .ts-control {
@@ -607,6 +619,23 @@ html.theme-dark .report-filter-export:focus-visible {
   }
 }
 
+.reports-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  margin-bottom: 16px;
+}
+
+html.theme-dark .reports-filter-bar {
+  background: rgba(13, 19, 35, 0.72);
+  border-bottom-color: #27334e;
+}
+
 .reports-period-form {
   display: flex;
   align-items: center;
@@ -619,7 +648,7 @@ html.theme-dark .report-filter-export:focus-visible {
   min-width: max-content;
   flex: 0 0 auto;
   flex-shrink: 0;
-  padding: 8px 12px;
+  padding: 8px 10px;
   border: 1px solid #d6d9e8;
   border-radius: 10px;
   background: #ffffff;
@@ -635,7 +664,7 @@ html.theme-dark .report-filter-export:focus-visible {
   grid-template-columns: 1fr 1fr;
   gap: 10px;
   align-items: flex-end;
-  min-width: 320px;
+  min-width: 0;
 }
 
 .reports-range-col {
@@ -646,7 +675,7 @@ html.theme-dark .report-filter-export:focus-visible {
 }
 
 .reports-range-label {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 800;
   color: #9ca3af;
   text-transform: uppercase;
@@ -662,7 +691,7 @@ html.theme-dark .report-filter-export:focus-visible {
   background: #ffffff;
   color: #1f2937;
   font-family: inherit;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   box-sizing: border-box;
 }
@@ -712,4 +741,47 @@ html.theme-dark .reports-range-back-btn:hover {
     min-width: 0;
     width: 100%;
   }
+}
+
+/* Unified Filter Select Style (Following Dealer Sales Overtime) */
+.reports-period-select,
+.rrp-filter-select,
+.rv2-filter-select {
+  width: 100%;
+  height: 34px;
+  padding: 8px 28px 8px 10px;
+  border-radius: 9px;
+  border: 1px solid #d6d9e8;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1f2937;
+  background: #fff;
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #64748b 50%),
+    linear-gradient(135deg, #64748b 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) calc(50% - 1px),
+    calc(100% - 9px) calc(50% - 1px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+  cursor: pointer;
+}
+
+.reports-period-select:focus,
+.rrp-filter-select:focus,
+.rv2-filter-select:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.14);
+}
+
+html.theme-dark .reports-period-select,
+html.theme-dark .rrp-filter-select,
+html.theme-dark .rv2-filter-select {
+  border-color: #32405f;
+  background-color: #0f1628;
+  color: #d9e2f6;
 }

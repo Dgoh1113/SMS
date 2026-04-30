@@ -716,3 +716,15 @@ html.theme-dark .inquiries-tab-count[data-tooltip]::after {
     border-radius: 10px;
   }
 }
+
+.inquiries-title-count {
+  color: #94a3b8;
+  font-size: 0.85em;
+  margin-left: 6px;
+  font-weight: 500;
+}
+
+html.theme-dark .inquiries-title-count {
+  color: #64748b;
+}
+

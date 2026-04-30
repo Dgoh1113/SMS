@@ -20,12 +20,8 @@
 @include('dealer.partials.console-inquiries-tabs', ['dealerConsoleTab' => $dealerConsoleTab ?? 'pending-payouts'])
 <div id="completedPanel">
 <section class="inquiries-mgmt-panel dealer-payouts-panel">
-    <div class="inquiries-panel-header">
-        <div class="inquiries-panel-title-wrap">
-            <i class="bi bi-piggy-bank inquiries-panel-icon"></i>
-            <h2 class="inquiries-panel-title">Pending Payouts</h2>
-        </div>
-        <div class="inquiries-panel-actions">
+    @include('dealer.partials.console-panel-header', [
+        'actions' => '
             <div class="inquiries-columns-dropdown">
                 <button type="button" class="inquiries-btn inquiries-btn-secondary" id="completedColumnsBtn" aria-haspopup="true" aria-expanded="false">Columns</button>
                 <div class="inquiries-columns-menu" id="completedColumnsMenu" hidden>
@@ -60,8 +56,8 @@
                     <button type="button" class="inquiries-columns-reset" id="completedColumnsReset">Reset to default</button>
                 </div>
             </div>
-        </div>
-    </div>
+        '
+    ])
     <div class="inquiries-table-wrap">
         <div class="inquiries-table-scroll">
             <table class="inquiries-table" id="completedTable">

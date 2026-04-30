@@ -91,7 +91,9 @@
             @endif
         </td>
         <td data-col="assignby">{{ $r->CREATEDBY_NAME ?? $r->ASSIGNED_BY_EMAIL ?? '-' }}</td>
-        <td data-col="status"><span class="inquiries-status {{ $statusClass }}">{{ $statusDisplay }}</span></td>
+        @if(($dealerConsoleTab ?? 'inquiries') === 'inquiries')
+            <td data-col="status"><span class="inquiries-status {{ $statusClass }}">{{ $statusDisplay }}</span></td>
+        @endif
         <td class="inquiries-col-action inquiries-action-cell">
             @php
                 $actStatus = strtoupper($r->ACT_STATUS ?? 'PENDING');
@@ -106,7 +108,7 @@
     </tr>
 @empty
     <tr class="inquiries-empty-row">
-        <td colspan="22" class="inquiries-empty-cell">
+        <td colspan="{{ ($dealerConsoleTab ?? 'inquiries') === 'inquiries' ? 24 : 23 }}" class="inquiries-empty-cell">
             <div class="dealer-table-empty">No inquiries assigned yet.</div>
         </td>
     </tr>

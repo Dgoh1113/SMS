@@ -33,41 +33,55 @@
         </nav>
     </div>
 
-    <div class="rrp-filter-row">
-        <form method="GET" class="rrp-filter-form" data-auto-submit-report-filters>
-            <div class="reports-period-date-group-wrapper reports-filter-container">
-                <div class="reports-range-label">PERIOD</div>
-                <select name="days" class="rrp-filter-select" aria-label="Select period" id="reportsPeriodSelect" style="display: {{ request('from') || request('to') ? 'none' : 'block' }};">
-                    @php $daysParam = request('days', '60'); @endphp
-                    <option value="30" {{ $daysParam == '30' ? 'selected' : '' }}>Last 30 Days</option>
-                    <option value="60" {{ $daysParam == '60' ? 'selected' : '' }}>Last 60 Days</option>
-                    <option value="90" {{ $daysParam == '90' ? 'selected' : '' }}>Last 90 Days</option>
-                    <option value="custom" {{ request('from') || request('to') ? 'selected' : '' }}>Custom range…</option>
-                </select>
-                <div id="reportsRangeInline" class="reports-range-grid" style="display: {{ request('from') || request('to') ? 'grid' : 'none' }};">
-                    <div class="reports-range-col">
-                        <label class="reports-range-label">Starting</label>
-                        <input type="date" name="from" id="reportsRangeFrom" value="{{ request('from') }}" class="reports-range-input" aria-label="From date">
+    <div class="reports-filter-bar">
+        <form method="GET" action="{{ route('admin.reports.revenue') }}" class="reports-period-form reports-period-form-compact rrp-filter-form" data-auto-submit-report-filters style="display: flex; flex-direction: row; align-items: flex-end; gap: 8px; flex-wrap: nowrap; justify-content: flex-end;">
+            @foreach(request()->query() as $key => $val)
+                @if($key !== 'days' && $key !== 'from' && $key !== 'to' && $key !== 'report_area' && $key !== 'report_scope')
+                    <input type="hidden" name="{{ $key }}" value="{{ $val }}">
+                @endif
+            @endforeach
+
+            <div class="reports-filter-container rv2-filter" style="width: 190px; min-height: 90px; display: flex; flex-direction: column; align-self: auto;">
+                <div class="reports-range-label" style="display: flex; align-items: center; font-size: 9px; font-weight: 800; height: 1.6em;">PERIOD</div>
+                <div style="flex: 1; display: flex; align-items: flex-end;">
+                    <select name="days" class="rrp-filter-select" aria-label="Select period" id="reportsPeriodSelect" style="display: {{ request('from') || request('to') ? 'none' : 'block' }}; width: 100%;">
+                        @php $daysParam = request('days', '60'); @endphp
+                        <option value="30" {{ $daysParam == '30' ? 'selected' : '' }}>Last 30 Days</option>
+                        <option value="60" {{ $daysParam == '60' ? 'selected' : '' }}>Last 60 Days</option>
+                        <option value="90" {{ $daysParam == '90' ? 'selected' : '' }}>Last 90 Days</option>
+                        <option value="custom" {{ request('from') || request('to') ? 'selected' : '' }}>Custom range…</option>
+                    </select>
+                    <div id="reportsRangeInline" class="reports-range-grid" style="display: {{ request('from') || request('to') ? 'grid' : 'none' }}; width: 100%; min-width: 0; gap: 4px;">
+                        <div class="reports-range-col">
+                            <label class="reports-range-label" style="font-size: 9px; opacity: 0.8;">Starting</label>
+                            <input type="date" name="from" id="reportsRangeFrom" value="{{ request('from', now()->subMonth()->format('Y-m-d')) }}" class="reports-range-input" aria-label="From date" style="width: 100%;">
+                        </div>
+                        <div class="reports-range-col">
+                            <label class="reports-range-label" style="font-size: 9px; opacity: 0.8;">Ending</label>
+                            <input type="date" name="to" id="reportsRangeTo" value="{{ request('to', now()->format('Y-m-d')) }}" class="reports-range-input" aria-label="To date" style="width: 100%;">
+                        </div>
+                        <button type="button" class="reports-range-back-btn" id="reportsRangeReset" style="right: 4px; top: 4px;">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
                     </div>
-                    <div class="reports-range-col">
-                        <label class="reports-range-label">Ending</label>
-                        <input type="date" name="to" id="reportsRangeTo" value="{{ request('to') }}" class="reports-range-input" aria-label="To date">
-                    </div>
-                    <button type="button" class="reports-range-back-btn" id="reportsRangeReset">
-                        <i class="bi bi-x-lg"></i>
-                    </button>
                 </div>
             </div>
-            <div class="reports-filter-container">
-                <div class="reports-range-label">DEALER SCOPE</div>
-                @include('admin.partials.report_scope_picker', [
-                    'options' => $reportScopeOptions ?? [],
-                    'selected' => $selectedReportScope ?? 'all',
-                ])
+
+            <div class="reports-filter-container rv2-filter" style="width: 170px; min-height: 90px; display: flex; flex-direction: column; align-self: auto;">
+                <div class="reports-range-label" style="display: flex; align-items: center; font-size: 9px; font-weight: 800; height: 1.6em;">DEALER SCOPE</div>
+                <div style="flex: 1; display: flex; align-items: flex-end;">
+                    <div style="width: 100%; max-width: 100%; --report-scope-picker-width: 100%;">
+                        @include('admin.partials.report_scope_picker', [
+                            'options' => $reportScopeOptions ?? [],
+                            'selected' => $selectedReportScope ?? 'all',
+                        ])
+                    </div>
+                </div>
             </div>
-            <div class="rrp-filter-actions report-filter-actions" style="flex-shrink: 0;">
+
+            <div class="reports-period-actions report-filter-actions" style="margin-left: auto; align-self: flex-end; padding-bottom: 8px;">
                 @include('admin.partials.report_filter_actions', [
-                    'wrapperClass' => 'rrp-filter-actions-inner',
+                    'wrapperClass' => 'rrp-filter-actions-inner report-filter-actions-inner',
                     'applyClass' => 'report-filter-apply',
                     'exportClass' => 'report-filter-export',
                     'clearClass' => 'report-filter-clear',
@@ -170,7 +184,150 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // Title dropdown (shared across reports)
+            const form = document.querySelector('.rrp-filter-form');
+            if (!form) return;
+
+            let autoSubmitTimer = null;
+
+            const markReportFiltersSubmitting = function () {
+                form.classList.add('is-report-filter-submitting');
+                form.querySelectorAll('select[name="report_scope"]').forEach(function (select) {
+                    if (select.tomselect && typeof select.tomselect.blur === 'function') {
+                        select.tomselect.blur();
+                    }
+                });
+                if (document.activeElement && form.contains(document.activeElement) && typeof document.activeElement.blur === 'function') {
+                    document.activeElement.blur();
+                }
+            };
+
+            const getRangeWrapper = function (select) {
+                if (select.name !== 'days') return null;
+                return document.getElementById('reportsRangeInline');
+            };
+
+            const syncRange = function (select) {
+                const wrapper = getRangeWrapper(select);
+                if (!wrapper) return;
+                const isCustom = select.value === 'custom';
+                wrapper.style.display = isCustom ? 'grid' : 'none';
+                select.style.display = isCustom ? 'none' : 'block';
+                
+                const inputs = wrapper.querySelectorAll('input[type="date"]');
+                const fromInput = inputs[0];
+                const toInput = inputs[1];
+
+                if (fromInput && toInput) {
+                    fromInput.disabled = !isCustom;
+                    toInput.disabled = !isCustom;
+                    fromInput.required = isCustom;
+                    toInput.required = isCustom;
+
+                    if (!isCustom) {
+                        toInput.min = '';
+                    } else {
+                        if (!fromInput.value) fromInput.value = "{{ now()->subMonth()->format('Y-m-d') }}";
+                        if (!toInput.value) toInput.value = "{{ now()->format('Y-m-d') }}";
+                        toInput.min = fromInput.value || '';
+                    }
+                }
+            };
+
+            const isFormReadyToSubmit = function () {
+                const daysSelect = form.querySelector('select[name="days"]');
+                if (daysSelect && daysSelect.value === 'custom') {
+                    const wrapper = getRangeWrapper(daysSelect);
+                    if (wrapper) {
+                        const inputs = wrapper.querySelectorAll('input[type="date"]');
+                        const from = inputs[0] ? inputs[0].value : '';
+                        const to = inputs[1] ? inputs[1].value : '';
+                        if (from === '' || to === '' || from > to) {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            };
+
+            const submitReportFilters = function () {
+                window.clearTimeout(autoSubmitTimer);
+                if (!isFormReadyToSubmit()) return;
+                autoSubmitTimer = window.setTimeout(function () {
+                    markReportFiltersSubmitting();
+                    if (typeof form.requestSubmit === 'function') {
+                        form.requestSubmit();
+                        return;
+                    }
+                    form.submit();
+                }, 80);
+            };
+
+            form.querySelectorAll('select[name="days"], select[name="report_scope"], select[name="report_area"]').forEach(function (select) {
+                if (select.name === 'days') {
+                    select.addEventListener('change', function() {
+                        syncRange(select);
+                        submitReportFilters();
+                    });
+                } else {
+                    select.addEventListener('change', submitReportFilters);
+                }
+                const bindTomSelectChange = function () {
+                    if (!select.tomselect || select.dataset.autoSubmitTomSelectReady === '1') return;
+                    select.dataset.autoSubmitTomSelectReady = '1';
+                    select.tomselect.on('change', submitReportFilters);
+                };
+                bindTomSelectChange();
+                window.setTimeout(bindTomSelectChange, 120);
+                window.setTimeout(bindTomSelectChange, 360);
+            });
+
+            const rangeWrapper = document.getElementById('reportsRangeInline');
+            if (rangeWrapper) {
+                const inputs = rangeWrapper.querySelectorAll('input[type="date"]');
+                if (inputs.length === 2) {
+                    const fromInput = inputs[0];
+                    const toInput = inputs[1];
+                    fromInput.addEventListener('change', submitReportFilters);
+                    toInput.addEventListener('change', submitReportFilters);
+                    
+                    fromInput.addEventListener('input', function() {
+                        toInput.min = fromInput.value || '';
+                        if (toInput.value && fromInput.value && toInput.value < fromInput.value) {
+                            toInput.value = fromInput.value;
+                        }
+                    });
+                }
+                const rangeReset = document.getElementById('reportsRangeReset');
+                if (rangeReset) {
+                    rangeReset.addEventListener('click', function() {
+                        const daysSelect = form.querySelector('select[name="days"]');
+                        if (daysSelect) {
+                            daysSelect.value = '60';
+                            syncRange(daysSelect);
+                            submitReportFilters();
+                        }
+                    });
+                }
+            }
+
+            // Area searchable dropdown
+            const areaSelectEl = document.getElementById('adminRevenueAreaSelect');
+            if (areaSelectEl && typeof TomSelect === 'function') {
+                new TomSelect(areaSelectEl, {
+                    plugins: ['dropdown_input'],
+                    maxOptions: 100,
+                    searchField: 'text',
+                    placeholder: 'Search city...',
+                    allowEmptyOption: false,
+                    onDropdownOpen: function() {
+                        this.clearCache();
+                    },
+                    onChange: function() {
+                        submitReportFilters();
+                    }
+                });
+            }
+
             const dropdownBtn = document.getElementById('dropdownHoverButton');
             const dropdown = document.getElementById('dropdownHover');
             const titleHover = document.getElementById('reportsTitleHover');
@@ -206,154 +363,6 @@
                     if (e.key === 'Escape') closeDropdown();
                 });
             }
-
-            const autoSubmitReportForms = document.querySelectorAll('[data-auto-submit-report-filters]');
-            autoSubmitReportForms.forEach(function (form) {
-                if (!form || form.dataset.autoSubmitReady === '1') {
-                    return;
-                }
-
-                form.dataset.autoSubmitReady = '1';
-                let autoSubmitTimer = null;
-
-                const markReportFiltersSubmitting = function () {
-                    form.classList.add('is-report-filter-submitting');
-
-                    form.querySelectorAll('select[name="report_scope"]').forEach(function (select) {
-                        if (select.tomselect && typeof select.tomselect.blur === 'function') {
-                            select.tomselect.blur();
-                        }
-                    });
-
-                    if (document.activeElement && form.contains(document.activeElement) && typeof document.activeElement.blur === 'function') {
-                        document.activeElement.blur();
-                    }
-                };
-
-                form.addEventListener('submit', markReportFiltersSubmitting);
-
-                const getRangeWrapper = function (select) {
-                    if (select.name !== 'days') return null;
-                    return document.getElementById('reportsRangeInline');
-                };
-
-                const syncRange = function (select) {
-                    const wrapper = getRangeWrapper(select);
-                    if (!wrapper) return;
-                    const isCustom = select.value === 'custom';
-                    wrapper.style.display = isCustom ? 'grid' : 'none';
-                    select.style.display = isCustom ? 'none' : 'block';
-                    
-                    const inputs = wrapper.querySelectorAll('input[type="date"]');
-                    const fromInput = inputs[0];
-                    const toInput = inputs[1];
-
-                    if (fromInput && toInput) {
-                        fromInput.disabled = !isCustom;
-                        toInput.disabled = !isCustom;
-                        fromInput.required = isCustom;
-                        toInput.required = isCustom;
-
-                        if (!isCustom) {
-                            fromInput.value = '';
-                            toInput.value = '';
-                            toInput.min = '';
-                        } else {
-                            toInput.min = fromInput.value || '';
-                        }
-                    }
-                };
-
-                const isFormReadyToSubmit = function () {
-                    const daysSelect = form.querySelector('select[name="days"]');
-                    if (daysSelect && daysSelect.value === 'custom') {
-                        const wrapper = getRangeWrapper(daysSelect);
-                        if (wrapper) {
-                            const inputs = wrapper.querySelectorAll('input[type="date"]');
-                            const from = inputs[0] ? inputs[0].value : '';
-                            const to = inputs[1] ? inputs[1].value : '';
-                            if (from === '' || to === '' || from > to) {
-                                return false;
-                            }
-                        }
-                    }
-                    return true;
-                };
-
-                const submitReportFilters = function () {
-                    window.clearTimeout(autoSubmitTimer);
-                    if (!isFormReadyToSubmit()) {
-                        return;
-                    }
-                    autoSubmitTimer = window.setTimeout(function () {
-                        markReportFiltersSubmitting();
-
-                        if (typeof form.requestSubmit === 'function') {
-                            form.requestSubmit();
-                            return;
-                        }
-
-                        form.submit();
-                    }, 80);
-                };
-
-                form.querySelectorAll('select[name="days"], select[name="report_scope"]').forEach(function (select) {
-                    if (select.name === 'days') {
-                        select.addEventListener('change', function() {
-                            syncRange(select);
-                            submitReportFilters();
-                        });
-                    } else {
-                        select.addEventListener('change', submitReportFilters);
-                    }
-
-                    const bindTomSelectChange = function () {
-                        if (!select.tomselect || select.dataset.autoSubmitTomSelectReady === '1') {
-                            return;
-                        }
-
-                        select.dataset.autoSubmitTomSelectReady = '1';
-                        select.tomselect.on('change', submitReportFilters);
-                    };
-
-                    bindTomSelectChange();
-                    window.setTimeout(bindTomSelectChange, 120);
-                    window.setTimeout(bindTomSelectChange, 360);
-                });
-
-                const rangeWrapper = document.getElementById('reportsRangeInline');
-                if (rangeWrapper) {
-                    const inputs = rangeWrapper.querySelectorAll('input[type="date"]');
-                    if (inputs.length === 2) {
-                        const fromInput = inputs[0];
-                        const toInput = inputs[1];
-
-                        fromInput.addEventListener('input', function() {
-                            toInput.min = fromInput.value || '';
-                            if (toInput.value && fromInput.value && toInput.value < fromInput.value) {
-                                toInput.value = fromInput.value;
-                            }
-                            submitReportFilters();
-                        });
-
-                        fromInput.addEventListener('change', submitReportFilters);
-                        toInput.addEventListener('input', submitReportFilters);
-                        toInput.addEventListener('change', submitReportFilters);
-                    }
-
-                    const rangeReset = document.getElementById('reportsRangeReset');
-                    if (rangeReset) {
-                        rangeReset.addEventListener('click', function() {
-                            const daysSelect = form.querySelector('select[name="days"]');
-                            if (daysSelect) {
-                                daysSelect.value = '60';
-                                syncRange(daysSelect);
-                                submitReportFilters();
-                            }
-                        });
-                    }
-                }
-            });
 
             const labels = @json($chartLabels);
             const volume = @json($chartVolume);

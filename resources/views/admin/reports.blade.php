@@ -749,22 +749,13 @@
     ];
     $totalStatus = max(array_sum(array_column($statusReportData, 'value')), 1);
     $selectedDays = max((int) ($days ?? 60), 1);
-    $trendByDay = collect($inquiryTrend ?? [])->mapWithKeys(function ($item) {
-        return [
-            (int) ($item['day'] ?? 0) => (int) ($item['count'] ?? 0),
-        ];
-    })->all();
-    $adminInquiryTrendLabels = array_map(function ($day) {
-        return str_pad((string) $day, 2, '0', STR_PAD_LEFT);
-    }, range(1, $selectedDays));
-    $adminInquiryTrendData = array_map(function ($day) use ($trendByDay) {
-        return (int) ($trendByDay[$day] ?? 0);
-    }, range(1, $selectedDays));
+    $adminInquiryTrendLabels = array_column($inquiryTrend ?? [], 'day');
+    $adminInquiryTrendData = array_column($inquiryTrend ?? [], 'count');
     $totalInquiry = array_sum($adminInquiryTrendData);
     $hasInquiryTrendData = $totalInquiry > 0;
 @endphp
 
-<div class="reports-period-row">
+<div class="reports-filter-bar">
     @php
         $exportScopeLabel = $reportScopeOptions[$selectedReportScope ?? 'all']['label'] ?? 'All';
         $monthlyExportTitle = 'Performance Report - ' . ($periodLabel ?? 'Current Period');
@@ -772,47 +763,52 @@
             $monthlyExportTitle .= ' - ' . $exportScopeLabel;
         }
     @endphp
-    <form method="get" class="reports-period-form reports-period-form-compact" data-auto-submit-report-filters>
-        @php
-            $months = [
-                1 => 'January', 2 => 'February', 3 => 'March', 4 => 'April',
-                5 => 'May', 6 => 'June', 7 => 'July', 8 => 'August',
-                9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December',
-            ];
-        @endphp
-        <div class="reports-period-date-group-wrapper reports-filter-container">
-            <div class="reports-range-label">PERIOD</div>
-            <select name="days" class="reports-period-select" aria-label="Select period" id="reportsPeriodSelect" style="display: {{ request('from') || request('to') ? 'none' : 'block' }};">
-                @php $daysParam = request('days', '60'); @endphp
-                <option value="30" {{ $daysParam == '30' ? 'selected' : '' }}>Last 30 Days</option>
-                <option value="60" {{ $daysParam == '60' ? 'selected' : '' }}>Last 60 Days</option>
-                <option value="90" {{ $daysParam == '90' ? 'selected' : '' }}>Last 90 Days</option>
-                <option value="custom" {{ request('from') || request('to') ? 'selected' : '' }}>Custom range…</option>
-            </select>
-            <div id="reportsRangeInline" class="reports-range-grid" style="display: {{ request('from') || request('to') ? 'grid' : 'none' }};">
-                <div class="reports-range-col" style="position: relative;">
-                    <label class="reports-range-label">Starting</label>
-                    <input type="date" name="from" id="reportsRangeFrom" value="{{ request('from') }}" class="reports-range-input" aria-label="From date">
-                    <i class="bi bi-calendar3 reports-custom-calendar-icon" onclick="document.getElementById(\'reportsRangeFrom\').showPicker()"></i>
+    <form method="GET" action="{{ route('admin.reports') }}" class="reports-period-form reports-period-form-compact" data-auto-submit-report-filters style="display: flex; flex-direction: row; align-items: flex-end; gap: 8px; flex-wrap: nowrap; justify-content: flex-end;">
+        @foreach(request()->query() as $key => $val)
+            @if($key !== 'days' && $key !== 'from' && $key !== 'to' && $key !== 'report_area' && $key !== 'report_scope')
+                <input type="hidden" name="{{ $key }}" value="{{ $val }}">
+            @endif
+        @endforeach
+
+        <div class="reports-filter-container rv2-filter" style="width: 190px; min-height: 90px; display: flex; flex-direction: column; align-self: auto;">
+            <div class="reports-range-label" style="display: flex; align-items: center; font-size: 9px; font-weight: 800; height: 1.6em;">PERIOD</div>
+            <div style="flex: 1; display: flex; align-items: flex-end;">
+                <select name="days" class="reports-period-select" aria-label="Select period" id="reportsPeriodSelect" style="display: {{ request('from') || request('to') ? 'none' : 'block' }}; width: 100%;">
+                    @php $daysParam = request('days', '60'); @endphp
+                    <option value="30" {{ $daysParam == '30' ? 'selected' : '' }}>Last 30 Days</option>
+                    <option value="60" {{ $daysParam == '60' ? 'selected' : '' }}>Last 60 Days</option>
+                    <option value="90" {{ $daysParam == '90' ? 'selected' : '' }}>Last 90 Days</option>
+                    <option value="custom" {{ request('from') || request('to') ? 'selected' : '' }}>Custom range…</option>
+                </select>
+                <div id="reportsRangeInline" class="reports-range-grid" style="display: {{ request('from') || request('to') ? 'grid' : 'none' }}; width: 100%; min-width: 0; gap: 4px;">
+                    <div class="reports-range-col">
+                        <label class="reports-range-label" style="font-size: 9px; opacity: 0.8;">Starting</label>
+                        <input type="date" name="from" id="reportsRangeFrom" value="{{ request('from', now()->subMonth()->format('Y-m-d')) }}" class="reports-range-input" aria-label="From date" style="width: 100%;">
+                    </div>
+                    <div class="reports-range-col">
+                        <label class="reports-range-label" style="font-size: 9px; opacity: 0.8;">Ending</label>
+                        <input type="date" name="to" id="reportsRangeTo" value="{{ request('to', now()->format('Y-m-d')) }}" class="reports-range-input" aria-label="To date" style="width: 100%;">
+                    </div>
+                    <button type="button" class="reports-range-back-btn" id="reportsRangeReset" style="right: 4px; top: 4px;">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
                 </div>
-                <div class="reports-range-col" style="position: relative;">
-                    <label class="reports-range-label">Ending</label>
-                    <input type="date" name="to" id="reportsRangeTo" value="{{ request('to') }}" class="reports-range-input" aria-label="To date">
-                    <i class="bi bi-calendar3 reports-custom-calendar-icon" onclick="document.getElementById(\'reportsRangeTo\').showPicker()"></i>
-                </div>
-                <button type="button" class="reports-range-back-btn" id="reportsRangeReset">
-                    <i class="bi bi-x-lg"></i>
-                </button>
             </div>
         </div>
-        <div class="reports-filter-container">
-            <div class="reports-range-label">DEALER SCOPE</div>
-            @include('admin.partials.report_scope_picker', [
-                'options' => $reportScopeOptions ?? [],
-                'selected' => $selectedReportScope ?? 'all',
-            ])
+
+        <div class="reports-filter-container rv2-filter" style="width: 170px; min-height: 90px; display: flex; flex-direction: column; align-self: auto;">
+            <div class="reports-range-label" style="display: flex; align-items: center; font-size: 9px; font-weight: 800; height: 1.6em;">DEALER SCOPE</div>
+            <div style="flex: 1; display: flex; align-items: flex-end;">
+                <div style="width: 100%; max-width: 100%; --report-scope-picker-width: 100%;">
+                    @include('admin.partials.report_scope_picker', [
+                        'options' => $reportScopeOptions ?? [],
+                        'selected' => $selectedReportScope ?? 'all',
+                    ])
+                </div>
+            </div>
         </div>
-        <div class="reports-period-actions report-filter-actions" style="flex-shrink: 0;">
+
+        <div class="reports-period-actions report-filter-actions" style="align-self: flex-end; padding-bottom: 8px;">
             @include('admin.partials.report_filter_actions', [
                 'wrapperClass' => 'reports-period-actions-inner',
                 'applyClass' => 'report-filter-apply',
@@ -826,8 +822,6 @@
             ])
         </div>
     </form>
-</div>
-
 </div>
 <div class="reports-page-layout">
 <section class="reports-metrics reports-metrics--admin">
@@ -1123,7 +1117,17 @@
                     if (!wrapper) return;
                     const isCustom = select.value === 'custom';
                     wrapper.style.display = isCustom ? 'grid' : 'none';
-                    select.style.display = isCustom ? 'none' : 'block';
+                    
+                    if (isCustom) {
+                        select.style.display = 'none';
+                        if (select.tomselect) select.tomselect.wrapper.style.display = 'none';
+                    } else {
+                        if (select.tomselect) {
+                            select.tomselect.wrapper.style.display = 'block';
+                        } else {
+                            select.style.display = 'block';
+                        }
+                    }
                     
                     const inputs = wrapper.querySelectorAll('input[type="date"]');
                     const fromInput = inputs[0];
@@ -1136,24 +1140,14 @@
                         toInput.required = isCustom;
 
                         if (!isCustom) {
-                            fromInput.value = '';
-                            toInput.value = '';
+                            // Only clear if we are switching away from custom
+                            // fromInput.value = '';
+                            // toInput.value = '';
                             toInput.min = '';
                         } else {
-                            if (!fromInput.value) {
-                                const today = new Date();
-                                const yyyy = today.getFullYear();
-                                const mm = String(today.getMonth() + 1).padStart(2, '0');
-                                const dd = String(today.getDate()).padStart(2, '0');
-                                fromInput.value = yyyy + '-' + mm + '-' + dd;
-                            }
-                            if (!toInput.value) {
-                                const today = new Date();
-                                const yyyy = today.getFullYear();
-                                const mm = String(today.getMonth() + 1).padStart(2, '0');
-                                const dd = String(today.getDate()).padStart(2, '0');
-                                toInput.value = yyyy + '-' + mm + '-' + dd;
-                            }
+                            // Ensure defaults are present if empty
+                            if (!fromInput.value) fromInput.value = "{{ now()->subMonth()->format('Y-m-d') }}";
+                            if (!toInput.value) toInput.value = "{{ now()->format('Y-m-d') }}";
                             toInput.min = fromInput.value || '';
                         }
                     }
@@ -1192,8 +1186,9 @@
                     }, 80);
                 };
 
-                form.querySelectorAll('select[name="days"], select[name="report_scope"]').forEach(function (select) {
+                form.querySelectorAll('select[name="days"], select[name="report_scope"], select[name="report_area"]').forEach(function (select) {
                     if (select.name === 'days') {
+                        syncRange(select);
                         select.addEventListener('change', function() {
                             syncRange(select);
                             submitReportFilters();
@@ -1216,6 +1211,24 @@
                     window.setTimeout(bindTomSelectChange, 360);
                 });
 
+                // Area searchable dropdown
+                const areaSelectEl = document.getElementById('adminMonthlyAreaSelect');
+                if (areaSelectEl && typeof TomSelect === 'function') {
+                    new TomSelect(areaSelectEl, {
+                        plugins: ['dropdown_input'],
+                        maxOptions: 100,
+                        searchField: 'text',
+                        placeholder: 'Search city...',
+                        allowEmptyOption: false,
+                        onDropdownOpen: function() {
+                            this.clearCache();
+                        },
+                        onChange: function() {
+                            submitReportFilters();
+                        }
+                    });
+                }
+
                 const rangeWrapper = document.getElementById('reportsRangeInline');
                 if (rangeWrapper) {
                     const inputs = rangeWrapper.querySelectorAll('input[type="date"]');
@@ -1223,17 +1236,15 @@
                         const fromInput = inputs[0];
                         const toInput = inputs[1];
 
+                        fromInput.addEventListener('change', submitReportFilters);
+                        toInput.addEventListener('change', submitReportFilters);
+
                         fromInput.addEventListener('input', function() {
                             toInput.min = fromInput.value || '';
                             if (toInput.value && fromInput.value && toInput.value < fromInput.value) {
                                 toInput.value = fromInput.value;
                             }
-                            submitReportFilters();
                         });
-
-                        fromInput.addEventListener('change', submitReportFilters);
-                        toInput.addEventListener('input', submitReportFilters);
-                        toInput.addEventListener('change', submitReportFilters);
                     }
 
                     const rangeReset = document.getElementById('reportsRangeReset');
@@ -1366,8 +1377,22 @@
                     }
 
                     const showAllWeekTicks = reportPeriod === 'month';
-                    const maxTickCount = inquiryLabels.length > 24 ? 11 : (inquiryLabels.length > 14 ? 9 : (inquiryLabels.length > 7 ? 7 : inquiryLabels.length));
-                    const tickStep = inquiryLabels.length > 24 ? 3 : (inquiryLabels.length > 14 ? 2 : 1);
+                    const totalDays = inquiryLabels.length;
+                    let tickStep = 15;
+
+                    if (totalDays > 180) {
+                        tickStep = 30; // Over 6 months: Monthly
+                    } else if (totalDays >= 30 && totalDays <= 45) {
+                        tickStep = 3; // 30 days range: Every 3 days
+                    } else if (totalDays < 30) {
+                        // Smart division for short ranges
+                        if (totalDays <= 7) tickStep = 1;
+                        else if (totalDays <= 14) tickStep = 2;
+                        else tickStep = 3;
+                    } else {
+                        tickStep = 15; // Standard (60, 90 days etc.)
+                    }
+                    const maxTickCount = Math.ceil(inquiryLabels.length / tickStep) + 2;
                     const maxInquiryValue = inquiryValues.length ? Math.max.apply(null, inquiryValues) : 0;
 
                     function clearInquiryHover(chart) {
@@ -1635,26 +1660,20 @@
                                         color: '#8b95b5',
                                         padding: 4,
                                         font: {
-                                            size: showAllWeekTicks ? 10 : (inquiryLabels.length > 10 ? 10 : 11),
+                                            size: 10,
                                             weight: '500'
                                         },
-                                        autoSkip: !showAllWeekTicks,
-                                        maxTicksLimit: showAllWeekTicks ? inquiryLabels.length : maxTickCount,
+                                        autoSkip: false,
+                                        maxTicksLimit: inquiryLabels.length,
                                         callback: function (value, index) {
                                             const label = this.getLabelForValue(value);
-                                            if (showAllWeekTicks) {
-                                                return label;
-                                            }
-                                            if (inquiryLabels.length <= maxTickCount) {
-                                                return label;
-                                            }
                                             if (index === 0 || index === inquiryLabels.length - 1 || index % tickStep === 0) {
                                                 return label;
                                             }
                                             return '';
                                         },
-                                        maxRotation: showAllWeekTicks ? 0 : (inquiryLabels.length > 7 ? 35 : 0),
-                                        minRotation: showAllWeekTicks ? 0 : (inquiryLabels.length > 7 ? 35 : 0)
+                                        maxRotation: 0,
+                                        minRotation: 0
                                     }
                                 },
                                 y: {

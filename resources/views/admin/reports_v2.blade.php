@@ -37,69 +37,93 @@
     </header>
 
     <div class="rv2-filtered-layer">
-        <div class="rv2-filtered-layer-head">
-            <form method="GET" class="rv2-filters rv2-filters-form" data-auto-submit-report-filters>
+        <div class="rv2-filtered-layer-head reports-filter-bar">
+            <form method="GET" action="{{ route('admin.reports.v2') }}" class="reports-period-form reports-period-form-compact rv2-filters-form" data-auto-submit-report-filters style="display: flex; flex-direction: row; align-items: flex-end; gap: 12px; flex-wrap: wrap;">
                 @foreach(request()->query() as $key => $val)
-                    @if($key !== 'days' && $key !== 'compare_days' && $key !== 'page' && $key !== 'primary_from' && $key !== 'primary_to' && $key !== 'compare_from' && $key !== 'compare_to' && $key !== 'include_dealer' && $key !== 'include_estream' && $key !== 'report_scope')
+                    @if($key !== 'days' && $key !== 'primary_from' && $key !== 'primary_to' && $key !== 'compare_days' && $key !== 'compare_from' && $key !== 'compare_to' && $key !== 'report_area' && $key !== 'report_scope')
                         <input type="hidden" name="{{ $key }}" value="{{ $val }}">
                     @endif
                 @endforeach
-                <div class="rv2-filter">
-                    <div class="rv2-filter-label">PRIMARY PERIOD</div>
-                    <select name="days" class="rv2-filter-select" id="rv2PrimarySelect" style="display: {{ request('primary_from') || request('primary_to') ? 'none' : 'block' }};">
-                        @php $primaryDays = (int) request('days', $chartDays ?? 90); @endphp
-                        <option value="30" {{ $primaryDays === 30 ? 'selected' : '' }}>Last 30 days</option>
-                        <option value="60" {{ $primaryDays === 60 ? 'selected' : '' }}>Last 60 days</option>
-                        <option value="90" {{ $primaryDays === 90 ? 'selected' : '' }}>Last 90 days</option>
-                        <option value="custom" {{ request('primary_from') || request('primary_to') ? 'selected' : '' }}>Custom range…</option>
-                    </select>
-                    <div class="rv2-date-range reports-range-grid" style="display: {{ request('primary_from') || request('primary_to') ? 'grid' : 'none' }};">
-                        <div class="reports-range-col">
-                            <label class="reports-range-label">Starting</label>
-                            <input type="date" name="primary_from" value="{{ request('primary_from') }}" class="reports-range-input">
+
+                <div class="reports-filter-container rv2-filter" style="width: 240px; min-height: 90px; display: flex; flex-direction: column;">
+                    <div class="reports-range-label" style="height: 1.6em; display: flex; align-items: center;">PERIOD</div>
+                    <div style="flex: 1; display: flex; align-items: flex-end;">
+                        <select name="days" class="rv2-filter-select" id="rv2PrimarySelect" style="display: {{ request('primary_from') || request('primary_to') ? 'none' : 'block' }}; width: 100%;">
+                            @php $primaryDays = (int) request('days', $chartDays ?? 90); @endphp
+                            <option value="30" {{ $primaryDays === 30 ? 'selected' : '' }}>Last 30 days</option>
+                            <option value="60" {{ $primaryDays === 60 ? 'selected' : '' }}>Last 60 days</option>
+                            <option value="90" {{ $primaryDays === 90 ? 'selected' : '' }}>Last 90 days</option>
+                            <option value="custom" {{ request('primary_from') || request('primary_to') ? 'selected' : '' }}>Custom range…</option>
+                        </select>
+                        <div id="rv2PrimaryRangeInline" class="reports-range-grid" style="display: {{ request('primary_from') || request('primary_to') ? 'grid' : 'none' }}; width: 100%; min-width: 0; gap: 4px;">
+                            <div class="reports-range-col">
+                                <label class="reports-range-label" style="font-size: 9px; opacity: 0.8;">Starting</label>
+                                <input type="date" name="primary_from" id="rv2PrimaryFrom" value="{{ request('primary_from', now()->subMonth()->format('Y-m-d')) }}" class="reports-range-input" style="width: 100%;">
+                            </div>
+                            <div class="reports-range-col">
+                                <label class="reports-range-label" style="font-size: 9px; opacity: 0.8;">Ending</label>
+                                <input type="date" name="primary_to" id="rv2PrimaryTo" value="{{ request('primary_to', now()->format('Y-m-d')) }}" class="reports-range-input" style="width: 100%;">
+                            </div>
+                            <button type="button" class="reports-range-back-btn rv2-range-reset" data-target="rv2PrimarySelect" style="right: 4px; top: 4px;">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
                         </div>
-                        <div class="reports-range-col">
-                            <label class="reports-range-label">Ending</label>
-                            <input type="date" name="primary_to" value="{{ request('primary_to') }}" class="reports-range-input">
-                        </div>
-                        <button type="button" class="reports-range-back-btn rv2-range-reset" data-target="rv2PrimarySelect">
-                            <i class="bi bi-x-lg"></i>
-                        </button>
                     </div>
                 </div>
-                <div class="rv2-filter">
-                    <div class="rv2-filter-label">COMPARE AGAINST</div>
-                    @php $compareDays = (int) request('compare_days', 30); @endphp
-                    <select name="compare_days" class="rv2-filter-select" id="rv2CompareSelect" style="display: {{ request('compare_from') || request('compare_to') ? 'none' : 'block' }};">
-                        <option value="30" {{ $compareDays === 30 ? 'selected' : '' }}>Last 30 days</option>
-                        <option value="60" {{ $compareDays === 60 ? 'selected' : '' }}>Last 60 days</option>
-                        <option value="90" {{ $compareDays === 90 ? 'selected' : '' }}>Last 90 days</option>
-                        <option value="custom" {{ request('compare_from') || request('compare_to') ? 'selected' : '' }}>Custom range…</option>
-                    </select>
-                    <div class="rv2-date-range reports-range-grid" style="display: {{ request('compare_from') || request('compare_to') ? 'grid' : 'none' }};">
-                        <div class="reports-range-col">
-                            <label class="reports-range-label">Starting</label>
-                            <input type="date" name="compare_from" value="{{ request('compare_from') }}" class="reports-range-input">
+
+                <div class="reports-filter-container rv2-filter" style="width: 240px; min-height: 90px; display: flex; flex-direction: column;">
+                    <div class="reports-range-label" style="height: 1.6em; display: flex; align-items: center;">COMPARE AGAINST</div>
+                    <div style="flex: 1; display: flex; align-items: flex-end;">
+                        @php $compareDays = (int) request('compare_days', 30); @endphp
+                        <select name="compare_days" class="rv2-filter-select" id="rv2CompareSelect" style="display: {{ request('compare_from') || request('compare_to') ? 'none' : 'block' }}; width: 100%;">
+                            <option value="30" {{ $compareDays === 30 ? 'selected' : '' }}>Last 30 days</option>
+                            <option value="60" {{ $compareDays === 60 ? 'selected' : '' }}>Last 60 days</option>
+                            <option value="90" {{ $compareDays === 90 ? 'selected' : '' }}>Last 90 days</option>
+                            <option value="custom" {{ request('compare_from') || request('compare_to') ? 'selected' : '' }}>Custom range…</option>
+                        </select>
+                        <div id="rv2CompareRangeInline" class="reports-range-grid" style="display: {{ request('compare_from') || request('compare_to') ? 'grid' : 'none' }}; width: 100%; min-width: 0; gap: 4px;">
+                            <div class="reports-range-col">
+                                <label class="reports-range-label" style="font-size: 9px; opacity: 0.8;">Starting</label>
+                                <input type="date" name="compare_from" id="rv2CompareFrom" value="{{ request('compare_from', now()->subMonths(2)->format('Y-m-d')) }}" class="reports-range-input" style="width: 100%;">
+                            </div>
+                            <div class="reports-range-col">
+                                <label class="reports-range-label" style="font-size: 9px; opacity: 0.8;">Ending</label>
+                                <input type="date" name="compare_to" id="rv2CompareTo" value="{{ request('compare_to', now()->subMonth()->format('Y-m-d')) }}" class="reports-range-input" style="width: 100%;">
+                            </div>
+                            <button type="button" class="reports-range-back-btn rv2-range-reset" data-target="rv2CompareSelect" style="right: 4px; top: 4px;">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
                         </div>
-                        <div class="reports-range-col">
-                            <label class="reports-range-label">Ending</label>
-                            <input type="date" name="compare_to" value="{{ request('compare_to') }}" class="reports-range-input">
-                        </div>
-                        <button type="button" class="reports-range-back-btn rv2-range-reset" data-target="rv2CompareSelect">
-                            <i class="bi bi-x-lg"></i>
-                        </button>
                     </div>
                 </div>
-                <div class="rv2-filter">
-                    <div class="rv2-filter-label">DEALER SCOPE</div>
-                    @include('admin.partials.report_scope_picker', [
-                        'options' => $reportScopeOptions ?? [],
-                        'selected' => $selectedReportScope ?? 'all',
-                    ])
+
+                <div class="reports-filter-container rv2-filter" style="width: 140px; min-height: 90px; display: flex; flex-direction: column;">
+                    <div class="reports-range-label" style="height: 1.6em; display: flex; align-items: center; white-space: nowrap;">DEALER SCOPE</div>
+                    <div style="flex: 1; display: flex; align-items: flex-end;">
+                        <div style="width: 100%; max-width: 100%; --report-scope-picker-width: 100%;">
+                            @include('admin.partials.report_scope_picker', [
+                                'options' => $reportScopeOptions ?? [],
+                                'selected' => $selectedReportScope ?? 'all',
+                            ])
+                        </div>
+                    </div>
                 </div>
-                <div class="rv2-filter rv2-filter-apply">
+
+                <div class="reports-filter-container rv2-filter" style="width: 140px; min-height: 90px; display: flex; flex-direction: column;">
+                    <div class="reports-range-label" style="height: 1.6em; display: flex; align-items: center;">AREA</div>
+                    <div style="flex: 1; display: flex; align-items: flex-end;">
+                        <select name="report_area" id="adminSalesAreaSelect" class="rv2-filter-select" aria-label="Select area" style="width: 100%; font-size: 13px;">
+                            <option value="all">All Areas</option>
+                            @foreach($areaOptions ?? [] as $area)
+                                <option value="{{ $area }}" {{ ($selectedArea ?? '') === $area ? 'selected' : '' }}>{{ $area }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <div class="reports-period-actions report-filter-actions" style="margin-left: auto; align-self: flex-end; padding-bottom: 8px;">
                     @include('admin.partials.report_filter_actions', [
-                        'wrapperClass' => 'rv2-filter-actions report-filter-actions',
+                        'wrapperClass' => 'reports-period-actions-inner',
                         'applyClass' => 'report-filter-apply',
                         'exportClass' => 'report-filter-export',
                         'clearClass' => 'report-filter-clear',
@@ -117,7 +141,7 @@
             <div class="rv2-panel-head">
                 <div>
                     <div class="rv2-section-title rv2-section-title-prominent">Top 5 Dealer &mdash; Failed vs Closed</div>
-</div>
+                </div>
             </div>
             <div class="rv2-panel-body">
                 <div class="rv2-bar-chart-title-row">
@@ -205,7 +229,6 @@
     </div>
 </div>
 
-{{-- View-only intervention / activity popout (like dealer status process) --}}
 <div class="inquiries-assign-modal rv2-intervention-modal" id="rv2InterventionModal" hidden>
     <div class="inquiries-assign-backdrop" data-rv2-intervention-close="1"></div>
     <div class="inquiries-assign-window" role="dialog" aria-modal="true" aria-labelledby="rv2InterventionModalTitle">
@@ -233,7 +256,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // Title dropdown (shared across reports)
+            // Title dropdown
             const dropdownBtn = document.getElementById('dropdownHoverButton');
             const dropdown = document.getElementById('dropdownHover');
             const titleHover = document.getElementById('reportsTitleHover');
@@ -270,7 +293,7 @@
                 });
             }
 
-            // Log Intervention popout — view-only dealer activity (like status process in inquiries)
+            // Log Intervention popout
             (function initInterventionModal() {
                 var modal = document.getElementById('rv2InterventionModal');
                 var titleName = document.getElementById('rv2InterventionDealerName');
@@ -344,7 +367,7 @@
 
                 const getRangeWrapper = function (select) {
                     const filter = select.closest('.rv2-filter');
-                    return filter ? filter.querySelector('.rv2-date-range') : null;
+                    return filter ? filter.querySelector('.reports-range-grid') : null;
                 };
 
                 const syncFormCustomState = function () {
@@ -357,103 +380,99 @@
 
                 const syncRange = function (select) {
                     const wrapper = getRangeWrapper(select);
-                    if (!wrapper) {
-                        return;
-                    }
+                    if (!wrapper) return;
 
                     const isCustom = select.value === 'custom';
                     wrapper.style.display = isCustom ? 'grid' : 'none';
-                    select.style.display = isCustom ? 'none' : 'block';
+                    
+                    if (isCustom) {
+                        select.style.display = 'none';
+                        if (select.tomselect) select.tomselect.wrapper.style.display = 'none';
+                    } else {
+                        if (select.tomselect) select.tomselect.wrapper.style.display = 'block';
+                        else select.style.display = 'block';
+                    }
                     
                     const inputs = wrapper.querySelectorAll('input[type="date"]');
-                    const fromInput = inputs[0];
-                    const toInput = inputs[1];
-
-                    if (fromInput && toInput) {
-                        fromInput.disabled = !isCustom;
-                        toInput.disabled = !isCustom;
-                        fromInput.required = isCustom;
-                        toInput.required = isCustom;
-
+                    if (inputs.length === 2) {
+                        inputs[0].disabled = inputs[1].disabled = !isCustom;
+                        inputs[0].required = inputs[1].required = isCustom;
                         if (!isCustom) {
-                            fromInput.value = '';
-                            toInput.value = '';
-                            toInput.min = '';
+                            inputs[1].min = '';
                         } else {
-                            toInput.min = fromInput.value || '';
+                            if (!inputs[0].value) inputs[0].value = "{{ now()->subMonth()->format('Y-m-d') }}";
+                            if (!inputs[1].value) inputs[1].value = "{{ now()->format('Y-m-d') }}";
+                            inputs[1].min = inputs[0].value || '';
                         }
                     }
-
                     syncFormCustomState();
                 };
 
                 const isFormReadyToSubmit = function () {
                     return Array.prototype.every.call(form.querySelectorAll('select[name="days"], select[name="compare_days"]'), function (select) {
                         const wrapper = getRangeWrapper(select);
-                        if (!wrapper || select.value !== 'custom') {
-                            return true;
-                        }
-
+                        if (!wrapper || select.value !== 'custom') return true;
                         const inputs = wrapper.querySelectorAll('input[type="date"]');
                         const from = inputs[0] ? inputs[0].value : '';
                         const to = inputs[1] ? inputs[1].value : '';
-
                         return from !== '' && to !== '' && from <= to;
                     });
                 };
 
                 const submitReportFilters = function () {
                     window.clearTimeout(autoSubmitTimer);
-
-                    if (!isFormReadyToSubmit()) {
-                        return;
-                    }
-
+                    if (!isFormReadyToSubmit()) return;
                     autoSubmitTimer = window.setTimeout(function () {
                         markReportFiltersSubmitting();
-
                         if (typeof form.requestSubmit === 'function') {
                             form.requestSubmit();
                             return;
                         }
-
                         form.submit();
                     }, 80);
                 };
 
-                form.querySelectorAll('select[name="days"], select[name="compare_days"], select[name="report_scope"]').forEach(function (select) {
+                form.querySelectorAll('select[name="days"], select[name="compare_days"], select[name="report_scope"], select[name="report_area"]').forEach(function (select) {
                     if (select.name === 'days' || select.name === 'compare_days') {
                         syncRange(select);
                     }
-
                     select.addEventListener('change', function () {
                         if (select.name === 'days' || select.name === 'compare_days') {
                             syncRange(select);
                         }
-
                         submitReportFilters();
                     });
 
                     const bindTomSelectChange = function () {
-                        if (!select.tomselect || select.dataset.autoSubmitTomSelectReady === '1') {
-                            return;
-                        }
-
+                        if (!select.tomselect || select.dataset.autoSubmitTomSelectReady === '1') return;
                         select.dataset.autoSubmitTomSelectReady = '1';
                         select.tomselect.on('change', submitReportFilters);
                     };
-
                     bindTomSelectChange();
                     window.setTimeout(bindTomSelectChange, 120);
                     window.setTimeout(bindTomSelectChange, 360);
                 });
+
+                // Area searchable dropdown
+                const areaSelectEl = document.getElementById('adminSalesAreaSelect');
+                if (areaSelectEl && typeof TomSelect === 'function') {
+                    new TomSelect(areaSelectEl, {
+                        plugins: ['dropdown_input'],
+                        maxOptions: 100,
+                        searchField: 'text',
+                        placeholder: 'Search city...',
+                        allowEmptyOption: false,
+                        onDropdownOpen: function() { this.clearCache(); },
+                        onChange: function() { submitReportFilters(); }
+                    });
+                }
 
                 form.querySelectorAll('.rv2-range-reset').forEach(function(btn) {
                     btn.addEventListener('click', function() {
                         const targetId = btn.getAttribute('data-target');
                         const select = document.getElementById(targetId);
                         if (select) {
-                            select.value = '60';
+                            select.value = '30';
                             syncRange(select);
                             submitReportFilters();
                         }
@@ -466,52 +485,36 @@
                         const fromInput = inputs[0];
                         const toInput = inputs[1];
 
+                        fromInput.addEventListener('change', submitReportFilters);
+                        toInput.addEventListener('change', submitReportFilters);
+
                         fromInput.addEventListener('input', function() {
                             toInput.min = fromInput.value || '';
                             if (toInput.value && fromInput.value && toInput.value < fromInput.value) {
                                 toInput.value = fromInput.value;
                             }
-                            submitReportFilters();
                         });
-
-                        fromInput.addEventListener('change', submitReportFilters);
-                        toInput.addEventListener('input', submitReportFilters);
-                        toInput.addEventListener('change', submitReportFilters);
                     }
                 });
             });
 
-            // ——— Top 10 Failed / Top 10 Closed bar charts (side by side) ———
+            // ——— Charts ———
             const top10Failed = @json($top10Failed ?? []);
             const top10Closed = @json($top10Closed ?? []);
-            // Keep a single, consistent color per side.
             const BAR_RED = 'rgba(239, 68, 68, 0.96)';
-            const BAR_RED_HOVER = 'rgba(248, 113, 113, 1)';
             const BAR_CLOSED = 'rgba(34, 197, 94, 0.94)';
-            const BAR_CLOSED_HOVER = 'rgba(16, 185, 129, 1)';
-            const BAR_RED_BORDER = 'rgba(185, 28, 28, 0.9)';
-            const BAR_CLOSED_BORDER = 'rgba(21, 128, 61, 0.9)';
             const isDarkTheme = document.documentElement.classList.contains('theme-dark');
             const isMobile = window.matchMedia('(max-width: 768px)').matches;
             const chartLabelFontSize = isMobile ? 8 : 10;
             const chartBarThickness = isMobile ? 22 : 40;
-            const neutralTickColor = isDarkTheme ? '#93a0bf' : '#475569';
-            const neutralTitleColor = isDarkTheme ? '#7f8caf' : '#64748b';
-            const failedAxisColor = isDarkTheme ? '#ff9b9b' : '#7f1d1d';
-            const closedAxisColor = isDarkTheme ? '#7be194' : '#166534';
-            const gridLineColor = isDarkTheme ? 'rgba(148, 163, 184, 0.1)' : 'rgba(148, 163, 184, 0.14)';
-            const zeroLineColor = isDarkTheme ? 'rgba(148, 163, 184, 0.22)' : 'rgba(51, 65, 85, 0.24)';
-            const failedBackdropColor = isDarkTheme ? 'rgba(248, 113, 113, 0.075)' : 'rgba(254, 226, 226, 0.5)';
-            const closedBackdropColor = isDarkTheme ? 'rgba(74, 222, 128, 0.075)' : 'rgba(220, 252, 231, 0.5)';
-            const transparentBackdropColor = isDarkTheme ? 'rgba(15, 23, 42, 0)' : 'rgba(255, 255, 255, 0)';
 
             if (window.Chart && typeof window.ChartDataLabels !== 'undefined') {
                 window.Chart.register(window.ChartDataLabels);
             }
 
             const rowCount = Math.max(top10Failed.length, top10Closed.length, 0);
-            const failedName = Array.from({ length: rowCount }, (_, i) => (top10Failed[i]?.name ?? top10Failed[i]?.dealer_id ?? '—'));
-            const closedName = Array.from({ length: rowCount }, (_, i) => (top10Closed[i]?.name ?? top10Closed[i]?.dealer_id ?? '—'));
+            const failedName = Array.from({ length: rowCount }, (_, i) => (top10Failed[i]?.name ?? '—'));
+            const closedName = Array.from({ length: rowCount }, (_, i) => (top10Closed[i]?.name ?? '—'));
             const failedPct = Array.from({ length: rowCount }, (_, i) => top10Failed[i]?.percentage ?? 0);
             const closedPct = Array.from({ length: rowCount }, (_, i) => top10Closed[i]?.percentage ?? 0);
 
@@ -521,154 +524,31 @@
                 datasets: [
                     {
                         label: 'Failed',
-                        yAxisID: 'y',
                         data: Array.from({ length: rowCount }, (_, i) => -Math.min(100, Math.abs(failedPct[i] ?? 0))),
-                        backgroundColor: Array.from({ length: rowCount }, () => BAR_RED),
-                        hoverBackgroundColor: Array.from({ length: rowCount }, () => BAR_RED_HOVER),
-                        borderColor: Array.from({ length: rowCount }, () => BAR_RED_BORDER),
-                        borderWidth: 1,
+                        backgroundColor: BAR_RED,
                         borderRadius: 10,
-                        borderSkipped: false,
-                        barThickness: chartBarThickness,
-                        maxBarThickness: chartBarThickness
+                        barThickness: chartBarThickness
                     },
                     {
                         label: 'Closed',
-                        yAxisID: 'y',
                         data: Array.from({ length: rowCount }, (_, i) => Math.min(100, Math.abs(closedPct[i] ?? 0))),
-                        backgroundColor: Array.from({ length: rowCount }, () => BAR_CLOSED),
-                        hoverBackgroundColor: Array.from({ length: rowCount }, () => BAR_CLOSED_HOVER),
-                        borderColor: Array.from({ length: rowCount }, () => BAR_CLOSED_BORDER),
-                        borderWidth: 1,
+                        backgroundColor: BAR_CLOSED,
                         borderRadius: 10,
-                        borderSkipped: false,
-                        barThickness: chartBarThickness,
-                        maxBarThickness: chartBarThickness
+                        barThickness: chartBarThickness
                     }
                 ]
-            };
-
-            const failedClosedBackdropPlugin = {
-                id: 'failedClosedBackdropPlugin',
-                beforeDatasetsDraw: function(chart) {
-                    const chartArea = chart.chartArea;
-                    const xScale = chart.scales?.x;
-                    if (!chartArea || !xScale) return;
-
-                    const left = chartArea.left;
-                    const right = chartArea.right;
-                    const top = chartArea.top;
-                    const height = chartArea.bottom - chartArea.top;
-                    const zeroX = xScale.getPixelForValue(0);
-                    const ctx = chart.ctx;
-                    const failedBackdrop = ctx.createLinearGradient(left, top, zeroX, top);
-                    failedBackdrop.addColorStop(0, transparentBackdropColor);
-                    failedBackdrop.addColorStop(1, failedBackdropColor);
-
-                    const closedBackdrop = ctx.createLinearGradient(zeroX, top, right, top);
-                    closedBackdrop.addColorStop(0, closedBackdropColor);
-                    closedBackdrop.addColorStop(1, transparentBackdropColor);
-
-                    ctx.save();
-                    ctx.fillStyle = failedBackdrop;
-                    ctx.fillRect(left, top, Math.max(0, zeroX - left), height);
-                    ctx.fillStyle = closedBackdrop;
-                    ctx.fillRect(zeroX, top, Math.max(0, right - zeroX), height);
-                    ctx.restore();
-                }
-            };
-
-            const failedClosedBarShadowPlugin = {
-                id: 'failedClosedBarShadowPlugin',
-                beforeDatasetDraw: function(chart, args) {
-                    const ctx = chart.ctx;
-                    ctx.save();
-                    ctx.shadowColor = args.index === 0
-                        ? (isDarkTheme ? 'rgba(248, 113, 113, 0.24)' : 'rgba(239, 68, 68, 0.16)')
-                        : (isDarkTheme ? 'rgba(74, 222, 128, 0.22)' : 'rgba(34, 197, 94, 0.16)');
-                    ctx.shadowBlur = 12;
-                    ctx.shadowOffsetY = 3;
-                },
-                afterDatasetDraw: function(chart) {
-                    chart.ctx.restore();
-                }
-            };
-
-            const failedClosedLabelHoverPlugin = {
-                id: 'failedClosedLabelHoverPlugin',
-                afterEvent: function (chart, args) {
-                    const event = args?.event;
-                    const canvas = chart?.canvas;
-                    const chartArea = chart?.chartArea;
-                    const categoryScale = chart?.scales?.y;
-
-                    if (!canvas || !chartArea || !categoryScale || !event) {
-                        return;
-                    }
-
-                    if (event.type === 'mouseout') {
-                        canvas.title = '';
-                        canvas.style.cursor = '';
-                        return;
-                    }
-
-                    const x = Number(event.x);
-                    const y = Number(event.y);
-                    const isInsideVerticalRange = y >= chartArea.top && y <= chartArea.bottom;
-
-                    if (!isInsideVerticalRange) {
-                        canvas.title = '';
-                        canvas.style.cursor = '';
-                        return;
-                    }
-
-                    const rawIndex = categoryScale.getValueForPixel(y);
-                    const rowIndex = Number.isFinite(rawIndex) ? Math.round(rawIndex) : -1;
-
-                    if (rowIndex < 0 || rowIndex >= rowCount) {
-                        canvas.title = '';
-                        canvas.style.cursor = '';
-                        return;
-                    }
-
-                    let hoveredName = '';
-
-                    if (x >= 0 && x < chartArea.left - 6) {
-                        hoveredName = failedName[rowIndex] ?? '';
-                    } else if (x > chartArea.right + 6 && x <= chart.width) {
-                        hoveredName = closedName[rowIndex] ?? '';
-                    }
-
-                    canvas.title = hoveredName && hoveredName !== '—' ? hoveredName : '';
-                    canvas.style.cursor = canvas.title ? 'help' : '';
-                }
             };
 
             const config = {
                 type: 'bar',
                 data: data,
-                plugins: [failedClosedBackdropPlugin, failedClosedBarShadowPlugin, failedClosedLabelHoverPlugin],
                 options: {
                     indexAxis: 'y',
                     responsive: true,
                     maintainAspectRatio: false,
-                    layout: { padding: { left: 0, right: 0, top: 4, bottom: 4 } },
-                    datasets: {
-                        bar: {
-                            // Shrink each category band and bar so Failed / Closed rows
-                            // have more vertical space between them.
-                            categoryPercentage: 0.6,
-                            barPercentage: 0.6
-                        }
-                    },
                     plugins: {
                         legend: { display: false },
                         tooltip: {
-                            backgroundColor: isDarkTheme ? 'rgba(15, 23, 42, 0.96)' : 'rgba(15, 23, 42, 0.92)',
-                            titleColor: '#ffffff',
-                            bodyColor: '#e5edf9',
-                            borderColor: isDarkTheme ? 'rgba(99, 113, 146, 0.45)' : 'rgba(148, 163, 184, 0.24)',
-                            borderWidth: 1,
                             callbacks: {
                                 label: function(ctx) {
                                     const pct = Math.abs(Number(ctx.raw) || 0);
@@ -679,19 +559,11 @@
                             }
                         },
                         datalabels: {
-                            clip: false,
-                            labels: {
-                                // Only show percentages inside the bars
-                                pct: {
-                                    color: '#ffffff',
-                                    font: { size: chartLabelFontSize, weight: '800' },
-                                    formatter: function(_value, ctx) {
-                                        const i = ctx.dataIndex;
-                                        return ctx.dataset.label === 'Failed' ? `${failedPct[i]}%` : `${closedPct[i]}%`;
-                                    },
-                                    anchor: 'center',
-                                    align: 'center'
-                                }
+                            color: '#fff',
+                            font: { size: chartLabelFontSize, weight: '800' },
+                            formatter: function(_v, ctx) {
+                                const i = ctx.dataIndex;
+                                return ctx.dataset.label === 'Failed' ? `${failedPct[i]}%` : `${closedPct[i]}%`;
                             }
                         }
                     },
@@ -699,52 +571,12 @@
                         x: {
                             min: -100,
                             max: 100,
-                            grid: {
-                                color: function(ctx) {
-                                    return Number(ctx.tick?.value) === 0 ? zeroLineColor : gridLineColor;
-                                },
-                                lineWidth: function(ctx) {
-                                    return Number(ctx.tick?.value) === 0 ? 1.1 : 1;
-                                },
-                                drawTicks: false
-                            },
-                            ticks: {
-                                stepSize: 20,
-                                color: neutralTickColor,
-                                font: { size: chartLabelFontSize },
-                                callback: function(v) { return Math.abs(v); }
-                            },
-                            title: {
-                                display: true,
-                                text: 'Percentage of cases',
-                                color: neutralTitleColor,
-                                font: { size: chartLabelFontSize, weight: '700' }
-                            }
+                            ticks: { callback: function(v) { return Math.abs(v); } }
                         },
-                        // Left Sidebar Alignment (Failed Names)
                         y: {
-                            position: 'left',
-                            grid: { display: false, drawBorder: false },
                             ticks: {
-                                autoSkip: false,
-                                color: failedAxisColor,
-                                font: { size: chartLabelFontSize, weight: '700' },
                                 callback: function(value, index) {
                                     const name = failedName[index] ?? '—';
-                                    return name.length > 15 ? name.substring(0, 15) + '…' : name;
-                                }
-                            }
-                        },
-                        // Right Sidebar Alignment (Closed Names)
-                        yRight: {
-                            position: 'right',
-                            grid: { display: false, drawBorder: false },
-                            ticks: {
-                                autoSkip: false,
-                                color: closedAxisColor,
-                                font: { size: chartLabelFontSize, weight: '700' },
-                                callback: function(value, index) {
-                                    const name = closedName[index] ?? '—';
                                     return name.length > 15 ? name.substring(0, 15) + '…' : name;
                                 }
                             }
@@ -753,16 +585,9 @@
                 }
             };
 
-            const divergeEl = document.getElementById('top10FailedClosedChart');
-            if (divergeEl && window.Chart && rowCount > 0) {
-                // Make chart height dynamic based on number of dealers and bar size.
-                const isWideMonitor = window.matchMedia('(min-width: 1600px)').matches;
-                const perRow = isMobile ? 52 : 92;
-                const minRows = isMobile ? 1 : 4;
-                const rowsForHeight = Math.max(rowCount, minRows);
-                const monitorHeightTrim = isWideMonitor ? 55 : 0;
-                divergeEl.height = Math.max(160, (perRow * rowsForHeight) - monitorHeightTrim);
-                new Chart(divergeEl.getContext('2d'), config);
+            const el = document.getElementById('top10FailedClosedChart');
+            if (el && window.Chart) {
+                new Chart(el.getContext('2d'), config);
             }
         });
     </script>
