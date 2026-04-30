@@ -61,6 +61,7 @@ class AdminController extends Controller
                      ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
                  ) ls ON ls."LEADID" = l."LEADID"
                  WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL AND TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) <> \'\'
+                 AND COALESCE(ls."LATEST_STATUS", \'\') <> \'CANCELLED\'
                  GROUP BY TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50)))'
             );
 
@@ -335,8 +336,16 @@ class AdminController extends Controller
 
     private function dashboardData(): array
     {
-        // Total leads: all rows in LEAD
-        $leadCountRow = DB::selectOne('SELECT COUNT(*) as cnt FROM "LEAD" WHERE COALESCE("ISDELETED", FALSE) = FALSE');
+        // Total leads: all rows in LEAD (excluding Cancelled)
+        $leadCountRow = DB::selectOne(
+            'SELECT COUNT(*) as cnt FROM "LEAD" l
+             WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
+             AND COALESCE((SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
+                           FROM "LEAD_ACT" la
+                           WHERE la."LEADID" = l."LEADID"
+                           ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
+                          ), \'\') <> \'CANCELLED\''
+        );
         $totalLeads = (int) ($leadCountRow->cnt ?? $leadCountRow->CNT ?? current((array) $leadCountRow) ?? 0);
 
         // Total closed: LEAD_ACT with STATUS = 'Completed'
@@ -477,6 +486,7 @@ class AdminController extends Controller
                      ) la ON la."LEADID" = l."LEADID"
                      WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
                        AND l."CREATEDAT" <= ?
+                       AND UPPER(TRIM(COALESCE(la."STATUS", \'\'))) <> \'CANCELLED\'
                        AND UPPER(TRIM(COALESCE(la."STATUS", \'\'))) IN (\'PENDING\', \'FOLLOWUP\', \'DEMO\', \'CONFIRMED\')',
                     [$cutoff, $cutoff]
                 );
@@ -485,12 +495,14 @@ class AdminController extends Controller
             };
 
             $r = DB::selectOne(
-                'SELECT COUNT(*) AS c FROM "LEAD" WHERE COALESCE("ISDELETED", FALSE) = FALSE AND "CREATEDAT" >= ? AND "CREATEDAT" <= ?',
+                'SELECT COUNT(*) AS c FROM "LEAD" l WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
+                 AND COALESCE((SELECT FIRST 1 UPPER(TRIM(la."STATUS")) FROM "LEAD_ACT" la WHERE la."LEADID" = l."LEADID" ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC), \'\') <> \'CANCELLED\'',
                 [$startThisWeek->format('Y-m-d H:i:s'), Carbon::now()->format('Y-m-d 23:59:59')]
             );
             $leadsThisWeek = (int) ($r->c ?? $r->C ?? 0);
             $r = DB::selectOne(
-                'SELECT COUNT(*) AS c FROM "LEAD" WHERE COALESCE("ISDELETED", FALSE) = FALSE AND "CREATEDAT" >= ? AND "CREATEDAT" <= ?',
+                'SELECT COUNT(*) AS c FROM "LEAD" l WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
+                 AND COALESCE((SELECT FIRST 1 UPPER(TRIM(la."STATUS")) FROM "LEAD_ACT" la WHERE la."LEADID" = l."LEADID" ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC), \'\') <> \'CANCELLED\'',
                 [$startLastWeek->format('Y-m-d H:i:s'), $endLastWeek->format('Y-m-d 23:59:59')]
             );
             $leadsLastWeek = (int) ($r->c ?? $r->C ?? 0);
@@ -507,7 +519,8 @@ class AdminController extends Controller
             $closedLastWeek = (int) ($r->c ?? $r->C ?? 0);
 
             $r = DB::selectOne(
-                'SELECT COUNT(*) AS c FROM "LEAD" WHERE COALESCE("ISDELETED", FALSE) = FALSE AND "CREATEDAT" <= ?',
+                'SELECT COUNT(*) AS c FROM "LEAD" l WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."CREATEDAT" <= ?
+                 AND COALESCE((SELECT FIRST 1 UPPER(TRIM(la."STATUS")) FROM "LEAD_ACT" la WHERE la."LEADID" = l."LEADID" ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC), \'\') <> \'CANCELLED\'',
                 [$endLastWeek->format('Y-m-d H:i:s')]
             );
             $leadsUntilLastWeek = (int) ($r->c ?? $r->C ?? 0);
@@ -787,11 +800,13 @@ class AdminController extends Controller
 
                 // Metric range changes (leads, closed, active, conversion)
                 $leadsCur = DB::selectOne(
-                    'SELECT COUNT(*) as c FROM "LEAD" WHERE COALESCE("ISDELETED", FALSE) = FALSE AND "CREATEDAT" >= ? AND "CREATEDAT" <= ?',
+                    'SELECT COUNT(*) as c FROM "LEAD" l WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
+                     AND COALESCE((SELECT FIRST 1 UPPER(TRIM(la."STATUS")) FROM "LEAD_ACT" la WHERE la."LEADID" = l."LEADID" ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC), \'\') <> \'CANCELLED\'',
                     [$rangeStart->format('Y-m-d 00:00:00'), $rangeEnd->format('Y-m-d 23:59:59')]
                 );
                 $leadsPrev = DB::selectOne(
-                    'SELECT COUNT(*) as c FROM "LEAD" WHERE COALESCE("ISDELETED", FALSE) = FALSE AND "CREATEDAT" >= ? AND "CREATEDAT" <= ?',
+                    'SELECT COUNT(*) as c FROM "LEAD" l WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
+                     AND COALESCE((SELECT FIRST 1 UPPER(TRIM(la."STATUS")) FROM "LEAD_ACT" la WHERE la."LEADID" = l."LEADID" ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC), \'\') <> \'CANCELLED\'',
                     [$prevStart->format('Y-m-d 00:00:00'), $prevEnd->format('Y-m-d 23:59:59')]
                 );
                 $curLeadsCount = (int) ($leadsCur->c ?? $leadsCur->C ?? 0);
@@ -994,7 +1009,7 @@ class AdminController extends Controller
         $totalOngoing = 0;
         foreach ($assigned as $r) {
             $status = strtoupper(trim((string) ($r->CURRENTSTATUS ?? '')));
-            if (!in_array($status, ['COMPLETED', 'CASE COMPLETED', 'FAILED', 'REWARDED', 'REWARD', 'REWARD DISTRIBUTED'], true)) {
+            if (!in_array($status, ['COMPLETED', 'CASE COMPLETED', 'FAILED', 'REWARDED', 'REWARD', 'REWARD DISTRIBUTED', 'CANCELLED'], true)) {
                 $totalOngoing++;
             }
         }
@@ -1421,52 +1436,68 @@ class AdminController extends Controller
         return redirect()->route('admin.inquiries')->with('success', 'Assignment undone.');
     }
 
-    public function markInquiryFailed(Request $request): RedirectResponse
+    public function markInquiryCancelled(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'LEADID' => 'required|integer|min:1',
-            'FAIL_REASON' => 'nullable|string|max:130|required_without:DESCRIPTION',
-            'FAIL_DETAIL' => 'nullable|string|max:4000',
-            'DESCRIPTION' => 'nullable|string|max:130|required_without:FAIL_REASON',
-        ]);
-        $leadId = (int) $validated['LEADID'];
-        $reason = trim((string) ($validated['FAIL_REASON'] ?? ''));
-        $legacyDescription = trim((string) ($validated['DESCRIPTION'] ?? ''));
+        $leadId = (int) $request->input('lead_id');
+        $message = trim((string) $request->input('FAIL_REASON', ''));
+        
+        if ($message === '') {
+            $message = trim((string) $request->input('reason', 'Marked as Cancelled by Admin.'));
+        }
+
+        if ($leadId <= 0) {
+            return back()->with('error', 'Invalid inquiry specified.');
+        }
+
         $userId = trim((string) ($request->session()->get('user_id') ?? ''));
 
-        $latest = DB::selectOne(
-            'SELECT FIRST 1 "STATUS" FROM "LEAD_ACT" WHERE "LEADID" = ? ORDER BY "CREATIONDATE" DESC, "LEAD_ACTID" DESC',
+        $lead = DB::selectOne(
+            'SELECT "LEADID" FROM "LEAD" WHERE "LEADID" = ?',
             [$leadId]
         );
-        $currentStatus = $latest ? strtoupper(trim((string) ($latest->STATUS ?? ''))) : '';
-        if (in_array($currentStatus, ['COMPLETED', 'REWARDED', 'FAILED'], true)) {
-            return back()->with('error', 'Cannot mark as Failed: lead is already ' . $currentStatus . '.');
+
+        if (!$lead) {
+            return back()->with('error', 'Lead not found.');
         }
 
-        if ($reason !== '') {
-            $message = $reason;
-        } else {
-            $message = $legacyDescription;
+        $currentStatusRow = DB::selectOne(
+            'SELECT FIRST 1 UPPER(TRIM("STATUS")) AS "CURRENT_STATUS"
+             FROM "LEAD_ACT"
+             WHERE "LEADID" = ?
+             ORDER BY "CREATIONDATE" DESC, "LEAD_ACTID" DESC',
+            [$leadId]
+        );
+
+        $currentStatus = $currentStatusRow->CURRENT_STATUS ?? '';
+
+        if (in_array($currentStatus, ['COMPLETED', 'REWARDED', 'FAILED', 'CANCELLED'], true)) {
+            return back()->with('error', 'Cannot mark as Cancelled: lead is already ' . $currentStatus . '.');
         }
 
+        DB::beginTransaction();
         try {
-            DB::beginTransaction();
             DB::update(
-                'UPDATE "LEAD" SET "LASTMODIFIED" = CURRENT_TIMESTAMP WHERE "LEADID" = ?',
+                'UPDATE "LEAD"
+                 SET "LASTMODIFIED" = CURRENT_TIMESTAMP
+                 WHERE "LEADID" = ?',
                 [$leadId]
             );
+
             DB::insert(
-                'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS")
+                'INSERT INTO "LEAD_ACT"
+                    ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS")
                  VALUES (NEXT VALUE FOR GEN_LEAD_ACTID,?,?,CURRENT_TIMESTAMP,?,?,?,?)',
-                [$leadId, $userId !== '' ? $userId : null, 'Status changed to Failed', $message, null, 'Failed']
+                [$leadId, $userId !== '' ? $userId : null, 'Status changed to Cancelled', $message, null, 'Cancelled']
             );
+
             DB::commit();
         } catch (\Throwable $e) {
             DB::rollBack();
-            return back()->with('error', 'Could not mark the inquiry as failed. Please try again.');
+            \Log::error('Admin mark inquiry cancelled failed: ' . $e->getMessage());
+            return back()->with('error', 'Could not mark the inquiry as cancelled. Please try again.');
         }
 
-        return redirect()->route('admin.inquiries')->with('success', 'Lead marked as Failed.');
+        return redirect()->route('admin.inquiries')->with('success', 'Lead marked as Cancelled.');
     }
 
     public function leadStatus(int $leadId): \Illuminate\Http\JsonResponse
@@ -2594,6 +2625,7 @@ class AdminController extends Controller
                  ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
              ) ls ON ls."LEADID" = l."LEADID"
              WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
+             AND COALESCE(ls.latest_status, \'\') <> \'CANCELLED\'
              ' . $leadScopeSql . '
              GROUP BY
                 CASE
@@ -2639,6 +2671,7 @@ class AdminController extends Controller
                  ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
              ) ls ON ls."LEADID" = l."LEADID"
              WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
+             AND COALESCE(ls.latest_status, \'\') <> \'CANCELLED\'
              ' . $leadScopeSql . '
              GROUP BY
                 CASE
@@ -2696,7 +2729,7 @@ class AdminController extends Controller
              ) m ON m."LEADID" = a."LEADID" AND m.max_created = a."CREATIONDATE"
              JOIN "LEAD" l ON l."LEADID" = a."LEADID"
              LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
-             WHERE 1 = 1
+             WHERE UPPER(TRIM(COALESCE(a."STATUS", \'\'))) <> \'CANCELLED\'
              ' . $leadScopeSql . '
              GROUP BY a."STATUS"',
             array_merge([$startStr, $endStr], $leadScopeBindings)
@@ -2730,7 +2763,7 @@ class AdminController extends Controller
              ) m ON m."LEADID" = a."LEADID" AND m.max_created = a."CREATIONDATE"
              JOIN "LEAD" l ON l."LEADID" = a."LEADID"
              LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
-             WHERE 1 = 1
+             WHERE UPPER(TRIM(COALESCE(a."STATUS", \'\'))) <> \'CANCELLED\'
              ' . $leadScopeSql . '
              GROUP BY a."STATUS"',
             array_merge([$prevStartStr, $prevEndStr], $leadScopeBindings)
@@ -2803,6 +2836,7 @@ class AdminController extends Controller
              FROM "LEAD" l
              LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
              WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
+             AND COALESCE((SELECT FIRST 1 UPPER(TRIM(la2."STATUS")) FROM "LEAD_ACT" la2 WHERE la2."LEADID" = l."LEADID" ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC), \'\') <> \'CANCELLED\'
              ' . $leadScopeSql . '
              GROUP BY CAST(l."CREATEDAT" AS DATE)
              ORDER BY CAST(l."CREATEDAT" AS DATE)',
@@ -2833,6 +2867,7 @@ class AdminController extends Controller
              FROM "LEAD" l
              LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
              WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
+             AND COALESCE((SELECT FIRST 1 UPPER(TRIM(la2."STATUS")) FROM "LEAD_ACT" la2 WHERE la2."LEADID" = l."LEADID" ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC), \'\') <> \'CANCELLED\'
              ' . $leadScopeSql,
             array_merge([$prevStartStr, $prevEndStr], $leadScopeBindings)
         );
@@ -3019,6 +3054,7 @@ class AdminController extends Controller
                  JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
                  WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL
                    AND l."CREATEDAT" >= CAST(? AS TIMESTAMP) AND l."CREATEDAT" <= CAST(? AS TIMESTAMP)
+                   AND COALESCE((SELECT FIRST 1 UPPER(TRIM(la2."STATUS")) FROM "LEAD_ACT" la2 WHERE la2."LEADID" = l."LEADID" ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC), \'\') <> \'CANCELLED\'
                    ' . $dealerScopeSql . '
                  GROUP BY l."ASSIGNEDTO", COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL")',
                 array_merge([$primaryStartStr, $primaryEndStr], $dealerScopeBindings)
@@ -3037,6 +3073,7 @@ class AdminController extends Controller
                  JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
                  WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL
                    AND l."CREATEDAT" >= DATEADD(DAY, ?, CURRENT_DATE)
+                   AND COALESCE((SELECT FIRST 1 UPPER(TRIM(la2."STATUS")) FROM "LEAD_ACT" la2 WHERE la2."LEADID" = l."LEADID" ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC), \'\') <> \'CANCELLED\'
                    ' . $dealerScopeSql . '
                  GROUP BY l."ASSIGNEDTO", COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL")',
                 array_merge([-$days], $dealerScopeBindings)
@@ -3167,6 +3204,7 @@ class AdminController extends Controller
                  FROM "LEAD" l
                  WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL
                    AND l."CREATEDAT" >= CAST(? AS TIMESTAMP) AND l."CREATEDAT" <= CAST(? AS TIMESTAMP)
+                   AND COALESCE((SELECT FIRST 1 UPPER(TRIM(la2."STATUS")) FROM "LEAD_ACT" la2 WHERE la2."LEADID" = l."LEADID" ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC), \'\') <> \'CANCELLED\'
                    ' . $dealerScopeSql . '
                  GROUP BY l."ASSIGNEDTO"',
                 array_merge([$compareStartStr, $compareEndStr], $dealerScopeBindings)
@@ -3183,6 +3221,7 @@ class AdminController extends Controller
                  FROM "LEAD" l
                  WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL
                    AND l."CREATEDAT" >= DATEADD(DAY, ?, CURRENT_DATE)
+                   AND COALESCE((SELECT FIRST 1 UPPER(TRIM(la2."STATUS")) FROM "LEAD_ACT" la2 WHERE la2."LEADID" = l."LEADID" ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC), \'\') <> \'CANCELLED\'
                    AND l."CREATEDAT" <= CURRENT_DATE
                    ' . $dealerScopeSql . '
                  GROUP BY l."ASSIGNEDTO"',
@@ -3549,13 +3588,9 @@ class AdminController extends Controller
                WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL
                 AND l."CREATEDAT" >= ?
                 AND l."CREATEDAT" <= ?
-                ' . $leadScopeSql;
-
-        if ($selectedArea) {
-            $rowsSql .= ' AND UPPER(TRIM(u."CITY")) = ?';
-        }
-
-        $rowsSql .= ' GROUP BY u."USERID", u."EMAIL", u."COMPANY", u."ALIAS"
+                AND COALESCE((SELECT FIRST 1 UPPER(TRIM(la2."STATUS")) FROM "LEAD_ACT" la2 WHERE la2."LEADID" = l."LEADID" ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC), \'\') <> \'CANCELLED\'
+                ' . $leadScopeSql . '
+              GROUP BY u."USERID", u."EMAIL", u."COMPANY", u."ALIAS"
               ORDER BY total_leads DESC';
         $rowsBindings = [$startStr, $endStr, 'REWARDED', $startStr, $endStr];
         $rowsBindings = array_merge($rowsBindings, $leadScopeBindings);

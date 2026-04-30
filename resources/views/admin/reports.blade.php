@@ -11,6 +11,27 @@
             min-width: 0;
         }
 
+        .reports-range-input {
+            padding-right: 32px;
+        }
+
+        .reports-range-input::-webkit-calendar-picker-indicator {
+            display: none;
+        }
+
+        .reports-custom-calendar-icon {
+            position: absolute;
+            right: 14px;
+            bottom: 12px;
+            cursor: pointer;
+            color: #64748b;
+            font-size: 14px;
+            pointer-events: auto;
+        }
+        .reports-custom-calendar-icon:hover {
+            color: #3b82f6;
+        }
+
         .reports-page .dashboard-panels-two-column > *,
         .reports-page .reports-product-section {
             min-width: 0;
