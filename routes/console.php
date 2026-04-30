@@ -20,12 +20,18 @@ Artisan::command('leads:auto-fail', function () {
         'SELECT
             l."LEADID",
             l."ASSIGNEDTO" AS "assignedTo",
+            (SELECT COUNT(*) 
+             FROM "LEAD_ACT" la2 
+             WHERE la2."LEADID" = l."LEADID" 
+               AND UPPER(TRIM(la2."STATUS")) IN (\'COMPLETED\', \'CASE COMPLETED\', \'REWARDED\', \'REWARD\', \'REWARD DISTRIBUTED\')
+               AND la2."CREATIONDATE" <= DATEADD(MONTH, 8, l."CREATEDAT")
+            ) AS "SUCCESS_WITHIN_8_MONTHS",
             COALESCE(
-                (SELECT FIRST 1 la."STATUS"
+                (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
                  FROM "LEAD_ACT" la
                  WHERE la."LEADID" = l."LEADID"
                  ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC),
-                \'Pending\'
+                \'PENDING\'
             ) AS "LATEST_STATUS"
          FROM "LEAD" l
          WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."CREATEDAT" <= ?',
@@ -79,13 +85,22 @@ Artisan::command('leads:auto-fail', function () {
     foreach ($rows as $r) {
         $leadId = (int) ($r->LEADID ?? 0);
         $latestStatus = strtoupper(trim((string) ($r->LATEST_STATUS ?? 'PENDING')));
+        $successWithin8Months = (int) ($r->SUCCESS_WITHIN_8_MONTHS ?? 0);
         $activityUserId = trim((string) ($assignmentUserMap[$leadId] ?? ($r->assignedTo ?? '')));
+        
         if ($leadId <= 0) {
             continue;
         }
-        if (in_array($latestStatus, ['FAILED', 'COMPLETED', 'REWARDED'], true)) {
+        
+        if (in_array($latestStatus, ['FAILED', 'CANCELLED', 'COMPLETED', 'CASE COMPLETED', 'REWARDED', 'REWARD', 'REWARD DISTRIBUTED'], true)) {
             continue;
         }
+        
+        if ($successWithin8Months > 0) {
+            // It got completed or rewarded within 8 months, so we don't mark it failed.
+            continue;
+        }
+
         if ($activityUserId === '') {
             $this->error('Failed to auto-fail lead ' . $leadId . ': no assigner or assigned user available for LEAD_ACT log.');
             continue;
@@ -106,7 +121,7 @@ Artisan::command('leads:auto-fail', function () {
                 'INSERT INTO "LEAD_ACT"
                     ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS")
                  VALUES (NEXT VALUE FOR GEN_LEAD_ACTID,?,?,CURRENT_TIMESTAMP,?,?,?,?)',
-                [$leadId, $activityUserId, 'Status changed to Failed (auto after 8 months)', $message, null, 'Failed']
+                [$leadId, $activityUserId, 'Status changed to Cancelled (auto after 8 months)', $message, null, 'Cancelled']
             );
 
             DB::commit();

@@ -490,7 +490,7 @@
                             <a href="{{ route('admin.inquiries.edit', ['leadId' => $r->LEADID, 'tab' => 'assigned']) }}" class="inquiries-btn inquiries-btn-assign inquiries-edit-inquiry-btn" data-lead-id="{{ $r->LEADID }}" title="Edit" aria-label="Edit"><i class="bi bi-pencil-square" aria-hidden="true"></i></a>
                         @endif
                         <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-view-status-btn" data-lead-id="{{ $r->LEADID }}" title="View Status" aria-label="View Status"><i class="bi bi-eye" aria-hidden="true"></i></button>
-                        <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-btn-assign-danger inquiries-mark-failed-btn" data-lead-id="{{ $r->LEADID }}" data-status="{{ $arawStatusDisp }}" title="Mark As Failed" aria-label="Mark As Failed"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+                        <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-btn-assign-danger inquiries-mark-failed-btn" data-lead-id="{{ $r->LEADID }}" data-status="{{ $arawStatusDisp }}" title="Mark As Cancelled" aria-label="Mark As Cancelled"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
                     </td>
                         </tr>
                     @empty
@@ -815,20 +815,20 @@
     <div class="inquiries-assign-backdrop" data-markfailed-close="1"></div>
     <div class="inquiries-assign-window" role="dialog" aria-modal="true" aria-labelledby="markFailedModalTitle">
         <div class="inquiries-assign-header">
-            <div class="inquiries-assign-title" id="markFailedModalTitle">Mark as Failed — Lead #SQL-<span id="markFailedModalLeadId"></span></div>
+            <h3 class="inquiries-assign-title">Cancel Lead</h3>
             <button type="button" class="inquiries-assign-close" aria-label="Close" data-markfailed-close="1">&times;</button>
         </div>
-            <form id="markFailedForm" method="POST" action="{{ route('admin.inquiries.mark-failed') }}" class="inquiries-assign-body">
-                @csrf
-                <input type="hidden" name="LEADID" id="markFailedLeadId">
-                <div class="inquiries-assign-row">
-                    <label class="inquiries-assign-label" for="markFailedReason">Failure reason <span class="required">*</span></label>
-                    <textarea id="markFailedReason" name="FAIL_REASON" class="inquiry-form-input" rows="4" maxlength="4000" placeholder="Type why this inquiry failed." required></textarea>
-                </div>
-                <div class="inquiries-assign-actions">
-                    <button type="button" class="inquiries-btn inquiries-btn-secondary" data-markfailed-close="1">Cancel</button>
-                    <button type="submit" class="inquiries-btn inquiries-btn-primary">Mark As Failed</button>
-                </div>
+        <form id="markFailedForm" method="POST" action="{{ route('admin.inquiries.mark-failed') }}" class="inquiries-assign-body">
+            @csrf
+            <input type="hidden" name="lead_id" id="markFailedLeadId" value="">
+            <div class="inquiry-form-group">
+                <label for="markFailedReason" class="inquiry-form-label">Reason for Cancellation <span class="inquiry-form-required">*</span></label>
+                <textarea id="markFailedReason" name="FAIL_REASON" class="inquiry-form-input" rows="4" maxlength="4000" placeholder="Type why this inquiry was cancelled." required></textarea>
+            </div>
+            <div class="inquiries-assign-footer">
+                <button type="button" class="inquiries-btn inquiries-btn-secondary" data-markfailed-close="1">Close</button>
+                <button type="submit" class="inquiries-btn inquiries-btn-primary inquiries-btn-assign-danger">Mark Cancelled</button>
+            </div>
         </form>
     </div>
 </div>
@@ -920,7 +920,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (normalized === 'rewarded' || normalized === 'reward distributed' || normalized === 'paid') return 'rewarded';
             if (normalized === 'demo') return 'demo';
             if (normalized === 'pending') return 'pending';
-            if (normalized === 'failed') return 'failed';
+            if (normalized === 'failed' || normalized === 'cancelled') return 'failed';
             if (normalized === 'created' || String(rawSubject || '').toLowerCase().trim() === 'lead created') return 'created';
             return 'default';
         }
@@ -1011,7 +1011,6 @@ document.addEventListener('DOMContentLoaded', function() {
         var modal = document.getElementById('markFailedModal');
         var form = document.getElementById('markFailedForm');
         var input = document.getElementById('markFailedLeadId');
-        var titleLeadId = document.getElementById('markFailedModalLeadId');
         var reasonField = document.getElementById('markFailedReason');
         if (!modal || !form || !input) return;
         function close() {
@@ -1022,14 +1021,13 @@ document.addEventListener('DOMContentLoaded', function() {
             var btn = e.target && e.target.closest ? e.target.closest('.inquiries-mark-failed-btn') : null;
             if (btn) {
                 var status = (btn.getAttribute('data-status') || '').toUpperCase();
-                if (['COMPLETED', 'FAILED', 'REWARDED'].indexOf(status) !== -1) {
-                    showMarkFailedBlockedToast();
+                if (['COMPLETED', 'FAILED', 'REWARDED', 'CANCELLED'].indexOf(status) !== -1) {
+                    showBlockedToast();
                     return;
                 }
                 var leadId = btn.getAttribute('data-lead-id');
                 if (leadId) {
                     input.value = leadId;
-                    if (titleLeadId) titleLeadId.textContent = leadId;
                     if (reasonField) reasonField.value = '';
                     modal.hidden = false;
                     if (reasonField) reasonField.focus();
@@ -1038,20 +1036,18 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             if (e.target && (e.target.getAttribute('data-markfailed-close') === '1')) close();
         });
-        function showMarkFailedBlockedToast() {
-            var id = 'inquiries-mark-failed-blocked-toast';
-            var el = document.getElementById(id);
+        function showBlockedToast() {
+            var el = document.getElementById('inquiries-mark-failed-blocked-toast');
             if (!el) {
                 el = document.createElement('div');
-                el.id = id;
+                el.id = 'inquiries-mark-failed-blocked-toast';
                 el.className = 'inquiries-mark-failed-blocked-toast';
-                el.setAttribute('role', 'status');
                 document.body.appendChild(el);
             }
-            el.textContent = 'Status Completed, Failed or Rewarded cannot be marked as failed.';
+            clearTimeout(window._blockedToastTimeout);
+            el.textContent = 'Status Completed, Rewarded, Failed or Cancelled cannot be marked as cancelled.';
             el.classList.remove('inquiries-mark-failed-blocked-toast-hidden');
-            clearTimeout(el._hideTimer);
-            el._hideTimer = setTimeout(function() {
+            window._blockedToastTimeout = setTimeout(function() {
                 el.classList.add('inquiries-mark-failed-blocked-toast-hidden');
             }, 4000);
         }

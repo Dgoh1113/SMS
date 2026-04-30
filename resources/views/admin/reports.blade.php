@@ -11,6 +11,27 @@
             min-width: 0;
         }
 
+        .reports-range-input {
+            padding-right: 32px;
+        }
+
+        .reports-range-input::-webkit-calendar-picker-indicator {
+            display: none;
+        }
+
+        .reports-custom-calendar-icon {
+            position: absolute;
+            right: 14px;
+            bottom: 12px;
+            cursor: pointer;
+            color: #64748b;
+            font-size: 14px;
+            pointer-events: auto;
+        }
+        .reports-custom-calendar-icon:hover {
+            color: #3b82f6;
+        }
+
         .reports-page .dashboard-panels-two-column > *,
         .reports-page .reports-product-section {
             min-width: 0;
@@ -769,13 +790,15 @@
                 <option value="custom" {{ request('from') || request('to') ? 'selected' : '' }}>Custom range…</option>
             </select>
             <div id="reportsRangeInline" class="reports-range-grid" style="display: {{ request('from') || request('to') ? 'grid' : 'none' }};">
-                <div class="reports-range-col">
+                <div class="reports-range-col" style="position: relative;">
                     <label class="reports-range-label">Starting</label>
                     <input type="date" name="from" id="reportsRangeFrom" value="{{ request('from') }}" class="reports-range-input" aria-label="From date">
+                    <i class="bi bi-calendar3 reports-custom-calendar-icon" onclick="document.getElementById(\'reportsRangeFrom\').showPicker()"></i>
                 </div>
-                <div class="reports-range-col">
+                <div class="reports-range-col" style="position: relative;">
                     <label class="reports-range-label">Ending</label>
                     <input type="date" name="to" id="reportsRangeTo" value="{{ request('to') }}" class="reports-range-input" aria-label="To date">
+                    <i class="bi bi-calendar3 reports-custom-calendar-icon" onclick="document.getElementById(\'reportsRangeTo\').showPicker()"></i>
                 </div>
                 <button type="button" class="reports-range-back-btn" id="reportsRangeReset">
                     <i class="bi bi-x-lg"></i>
@@ -1117,6 +1140,20 @@
                             toInput.value = '';
                             toInput.min = '';
                         } else {
+                            if (!fromInput.value) {
+                                const today = new Date();
+                                const yyyy = today.getFullYear();
+                                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                                const dd = String(today.getDate()).padStart(2, '0');
+                                fromInput.value = yyyy + '-' + mm + '-' + dd;
+                            }
+                            if (!toInput.value) {
+                                const today = new Date();
+                                const yyyy = today.getFullYear();
+                                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                                const dd = String(today.getDate()).padStart(2, '0');
+                                toInput.value = yyyy + '-' + mm + '-' + dd;
+                            }
                             toInput.min = fromInput.value || '';
                         }
                     }

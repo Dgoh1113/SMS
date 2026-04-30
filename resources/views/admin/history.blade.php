@@ -2,6 +2,43 @@
 @section('title', 'History - Admin')
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/pages/admin-history.css') }}?v=20260409-02">
+    <style>
+        .history-custom-range .history-date-input-field input[type="date"] {
+            padding-right: 32px;
+        }
+        .history-custom-range .history-date-input-field input[type="date"]::-webkit-calendar-picker-indicator {
+            display: none;
+        }
+        .history-custom-calendar-icon {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #64748b;
+            font-size: 14px;
+            pointer-events: auto;
+        }
+        .history-custom-calendar-icon:hover {
+            color: #3b82f6;
+        }
+        .history-row.is-expanded .desc-full {
+            background-color: transparent !important;
+            border: none !important;
+            padding: 0 !important;
+            margin-top: 0 !important;
+            color: inherit !important;
+        }
+        #historyTable th[data-col="subject"],
+        #historyTable td[data-col="subject"],
+        #historyTable th[data-col="description"],
+        #historyTable td[data-col="description"] {
+            max-width: 280px;
+        }
+        #historyTable td {
+            vertical-align: top;
+        }
+    </style>
 @endpush
 @section('content')
 <section class="dashboard-panel dashboard-table-panel">
@@ -19,15 +56,17 @@
                     </select>
                 </label>
                 <div class="history-custom-range" id="historyCustomRange" @if($dateRange !== 'custom') hidden @endif>
-                    <label class="history-date-input-field" for="historyStartDate">
+                    <label class="history-date-input-field" for="historyStartDate" style="position: relative;">
                         <span>Start</span>
                         <input type="date" id="historyStartDate" name="start_date" value="{{ $startDateInput }}">
+                        <i class="bi bi-calendar3 history-custom-calendar-icon" onclick="document.getElementById('historyStartDate').showPicker()"></i>
                     </label>
-                    <label class="history-date-input-field" for="historyEndDate">
+                    <label class="history-date-input-field" for="historyEndDate" style="position: relative;">
                         <span>End</span>
                         <input type="date" id="historyEndDate" name="end_date" value="{{ $endDateInput }}">
+                        <i class="bi bi-calendar3 history-custom-calendar-icon" onclick="document.getElementById('historyEndDate').showPicker()"></i>
                     </label>
-                    <button type="submit" class="inquiries-btn inquiries-btn-secondary history-apply-btn">Apply</button>
+                    <button type="submit" class="inquiries-btn inquiries-btn-secondary history-apply-btn" style="display: none;">Apply</button>
                 </div>
                 <div class="history-date-summary" id="historyDateSummary" @if($dateRange === 'custom') hidden @endif>
                     <span><strong>Start:</strong> {{ $filterStartDate }}</span>
@@ -39,6 +78,10 @@
                 <label class="history-checkbox-filter" for="historySystemMarkedFailOnly">
                     <input type="checkbox" id="historySystemMarkedFailOnly">
                     <span>System Marked Fail</span>
+                </label>
+                <label class="history-checkbox-filter" for="historyMarkedCancelledOnly">
+                    <input type="checkbox" id="historyMarkedCancelledOnly">
+                    <span>Marked Cancelled</span>
                 </label>
             </div>
         </div>
@@ -64,13 +107,16 @@
                             $dateStr = $r->CREATIONDATE ? date('Y-m-d H:i', strtotime($r->CREATIONDATE)) : '';
                             $inquiryId = isset($r->LEADID) ? ('#SQL-' . $r->LEADID) : '';
                             $fullDesc = (string) ($r->DESCRIPTION ?? '');
-                            $fullDescTrim = trim($fullDesc);
-                            $subjectText = trim((string) ($r->SUBJECT ?? ''));
+                            $fullDescTrim = preg_replace('/[\r\n]+/', "\n", trim($fullDesc));
+                            $subjectText = preg_replace('/[\r\n]+/', "\n", trim((string) ($r->SUBJECT ?? '')));
                             $descPreview = $fullDescTrim === '' ? '-' : (mb_strlen($fullDescTrim) > 50 ? (mb_substr($fullDescTrim, 0, 50) . '...') : $fullDescTrim);
                             $isLongDesc = $fullDescTrim !== '' && mb_strlen($fullDescTrim) > 50;
+                            $subjectPreview = $subjectText === '' ? '-' : (mb_strlen($subjectText) > 27 ? (mb_substr($subjectText, 0, 27) . '...') : $subjectText);
+                            $isLongSubject = $subjectText !== '' && mb_strlen($subjectText) > 27;
                             $isSystemMarkedFail = in_array(strtoupper($subjectText), ['STATUS CHANGED TO FAILED (AUTO AFTER 8 MONTHS)', 'LEAD FAILED'], true)
                                 || in_array(strtoupper($fullDescTrim), ['STATUS CHANGED TO FAILED (AUTO AFTER 8 MONTHS)', 'LEAD IS EXPIRED AFTER 8 MONTHS OF INQUIRY DATE'], true)
-                                || str_contains(strtolower($fullDescTrim), 'expired automatically because it has been open for more than 8 months');
+                                || (str_contains(strtolower($fullDescTrim), 'expired automatically because it has been open for more than 8 months') && strtoupper($r->STATUS ?? '') === 'FAILED');
+                            $isMarkedCancelled = strtoupper(trim((string) ($r->STATUS ?? ''))) === 'CANCELLED';
                             $company = trim((string) ($r->COMPANYNAME ?? ''));
                             $contact = trim((string) ($r->CONTACTNAME ?? ''));
                             $customerDisplay = $company !== '' && $contact !== '' ? ($company . ' - ' . $contact) : ($company !== '' ? $company : ($contact !== '' ? $contact : '-'));
@@ -79,14 +125,21 @@
                         @endphp
                         <tr class="history-row inquiry-row"
                             data-search="{{ $searchHaystack }}"
-                            data-system-marked-fail="{{ $isSystemMarkedFail ? '1' : '0' }}">
+                            data-system-marked-fail="{{ $isSystemMarkedFail ? '1' : '0' }}"
+                            data-marked-cancelled="{{ $isMarkedCancelled ? '1' : '0' }}">
                             <td data-col="id">{{ $r->LEAD_ACTID }}</td>
                             <td data-col="inquiryid">{{ $inquiryId }}</td>
                             <td data-col="user">{{ $userDisplay }}</td>
                             <td data-col="customer">{{ $customerDisplay }}</td>
                             <td data-col="postcode">{{ $r->POSTCODE ?? '-' }}</td>
                             <td data-col="city">{{ $r->CITY ?? '-' }}</td>
-                            <td data-col="subject">{{ $subjectText !== '' ? $subjectText : '-' }}</td>
+                            <td data-col="subject"
+                                class="inquiries-msg-cell {{ $isLongSubject ? 'expandable-desc' : '' }}">
+                                <div class="desc-preview">{{ $subjectPreview }}</div>
+                                @if($isLongSubject)
+                                    <div class="desc-full">{!! nl2br(e($subjectText)) !!}</div>
+                                @endif
+                            </td>
                             <td data-col="description"
                                 class="inquiries-msg-cell {{ $isLongDesc ? 'expandable-desc' : '' }}">
                                 <div class="desc-preview">{{ $descPreview }}</div>
@@ -112,6 +165,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var table = document.getElementById('historyTable');
     if (!table) return;
     var systemMarkedFailOnly = document.getElementById('historySystemMarkedFailOnly');
+    var markedCancelledOnly = document.getElementById('historyMarkedCancelledOnly');
     var dateFilterForm = document.getElementById('historyDateFilterForm');
     var dateRangeSelect = document.getElementById('historyDateRange');
     var customRange = document.getElementById('historyCustomRange');
@@ -139,6 +193,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var searchInput = document.getElementById('historySearchInput');
         var q = (searchInput && searchInput.value) ? searchInput.value.toLowerCase().trim() : '';
         var failOnly = !!(systemMarkedFailOnly && systemMarkedFailOnly.checked);
+        var cancelledOnly = !!(markedCancelledOnly && markedCancelledOnly.checked);
         var filters = {};
         table.querySelectorAll('thead .inquiries-grid-filter').forEach(function(inp) {
             var col = inp.getAttribute('data-col');
@@ -154,8 +209,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 var cellText = (cell && cell.textContent) ? cell.textContent.toLowerCase().trim() : '';
                 if (cellText.indexOf(filters[col]) === -1) { colMatch = false; break; }
             }
-            var systemFailMatch = !failOnly || (row.getAttribute('data-system-marked-fail') === '1');
-            row.style.display = (searchMatch && colMatch && systemFailMatch) ? '' : 'none';
+            var systemFailMatch = row.getAttribute('data-system-marked-fail') === '1';
+            var cancelledMatch = row.getAttribute('data-marked-cancelled') === '1';
+            
+            var checkboxMatch = true;
+            if (failOnly && cancelledOnly) {
+                checkboxMatch = systemFailMatch || cancelledMatch;
+            } else if (failOnly) {
+                checkboxMatch = systemFailMatch;
+            } else if (cancelledOnly) {
+                checkboxMatch = cancelledMatch;
+            }
+
+            row.style.display = (searchMatch && colMatch && checkboxMatch) ? '' : 'none';
         });
     }
     var searchInput = document.getElementById('historySearchInput');
@@ -170,12 +236,39 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (startDateField) startDateField.value = '';
                 if (endDateField) endDateField.value = '';
                 dateFilterForm.submit();
+            } else if (dateRangeSelect.value === 'custom') {
+                var today = new Date();
+                var yyyy = today.getFullYear();
+                var mm = String(today.getMonth() + 1).padStart(2, '0');
+                var dd = String(today.getDate()).padStart(2, '0');
+                var todayStr = yyyy + '-' + mm + '-' + dd;
+                if (startDateField && !startDateField.value) startDateField.value = todayStr;
+                if (endDateField && !endDateField.value) endDateField.value = todayStr;
+                if (dateFilterForm) dateFilterForm.submit();
             }
         });
         syncDateRangeUi();
     }
+    
+    if (startDateField) {
+        startDateField.addEventListener('change', function() {
+            if (dateRangeSelect && dateRangeSelect.value === 'custom' && dateFilterForm) {
+                dateFilterForm.submit();
+            }
+        });
+    }
+    if (endDateField) {
+        endDateField.addEventListener('change', function() {
+            if (dateRangeSelect && dateRangeSelect.value === 'custom' && dateFilterForm) {
+                dateFilterForm.submit();
+            }
+        });
+    }
     if (systemMarkedFailOnly) {
         systemMarkedFailOnly.addEventListener('change', applyTableFilter);
+    }
+    if (markedCancelledOnly) {
+        markedCancelledOnly.addEventListener('change', applyTableFilter);
     }
 
     var clearFiltersBtn = document.getElementById('historyClearFilters');
@@ -186,6 +279,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 inp.value = '';
             });
             if (systemMarkedFailOnly) systemMarkedFailOnly.checked = false;
+            if (markedCancelledOnly) markedCancelledOnly.checked = false;
             var shouldReload = false;
             if (dateRangeSelect && dateRangeSelect.value !== 'today') shouldReload = true;
             if (startDateField && startDateField.value) shouldReload = true;
@@ -202,9 +296,16 @@ document.addEventListener('DOMContentLoaded', function() {
     table.addEventListener('click', function(e) {
         var row = e.target.closest('tr.history-row');
         if (!row) return;
-        var descCell = row.querySelector('.expandable-desc');
-        if (descCell) {
-            descCell.classList.toggle('expanded');
+        var descCells = row.querySelectorAll('.expandable-desc');
+        var isExpanded = false;
+        descCells.forEach(function(cell) {
+            cell.classList.toggle('expanded');
+            if (cell.classList.contains('expanded')) isExpanded = true;
+        });
+        if (isExpanded) {
+            row.classList.add('is-expanded');
+        } else {
+            row.classList.remove('is-expanded');
         }
     });
 
@@ -241,12 +342,20 @@ document.addEventListener('DOMContentLoaded', function() {
         table.querySelectorAll('.expandable-desc').forEach(function(cell) {
             cell.classList.add('expanded');
         });
+        table.querySelectorAll('tr.history-row').forEach(function(row) {
+            if (row.querySelector('.expandable-desc')) {
+                row.classList.add('is-expanded');
+            }
+        });
         contextMenu.classList.add('hidden');
     });
 
     document.getElementById('menuCollapseAll').addEventListener('click', function() {
         table.querySelectorAll('.expandable-desc').forEach(function(cell) {
             cell.classList.remove('expanded');
+        });
+        table.querySelectorAll('tr.history-row').forEach(function(row) {
+            row.classList.remove('is-expanded');
         });
         contextMenu.classList.add('hidden');
     });
