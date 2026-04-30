@@ -620,7 +620,7 @@
   }
 
   .inquiries-page-wrap .inquiries-table .inquiries-placeholder-cell {
-    height: 34px;
+    height: 46px;
   }
 
   .inquiries-table thead .inquiries-header-row th {
@@ -690,7 +690,61 @@
   #incomingPanel .inquiries-table-scroll,
   #assignedPanel .inquiries-table-scroll,
   #allPanel .inquiries-table-scroll {
-    min-height: 360px;
+    min-height: 460px;
+  }
+
+  /* Fixed-height container for laptop view – keeps all tabs the same height */
+  #incomingPanel > .inquiries-mgmt-panel,
+  #assignedPanel > .inquiries-mgmt-panel,
+  #allPanel > .inquiries-mgmt-panel {
+    display: flex;
+    flex-direction: column;
+  }
+
+  #incomingPanel > .inquiries-mgmt-panel > .inquiries-table-wrap,
+  #assignedPanel > .inquiries-mgmt-panel > .inquiries-table-wrap,
+  #allPanel > .inquiries-mgmt-panel > .inquiries-table-wrap {
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 auto;
+    height: calc(100vh - 155px);
+    min-height: calc(100vh - 155px);
+  }
+
+  #incomingPanel > .inquiries-mgmt-panel > .inquiries-table-wrap.inquiries-table-wrap-filled,
+  #assignedPanel > .inquiries-mgmt-panel > .inquiries-table-wrap.inquiries-table-wrap-filled,
+  #allPanel > .inquiries-mgmt-panel > .inquiries-table-wrap.inquiries-table-wrap-filled {
+    height: auto;
+    min-height: 0;
+  }
+
+  #incomingPanel .inquiries-table-scroll,
+  #assignedPanel .inquiries-table-scroll,
+  #allPanel .inquiries-table-scroll {
+    flex: 1 1 auto;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  #incomingPanel > .inquiries-mgmt-panel > .inquiries-table-wrap.inquiries-table-wrap-filled .inquiries-table-scroll,
+  #assignedPanel > .inquiries-mgmt-panel > .inquiries-table-wrap.inquiries-table-wrap-filled .inquiries-table-scroll,
+  #allPanel > .inquiries-mgmt-panel > .inquiries-table-wrap.inquiries-table-wrap-filled .inquiries-table-scroll {
+    flex: 0 0 auto;
+    min-height: 0 !important;
+    height: auto !important;
+  }
+
+  #incomingPanel .inquiries-assigned-pagination,
+  #assignedPanel .inquiries-assigned-pagination,
+  #allPanel .inquiries-assigned-pagination {
+    margin-top: auto;
+    flex-shrink: 0;
+  }
+
+  #incomingPanel > .inquiries-mgmt-panel > .inquiries-table-wrap.inquiries-table-wrap-filled .inquiries-assigned-pagination,
+  #assignedPanel > .inquiries-mgmt-panel > .inquiries-table-wrap.inquiries-table-wrap-filled .inquiries-assigned-pagination,
+  #allPanel > .inquiries-mgmt-panel > .inquiries-table-wrap.inquiries-table-wrap-filled .inquiries-assigned-pagination {
+    margin-top: 0;
   }
 }
 

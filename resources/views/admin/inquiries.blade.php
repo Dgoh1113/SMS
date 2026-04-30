@@ -8,8 +8,8 @@
     $assignUndo = session('assign_undo');
     $assignEmailPending = session('assign_email_pending');
     $incomingStatusFilterOptions = ['Created'];
-    $assignedStatusFilterOptions = ['Pending', 'Followup', 'Demo', 'Confirmed', 'Completed', 'Rewarded', 'Failed'];
-    $allStatusFilterOptions = ['Created', 'Pending', 'Followup', 'Demo', 'Confirmed', 'Completed', 'Rewarded', 'Failed'];
+    $assignedStatusFilterOptions = ['Assigned', 'Followup', 'Demo', 'Confirmed', 'Completed', 'Rewarded', 'Failed'];
+    $allStatusFilterOptions = ['Created', 'Assigned', 'Followup', 'Demo', 'Confirmed', 'Completed', 'Rewarded', 'Failed'];
     $incomingTabCountValue = (int) ($totalNewInquiries ?? 0);
     $assignedTabCountValue = (int) ($totalOngoing ?? 0);
     $allInquiryCount = (int) ($allTotal ?? count($allRows ?? []));
@@ -211,10 +211,11 @@
                     <td data-col="referralcode">{{ $r->REFERRALCODE ?? '—' }}</td>
                     @php
                         $rawStatus = strtoupper(trim((string)($r->CURRENTSTATUS ?? '')));
-                        $statusDisplay = $rawStatus === 'OPEN' ? 'CREATED' : ($rawStatus !== '' ? $rawStatus : 'PENDING');
+                        $statusDisplay = $rawStatus === 'OPEN' ? 'CREATED' : (($rawStatus === 'PENDING' || $rawStatus === '') ? 'ASSIGNED' : $rawStatus);
                         $statusClass = 'inquiries-status-new';
                         switch ($statusDisplay) {
                             case 'CREATED':    $statusClass = 'inquiries-status-created'; break;
+                            case 'ASSIGNED':
                             case 'PENDING':    $statusClass = 'inquiries-status-pending'; break;
                             case 'FOLLOWUP':   $statusClass = 'inquiries-status-followup'; break;
                             case 'FOLLOW UP':  $statusClass = 'inquiries-status-followup'; break;
@@ -468,6 +469,7 @@
                         $astatusClass = 'inquiries-status-new';
                         switch ($arawStatus) {
                             case 'CREATED':    $astatusClass = 'inquiries-status-created'; break;
+                            case 'ASSIGNED':
                             case 'PENDING':    $astatusClass = 'inquiries-status-pending'; break;
                             case 'FOLLOWUP':   $astatusClass = 'inquiries-status-followup'; break;
                             case 'FOLLOW UP':  $astatusClass = 'inquiries-status-followup'; break;
@@ -483,14 +485,14 @@
                             default:           $astatusClass = 'inquiries-status-new'; break;
                         }
                     @endphp
-                    @php $arawStatusDisp = $arawStatus !== '' ? $arawStatus : 'PENDING'; @endphp
+                    @php $arawStatusDisp = ($arawStatus === 'PENDING' || $arawStatus === '') ? 'ASSIGNED' : $arawStatus; @endphp
                     <td data-col="status"><span class="inquiries-status {{ $astatusClass }}">{{ $arawStatusDisp }}</span></td>
                     <td class="inquiries-col-action inquiries-action-cell">
                         @if(in_array($arawStatus, ['', 'OPEN', 'CREATED', 'PENDING'], true))
                             <a href="{{ route('admin.inquiries.edit', ['leadId' => $r->LEADID, 'tab' => 'assigned']) }}" class="inquiries-btn inquiries-btn-assign inquiries-edit-inquiry-btn" data-lead-id="{{ $r->LEADID }}" title="Edit" aria-label="Edit"><i class="bi bi-pencil-square" aria-hidden="true"></i></a>
                         @endif
                         <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-view-status-btn" data-lead-id="{{ $r->LEADID }}" title="View Status" aria-label="View Status"><i class="bi bi-eye" aria-hidden="true"></i></button>
-                        <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-btn-assign-danger inquiries-mark-failed-btn" data-lead-id="{{ $r->LEADID }}" data-status="{{ $arawStatusDisp }}" title="Mark As Cancelled" aria-label="Mark As Cancelled"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+                        <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-btn-assign-danger inquiries-mark-failed-btn" data-lead-id="{{ $r->LEADID }}" data-status="{{ $arawStatusDisp }}" title="Mark As Cancelled" aria-label="Mark As Cancelled"><i class="bi bi-flag" aria-hidden="true"></i></button>
                     </td>
                         </tr>
                     @empty
@@ -1788,7 +1790,7 @@ document.addEventListener('DOMContentLoaded', function() {
         clearFiltersBtn.addEventListener('click', function() {
             var t = document.getElementById('unassignedTable');
             if (t) {
-                t.querySelectorAll('.inquiries-grid-filter').forEach(function(inp) { inp.value = ''; });
+                t.querySelectorAll('.inquiries-grid-filter').forEach(function(inp) { if (inp.type !== 'checkbox') inp.value = ''; });
                 t.querySelectorAll('.status-multi-filter').forEach(function(f) { if (f._resetStatusFilter) f._resetStatusFilter(); });
             }
             resetInquiryOperatorMenus(t);
@@ -1811,7 +1813,7 @@ document.addEventListener('DOMContentLoaded', function() {
         assignedClearBtn.addEventListener('click', function() {
             var t = document.getElementById('assignedTable');
             if (t) {
-                t.querySelectorAll('.inquiries-grid-filter-assigned').forEach(function(inp) { inp.value = ''; });
+                t.querySelectorAll('.inquiries-grid-filter-assigned').forEach(function(inp) { if (inp.type !== 'checkbox') inp.value = ''; });
                 t.querySelectorAll('.status-multi-filter').forEach(function(f) { if (f._resetStatusFilter) f._resetStatusFilter(); });
             }
             resetInquiryOperatorMenus(t);
@@ -1833,7 +1835,7 @@ document.addEventListener('DOMContentLoaded', function() {
         allClearBtn.addEventListener('click', function() {
             var t = document.getElementById('allTable');
             if (t) {
-                t.querySelectorAll('.inquiries-grid-filter-all').forEach(function(inp) { inp.value = ''; });
+                t.querySelectorAll('.inquiries-grid-filter-all').forEach(function(inp) { if (inp.type !== 'checkbox') inp.value = ''; });
                 t.querySelectorAll('.status-multi-filter').forEach(function(f) { if (f._resetStatusFilter) f._resetStatusFilter(); });
             }
             resetInquiryOperatorMenus(t);
@@ -2288,7 +2290,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var referenceRowHeight = getInquiryReferenceRowHeight(tbody, table);
         var placeholderRowHeight = getInquiryPlaceholderRowHeight(referenceRowHeight, table);
         if (visibleDataCount === 0 && shouldUseCompactZeroInquiryPlaceholders()) {
-            placeholderRowHeight = 37;
+            placeholderRowHeight = 46;
         }
         for (var i = 0; i < missingCount; i += 1) {
             var row = document.createElement('tr');
@@ -2460,7 +2462,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var targetRows = Math.max(parseInt(perPage || 0, 10) || 0, 0);
         var shouldFillZeroRows = targetRows > 0 && visibleDataCount === 0;
         var shouldFillVisibleRows = targetRows > 0 && visibleDataCount > 0 && visibleDataCount < targetRows;
-        var shouldUseFilledLayout = targetRows > 0;
+        var shouldUseFilledLayout = targetRows > 0 && visibleDataCount > 0;
 
         if (shouldFillVisibleRows || shouldFillZeroRows) {
             if (shouldFillZeroRows && emptyRow) {
@@ -3137,6 +3139,43 @@ document.addEventListener('DOMContentLoaded', function() {
           }
       })();
 
+      function syncEmptyTabHeights() {
+          // Measure the Assigned tab's actual table-wrap height and apply to empty tabs
+          var assignedWrap = document.querySelector('#assignedPanel > .inquiries-mgmt-panel > .inquiries-table-wrap');
+          if (!assignedWrap) return;
+          // Temporarily show assigned panel to measure if hidden
+          var assignedPanel = document.getElementById('assignedPanel');
+          var wasHidden = assignedPanel && assignedPanel.hidden;
+          if (wasHidden) {
+              assignedPanel.style.position = 'absolute';
+              assignedPanel.style.left = '-10000px';
+              assignedPanel.style.visibility = 'hidden';
+              assignedPanel.hidden = false;
+          }
+          var assignedHeight = Math.round(assignedWrap.getBoundingClientRect().height || assignedWrap.offsetHeight || 0);
+          if (wasHidden) {
+              assignedPanel.hidden = true;
+              assignedPanel.style.position = '';
+              assignedPanel.style.left = '';
+              assignedPanel.style.visibility = '';
+          }
+          if (assignedHeight <= 0) return;
+
+          // Apply to Incoming tab if empty
+          var incomingTable = document.getElementById('unassignedTable');
+          var incomingWrap = document.querySelector('#incomingPanel > .inquiries-mgmt-panel > .inquiries-table-wrap');
+          if (incomingTable && incomingWrap) {
+              var hasDataRows = incomingTable.querySelectorAll('tbody tr.inquiry-row').length > 0;
+              if (!hasDataRows) {
+                  incomingWrap.style.height = assignedHeight + 'px';
+                  incomingWrap.style.minHeight = assignedHeight + 'px';
+              } else {
+                  incomingWrap.style.height = '';
+                  incomingWrap.style.minHeight = '';
+              }
+          }
+      }
+
       function syncAllInquiryPaginations() {
           if (typeof window.refreshAssignedPagination === 'function') {
               window.refreshAssignedPagination();
@@ -3147,6 +3186,7 @@ document.addEventListener('DOMContentLoaded', function() {
           if (typeof window.refreshIncomingPagination === 'function') {
               window.refreshIncomingPagination();
           }
+          syncEmptyTabHeights();
       }
 
       var inquiryPaginationSyncTimers = [];

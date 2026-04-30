@@ -514,13 +514,13 @@
         /* ===== Wide Desktop Compact ===== */
         @media (min-width: 1280px) {
             .inquiry-create-panel {
-                margin: 14px 10px 4px -2px !important;
+                margin: 6px 10px 4px -2px !important;
                 width: calc(100% - 12px) !important;
                 max-width: 1800px !important;
             }
 
             .inquiry-create-panel .dashboard-panel-body.inquiry-create-body {
-                padding: 4px 14px 4px !important;
+                padding: 2px 14px 2px !important;
             }
 
             .inquiry-create-panel--new .dashboard-panel-body.inquiry-create-body {
@@ -528,37 +528,37 @@
             }
 
             .inquiry-form-body {
-                gap: 12px !important;
+                gap: 8px !important;
                 display: flex !important;
                 flex-direction: column !important;
-                justify-content: space-between !important;
+                justify-content: flex-start !important;
                 width: 100% !important;
             }
 
             .inquiry-form-section {
-                padding: 10px 18px !important;
+                padding: 6px 16px !important;
                 border: 1px solid #eef0f7 !important;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.02) !important;
+                box-shadow: 0 1px 4px rgba(0,0,0,0.01) !important;
             }
 
             .inquiry-form-section-header {
-                margin-bottom: 6px !important;
+                margin-bottom: 4px !important;
                 gap: 8px !important;
             }
 
             .inquiry-form-section-icon {
-                width: 30px;
-                height: 30px;
+                width: 26px;
+                height: 26px;
                 font-size: 15px;
                 border-radius: 8px;
             }
 
             .inquiry-form-section-title {
-                font-size: 0.95rem;
+                font-size: 0.9rem;
             }
 
             .inquiry-form-section-subtitle {
-                font-size: 0.75rem;
+                font-size: 0.7rem;
             }
 
             /* Balanced spacing when Address 2 is expanded */
@@ -566,29 +566,30 @@
                 gap: 6px !important;
             }
             .inquiry-form-body.has-address2 .inquiry-form-section {
-                padding-top: 8px !important;
-                padding-bottom: 8px !important;
+                padding-top: 4px !important;
+                padding-bottom: 4px !important;
             }
             .inquiry-form-body.has-address2 .inquiry-form-grid {
-                gap: 8px !important;
+                gap: 6px !important;
             }
 
             .inquiry-form-section .inquiry-form-grid {
-                gap: 12px;
+                gap: 10px;
             }
 
             .inquiry-form-label-title {
-                font-size: 12px;
+                font-size: 11.5px;
+                margin-bottom: 2px;
             }
 
             .inquiry-form-input {
-                height: 32px;
+                height: 30px;
                 font-size: 13px;
                 padding: 4px 12px;
             }
 
             .inquiry-form-input.has-icon {
-                padding-left: 36px !important;
+                padding-left: 34px !important;
             }
 
             .inquiry-input-icon {
@@ -597,17 +598,17 @@
             }
 
             textarea.inquiry-form-input {
-                min-height: 50px !important;
-                height: 50px !important;
+                min-height: 42px !important;
+                height: 42px !important;
                 padding: 6px 10px 4px !important;
             }
 
             .inquiry-form-checkboxes {
-                gap: 6px;
+                gap: 4px;
             }
 
             .inquiry-form-checkbox-label {
-                padding: 6px 8px;
+                padding: 4px 8px;
                 font-size: 0.78rem;
                 gap: 6px;
                 border-radius: 8px;
@@ -620,13 +621,13 @@
             }
 
             .inquiry-toggle-option {
-                padding: 6px 12px;
+                padding: 4px 10px;
                 font-size: 0.8rem;
             }
 
             .inquiry-form-actions .login-primary-btn,
             .inquiry-form-actions .inquiry-form-cancel {
-                height: 38px !important;
+                height: 34px !important;
                 width: 150px !important;
                 min-width: 150px !important;
                 padding: 0 24px !important;
@@ -649,16 +650,16 @@
             }
 
             img.inquiry-create-fox-img {
-                width: 140px !important;
+                width: 110px !important;
                 top: 2px !important;
                 right: 10px !important;
             }
 
             .vertical-title {
-                padding: 16px 5px;
+                padding: 12px 4px;
                 font-size: 14px;
                 border-radius: 14px;
-                top: 19px;
+                top: 10px;
                 left: 54px;
                 z-index: 10;
             }
