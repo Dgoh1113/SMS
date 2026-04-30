@@ -3,6 +3,32 @@
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/pages/dealer-inquiries.css') }}?v=20260422-01">
+    <style>
+        .inquiry-progression-steps {
+            gap: 12px 0px;
+            justify-content: flex-start;
+        }
+        .inquiry-step {
+            white-space: nowrap;
+            flex-shrink: 0;
+            padding: 6px 12px;
+            min-width: fit-content;
+        }
+        .inquiry-step--recovering-muted {
+            opacity: 0.45 !important;
+            filter: grayscale(0.5);
+        }
+        .inquiry-connector {
+            min-width: 12px;
+            flex: 1 0 12px;
+        }
+        @media (max-width: 768px) {
+            .inquiry-step {
+                padding: 4px 8px;
+                font-size: 11px;
+            }
+        }
+    </style>
 @endpush
 
 @section('content')
@@ -1225,6 +1251,12 @@ if (document.readyState === 'loading') {
 
     function canSelectFutureStatus(fromStatus, toStatus) {
         if (!fromStatus || !toStatus) return false;
+        
+        // If the latest status is FAILED, only allow moving to COMPLETED
+        if (isFailedLatestStatus()) {
+            return toStatus === 'COMPLETED';
+        }
+
         var fromIdx = statusOrder.indexOf(fromStatus);
         var toIdx = statusOrder.indexOf(toStatus);
         if (fromIdx < 0 || toIdx <= fromIdx) return false;
@@ -1273,28 +1305,64 @@ if (document.readyState === 'loading') {
         var currentStatus = statusOrder[currentStatusIdx] || 'PENDING';
         var highlightNewStatus = !viewMode && !isFailedSelected() && selectedStatusIdx > currentStatusIdx;
         var failedLatest = isFailedLatestStatus();
+        
+        // If we are recovering (selecting a new status), treat it as a normal active lead visually
+        var effectivelyFailed = failedLatest && !highlightNewStatus;
 
-        progressionSteps.classList.toggle('inquiry-progression-steps--failed', failedLatest);
+        progressionSteps.classList.toggle('inquiry-progression-steps--failed', effectivelyFailed);
 
         statusOrder.forEach(function(stepName, i) {
             var step = getProgressionStep(stepName);
             var connector = getProgressionConnector(stepName);
             if (!step) return;
-            step.classList.remove('inquiry-step--done', 'inquiry-step--active', 'inquiry-step--selected', 'inquiry-step--clickable', 'inquiry-step--no-click', 'inquiry-step--viewable', 'inquiry-step--past-muted', 'inquiry-step--failed-terminal');
+            step.classList.remove('inquiry-step--done', 'inquiry-step--active', 'inquiry-step--selected', 'inquiry-step--clickable', 'inquiry-step--no-click', 'inquiry-step--viewable', 'inquiry-step--past-muted', 'inquiry-step--failed-terminal', 'inquiry-step--recovering-muted');
+            if (connector) {
+                connector.classList.remove('inquiry-step--recovering-muted');
+            }
             step.hidden = false;
-            step.style.display = failedLatest && i > currentStatusIdx ? 'none' : 'flex';
-            step.style.order = String(i * 2);
+            
+            var baseOrder = i * 2;
+            if (failedLatest && i > currentStatusIdx) baseOrder += 2;
+
+            var isCompleted = stepName === 'COMPLETED';
+            var isRewarded = stepName === 'REWARDED';
+            
+            var shouldShow = true;
+            // Hide REWARDED if we are in a failed state (recovering or viewing failure)
+            if (failedLatest && isRewarded) {
+                shouldShow = false;
+            } else if (effectivelyFailed) {
+                // Simple failed view: hide future steps except COMPLETED
+                if (i > currentStatusIdx && !isCompleted) shouldShow = false;
+            } else if (highlightNewStatus) {
+                // Recovery mode: hide intermediate steps between current and COMPLETED
+                if (i > currentStatusIdx && !isCompleted) shouldShow = false;
+            }
+
+            step.style.display = shouldShow ? 'flex' : 'none';
+            step.style.order = String(baseOrder);
             if (connector) {
                 connector.hidden = false;
-                connector.style.display = failedLatest && i > currentStatusIdx ? 'none' : 'block';
-                connector.style.order = String((i * 2) - 1);
+                connector.style.display = (shouldShow && i > 0 && connector.dataset.nextStep !== 'REWARDED') ? 'block' : 'none';
+                
+                // If the step itself is hidden, the connector to it should also be hidden
+                if (!shouldShow) connector.style.display = 'none';
+                
+                connector.style.order = String(baseOrder - 1);
             }
             var label = getStepDisplayLabel(i);
             var displayText = label || stepName;
             var isDone = i <= currentStatusIdx;
             if (isDone) {
                 step.classList.add('inquiry-step--done', 'inquiry-step--viewable');
-                if (highlightNewStatus || failedLatest) step.classList.add('inquiry-step--past-muted');
+                if (effectivelyFailed) step.classList.add('inquiry-step--past-muted');
+                
+                // Mute ALL statuses before fail during recovery
+                if (highlightNewStatus) {
+                    step.classList.add('inquiry-step--recovering-muted');
+                    if (connector) connector.classList.add('inquiry-step--recovering-muted');
+                }
+
                 if (i === selectedStatusIdx && viewMode) step.classList.add('inquiry-step--selected');
                 step.innerHTML = '<i class="bi bi-check"></i><span>' + escapeInquiryHtml(displayText) + '</span>';
                 return;
@@ -1314,20 +1382,29 @@ if (document.readyState === 'loading') {
         var failedStep = getProgressionStep('FAILED');
         var failedConnector = getProgressionConnector('FAILED');
         if (failedStep) {
-            failedStep.classList.remove('inquiry-step--done', 'inquiry-step--active', 'inquiry-step--selected', 'inquiry-step--clickable', 'inquiry-step--no-click', 'inquiry-step--viewable', 'inquiry-step--past-muted', 'inquiry-step--failed-terminal');
+            failedStep.classList.remove('inquiry-step--done', 'inquiry-step--active', 'inquiry-step--selected', 'inquiry-step--clickable', 'inquiry-step--no-click', 'inquiry-step--viewable', 'inquiry-step--past-muted', 'inquiry-step--failed-terminal', 'inquiry-step--recovering-muted');
+            if (failedConnector) failedConnector.classList.remove('inquiry-step--recovering-muted');
+
             if (failedLatest) {
                 if (failedConnector) {
                     failedConnector.hidden = false;
                     failedConnector.style.display = 'block';
                     failedConnector.style.order = String((currentStatusIdx * 2) + 1);
+                    if (highlightNewStatus) failedConnector.classList.add('inquiry-step--recovering-muted');
                 }
                 failedStep.hidden = false;
                 failedStep.style.display = 'flex';
                 failedStep.style.order = String((currentStatusIdx * 2) + 2);
+                
                 if (isFailedSelected()) {
                     failedStep.classList.add('inquiry-step--active', 'inquiry-step--selected', 'inquiry-step--viewable', 'inquiry-step--failed-terminal');
                 } else {
                     failedStep.classList.add('inquiry-step--done', 'inquiry-step--viewable', 'inquiry-step--failed-terminal');
+                    if (highlightNewStatus) {
+                        failedStep.classList.add('inquiry-step--recovering-muted');
+                    } else if (effectivelyFailed) {
+                        failedStep.classList.add('inquiry-step--past-muted');
+                    }
                 }
                 failedStep.innerHTML = '<i class="bi bi-x-lg"></i><span>FAILED</span>';
             } else {
@@ -1518,7 +1595,8 @@ if (document.readyState === 'loading') {
 
     function toggleFailedSummaryMode() {
         var followupSection = document.getElementById('inquiryFollowupSection');
-        var shouldCompact = isFailedLatestStatus();
+        var highlightNewStatus = !viewMode && !isFailedSelected() && selectedStatusIdx > currentStatusIdx;
+        var shouldCompact = isFailedLatestStatus() && !highlightNewStatus;
         if (followupSection) {
             followupSection.hidden = shouldCompact;
         }
@@ -1678,6 +1756,9 @@ if (document.readyState === 'loading') {
             return;
         }
         activities.forEach(function(a) {
+            // Skip FAILED status entries in the timeline to avoid redundancy with the notice box
+            if (normalizeStatus(a.status) === 'FAILED') return;
+
             var item = document.createElement('div');
             item.className = 'inquiry-activity-item';
             var user = escapeInquiryHtml(a.user || 'System');
@@ -2441,7 +2522,10 @@ if (document.readyState === 'loading') {
             }
         }
         if (toStatus === 'COMPLETED' && attachmentFiles.length === 0) {
-            showDealerInquiryToast('Please upload your own company\'s invoice for COMPLETED status.');
+            var msg = isFailedLatestStatus() 
+                ? 'Please upload proof of completion (image) for recovered leads.' 
+                : 'Please upload your own company\'s invoice for COMPLETED status.';
+            showDealerInquiryToast(msg);
             if (attachmentInput) attachmentInput.focus();
             return;
         }
