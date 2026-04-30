@@ -434,11 +434,24 @@ class DealerController extends Controller
                 case 'rewarded': $statusFilter = ['REWARDED', 'REWARD']; break;
                 case 'inquiries':
                 default:
-                    $statusFilter = $activeStatuses;
+                    $statusFilter = null;
                     break;
             }
 
-            $placeholders = implode(',', array_fill(0, count($statusFilter), '?'));
+            $params = [$dealerId];
+            $statusClause = '';
+            if ($statusFilter) {
+                $placeholders = implode(',', array_fill(0, count($statusFilter), '?'));
+                $statusClause = ' AND UPPER(TRIM(COALESCE(
+                        (SELECT FIRST 1 la2."STATUS"
+                           FROM "LEAD_ACT" la2
+                          WHERE la2."LEADID" = l."LEADID"
+                          ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC),
+                        \'Pending\'
+                    ))) IN (' . $placeholders . ')';
+                $params = array_merge($params, $statusFilter);
+            }
+
             $dealerInquiriesSql = 'SELECT FIRST 500
                     l."LEADID", l."PRODUCTID", l."COMPANYNAME", l."CONTACTNAME", l."CONTACTNO", l."EMAIL",
                     l."ADDRESS1", l."ADDRESS2", l."CITY", l."STATE", l."COUNTRY", l."POSTCODE", l."BUSINESSNATURE", l."USERCOUNT",
@@ -455,20 +468,10 @@ class DealerController extends Controller
                 FROM "LEAD" l
                 LEFT JOIN "USERS" u ON u."USERID" = l."CREATEDBY"
                 WHERE COALESCE(l."ISDELETED", FALSE) = FALSE 
-                  AND l."ASSIGNEDTO" = ?
-                  AND UPPER(TRIM(COALESCE(
-                        (SELECT FIRST 1 la2."STATUS"
-                           FROM "LEAD_ACT" la2
-                          WHERE la2."LEADID" = l."LEADID"
-                          ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC),
-                        \'Pending\'
-                    ))) IN (' . $placeholders . ')
+                  AND l."ASSIGNEDTO" = ?' . $statusClause . '
                 ORDER BY l."LEADID" DESC';
 
-            $leads = DB::select(
-                $dealerInquiriesSql,
-                array_merge([$dealerId], $statusFilter)
-            );
+            $leads = DB::select($dealerInquiriesSql, $params);
 
             if ($focusLeadId > 0) {
                 $hasFocusLead = false;
@@ -1209,6 +1212,22 @@ class DealerController extends Controller
             ], 422);
         }
 
+        // Require attachment when moving from FAILED to COMPLETED
+        $lastActForValidation = DB::selectOne(
+            'SELECT FIRST 1 la."STATUS"
+               FROM "LEAD_ACT" la
+              WHERE la."LEADID" = ?
+              ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC',
+            [$leadId]
+        );
+        $fromStatusRaw = $lastActForValidation ? trim($lastActForValidation->STATUS ?? '') : '';
+        if (strtoupper($fromStatusRaw) === 'FAILED' && strtoupper($statusDb) === 'COMPLETED' && !$request->hasFile('attachments')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please upload proof of completion (image) for recovered leads.',
+            ], 422);
+        }
+
         $lastAct = DB::selectOne(
             'SELECT FIRST 1 la."STATUS", la."CREATIONDATE"
                FROM "LEAD_ACT" la
@@ -1285,6 +1304,7 @@ class DealerController extends Controller
                 'DEMO' => ['CONFIRMED', 'COMPLETED'],
                 'CONFIRMED' => ['COMPLETED'],
                 'COMPLETED' => $hasReferralCode ? ['REWARDED'] : [],
+                'FAILED' => ['COMPLETED'],
                 default => [],
             };
 
@@ -1815,9 +1835,7 @@ class DealerController extends Controller
 
             foreach ($rows as $row) {
                 $status = $row->LATEST_STATUS ?? '';
-                if (in_array($status, ['PENDING', 'FOLLOWUP', 'FOLLOW UP', 'DEMO', 'CONFIRMED'])) {
-                    $counts['inquiries']++;
-                }
+                $counts['inquiries']++;
                 
                 if ($status === 'PENDING') {
                     $counts['pending']++;
