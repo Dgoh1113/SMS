@@ -470,7 +470,7 @@
   width: 100%;
   max-width: 100%;
 }
-.rv2-bar-chart-wrap-full canvas { width: 100% !important; height: auto !important; }
+.rv2-bar-chart-wrap-full canvas { width: 100% !important; height: 320px !important; }
 .rv2-panel-body .rv2-bar-chart-title-row + .rv2-chart-wrap { width: 100%; }
 
 .rv2-dual-label-chart {

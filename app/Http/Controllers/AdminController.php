@@ -755,7 +755,7 @@ class AdminController extends Controller
                     $day = $rangeStart->copy()->addDays($d);
                     $dayStr = $day->format('Y-m-d');
                     $labels[] = $day->format('d M');
-                    $tooltipTitles[] = $day->format('d M Y');
+                    $tooltipTitles[] = $day->format('d/m/Y');
 
                     $r = DB::selectOne(
                         'SELECT COUNT(*) as c FROM "LEAD_ACT" WHERE CAST("CREATIONDATE" AS DATE) = CAST(? AS DATE) AND UPPER(TRIM("STATUS")) = \'COMPLETED\'',
@@ -2297,11 +2297,11 @@ class AdminController extends Controller
                     'search' => 'all',
                 ],
                 'all_dealers' => [
-                    'label' => 'All Dealers (No E Stream)',
+                    'label' => 'All dealers',
                     'search' => 'all dealers no estream no e stream',
                 ],
                 'estream' => [
-                    'label' => 'All E Stream',
+                    'label' => 'All eStream',
                     'search' => 'all estream all e stream',
                 ],
             ];
@@ -2544,7 +2544,7 @@ class AdminController extends Controller
             $endDate = Carbon::now()->endOfDay();
         }
 
-        $periodLabel = $startDate->format('M j, Y') . ' - ' . $endDate->format('M j, Y');
+        $periodLabel = $startDate->format('d/m/Y') . ' - ' . $endDate->format('d/m/Y');
         $startStr = $startDate->format('Y-m-d H:i:s');
         $endStr = $endDate->format('Y-m-d H:i:s');
 
@@ -2857,8 +2857,31 @@ class AdminController extends Controller
             }
         }
         $inquiryTrend = [];
-        foreach ($trendByDay as $dayKey => $count) {
-            $inquiryTrend[] = ['day' => Carbon::parse($dayKey)->format('M j'), 'count' => $count];
+        if ($currentRangeDays >= 60) {
+            $trendByWeek = [];
+            foreach ($trendByDay as $dayKey => $count) {
+                $dt = Carbon::parse($dayKey);
+                $weekStart = $dt->copy()->startOfWeek();
+                $weekKey = $weekStart->format('Y-m-d');
+                if (!isset($trendByWeek[$weekKey])) {
+                    $weekEnd = $weekStart->copy()->endOfWeek();
+                    $trendByWeek[$weekKey] = [
+                        'day' => 'Week ' . $weekStart->weekOfYear,
+                        'full_day' => $weekStart->format('d/m/Y') . ' - ' . $weekEnd->format('d/m/Y'),
+                        'count' => 0
+                    ];
+                }
+                $trendByWeek[$weekKey]['count'] += $count;
+            }
+            $inquiryTrend = array_values($trendByWeek);
+        } else {
+            foreach ($trendByDay as $dayKey => $count) {
+                $inquiryTrend[] = [
+                    'day' => Carbon::parse($dayKey)->format('M j'),
+                    'full_day' => Carbon::parse($dayKey)->format('d/m/Y'),
+                    'count' => $count
+                ];
+            }
         }
 
         $currentMonthTotal = array_sum($trendByDay);
@@ -3541,7 +3564,7 @@ class AdminController extends Controller
             $end = Carbon::now()->endOfDay();
         }
 
-        $periodLabel = $start->format('M j, Y') . ' - ' . $end->format('M j, Y');
+        $periodLabel = $start->format('d/m/Y') . ' - ' . $end->format('d/m/Y');
 
         $startStr = $start->format('Y-m-d H:i:s');
         $endStr = $end->format('Y-m-d H:i:s');

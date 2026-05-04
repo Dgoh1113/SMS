@@ -2068,6 +2068,13 @@
 </script>
 <script>
 (function () {
+    function isMonthlyPerformanceReportTitle(title) {
+        return typeof title === 'string' && (
+            title.indexOf('Monthly Performance Report') === 0 ||
+            title.indexOf('Performance Report -') === 0
+        );
+    }
+
     function collectExportHeadMarkup() {
         return Array.prototype.map.call(document.querySelectorAll('link[rel="stylesheet"], style'), function (node) {
             return node.outerHTML;
@@ -2077,6 +2084,49 @@
     function replaceExportCanvases(sourceRoot, cloneRoot) {
         var sourceCanvases = sourceRoot.querySelectorAll('canvas');
         var cloneCanvases = cloneRoot.querySelectorAll('canvas');
+        var exportScale = 3;
+
+        function captureCanvasDataUrl(sourceCanvas) {
+            var sourceChart = window.Chart && typeof window.Chart.getChart === 'function'
+                ? window.Chart.getChart(sourceCanvas)
+                : null;
+
+            if (sourceChart && sourceCanvas.getBoundingClientRect) {
+                var rect = sourceCanvas.getBoundingClientRect();
+                var originalDevicePixelRatio = sourceChart.options.devicePixelRatio;
+                var originalResponsive = sourceChart.options.responsive;
+                var originalAnimation = sourceChart.options.animation;
+
+                try {
+                    sourceChart.options.devicePixelRatio = exportScale;
+                    sourceChart.options.responsive = false;
+                    sourceChart.options.animation = false;
+                    sourceChart.resize(Math.max(1, Math.round(rect.width)), Math.max(1, Math.round(rect.height)));
+                    sourceChart.update('none');
+                    return sourceCanvas.toDataURL('image/png');
+                } finally {
+                    sourceChart.options.devicePixelRatio = originalDevicePixelRatio;
+                    sourceChart.options.responsive = originalResponsive;
+                    sourceChart.options.animation = originalAnimation;
+                    sourceChart.resize();
+                    sourceChart.update('none');
+                }
+            }
+
+            var highResCanvas = document.createElement('canvas');
+            highResCanvas.width = Math.max(1, Math.round(sourceCanvas.width * exportScale));
+            highResCanvas.height = Math.max(1, Math.round(sourceCanvas.height * exportScale));
+            var highResContext = highResCanvas.getContext('2d');
+
+            if (!highResContext) {
+                return sourceCanvas.toDataURL('image/png');
+            }
+
+            highResContext.imageSmoothingEnabled = true;
+            highResContext.imageSmoothingQuality = 'high';
+            highResContext.drawImage(sourceCanvas, 0, 0, highResCanvas.width, highResCanvas.height);
+            return highResCanvas.toDataURL('image/png');
+        }
 
         Array.prototype.forEach.call(sourceCanvases, function (sourceCanvas, index) {
             var cloneCanvas = cloneCanvases[index];
@@ -2087,7 +2137,7 @@
             image.alt = '';
 
             try {
-                image.src = sourceCanvas.toDataURL('image/png');
+                image.src = captureCanvasDataUrl(sourceCanvas);
             } catch (error) {
                 return;
             }
@@ -2135,67 +2185,67 @@
     }
 
     function buildExportWindow(printWindow, title, generatedLabel) {
-        var isMonthlyPerformance = title.indexOf('Monthly Performance Report') === 0;
+        var isMonthlyPerformance = isMonthlyPerformanceReportTitle(title);
         var isDealerPerformance = title.indexOf('Dealer Performance Report') === 0;
         var isDealerSalesOvertime = title.indexOf('Dealer Sales Overtime Report') === 0;
         var isDealerRevenueProduction = title.indexOf('Dealer Revenue Production Report') === 0;
         var printedBy = @json(session('user_alias') ?: session('user_email') ?: session('user_role') ?: 'User');
         var exportStyles = [
-            '@page{size:A4 landscape;margin:8mm;}',
+            '@page{size:A4 landscape;margin:4mm;}',
             'html,body{background:#fff;color:#0f172a;font-family:"Public Sans",sans-serif;}',
             'body{margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}',
-            '.report-export-shell{padding:20px 24px 28px;}',
-            '.report-export-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #e5e7eb;}',
+            '.report-export-shell{padding:10px 14px 12px;}',
+            '.report-export-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #e5e7eb;}',
             '.report-export-title{margin:0;font-size:24px;line-height:1.15;font-weight:800;color:#0f172a;}',
             '.report-export-meta{font-size:12px;font-weight:600;color:#64748b;text-align:right;}',
             '.report-export-content{background:#fff;}',
-            '.report-export-content .dashboard-content.reports-page,.report-export-content .reports-page,.report-export-content .rv2-page,.report-export-content .rrp-page{padding:0 !important;margin:0 !important;width:auto !important;min-height:0 !important;zoom:1 !important;transform:none !important;background:#fff !important;overflow:visible !important;}',
-            '.report-export-content .reports-page-layout{width:100% !important;padding:0 !important;zoom:1 !important;transform:none !important;gap:14px !important;}',
+            '.report-export-content .dashboard-content.reports-page,.report-export-content .reports-page,.report-export-content .rv2-page,.report-export-content .rrp-page{padding:0 !important;margin:0 !important;width:auto !important;min-height:0 !important;zoom:1 !important;background:#fff !important;overflow:visible !important;}',
+            '.report-export-content .reports-page-layout{width:100% !important;padding:0 !important;zoom:1 !important;transform:none !important;gap:5px !important;}',
             '.report-export-content .dashboard-panel,.report-export-content .reports-product-section,.report-export-content .reports-inquiry-section,.report-export-content .reports-status-section,.report-export-content .dealer-reports-status-section,.report-export-content .rv2-panel,.report-export-content .rrp-panel,.report-export-content .rrp-metric-card{break-inside:avoid;page-break-inside:avoid;}',
             '.report-export-content .dashboard-topbar,.report-export-content .dashboard-sidebar,.report-export-content .dashboard-bottombar{display:none !important;}',
             '.report-export-canvas-image{display:block;max-width:100%;height:auto;}',
-            '.report-export-monthly-performance .report-export-shell{box-sizing:border-box;padding:5mm 6mm !important;}',
-            '.report-export-monthly-performance .report-export-heading{gap:10px;margin-bottom:8px;padding-bottom:6px;}',
-            '.report-export-monthly-performance .report-export-title{font-size:18px;line-height:1.1;}',
-            '.report-export-monthly-performance .report-export-meta{font-size:9px;}',
-            '.report-export-monthly-performance .report-export-content .reports-page:not(.dealer-reports-page){zoom:.86 !important;}',
-            '.report-export-monthly-performance .report-export-content .reports-page:not(.dealer-reports-page) .reports-page-layout{gap:7px !important;}',
-            '.report-export-monthly-performance .report-export-content .reports-page:not(.dealer-reports-page) .reports-metrics--admin{display:grid !important;grid-template-columns:repeat(8,minmax(0,1fr)) !important;gap:7px !important;margin:0 0 7px !important;}',
-            '.report-export-monthly-performance .report-export-content .reports-page:not(.dealer-reports-page) .reports-metric-card--admin,.report-export-monthly-performance .report-export-content .reports-page:not(.dealer-reports-page) .report-metric-link--admin{min-height:68px !important;padding:7px 8px !important;border-radius:10px !important;box-shadow:none !important;}',
-            '.report-export-monthly-performance .report-export-content .reports-admin-metric-top{margin-bottom:7px !important;}',
+            '.report-export-monthly-performance .report-export-shell{box-sizing:border-box;padding:3mm 4mm !important;}',
+            '.report-export-monthly-performance .report-export-heading{gap:6px;margin-bottom:3px;padding-bottom:3px;}',
+            '.report-export-monthly-performance .report-export-title{font-size:14px;line-height:1.1;}',
+            '.report-export-monthly-performance .report-export-meta{font-size:7px;}',
+            '.report-export-monthly-performance .report-export-content{position:relative;overflow:hidden;}',
+            '.report-export-monthly-performance .report-export-content .reports-page:not(.dealer-reports-page){display:block !important;max-width:none !important;transform-origin:top left !important;zoom:1 !important;}',
+            '.report-export-monthly-performance .report-export-content .reports-page:not(.dealer-reports-page) .reports-page-layout{gap:12px !important;}',
+            '.report-export-monthly-performance .report-export-content .reports-page:not(.dealer-reports-page) .reports-metrics--admin{display:grid !important;grid-template-columns:repeat(8,minmax(0,1fr)) !important;gap:8px !important;margin:0 0 12px !important;}',
+            '.report-export-monthly-performance .report-export-content .reports-page:not(.dealer-reports-page) .reports-metric-card--admin,.report-export-monthly-performance .report-export-content .reports-page:not(.dealer-reports-page) .report-metric-link--admin{min-height:76px !important;padding:8px 10px !important;border-radius:8px !important;box-shadow:none !important;}',
+            '.report-export-monthly-performance .report-export-content .reports-admin-metric-top{margin-bottom:6px !important;}',
             '.report-export-monthly-performance .report-export-content .reports-admin-metric-link-indicator{display:none !important;}',
-            '.report-export-monthly-performance .report-export-content .reports-metric-icon{width:28px !important;height:28px !important;border-radius:8px !important;font-size:14px !important;box-shadow:none !important;}',
-            '.report-export-monthly-performance .report-export-content .reports-metric-value{font-size:21px !important;line-height:1 !important;margin:0 0 5px !important;}',
-            '.report-export-monthly-performance .report-export-content .reports-metric-label{font-size:9px !important;line-height:1.05 !important;letter-spacing:.08em !important;}',
-            '.report-export-monthly-performance .report-export-content .reports-admin-metric-trend{font-size:8px !important;line-height:1.1 !important;margin-top:6px !important;}',
-            '.report-export-monthly-performance .report-export-content .reports-admin-metric-trend-icon{width:10px !important;height:10px !important;}',
-            '.report-export-monthly-performance .report-export-content .dashboard-panels-two-column{display:grid !important;grid-template-columns:minmax(0,1.28fr) minmax(0,.88fr) !important;gap:7px !important;margin:0 !important;}',
+            '.report-export-monthly-performance .report-export-content .reports-admin-metric-trend{display:flex !important;}',
+            '.report-export-monthly-performance .report-export-content .reports-metric-icon{width:28px !important;height:28px !important;border-radius:6px !important;font-size:12px !important;box-shadow:none !important;}',
+            '.report-export-monthly-performance .report-export-content .reports-metric-value{font-size:24px !important;line-height:1 !important;margin:0 0 4px !important;}',
+            '.report-export-monthly-performance .report-export-content .reports-metric-label{font-size:10px !important;line-height:1.1 !important;letter-spacing:.05em !important;}',
+            '.report-export-monthly-performance .report-export-content .dashboard-panels-two-column{display:grid !important;grid-template-columns:minmax(0,1.3fr) minmax(0,.85fr) !important;gap:12px !important;margin:0 !important;}',
             '.report-export-monthly-performance .report-export-content .reports-inquiry-section,.report-export-monthly-performance .report-export-content .reports-status-section,.report-export-monthly-performance .report-export-content .reports-product-section{border-radius:10px !important;box-shadow:none !important;}',
-            '.report-export-monthly-performance .report-export-content .reports-inquiry-section .dashboard-panel-header,.report-export-monthly-performance .report-export-content .reports-status-section .dashboard-panel-header,.report-export-monthly-performance .report-export-content .reports-product-section .dashboard-panel-header{padding:9px 10px 5px !important;gap:8px !important;}',
-            '.report-export-monthly-performance .report-export-content .reports-inquiry-section .dashboard-panel-body,.report-export-monthly-performance .report-export-content .reports-status-section .dashboard-panel-body,.report-export-monthly-performance .report-export-content .reports-product-section .dashboard-panel-body{padding:0 10px 9px !important;}',
+            '.report-export-monthly-performance .report-export-content .reports-inquiry-section .dashboard-panel-header,.report-export-monthly-performance .report-export-content .reports-status-section .dashboard-panel-header,.report-export-monthly-performance .report-export-content .reports-product-section .dashboard-panel-header{padding:8px 12px 6px !important;gap:8px !important;}',
+            '.report-export-monthly-performance .report-export-content .reports-inquiry-section .dashboard-panel-body,.report-export-monthly-performance .report-export-content .reports-status-section .dashboard-panel-body,.report-export-monthly-performance .report-export-content .reports-product-section .dashboard-panel-body{padding:0 12px 10px !important;}',
             '.report-export-monthly-performance .report-export-content .dashboard-panel-title{font-size:14px !important;line-height:1.1 !important;}',
-            '.report-export-monthly-performance .report-export-content .reports-inquiry-subtitle,.report-export-monthly-performance .report-export-content .reports-status-subtitle,.report-export-monthly-performance .report-export-content .reports-product-subtitle{font-size:9px !important;line-height:1.15 !important;}',
-            '.report-export-monthly-performance .report-export-content .reports-inquiry-chip{padding:5px 10px !important;font-size:9px !important;}',
-            '.report-export-monthly-performance .report-export-content .dealer-reports-card,.report-export-monthly-performance .report-export-content .dealer-reports-status-card,.report-export-monthly-performance .report-export-content .reports-product-card{padding:7px !important;border-radius:9px !important;}',
-            '.report-export-monthly-performance .report-export-content .reports-inquiry-section .dealer-reports-chart-wrapper{height:188px !important;min-height:188px !important;padding:0 !important;}',
-            '.report-export-monthly-performance .report-export-content .reports-inquiry-section .report-export-canvas-image{width:100% !important;height:188px !important;object-fit:contain !important;}',
-            '.report-export-monthly-performance .report-export-content .admin-inquiry-trend-legend{margin-top:4px !important;gap:12px !important;font-size:9px !important;}',
-            '.report-export-monthly-performance .report-export-content .report-status-body{display:grid !important;grid-template-columns:minmax(0,.78fr) minmax(0,1fr) !important;align-items:center !important;gap:8px !important;}',
-            '.report-export-monthly-performance .report-export-content .dealer-reports-status-card{min-height:178px !important;display:flex !important;align-items:center !important;justify-content:center !important;border:0 !important;background:transparent !important;box-shadow:none !important;}',
-            '.report-export-monthly-performance .report-export-content .report-donut-wrapper{height:168px !important;min-height:168px !important;display:flex !important;align-items:center !important;justify-content:center !important;}',
-            '.report-export-monthly-performance .report-export-content .report-donut{width:146px !important;height:146px !important;filter:saturate(1.18) contrast(1.05);box-shadow:inset 0 0 0 1px rgba(15,23,42,.08),0 8px 18px rgba(15,23,42,.08) !important;}',
-            '.report-export-monthly-performance .report-export-content .report-donut-center{inset:50% auto auto 50% !important;width:82px !important;height:82px !important;transform:translate(-50%,-50%) !important;display:flex !important;flex-direction:column !important;align-items:center !important;justify-content:center !important;gap:2px !important;text-align:center !important;box-shadow:0 3px 10px rgba(15,23,42,.06) !important;}',
-            '.report-export-monthly-performance .report-export-content .report-donut-total{display:block !important;font-size:22px !important;line-height:.95 !important;margin:0 !important;}',
-            '.report-export-monthly-performance .report-export-content .report-donut-label{display:block !important;font-size:8px !important;line-height:1 !important;margin:0 !important;}',
-            '.report-export-monthly-performance .report-export-content .report-legend{display:grid !important;grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:4px 12px !important;margin:0 !important;font-size:9px !important;line-height:1.15 !important;}',
-            '.report-export-monthly-performance .report-export-content .report-legend li{min-width:0 !important;gap:5px !important;}',
-            '.report-export-monthly-performance .report-export-content .report-legend-color{width:8px !important;height:8px !important;}',
-            '.report-export-monthly-performance .report-export-content .reports-product-section{margin-top:7px !important;break-inside:auto !important;page-break-inside:auto !important;}',
-            '.report-export-monthly-performance .report-export-content .reports-product-scale{gap:6px !important;}',
-            '.report-export-monthly-performance .report-export-content .reports-product-scale-chip{font-size:8px !important;padding:3px 7px !important;}',
-            '.report-export-monthly-performance .report-export-content .reports-product-chart-wrapper{height:126px !important;min-height:126px !important;padding:0 !important;}',
-            '.report-export-monthly-performance .report-export-content .reports-product-section .report-export-canvas-image{width:100% !important;height:126px !important;object-fit:contain !important;}',
-            '.report-export-monthly-performance .report-export-content .dealer-reports-empty,.report-export-monthly-performance .report-export-content .reports-product-empty{font-size:10px !important;padding:28px 10px !important;}',
+            '.report-export-monthly-performance .report-export-content .reports-inquiry-subtitle,.report-export-monthly-performance .report-export-content .reports-status-subtitle,.report-export-monthly-performance .report-export-content .reports-product-subtitle{font-size:10px !important;line-height:1.15 !important;}',
+            '.report-export-monthly-performance .report-export-content .reports-inquiry-chip{padding:4px 8px !important;font-size:9px !important;}',
+            '.report-export-monthly-performance .report-export-content .dealer-reports-card,.report-export-monthly-performance .report-export-content .dealer-reports-status-card,.report-export-monthly-performance .report-export-content .reports-product-card{padding:8px !important;border-radius:8px !important;}',
+            '.report-export-monthly-performance .report-export-content .reports-inquiry-section .dealer-reports-chart-wrapper{height:250px !important;min-height:250px !important;max-height:250px !important;padding:0 !important;overflow:hidden !important;}',
+            '.report-export-monthly-performance .report-export-content .reports-inquiry-section .report-export-canvas-image{width:100% !important;height:250px !important;object-fit:contain !important;}',
+            '.report-export-monthly-performance .report-export-content .admin-inquiry-trend-legend{margin-top:4px !important;gap:12px !important;font-size:10px !important;}',
+            '.report-export-monthly-performance .report-export-content .report-status-body{display:grid !important;grid-template-columns:minmax(0,.75fr) minmax(0,1fr) !important;align-items:center !important;gap:8px !important;}',
+            '.report-export-monthly-performance .report-export-content .dealer-reports-status-card{min-height:230px !important;display:flex !important;align-items:center !important;justify-content:center !important;border:0 !important;background:transparent !important;box-shadow:none !important;}',
+            '.report-export-monthly-performance .report-export-content .report-donut-wrapper{height:180px !important;min-height:180px !important;display:flex !important;align-items:center !important;justify-content:center !important;}',
+            '.report-export-monthly-performance .report-export-content .report-donut{width:150px !important;height:150px !important;filter:saturate(1.18) contrast(1.05);box-shadow:inset 0 0 0 1px rgba(15,23,42,.08),0 6px 12px rgba(15,23,42,.08) !important;}',
+            '.report-export-monthly-performance .report-export-content .report-donut-center{inset:50% auto auto 50% !important;width:85px !important;height:85px !important;transform:translate(-50%,-50%) !important;display:flex !important;flex-direction:column !important;align-items:center !important;justify-content:center !important;gap:2px !important;text-align:center !important;box-shadow:0 3px 8px rgba(15,23,42,.06) !important;}',
+            '.report-export-monthly-performance .report-export-content .report-donut-total{display:block !important;font-size:26px !important;line-height:.95 !important;margin:0 !important;}',
+            '.report-export-monthly-performance .report-export-content .report-donut-label{display:block !important;font-size:10px !important;line-height:1 !important;margin:0 !important;}',
+            '.report-export-monthly-performance .report-export-content .report-legend{display:grid !important;grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:6px 16px !important;margin:16px 0 0 0 !important;font-size:11px !important;line-height:1.2 !important;}',
+            '.report-export-monthly-performance .report-export-content .report-legend li{min-width:0 !important;gap:6px !important;}',
+            '.report-export-monthly-performance .report-export-content .report-legend-color{width:10px !important;height:10px !important;}',
+            '.report-export-monthly-performance .report-export-content .reports-product-section{margin-top:12px !important;break-inside:auto !important;page-break-inside:auto !important;}',
+            '.report-export-monthly-performance .report-export-content .reports-product-scale{gap:8px !important;}',
+            '.report-export-monthly-performance .report-export-content .reports-product-scale-chip{font-size:10px !important;padding:4px 8px !important;}',
+            '.report-export-monthly-performance .report-export-content .reports-product-chart-wrapper{height:240px !important;min-height:240px !important;max-height:240px !important;padding:0 !important;overflow:hidden !important;}',
+            '.report-export-monthly-performance .report-export-content .reports-product-section .report-export-canvas-image{width:100% !important;height:240px !important;object-fit:contain !important;}',
+            '.report-export-monthly-performance .report-export-content .dealer-reports-empty,.report-export-monthly-performance .report-export-content .reports-product-empty{font-size:12px !important;padding:20px 8px !important;}',
             '.report-export-dealer-performance .report-export-shell{box-sizing:border-box;padding:5mm 6mm !important;}',
             '.report-export-dealer-performance .report-export-heading{gap:10px;margin-bottom:8px;padding-bottom:6px;}',
             '.report-export-dealer-performance .report-export-title{font-size:18px;line-height:1.1;}',
@@ -2243,7 +2293,7 @@
             '.report-export-dealer-revenue-production .report-export-title{font-size:18px;line-height:1.1;}',
             '.report-export-dealer-revenue-production .report-export-meta{font-size:9px;}',
             '.report-export-dealer-revenue-production .report-export-content .rrp-page{zoom:.86 !important;}',
-            '@media print{.report-export-shell{padding:0;}.report-export-monthly-performance .report-export-shell,.report-export-dealer-performance .report-export-shell,.report-export-dealer-sales-overtime .report-export-shell,.report-export-dealer-revenue-production .report-export-shell{padding:5mm 6mm !important;}.report-export-monthly-performance .report-export-heading,.report-export-dealer-performance .report-export-heading,.report-export-dealer-sales-overtime .report-export-heading,.report-export-dealer-revenue-production .report-export-heading{margin-bottom:6px;}.report-export-monthly-performance .report-export-content .reports-page:not(.dealer-reports-page),.report-export-dealer-performance .report-export-content .dealer-reports-page,.report-export-dealer-revenue-production .report-export-content .rrp-page{zoom:.76 !important;}}'
+            '@media print{.report-export-shell{padding:0;}.report-export-monthly-performance .report-export-shell,.report-export-dealer-performance .report-export-shell,.report-export-dealer-sales-overtime .report-export-shell,.report-export-dealer-revenue-production .report-export-shell{padding:2mm 3mm !important;}.report-export-monthly-performance .report-export-heading,.report-export-dealer-performance .report-export-heading,.report-export-dealer-sales-overtime .report-export-heading,.report-export-dealer-revenue-production .report-export-heading{margin-bottom:2px;}.report-export-dealer-performance .report-export-content .dealer-reports-page,.report-export-dealer-revenue-production .report-export-content .rrp-page{zoom:.76 !important;}}'
         ].join(' ');
 
         printWindow.document.open();
@@ -2301,6 +2351,7 @@
         replaceExportCanvases(target, clone);
 
         var title = trigger.getAttribute('data-export-title') || document.title || 'Report';
+        var isMonthlyPerformance = isMonthlyPerformanceReportTitle(title);
         var generatedLabel = new Date().toLocaleString();
 
         buildExportWindow(printWindow, title, generatedLabel);
@@ -2308,6 +2359,54 @@
         var mount = printWindow.document.querySelector('.report-export-content');
         if (mount) {
             mount.appendChild(printWindow.document.importNode(clone, true));
+        }
+
+        // Fit monthly performance report to the A4 landscape page, growing when there is spare room.
+        if (isMonthlyPerformance && mount) {
+            (function () {
+                var reportPage = mount.querySelector('.reports-page:not(.dealer-reports-page)');
+                if (!reportPage) return;
+
+                // A4 landscape: 297mm x 210mm. With 4mm margins = 289mm x 202mm usable.
+                // Convert to px (96dpi): 1mm ≈ 3.7795px
+                var pageHeightPx = 202 * 3.7795; // ~763px
+                var headingEl = printWindow.document.querySelector('.report-export-heading');
+                var shellEl = printWindow.document.querySelector('.report-export-shell');
+
+                // Measure after a tick to let styles settle
+                window.setTimeout(function () {
+                    try {
+                        var headingH = headingEl ? headingEl.offsetHeight : 30;
+                        var shellPad = shellEl ? (parseFloat(printWindow.getComputedStyle(shellEl).paddingTop) || 0) + (parseFloat(printWindow.getComputedStyle(shellEl).paddingBottom) || 0) : 24;
+                        reportPage.style.setProperty('transform', 'none');
+                        reportPage.style.setProperty('width', '100%', 'important');
+                        mount.style.removeProperty('height');
+                        mount.style.removeProperty('overflow');
+
+                        var availableH = pageHeightPx - headingH - shellPad;
+                        var contentH = reportPage.scrollHeight || reportPage.offsetHeight;
+
+                        if (contentH > 0 && availableH > 0) {
+                            var scaleFactor = Math.floor(((availableH / contentH) * 0.985) * 100) / 100;
+                            scaleFactor = Math.max(0.35, Math.min(scaleFactor, 1.35));
+                            reportPage.style.setProperty('width', (100 / scaleFactor) + '%', 'important');
+                            var adjustedContentH = reportPage.scrollHeight || contentH;
+
+                            if (adjustedContentH * scaleFactor > availableH) {
+                                scaleFactor = Math.floor(((availableH / adjustedContentH) * 0.985) * 100) / 100;
+                                scaleFactor = Math.max(0.35, Math.min(scaleFactor, 1.35));
+                                reportPage.style.setProperty('width', (100 / scaleFactor) + '%', 'important');
+                                adjustedContentH = reportPage.scrollHeight || adjustedContentH;
+                            }
+
+                            reportPage.style.transform = 'scale(' + scaleFactor + ')';
+                            reportPage.style.transformOrigin = 'top left';
+                            mount.style.height = (adjustedContentH * scaleFactor) + 'px';
+                            mount.style.overflow = 'hidden';
+                        }
+                    } catch (e) {}
+                }, 50);
+            })();
         }
 
         var didTriggerPrint = false;
@@ -2335,11 +2434,11 @@
                     printWindow.print();
                 } catch (error) {}
                 window.setTimeout(cleanupFrame, 60000);
-            }, 350);
+            }, 500);
         };
 
         printFrame.onload = triggerPrint;
-        window.setTimeout(triggerPrint, 900);
+        window.setTimeout(triggerPrint, 1200);
         return false;
     }
 

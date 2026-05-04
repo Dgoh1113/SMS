@@ -97,7 +97,7 @@
                     </div>
                 </div>
 
-                <div class="reports-filter-container rv2-filter" style="width: 140px; min-height: 90px; display: flex; flex-direction: column;">
+                <div class="reports-filter-container rv2-filter" style="width: 170px; min-height: 60px; display: flex; flex-direction: column;">
                     <div class="reports-range-label" style="height: 1.6em; display: flex; align-items: center; white-space: nowrap;">DEALER SCOPE</div>
                     <div style="flex: 1; display: flex; align-items: flex-end;">
                         <div style="width: 100%; max-width: 100%; --report-scope-picker-width: 100%;">
@@ -109,11 +109,11 @@
                     </div>
                 </div>
 
-                <div class="reports-filter-container rv2-filter" style="width: 140px; min-height: 90px; display: flex; flex-direction: column;">
+                <div class="reports-filter-container rv2-filter" style="width: 170px; min-height: 60px; display: flex; flex-direction: column;">
                     <div class="reports-range-label" style="height: 1.6em; display: flex; align-items: center;">AREA</div>
-                    <div style="flex: 1; display: flex; align-items: flex-end;">
-                        <select name="report_area" id="adminSalesAreaSelect" class="rv2-filter-select" aria-label="Select area" style="width: 100%; font-size: 13px;">
-                            <option value="all">All Areas</option>
+                    <div class="report-scope-field" style="flex: 1; display: flex; align-items: flex-end; width: 100%;">
+                        <select name="report_area" id="adminSalesAreaSelect" class="report-scope-select" aria-label="Select area" style="width: 100%; font-size: 13px;">
+                            <option value="all">All</option>
                             @foreach($areaOptions ?? [] as $area)
                                 <option value="{{ $area }}" {{ ($selectedArea ?? '') === $area ? 'selected' : '' }}>{{ $area }}</option>
                             @endforeach
@@ -453,17 +453,29 @@
                     window.setTimeout(bindTomSelectChange, 360);
                 });
 
+
                 // Area searchable dropdown
                 const areaSelectEl = document.getElementById('adminSalesAreaSelect');
                 if (areaSelectEl && typeof TomSelect === 'function') {
                     new TomSelect(areaSelectEl, {
+                        maxItems: 1,
+                        hideSelected: false,
                         plugins: ['dropdown_input'],
                         maxOptions: 100,
                         searchField: 'text',
                         placeholder: 'Search city...',
                         allowEmptyOption: false,
+                        copyClassesToDropdown: false,
                         onDropdownOpen: function() { this.clearCache(); },
-                        onChange: function() { submitReportFilters(); }
+                        onChange: function() { submitReportFilters(); },
+                        onInitialize: function () {
+                            if (this.wrapper) {
+                                this.wrapper.classList.add('report-scope-ts-wrapper');
+                                this.wrapper.id = 'adminSalesAreaSelect-ts-wrapper';
+                            }
+                            if (this.control) this.control.classList.add('report-scope-ts-control');
+                            if (this.dropdown) this.dropdown.classList.add('report-scope-ts-dropdown');
+                        }
                     });
                 }
 
@@ -506,7 +518,7 @@
             const isDarkTheme = document.documentElement.classList.contains('theme-dark');
             const isMobile = window.matchMedia('(max-width: 768px)').matches;
             const chartLabelFontSize = isMobile ? 8 : 10;
-            const chartBarThickness = isMobile ? 22 : 40;
+            const chartBarThickness = isMobile ? 16 : 24;
 
             if (window.Chart && typeof window.ChartDataLabels !== 'undefined') {
                 window.Chart.register(window.ChartDataLabels);
@@ -527,14 +539,16 @@
                         data: Array.from({ length: rowCount }, (_, i) => -Math.min(100, Math.abs(failedPct[i] ?? 0))),
                         backgroundColor: BAR_RED,
                         borderRadius: 10,
-                        barThickness: chartBarThickness
+                        barThickness: chartBarThickness,
+                        yAxisID: 'y'
                     },
                     {
                         label: 'Closed',
                         data: Array.from({ length: rowCount }, (_, i) => Math.min(100, Math.abs(closedPct[i] ?? 0))),
                         backgroundColor: BAR_CLOSED,
                         borderRadius: 10,
-                        barThickness: chartBarThickness
+                        barThickness: chartBarThickness,
+                        yAxisID: 'yRight'
                     }
                 ]
             };
@@ -574,10 +588,19 @@
                             ticks: { callback: function(v) { return Math.abs(v); } }
                         },
                         y: {
+                            position: 'left',
                             ticks: {
                                 callback: function(value, index) {
-                                    const name = failedName[index] ?? '—';
-                                    return name.length > 15 ? name.substring(0, 15) + '…' : name;
+                                    return failedName[index] ?? '—';
+                                }
+                            }
+                        },
+                        yRight: {
+                            position: 'right',
+                            grid: { display: false },
+                            ticks: {
+                                callback: function(value, index) {
+                                    return closedName[index] ?? '—';
                                 }
                             }
                         }
