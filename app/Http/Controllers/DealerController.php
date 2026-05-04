@@ -1300,9 +1300,9 @@ class DealerController extends Controller
         if (!$isSameStatusEdit) {
             $allowedTo = match ($fromUpper) {
                 'PENDING' => ['FOLLOW UP'],
-                'FOLLOW UP' => ['DEMO', 'CONFIRMED', 'COMPLETED'],
-                'DEMO' => ['CONFIRMED', 'COMPLETED'],
-                'CONFIRMED' => ['COMPLETED'],
+                'FOLLOW UP' => ['PENDING', 'DEMO', 'CONFIRMED', 'COMPLETED'],
+                'DEMO' => ['FOLLOW UP', 'CONFIRMED', 'COMPLETED'],
+                'CONFIRMED' => ['FOLLOW UP', 'DEMO', 'COMPLETED'],
                 'COMPLETED' => $hasReferralCode ? ['REWARDED'] : [],
                 'FAILED' => ['COMPLETED'],
                 default => [],
@@ -1323,6 +1323,37 @@ class DealerController extends Controller
                     'success' => false,
                     'message' => $message,
                 ], 422);
+            }
+        }
+
+        // For FOLLOW UP and DEMO, we always try to update the existing record (iterative editing)
+        // rather than creating a new row, regardless of whether it's a backtrack or current status.
+        if (in_array($toUpper, ['FOLLOW UP', 'DEMO'])) {
+            $latestActRow = DB::selectOne(
+                'SELECT FIRST 1 "LEAD_ACTID", "DESCRIPTION" FROM "LEAD_ACT"
+                 WHERE "LEADID" = ? AND UPPER(TRIM("STATUS")) = ?
+                 ORDER BY "CREATIONDATE" DESC, "LEAD_ACTID" DESC',
+                [$leadId, $toUpper === 'FOLLOW UP' ? 'FOLLOWUP' : $toUpper]
+            );
+
+            if ($latestActRow) {
+                // If remark is empty, we just update the inquiry status (e.g. backtracking without a new note)
+                // If remark is provided, we append it.
+                if ($remark !== '') {
+                    $oldDesc = trim((string) ($latestActRow->DESCRIPTION ?? ''));
+                    $divider = "\n" . str_repeat('-', 30) . "\n" . now()->format('d/m/Y H:i') . ":\n";
+                    $newDesc = $oldDesc . ($oldDesc !== '' ? $divider : '') . $remark;
+                    DB::update('UPDATE "LEAD_ACT" SET "DESCRIPTION" = ? WHERE "LEAD_ACTID" = ?', [$newDesc, $latestActRow->LEAD_ACTID]);
+                }
+
+                // Sync the main lead status
+                DB::update('UPDATE "LEAD" SET "STATUS" = ?, "LASTMODIFIED" = CURRENT_TIMESTAMP WHERE "LEADID" = ?', [$statusDb, $leadId]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Status updated iteratively',
+                    'counts' => $this->getDealerConsoleCounts($dealerId)
+                ]);
             }
         }
 

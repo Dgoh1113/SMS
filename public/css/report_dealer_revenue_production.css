@@ -634,28 +634,28 @@ html.theme-dark .rrp-pill-purple {
 
 @media (max-width: 768px) {
   .rrp-page {
-    padding: 0 12px 18px;
+    padding: 0 16px 20px;
+    font-size: 100%;
   }
 
   .rrp-filter-row {
     justify-content: flex-start;
-    margin-bottom: 14px;
+    margin: 0 0 16px;
   }
 
   .rrp-filter-form {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: grid !important;
+    grid-template-columns: 1fr !important;
     width: 100%;
     margin-right: 0;
-    gap: 8px 10px;
+    gap: 12px !important;
     align-items: stretch;
   }
 
   .rrp-period-date-group,
   .rrp-filter-form .report-scope-field {
-    grid-column: 1 / -1;
-    width: 100%;
-    flex-basis: auto;
+    width: 100% !important;
+    max-width: none !important;
   }
 
   .rrp-period-date-group,
@@ -666,9 +666,10 @@ html.theme-dark .rrp-pill-purple {
   .rrp-filter-actions .report-filter-apply,
   .rrp-filter-actions .report-filter-clear,
   .rrp-filter-actions .report-filter-export {
-    width: 100%;
-    min-width: 0;
-    height: 36px;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 44px;
+    font-size: 14px;
     box-sizing: border-box;
   }
 
@@ -677,82 +678,48 @@ html.theme-dark .rrp-pill-purple {
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 12px;
+    border-radius: 9px;
     padding: 0 14px;
   }
 
   .rrp-filter-form .report-scope-field .report-scope-ts-wrapper.single .ts-control > .item,
   .rrp-filter-form .report-scope-field .report-scope-ts-wrapper.single .ts-control > input {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    min-height: 100%;
-    margin: 0;
-    line-height: 1.2;
     text-align: center;
   }
 
   .rrp-filter-check {
-    padding: 0 10px;
+    padding: 0 12px;
+    border-radius: 9px;
+    justify-content: flex-start;
   }
 
   .rrp-filter-actions {
-    grid-column: 1 / -1;
     width: 100%;
     display: grid;
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: 1fr;
     gap: 8px;
     align-items: stretch;
   }
 
-  .rrp-filter-actions .report-filter-apply,
-  .rrp-filter-actions .report-filter-clear,
-  .rrp-filter-actions .report-filter-export {
-    margin: 0;
-  }
-
-  .rrp-filter-actions .report-filter-clear,
-  .rrp-filter-actions .report-filter-export {
-    min-width: 0;
-  }
-
   .rrp-top-grid {
     grid-template-columns: 1fr;
-    gap: 10px;
-    margin-bottom: 14px;
-  }
-
-  .rrp-metric-card {
-    padding: 12px;
-  }
-
-  .rrp-metric-value {
-    font-size: clamp(18px, 7vw, 22px);
-    word-break: break-word;
+    gap: 12px;
+    margin-bottom: 16px;
   }
 
   .rrp-panel-header {
-    padding: 12px;
-    gap: 8px;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px 16px;
+    gap: 10px;
   }
 
   .rrp-panel-body {
-    padding: 12px;
-  }
-
-  .rrp-legend {
-    flex-wrap: wrap;
-    gap: 8px 12px;
+    padding: 12px 16px;
   }
 
   .rrp-chart-wrap {
     height: 220px;
-  }
-
-  .rrp-panel .table-responsive {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
   }
 
   .rrp-table {

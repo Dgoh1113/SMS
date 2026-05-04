@@ -17,7 +17,10 @@
     $completedTo = min($completedTotal, $completedPerPage);
 @endphp
 <div class="dashboard-content inquiries-page-wrap">
-@include('dealer.partials.console-inquiries-tabs', ['dealerConsoleTab' => $dealerConsoleTab ?? 'pending-payouts'])
+@include('dealer.partials.console-inquiries-tabs', [
+    'dealerConsoleTab' => $dealerConsoleTab ?? 'pending-payouts',
+    'dealerConsoleCounts' => $dealerConsoleCounts ?? []
+])
 <div id="completedPanel">
 <section class="inquiries-mgmt-panel dealer-payouts-panel">
     @include('dealer.partials.console-panel-header', [

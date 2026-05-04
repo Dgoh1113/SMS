@@ -94,31 +94,42 @@ html.theme-dark .inquiry-row--notif-highlight td span:not(.inquiries-badge):not(
 }
 
 .dealer-console-tabs {
+  position: sticky;
+  top: -10px; /* Adjust for parent padding-top */
+  z-index: 900; /* Below topbar (950) but above content */
   display: flex;
   align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-top: 0;
-  margin-bottom: 12px;
-  padding: 0;
-  border: none;
-  border-bottom: 1px solid #e5e7eb;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
+  background: #f5f4ff; /* Match dashboard background */
+  margin: -10px -18px 12px -18px; /* Offset parent padding */
+  padding: 10px 18px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  width: calc(100% + 36px);
+  max-width: calc(100% + 36px);
+}
+
+.dealer-console-tabs-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  white-space: nowrap;
   width: 100%;
-  max-width: 100%;
-  align-self: stretch;
+  padding-bottom: 8px;
+  scrollbar-width: none; /* Hide scrollbar for cleaner look */
+}
+
+.dealer-console-tabs-inner::-webkit-scrollbar {
+  display: none;
 }
 
 .dealer-console-tab {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 40px;
-  padding: 8px 12px 12px;
+  min-height: 46px;
+  padding: 8px 18px 14px;
   border: none;
-  border-bottom: 2px solid transparent;
+  border-bottom: 3px solid transparent;
   border-radius: 0;
   background: transparent;
   color: #6b7280;
@@ -181,8 +192,8 @@ html.theme-dark .inquiry-row--notif-highlight td span:not(.inquiries-badge):not(
 }
 
 .dealer-console-tab-active .inquiries-tab-count {
-  background: rgba(124, 58, 237, 0.12);
-  color: #6d28d9;
+  background: #7c3aed;
+  color: #ffffff;
 }
 
 .inquiries-tab-count[title] {
@@ -1037,3 +1048,12 @@ html.theme-dark .inquiries-title-count {
   color: #64748b;
 }
 
+.inquiries-table.inquiries-table--fit th[data-col="status"],
+.inquiries-table.inquiries-table--fit td[data-col="status"] {
+    width: 130px !important;
+}
+
+.status-multi-filter-toggle {
+    padding: 6px 8px;
+    min-height: 32px;
+}

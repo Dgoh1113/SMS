@@ -45,7 +45,7 @@
                     @endif
                 @endforeach
 
-                <div class="reports-filter-container rv2-filter" style="width: 240px; min-height: 90px; display: flex; flex-direction: column;">
+                <div class="reports-filter-container rv2-filter" style="width: 280px; min-height: 90px; display: flex; flex-direction: column;">
                     <div class="reports-range-label" style="height: 1.6em; display: flex; align-items: center;">PERIOD</div>
                     <div style="flex: 1; display: flex; align-items: flex-end;">
                         <select name="days" class="rv2-filter-select" id="rv2PrimarySelect" style="display: {{ request('primary_from') || request('primary_to') ? 'none' : 'block' }}; width: 100%;">
@@ -55,7 +55,7 @@
                             <option value="90" {{ $primaryDays === 90 ? 'selected' : '' }}>Last 90 days</option>
                             <option value="custom" {{ request('primary_from') || request('primary_to') ? 'selected' : '' }}>Custom range…</option>
                         </select>
-                        <div id="rv2PrimaryRangeInline" class="reports-range-grid" style="display: {{ request('primary_from') || request('primary_to') ? 'grid' : 'none' }}; width: 100%; min-width: 0; gap: 4px;">
+                        <div id="rv2PrimaryRangeInline" class="reports-range-grid" style="display: {{ request('primary_from') || request('primary_to') ? 'grid' : 'none' }}; width: 100%; min-width: 0; gap: 10px;">
                             <div class="reports-range-col">
                                 <label class="reports-range-label" style="font-size: 9px; opacity: 0.8;">Starting</label>
                                 <input type="date" name="primary_from" id="rv2PrimaryFrom" value="{{ request('primary_from', now()->subMonth()->format('Y-m-d')) }}" class="reports-range-input" style="width: 100%;">
@@ -71,7 +71,7 @@
                     </div>
                 </div>
 
-                <div class="reports-filter-container rv2-filter" style="width: 240px; min-height: 90px; display: flex; flex-direction: column;">
+                <div class="reports-filter-container rv2-filter" style="width: 280px; min-height: 90px; display: flex; flex-direction: column;">
                     <div class="reports-range-label" style="height: 1.6em; display: flex; align-items: center;">COMPARE AGAINST</div>
                     <div style="flex: 1; display: flex; align-items: flex-end;">
                         @php $compareDays = (int) request('compare_days', 30); @endphp
@@ -81,7 +81,7 @@
                             <option value="90" {{ $compareDays === 90 ? 'selected' : '' }}>Last 90 days</option>
                             <option value="custom" {{ request('compare_from') || request('compare_to') ? 'selected' : '' }}>Custom range…</option>
                         </select>
-                        <div id="rv2CompareRangeInline" class="reports-range-grid" style="display: {{ request('compare_from') || request('compare_to') ? 'grid' : 'none' }}; width: 100%; min-width: 0; gap: 4px;">
+                        <div id="rv2CompareRangeInline" class="reports-range-grid" style="display: {{ request('compare_from') || request('compare_to') ? 'grid' : 'none' }}; width: 100%; min-width: 0; gap: 10px;">
                             <div class="reports-range-col">
                                 <label class="reports-range-label" style="font-size: 9px; opacity: 0.8;">Starting</label>
                                 <input type="date" name="compare_from" id="rv2CompareFrom" value="{{ request('compare_from', now()->subMonths(2)->format('Y-m-d')) }}" class="reports-range-input" style="width: 100%;">

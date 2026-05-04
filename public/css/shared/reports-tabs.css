@@ -576,16 +576,39 @@ html.theme-dark .report-filter-export:focus-visible {
 }
 
 @media (max-width: 768px) {
+  .reports-tabs-row {
+    padding: 0;
+    margin: 0 -12px; /* Pull out to edges if needed, but we'll use padding instead */
+    justify-content: flex-start;
+  }
+
   .reports-tabs-nav {
     max-width: none;
     overflow-x: auto;
-    padding: 0 4px;
+    padding: 0 16px;
+    margin-bottom: 12px;
+    gap: 12px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Hide scrollbar for cleaner look */
+  }
+
+  .reports-tabs-nav::-webkit-scrollbar {
+    display: none;
   }
 
   .reports-tab-link {
     flex: 0 0 auto;
-    min-width: 180px;
-    width: auto;
+    min-width: auto;
+    padding: 0 4px 10px;
+    font-size: 13px;
+  }
+
+  .reports-tab-link span {
+    white-space: nowrap;
+  }
+
+  .reports-tab-icon {
+    font-size: 15px;
   }
 
   .report-scope-field,
@@ -601,10 +624,11 @@ html.theme-dark .report-filter-export:focus-visible {
   .report-filter-export {
     width: 100%;
     min-width: 0;
-    min-height: 46px;
+    min-height: 48px;
     gap: 11px;
-    padding: 8px 14px;
+    padding: 8px 16px;
     font-size: 14px;
+    border-radius: 12px;
   }
 
   .report-filter-export::before {

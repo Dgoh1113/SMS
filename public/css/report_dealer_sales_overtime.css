@@ -898,41 +898,29 @@ html.theme-dark .rv2-page-ellipsis {
 
 @media (max-width: 768px) {
   .rv2-page {
-    padding: 0 12px 18px;
+    padding: 0 16px 20px;
     font-size: 100%;
   }
 
   .rv2-filtered-layer-head {
-    padding: 10px 12px;
-    justify-content: stretch;
+    padding: 12px 16px;
   }
 
-  .rv2-filters,
   .rv2-filters-form {
     width: 100%;
-  }
-
-  .rv2-filters {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  .rv2-filters-form {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
     margin-left: 0;
     justify-content: stretch;
   }
 
   .rv2-filter {
-    width: 100%;
-    min-width: 0;
-    padding: 8px 9px;
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    padding: 10px 12px;
     box-sizing: border-box;
-  }
-
-  .rv2-filters-form > .rv2-filter:nth-child(3),
-  .rv2-filters-form > .rv2-filter-apply {
-    grid-column: 1 / -1;
   }
 
   .report-scope-field,
@@ -941,15 +929,22 @@ html.theme-dark .rv2-page-ellipsis {
     min-width: 0;
   }
 
-  .rv2-filter-apply {
-    width: auto;
+  .rv2-filter-actions {
+    width: 100%;
+  }
+
+  .report-filter-actions {
+    display: flex;
+    width: 100%;
+    gap: 8px;
   }
 
   .rv2-filter-actions .report-filter-apply,
   .rv2-filter-actions .report-filter-export {
-    width: auto;
-    min-height: 34px;
-    min-width: 110px;
+    flex: 1;
+    width: 100%;
+    min-height: 44px;
+    min-width: 0;
   }
 
   .rv2-date-range {

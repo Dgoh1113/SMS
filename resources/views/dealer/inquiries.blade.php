@@ -2,7 +2,7 @@
 @section('title', 'My Inquiries – SQL LMS Dealer Console')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/pages/dealer-inquiries.css') }}?v=20260422-01">
+    <link rel="stylesheet" href="{{ asset('css/pages/dealer-inquiries.css') }}?v=20260430-01">
     <style>
         .inquiry-progression-steps {
             gap: 12px 0px;
@@ -13,14 +13,42 @@
             flex-shrink: 0;
             padding: 6px 12px;
             min-width: fit-content;
+            color: rgba(100, 116, 139, 0.7); /* Increased from 0.4 for better visibility */
         }
         .inquiry-step--recovering-muted {
             opacity: 0.45 !important;
             filter: grayscale(0.5);
         }
+        .inquiry-step--historical-muted {
+            opacity: 0.5 !important;
+            filter: grayscale(0.8);
+        }
         .inquiry-connector {
             min-width: 12px;
             flex: 1 0 12px;
+        }
+        .inquiry-history-remark {
+            background: rgba(15, 23, 42, 0.03);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 13px;
+            color: #64748b;
+            max-height: 150px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        .inquiry-history-date-badge {
+            display: inline-block;
+            background: #e2e8f0;
+            color: #475569;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-bottom: 4px;
         }
         @media (max-width: 768px) {
             .inquiry-step {
@@ -41,7 +69,10 @@
     $statusFilterOptions = ['Followup', 'Demo', 'Confirmed', 'Completed', 'Rewarded', 'Failed'];
 @endphp
 <div class="dashboard-content inquiries-page-wrap">
-    @include('dealer.partials.console-inquiries-tabs', ['dealerConsoleTab' => $dealerConsoleTab ?? 'inquiries'])
+    @include('dealer.partials.console-inquiries-tabs', [
+        'dealerConsoleTab' => $dealerConsoleTab ?? 'inquiries',
+        'dealerConsoleCounts' => $dealerConsoleCounts ?? []
+    ])
     <section class="inquiries-mgmt-panel dealer-inquiries-panel">
         @include('dealer.partials.console-panel-header', [
             'actions' => '
@@ -962,9 +993,17 @@ if (document.readyState === 'loading') {
                         </div>
                         <div class="inquiry-attachment-preview-wrap" id="inquiryAttachmentPreview" aria-live="polite"></div>
                     </label>
+                    <div class="inquiry-field" id="inquiryHistoryRemarkWrap" style="display:none;">
+                        <span class="inquiry-field-label">PREVIOUS REMARKS</span>
+                        <div class="inquiry-history-remark" id="inquiryHistoryRemark"></div>
+                    </div>
+
                     <label class="inquiry-field">
-                        <span class="inquiry-field-label">REMARK</span>
-                        <textarea class="inquiry-field-input inquiry-field-textarea" id="inquiryRemark" placeholder="" rows="6"></textarea>
+                        <span class="inquiry-field-label">NEW REMARK</span>
+                        <div id="inquiryNewRemarkDateWrap" style="display:none;">
+                            <span class="inquiry-history-date-badge" id="inquiryNewRemarkDate"></span>
+                        </div>
+                        <textarea class="inquiry-field-input inquiry-field-textarea" id="inquiryRemark" placeholder="Type your update here..." rows="4"></textarea>
                     </label>
                 </div>
             </div>
@@ -1259,17 +1298,22 @@ if (document.readyState === 'loading') {
 
         var fromIdx = statusOrder.indexOf(fromStatus);
         var toIdx = statusOrder.indexOf(toStatus);
-        if (fromIdx < 0 || toIdx <= fromIdx) return false;
+        if (fromIdx < 0) return false;
+
+        // Allow SAME status if it's FOLLOW UP or DEMO (for editing remarks)
+        if (fromStatus === toStatus && (fromStatus === 'FOLLOW UP' || fromStatus === 'DEMO')) {
+            return true;
+        }
 
         switch (fromStatus) {
             case 'PENDING':
                 return toStatus === 'FOLLOW UP';
             case 'FOLLOW UP':
-                return toStatus === 'DEMO' || toStatus === 'CONFIRMED' || toStatus === 'COMPLETED';
+                return ['PENDING', 'DEMO', 'CONFIRMED', 'COMPLETED'].indexOf(toStatus) !== -1;
             case 'DEMO':
-                return toStatus === 'CONFIRMED' || toStatus === 'COMPLETED';
+                return ['FOLLOW UP', 'CONFIRMED', 'COMPLETED'].indexOf(toStatus) !== -1;
             case 'CONFIRMED':
-                return toStatus === 'COMPLETED';
+                return ['FOLLOW UP', 'DEMO', 'COMPLETED'].indexOf(toStatus) !== -1;
             case 'COMPLETED':
                 return toStatus === 'REWARDED' && hasReferralCode(currentReferralCode);
             default:
@@ -1308,6 +1352,9 @@ if (document.readyState === 'loading') {
         
         // If we are recovering (selecting a new status), treat it as a normal active lead visually
         var effectivelyFailed = failedLatest && !highlightNewStatus;
+        
+        var hasFailedInHistory = !!findLatestFailedActivity();
+        var hasEverFailed = hasFailedInHistory || failedLatest;
 
         progressionSteps.classList.toggle('inquiry-progression-steps--failed', effectivelyFailed);
 
@@ -1321,34 +1368,37 @@ if (document.readyState === 'loading') {
             }
             step.hidden = false;
             
-            var baseOrder = i * 2;
-            if (failedLatest && i > currentStatusIdx) baseOrder += 2;
+            var baseOrder = i * 10;
+            if (failedLatest && i > currentStatusIdx) baseOrder += 10;
 
             var isCompleted = stepName === 'COMPLETED';
             var isRewarded = stepName === 'REWARDED';
             
             var shouldShow = true;
-            // Hide REWARDED if we are in a failed state (recovering or viewing failure)
-            if (failedLatest && isRewarded) {
-                shouldShow = false;
-            } else if (effectivelyFailed) {
-                // Simple failed view: hide future steps except COMPLETED
-                if (i > currentStatusIdx && !isCompleted) shouldShow = false;
-            } else if (highlightNewStatus) {
-                // Recovery mode: hide intermediate steps between current and COMPLETED
-                if (i > currentStatusIdx && !isCompleted) shouldShow = false;
+            if (hasEverFailed) {
+                // For leads that have ever failed, we strictly only show:
+                // 1. The PENDING start
+                // 2. Any status that actually has an activity record (reached)
+                // 3. The COMPLETED recovery goal
+                var hasActivity = hasActivityForStatus(stepName);
+                if (!hasActivity && stepName !== 'PENDING' && stepName !== 'COMPLETED') {
+                    shouldShow = false;
+                }
+                
+                // Always hide REWARDED if there is failure history
+                if (isRewarded) shouldShow = false;
             }
 
             step.style.display = shouldShow ? 'flex' : 'none';
             step.style.order = String(baseOrder);
             if (connector) {
                 connector.hidden = false;
-                connector.style.display = (shouldShow && i > 0 && connector.dataset.nextStep !== 'REWARDED') ? 'block' : 'none';
+                connector.style.display = (shouldShow && i > 0) ? 'block' : 'none';
                 
                 // If the step itself is hidden, the connector to it should also be hidden
                 if (!shouldShow) connector.style.display = 'none';
                 
-                connector.style.order = String(baseOrder - 1);
+                connector.style.order = String(baseOrder - 5);
             }
             var label = getStepDisplayLabel(i);
             var displayText = label || stepName;
@@ -1374,6 +1424,7 @@ if (document.readyState === 'loading') {
                 step.classList.add('inquiry-step--active', 'inquiry-step--selected');
             } else if (canClick) {
                 step.classList.add('inquiry-step--clickable');
+                if (isDone) step.classList.add('inquiry-step--viewable');
             } else {
                 step.classList.add('inquiry-step--no-click');
             }
@@ -1385,25 +1436,47 @@ if (document.readyState === 'loading') {
             failedStep.classList.remove('inquiry-step--done', 'inquiry-step--active', 'inquiry-step--selected', 'inquiry-step--clickable', 'inquiry-step--no-click', 'inquiry-step--viewable', 'inquiry-step--past-muted', 'inquiry-step--failed-terminal', 'inquiry-step--recovering-muted');
             if (failedConnector) failedConnector.classList.remove('inquiry-step--recovering-muted');
 
-            if (failedLatest) {
+            if (hasEverFailed) {
+                var failedAtIdx = currentStatusIdx; // Default to current
+                if (hasFailedInHistory && !effectivelyFailed) {
+                    // Try to find chronological position of failure
+                    var latestFailed = findLatestFailedActivity();
+                    var found = false;
+                    for (var k = 0; k < cachedActivities.length; k++) {
+                        if (cachedActivities[k] === latestFailed) { found = true; continue; }
+                        if (found) {
+                            var prevStatus = normalizeStatus(cachedActivities[k].status);
+                            var prevIdx = statusOrder.indexOf(prevStatus);
+                            if (prevIdx >= 0) { failedAtIdx = prevIdx; break; }
+                        }
+                    }
+                }
+
                 if (failedConnector) {
                     failedConnector.hidden = false;
                     failedConnector.style.display = 'block';
-                    failedConnector.style.order = String((currentStatusIdx * 2) + 1);
+                    // Place connector after the status it failed at (e.g. idx*10 + 1)
+                    failedConnector.style.order = String((failedAtIdx * 10) + 1);
                     if (highlightNewStatus) failedConnector.classList.add('inquiry-step--recovering-muted');
                 }
                 failedStep.hidden = false;
                 failedStep.style.display = 'flex';
-                failedStep.style.order = String((currentStatusIdx * 2) + 2);
+                // Place step after its connector (e.g. idx*10 + 2)
+                failedStep.style.order = String((failedAtIdx * 10) + 2);
                 
                 if (isFailedSelected()) {
                     failedStep.classList.add('inquiry-step--active', 'inquiry-step--selected', 'inquiry-step--viewable', 'inquiry-step--failed-terminal');
                 } else {
+                    // It is either the current terminal status or a past failure
                     failedStep.classList.add('inquiry-step--done', 'inquiry-step--viewable', 'inquiry-step--failed-terminal');
+                    
                     if (highlightNewStatus) {
                         failedStep.classList.add('inquiry-step--recovering-muted');
                     } else if (effectivelyFailed) {
                         failedStep.classList.add('inquiry-step--past-muted');
+                    } else if (hasFailedInHistory) {
+                        // Historical failure: keep it muted so it doesn't distract from active flow
+                        failedStep.classList.add('inquiry-step--historical-muted');
                     }
                 }
                 failedStep.innerHTML = '<i class="bi bi-x-lg"></i><span>FAILED</span>';
@@ -1417,6 +1490,44 @@ if (document.readyState === 'loading') {
                 failedStep.classList.add('inquiry-step--no-click');
                 failedStep.innerHTML = '<span>FAILED</span>';
             }
+        }
+    }
+
+    function refreshRemarkHistoryDisplay() {
+        var historyWrap = document.getElementById('inquiryHistoryRemarkWrap');
+        var historyEl = document.getElementById('inquiryHistoryRemark');
+        var remarkField = document.getElementById('inquiryRemark');
+        var dateWrap = document.getElementById('inquiryNewRemarkDateWrap');
+        var dateBadge = document.getElementById('inquiryNewRemarkDate');
+        if (!historyWrap || !historyEl || !remarkField || !dateWrap || !dateBadge) return;
+
+        var selectedName = getSelectedStatusName();
+        var fromStatus = statusOrder[currentStatusIdx] || 'PENDING';
+        var isLoggableStatus = (selectedName === 'FOLLOW UP' || selectedName === 'DEMO');
+        var isSameStatusUpdate = isLoggableStatus && fromStatus === selectedName;
+
+        var act = findActivityForStatus(selectedName);
+        if (act && act.description) {
+            historyWrap.style.display = 'block';
+            historyEl.textContent = act.description;
+        } else {
+            historyWrap.style.display = 'none';
+        }
+
+        if (!viewMode) {
+            remarkField.closest('.inquiry-field').style.display = 'block';
+            if (isSameStatusUpdate && act && act.description) {
+                dateWrap.style.display = 'block';
+                dateBadge.textContent = new Date().toLocaleDateString('en-GB'); // d/m/Y
+                remarkField.placeholder = "Add your NEW notes for " + selectedName + " here...";
+            } else {
+                dateWrap.style.display = 'none';
+                remarkField.placeholder = "Type your update here...";
+            }
+        } else {
+            // In View Mode, hide the "New Remark" field entirely
+            remarkField.closest('.inquiry-field').style.display = 'none';
+            dateWrap.style.display = 'none';
         }
     }
 
@@ -1487,6 +1598,7 @@ if (document.readyState === 'loading') {
         // In edit mode, select the first allowed next status.
         selectedStatusIdx = viewMode ? (isFailedLatestStatus() ? -1 : idx) : getDefaultSelectedStatusIdx(idx);
         refreshProgressionState();
+        if (typeof refreshRemarkHistoryDisplay === 'function') refreshRemarkHistoryDisplay();
         var selectedStatus = getSelectedStatusName();
         var remarkEl = document.getElementById('inquiryRemark');
         if (remarkEl) remarkEl.placeholder = remarkPlaceholders[selectedStatus] || remarkPlaceholders['PENDING'];
@@ -1619,11 +1731,12 @@ if (document.readyState === 'loading') {
 
     function toggleUpdateButton() {
         var isRewarded = currentStatusIdx === statusOrder.length - 1;
-        // Only allow submitting a real future step.
         var selectedName = getSelectedStatusName();
-        var isCurrentOrOlderStep = selectedStatusIdx <= currentStatusIdx;
-        var isBlockedFuture = selectedStatusIdx > currentStatusIdx && !canSelectFutureStatus(statusOrder[currentStatusIdx] || 'PENDING', selectedName);
-        var disable = isRewarded || viewMode || isCurrentOrOlderStep || isBlockedFuture;
+        var fromStatus = statusOrder[currentStatusIdx] || 'PENDING';
+        
+        var canUpdate = canSelectFutureStatus(fromStatus, selectedName);
+        var disable = isRewarded || viewMode || !canUpdate;
+        
         updateBtn.disabled = disable;
         updateBtn.classList.toggle('inquiry-btn-update--disabled', disable);
     }
@@ -1659,6 +1772,11 @@ if (document.readyState === 'loading') {
         var timeEl = document.getElementById('inquiryFollowupTime');
         var remarkEl = document.getElementById('inquiryRemark');
         var productBoxes = document.querySelectorAll('.inquiry-product-checkbox');
+        
+        var selectedName = getSelectedStatusName();
+        var fromStatus = statusOrder[currentStatusIdx] || 'PENDING';
+        var isSameStatusUpdate = (selectedName === 'FOLLOW UP' || selectedName === 'DEMO') && fromStatus === selectedName;
+
         if (!activity || !activity.created_at) {
             if (dateEl) dateEl.value = '';
             if (timeEl) timeEl.value = '';
@@ -1671,7 +1789,9 @@ if (document.readyState === 'loading') {
         var d = new Date(activity.created_at);
         if (dateEl) dateEl.value = isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
         if (timeEl) timeEl.value = isNaN(d.getTime()) ? '' : String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
-        if (remarkEl) remarkEl.value = activity.description || '';
+        
+        // History is now handled by refreshRemarkHistoryDisplay
+        if (remarkEl) remarkEl.value = '';
 
         // Restore product selection (e.g. SQL Account) for completed/rewarded activities
         if (productBoxes.length) {
@@ -2228,14 +2348,30 @@ if (document.readyState === 'loading') {
             if (stepIdx < 0) return;
             var isDoneStep = stepIdx <= currentStatusIdx;
             var isFutureStep = step.classList.contains('inquiry-step--clickable');
-            if (!isDoneStep && !isFutureStep) return;
+            var canBacktrackOrEdit = canSelectFutureStatus(statusOrder[currentStatusIdx] || 'PENDING', step.dataset.step);
+
+            if (!isDoneStep && !isFutureStep && !canBacktrackOrEdit) return;
+            
             selectedStatusIdx = stepIdx;
+            var stepName = step.dataset.step;
+            var isEditAllowedStatus = ['FOLLOW UP', 'DEMO'].indexOf(stepName) !== -1;
+            
             if (isDoneStep) {
-                viewMode = true;
-                var act = findActivityForStatus(statusOrder[stepIdx]);
-                populateFormFromActivity(act);
-                setFieldsReadOnly(true);
-                setDateTimeLabels(statusOrder[stepIdx]);
+                if (isEditAllowedStatus) {
+                    // Allow editing any Followup/Demo even if it's a past step
+                    viewMode = false;
+                    var act = findActivityForStatus(stepName);
+                    populateFormFromActivity(act);
+                    setFieldsReadOnly(false);
+                    setRemarkPlaceholder(stepName);
+                    setDateTimeLabels(stepName);
+                } else {
+                    viewMode = true;
+                    var act = findActivityForStatus(stepName);
+                    populateFormFromActivity(act);
+                    setFieldsReadOnly(true);
+                    setDateTimeLabels(stepName);
+                }
             } else {
                 viewMode = false;
                 var remarkEl = document.getElementById('inquiryRemark');
@@ -2245,10 +2381,11 @@ if (document.readyState === 'loading') {
                 if (dateEl) dateEl.value = getDefaultDate();
                 if (timeEl) timeEl.value = getDefaultTime();
                 setFieldsReadOnly(false);
-                setRemarkPlaceholder(statusOrder[stepIdx]);
-                setDateTimeLabels(statusOrder[stepIdx]);
+                setRemarkPlaceholder(stepName);
+                setDateTimeLabels(stepName);
             }
             refreshProgressionState();
+            if (typeof refreshRemarkHistoryDisplay === 'function') refreshRemarkHistoryDisplay();
             toggleAddCalendarButton();
             toggleProductChecklist();
             toggleUpdateButton();
@@ -2503,10 +2640,19 @@ if (document.readyState === 'loading') {
 
     updateBtn.addEventListener('click', function() {
         if (this.disabled) return;
+        var toStatus = getSelectedStatusName();
+        var fromStatus = statusOrder[currentStatusIdx] || 'PENDING';
+
         if (selectedStatusIdx <= currentStatusIdx) {
             var currentStatus = statusOrder[currentStatusIdx] || 'PENDING';
-            showDealerInquiryToast('Status is already ' + formatStatusLabel(currentStatus) + '. Please choose the next available status.');
-            return;
+            
+            // Allow SAME status if it's FOLLOW UP or DEMO
+            if (toStatus === currentStatus && (toStatus === 'FOLLOW UP' || toStatus === 'DEMO')) {
+                // Continue
+            } else {
+                showDealerInquiryToast('Status is already ' + formatStatusLabel(currentStatus) + '. Please choose the next available status.');
+                return;
+            }
         }
         var toStatus = getSelectedStatusName();
         var fromStatus = statusOrder[currentStatusIdx] || 'PENDING';

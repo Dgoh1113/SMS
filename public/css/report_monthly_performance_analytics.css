@@ -26,9 +26,7 @@
   box-sizing: border-box;
   max-width: 100%;
   overflow-x: hidden;
-  width: 114.943%;
-  zoom: 0.87;
-  transform-origin: top left;
+  width: 100%;
 }
 
 .reports-page-tabs-shell {
@@ -1026,61 +1024,51 @@ html.theme-dark .reports-page .report-legend {
 @media (max-width: 768px) {
   .reports-page {
     font-size: 100%;
+    padding-right: 0;
   }
 
-  .reports-page-tabs-shell {
-    padding: 0 16px;
-  }
-
-  .reports-page-filters-shell {
-    padding: 0 16px;
+  .reports-page-tabs-shell,
+  .reports-page-filters-shell,
+  .reports-page-layout {
+    padding-left: 16px;
+    padding-right: 16px;
   }
 
   .reports-page-layout {
     width: 100% !important;
     max-width: 100%;
     zoom: 1 !important;
-    padding: 0 16px 24px;
+    padding-top: 0;
+    padding-bottom: 24px;
     gap: 16px;
   }
 
   .reports-period-row {
     justify-content: flex-start;
-    margin: 0 0 12px;
+    margin: 0 0 16px;
   }
 
   .reports-period-form-compact {
-    display: flex;
-    flex-direction: column;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
     width: 100%;
-    margin-right: 0;
-    gap: 10px;
-    align-items: stretch;
+    margin: 0;
+    justify-content: stretch;
     padding: 0;
+    border: 0;
   }
 
   .reports-period-filter-cluster,
   .reports-period-action-cluster {
-    align-items: stretch;
     width: 100%;
+    align-items: stretch;
   }
 
   .reports-period-filter-controls {
-    flex-direction: column;
-    align-items: stretch;
-    width: 100%;
-  }
-
-  .reports-period-form-compact .reports-period-date-group {
-    width: 100%;
-  }
-
-  .reports-period-form-compact .reports-period-date-group .reports-period-select--month,
-  .reports-period-form-compact .reports-period-date-group .reports-period-select--year {
-    width: 100%;
-  }
-
-  .reports-period-form-compact .report-scope-field {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
     width: 100%;
   }
 
@@ -1092,40 +1080,30 @@ html.theme-dark .reports-page .report-legend {
   .reports-period-actions .report-filter-clear,
   .reports-period-actions .report-filter-apply,
   .reports-period-actions .report-filter-export {
-    width: 100%;
-    min-width: 0;
-    height: 42px;
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 44px;
     font-size: 14px;
     box-sizing: border-box;
+    flex: 1 1 auto;
   }
 
   .reports-period-check {
     justify-content: flex-start;
     padding: 0 12px;
+    border-radius: 9px;
   }
 
   .reports-period-actions {
     width: 100%;
     display: grid;
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: 1fr;
     gap: 8px;
     align-items: stretch;
   }
 
-  .reports-period-actions .report-filter-apply,
-  .reports-period-actions .report-filter-clear,
-  .reports-period-actions .report-filter-export {
-    margin: 0;
-  }
-
-  .reports-period-actions .report-filter-clear,
-  .reports-period-actions .report-filter-export {
-    min-width: 0;
-  }
-
   .reports-page .dashboard-metrics-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    grid-auto-flow: row;
     gap: 12px;
   }
 
@@ -1135,56 +1113,23 @@ html.theme-dark .reports-page .report-legend {
   .reports-page .dashboard-metrics-grid > *:nth-child(7) {
     grid-column: auto !important;
     grid-row: auto !important;
-    min-width: 0;
   }
 
   .reports-page .dashboard-metric-card {
     padding: 14px;
-    min-height: 170px;
+    min-height: 160px;
   }
 
   .dashboard-metric-card-top {
     flex-direction: column;
     align-items: flex-start;
     gap: 6px;
-    min-height: 0;
-  }
-
-  .dashboard-metric-dealer-tag {
-    max-width: 100%;
-    white-space: normal;
-  }
-
-  .dashboard-metric-dealer-spacer {
-    display: none;
-  }
-
-  .reports-page .dashboard-metrics-grid .dashboard-metric-label {
-    font-size: 12px;
-  }
-
-  .reports-page .dashboard-metrics-grid .dashboard-metric-value {
-    font-size: 18px;
-  }
-
-  .reports-page .dashboard-metric-trend {
-    font-size: 11px;
-    align-items: flex-start;
-  }
-
-  .reports-page .report-metric-chevron {
-    display: none;
   }
 
   .reports-page .dashboard-panel-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
-  }
-
-  .reports-page .inquiry-trend-badge {
-    align-self: flex-start;
-    flex-wrap: wrap;
   }
 
   .reports-page .report-legend {

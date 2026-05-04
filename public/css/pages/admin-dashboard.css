@@ -821,8 +821,8 @@ html.theme-dark .admin-dashboard-page .dashboard-badge {
   }
 
   .dashboard-charts-container .dashboard-row {
-    gap: 10px;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+    grid-template-columns: 1fr;
   }
 
   .dashboard-chart-panel {
