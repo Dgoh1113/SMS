@@ -660,7 +660,7 @@
                 font-size: 14px;
                 border-radius: 14px;
                 top: 10px;
-                left: 39px;
+                left: 50px;
                 z-index: 10;
             }
         }
