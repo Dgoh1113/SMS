@@ -45,7 +45,7 @@
                     @endif
                 @endforeach
 
-                <div class="reports-filter-container rv2-filter" style="width: 280px; min-height: 90px; display: flex; flex-direction: column;">
+                <div class="reports-filter-container rv2-filter" style="width: 240px; min-height: 90px; display: flex; flex-direction: column;">
                     <div class="reports-range-label" style="height: 1.6em; display: flex; align-items: center;">PERIOD</div>
                     <div style="flex: 1; display: flex; align-items: flex-end;">
                         <select name="days" class="rv2-filter-select" id="rv2PrimarySelect" style="display: {{ request('primary_from') || request('primary_to') ? 'none' : 'block' }}; width: 100%;">
@@ -71,7 +71,7 @@
                     </div>
                 </div>
 
-                <div class="reports-filter-container rv2-filter" style="width: 280px; min-height: 90px; display: flex; flex-direction: column;">
+                <div class="reports-filter-container rv2-filter" style="width: 240px; min-height: 90px; display: flex; flex-direction: column;">
                     <div class="reports-range-label" style="height: 1.6em; display: flex; align-items: center;">COMPARE AGAINST</div>
                     <div style="flex: 1; display: flex; align-items: flex-end;">
                         @php $compareDays = (int) request('compare_days', 30); @endphp
@@ -97,7 +97,7 @@
                     </div>
                 </div>
 
-                <div class="reports-filter-container rv2-filter" style="width: 170px; min-height: 60px; display: flex; flex-direction: column;">
+                <div class="reports-filter-container rv2-filter" style="width: 240px; min-height: 90px; display: flex; flex-direction: column;">
                     <div class="reports-range-label" style="height: 1.6em; display: flex; align-items: center; white-space: nowrap;">DEALER SCOPE</div>
                     <div style="flex: 1; display: flex; align-items: flex-end;">
                         <div style="width: 100%; max-width: 100%; --report-scope-picker-width: 100%;">
@@ -109,7 +109,7 @@
                     </div>
                 </div>
 
-                <div class="reports-filter-container rv2-filter" style="width: 170px; min-height: 60px; display: flex; flex-direction: column;">
+                <div class="reports-filter-container rv2-filter" style="width: 240px; min-height: 90px; display: flex; flex-direction: column;">
                     <div class="reports-range-label" style="height: 1.6em; display: flex; align-items: center;">AREA</div>
                     <div class="report-scope-field" style="flex: 1; display: flex; align-items: flex-end; width: 100%;">
                         <select name="report_area" id="adminSalesAreaSelect" class="report-scope-select" aria-label="Select area" style="width: 100%; font-size: 13px;">

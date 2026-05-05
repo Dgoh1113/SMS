@@ -556,6 +556,10 @@
         }
 
         @media (max-width: 768px) {
+            .reports-page .reports-metrics--admin {
+                grid-template-columns: repeat(1, minmax(0, 1fr));
+                gap: 12px;
+            }
             .reports-page .reports-tabs-nav {
                 align-items: stretch;
                 text-align: center;
@@ -885,7 +889,7 @@
             @endif
         @endforeach
 
-        <div class="reports-filter-container rv2-filter" style="width: 190px; min-height: 60px; display: flex; flex-direction: column; align-self: auto;">
+        <div class="reports-filter-container rv2-filter" style="width: 240px; min-height: 90px; display: flex; flex-direction: column; align-self: auto;">
             <div class="reports-range-label" style="display: flex; align-items: center; font-size: 9px; font-weight: 800; height: 1.6em;">PERIOD</div>
             <div style="flex: 1; display: flex; align-items: flex-end;">
                 <select name="days" class="reports-period-select" aria-label="Select period" id="reportsPeriodSelect" style="display: {{ request('from') || request('to') ? 'none' : 'block' }}; width: 100%;">
@@ -911,7 +915,7 @@
             </div>
         </div>
 
-        <div class="reports-filter-container rv2-filter" style="width: 170px; min-height: 60px; display: flex; flex-direction: column; align-self: auto;">
+        <div class="reports-filter-container rv2-filter" style="width: 240px; min-height: 90px; display: flex; flex-direction: column; align-self: auto;">
             <div class="reports-range-label" style="display: flex; align-items: center; font-size: 9px; font-weight: 800; height: 1.6em;">DEALER SCOPE</div>
             <div style="flex: 1; display: flex; align-items: flex-end;">
                 <div style="width: 100%; max-width: 100%; --report-scope-picker-width: 100%;">

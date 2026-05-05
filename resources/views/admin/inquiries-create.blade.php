@@ -6,11 +6,11 @@
     <style>
         /* ===== Panel Container ===== */
         .inquiry-create-panel {
-            width: min(92vw, 1500px);
+            width: calc(100% - 60px);
             max-width: 1500px;
-            margin: 8px auto;
+            margin: 8px 10px 8px 50px;
             position: relative;
-            overflow: hidden;
+            overflow: visible !important;
             background: #f8f9fc;
             border: 1px solid #e9eaf2;
             border-radius: 16px;
@@ -24,10 +24,10 @@
         .vertical-title {
             position: absolute;
             top: 20px;
-            left: 27px;
-            z-index: 2;
-            writing-mode: vertical-rl;
-            transform: rotate(180deg);
+            left: -40px; /* Sticks closely to the left edge of the container */
+            transform: rotate(-90deg) translateX(-100%);
+            transform-origin: top left;
+            z-index: 100;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -44,7 +44,11 @@
         }
 
         .inquiry-create-panel .dashboard-panel-body.inquiry-create-body {
-            padding: 14px 14px !important;
+            padding: 2px 14px 10px !important;
+            width: 100% !important;
+            max-width: none !important;
+            margin: 0 !important;
+            box-sizing: border-box !important;
         }
 
         .dashboard-root.inquiry-create-scroll {
@@ -241,15 +245,16 @@
             box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
         }
 
-        /* REFINED MASCOT - 200px */
+        /* REFINED MASCOT - Reduced Desktop Size */
         img.inquiry-create-fox-img {
             position: absolute !important;
-            top: 5px !important;
-            right: 12px !important;
-            width: 200px !important;
+            top: -15px !important; 
+            right: -25px !important; 
+            width: 200px !important; /* Reduced size */
+            z-index: 1000 !important;
+            filter: drop-shadow(0 15px 35px rgba(0,0,0,0.25));
             height: auto !important;
             max-width: none !important;
-            z-index: 5 !important;
             pointer-events: none !important;
             display: block !important;
         }
@@ -514,13 +519,16 @@
         /* ===== Wide Desktop Compact ===== */
         @media (min-width: 1280px) {
             .inquiry-create-panel {
-                margin: 6px 10px 4px -2px !important;
-                width: calc(100% - 12px) !important;
+                margin: 6px 10px 4px 45px !important; /* Added left margin for vertical title */
+                width: calc(100% - 60px) !important;
                 max-width: 1800px !important;
             }
 
             .inquiry-create-panel .dashboard-panel-body.inquiry-create-body {
-                padding: 2px 14px 2px !important;
+                padding: 2px 14px 10px !important;
+                width: 100% !important;
+                max-width: none !important;
+                margin: 0 !important;
             }
 
             .inquiry-create-panel--new .dashboard-panel-body.inquiry-create-body {
@@ -649,18 +657,13 @@
                 text-decoration: none !important;
             }
 
-            img.inquiry-create-fox-img {
-                width: 110px !important;
-                top: 2px !important;
-                right: 10px !important;
-            }
 
             .vertical-title {
                 padding: 12px 4px;
                 font-size: 14px;
                 border-radius: 14px;
-                top: 10px;
-                left: 50px;
+                top: 20px !important;
+                left: -40px !important; /* Positioned outside the container */
                 z-index: 10;
             }
         }
@@ -683,30 +686,75 @@
 
         /* ===== Responsive: Mobile ===== */
         @media (max-width: 768px) {
-            .inquiry-create-panel { margin: 12px; max-width: none; width: auto; }
+            .inquiry-create-panel { margin: 12px !important; max-width: none !important; width: auto !important; overflow: visible !important; }
+            .dashboard-panel-body, .inquiry-create-layout, .inquiry-create-main { overflow: visible !important; }
             .inquiry-create-panel--new .dashboard-panel-body.inquiry-create-body { padding-left: 18px !important; }
-            .vertical-title { display: none; }
-            .inquiry-create-fox-img { display: none !important; }
+            .vertical-title { display: none !important; }
+            
+            /* Mascot: Overlapping top right corner */
+            img.inquiry-create-fox-img { 
+                display: block !important; 
+                width: 110px !important; 
+                height: auto !important;
+                position: absolute !important;
+                top: -25px !important; /* Moved back up to the blue circle */
+                left: auto !important;
+                right: -10px !important; /* Tucked into the corner */
+                z-index: 100 !important;
+                filter: drop-shadow(0 8px 20px rgba(0,0,0,0.25));
+            }
+
             .inquiry-details-split {
                 grid-template-columns: 1fr !important;
             }
-            .inquiry-form-section { padding: 16px; }
+            .inquiry-form-section { padding: 16px; overflow: visible !important; }
             .inquiry-form-section .inquiry-form-grid {
                 grid-template-columns: 1fr !important;
                 gap: 14px !important;
             }
+            /* Force all labels to full width on mobile */
+            .inquiry-form-section .inquiry-form-grid > *,
             .inquiry-form-section .full,
             .inquiry-form-section .half,
             .inquiry-form-section .third,
-            .inquiry-form-section .quarter { grid-column: span 1 !important; }
-            .inquiry-form-checkboxes { grid-template-columns: repeat(2, 1fr) !important; }
+            .inquiry-form-section .quarter { 
+                grid-column: span 1 !important; 
+                width: 100% !important;
+            }
+            
+            /* Product interested: 2 in one line, reduced size */
+            .inquiry-form-checkboxes { 
+                grid-template-columns: repeat(2, 1fr) !important; 
+                gap: 6px !important;
+            }
+            .inquiry-form-checkbox-label {
+                padding: 6px 8px !important;
+                font-size: 0.75rem !important;
+                gap: 6px !important;
+            }
+            .inquiry-form-checkbox-label::before {
+                min-width: 16px !important;
+                height: 16px !important;
+            }
+
+            /* On-site button width and text */
+            .inquiry-toggle-option {
+                padding: 8px 4px !important;
+                font-size: 0.82rem !important;
+                gap: 4px !important;
+                white-space: nowrap !important;
+            }
+            .inquiry-toggle-option i {
+                font-size: 14px !important;
+            }
+
             .inquiry-form-actions { flex-direction: column !important; }
             .inquiry-form-actions .login-primary-btn,
             .inquiry-form-actions .inquiry-form-cancel { width: 100%; justify-content: center; }
         }
 
         @media (max-width: 480px) {
-            .inquiry-form-checkboxes { grid-template-columns: 1fr !important; }
+            .inquiry-form-checkboxes { grid-template-columns: repeat(2, 1fr) !important; }
         }
 
         /* ===== Laptop Compact: fit form in one screen ===== */
@@ -715,7 +763,7 @@
                 padding-bottom: 4px !important;
             }
             .inquiry-create-panel {
-                margin: 2px 10px 2px -2px !important;
+                margin: 2px 10px 2px 45px !important;
             }
             .inquiry-create-panel .dashboard-panel-body.inquiry-create-body {
                 padding: 0px 14px 2px !important;
@@ -793,7 +841,7 @@
                 font-size: 12px !important;
                 padding: 10px 3px !important;
                 top: 6px !important;
-                left: 35px !important;
+                left: -40px !important;
             }
             .inquiry-form-label[style*="margin-top: 8px"] {
                 margin-top: 2px !important;
@@ -812,11 +860,12 @@
     </style>
 @endpush
 @section('content')
-<section class="dashboard-panel dashboard-table-panel inquiry-create-panel{{ $isEdit ? ' inquiry-create-panel--edit' : ' inquiry-create-panel--new' }}">
+<section class="dashboard-panel dashboard-table-panel inquiry-create-panel{{ $isEdit ? ' inquiry-create-panel--edit' : ' inquiry-create-panel--new' }}" style="position: relative; overflow: visible !important;">
     <div class="vertical-title" aria-hidden="true">{{ $isEdit ? 'EDIT INQUIRY - #SQL-' . ($inquiry->LEADID ?? '') : 'ADD INQUIRY' }}</div>
     <div class="dashboard-panel-body inquiry-create-body">
         <div class="inquiry-create-layout">
-            <div class="inquiry-create-main">
+            <div class="inquiry-create-main" style="position: relative; overflow: visible !important;">
+                <img src="{{ asset('NewInquiries-FoxIcon.png') }}" class="inquiry-create-fox-img" alt="Mascot">
                 {{-- Duplicate company confirmation modal --}}
                 @if (session('duplicate_warning'))
                     <div class="inquiry-dup-modal" id="dupModal" role="dialog" aria-modal="true" aria-labelledby="dupModalTitle" hidden>
@@ -838,7 +887,7 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ $isEdit ? route('admin.inquiries.update', $inquiry->LEADID) : route('admin.inquiries.store') }}" class="inquiry-form" id="inquiryForm">
+                <form method="POST" action="{{ $isEdit ? route('admin.inquiries.update', $inquiry->LEADID) : route('admin.inquiries.store') }}" class="inquiry-form" id="inquiryForm" style="position: relative;">
                     @csrf
                     @if ($isEdit)
                         @method('PUT')
@@ -850,14 +899,13 @@
             <div class="inquiry-form-body" id="inquiryFormGrid">
                 <!-- Section 1: Company Information -->
                 <div class="inquiry-form-section" style="position: relative;">
-                    <img src="{{ asset('NewInquiries-FoxIcon.png') }}" class="inquiry-create-fox-img" alt="Mascot">
                     <div class="inquiry-form-section-header">
                         <div>
                             <h3 class="inquiry-form-section-title">Company Information</h3>
                         </div>
                     </div>
                     <div class="inquiry-form-grid">
-                        <div class="inquiry-form-label inquiry-company-field" style="grid-column: span 10 !important;">
+                        <div class="inquiry-form-label inquiry-company-field" style="grid-column: span 12;">
                             <label for="companyInput" class="inquiry-form-label-title">Company name <span class="required">*</span></label>
                             <div class="inquiry-form-input-wrapper">
                                 <i class="bi bi-building inquiry-input-icon"></i>
@@ -867,8 +915,7 @@
                                 </button>
                             </div>
                         </div>
-                        <div style="grid-column: span 2 !important;"></div>
-                        <label class="inquiry-form-label" style="grid-column: span 4 !important;">
+                        <label class="inquiry-form-label" style="grid-column: span 5;">
                             <span class="inquiry-form-label-title">Business nature <span class="required">*</span></span>
                             <div class="inquiry-form-input-wrapper">
                                 <i class="bi bi-briefcase inquiry-input-icon"></i>
@@ -876,7 +923,7 @@
                             </div>
                         </label>
 
-                        <label class="inquiry-form-label" style="grid-column: span 3 !important;">
+                        <label class="inquiry-form-label" style="grid-column: span 4;">
                             <span class="inquiry-form-label-title">Existing software <span class="required">*</span></span>
                             <div class="inquiry-form-input-wrapper">
                                 <i class="bi bi-window-stack inquiry-input-icon"></i>
@@ -884,14 +931,13 @@
                             </div>
                         </label>
 
-                        <label class="inquiry-form-label" style="grid-column: span 3 !important;">
+                        <label class="inquiry-form-label" style="grid-column: span 3;">
                             <span class="inquiry-form-label-title">User count <span class="required">*</span></span>
                             <div class="inquiry-form-input-wrapper">
                                 <i class="bi bi-people inquiry-input-icon"></i>
                                 <input type="number" name="USERCOUNT" value="{{ old('USERCOUNT', $inquiry->USERCOUNT ?? '1') }}" required min="1" class="inquiry-form-input has-icon" placeholder="1">
                             </div>
                         </label>
-                        <div style="grid-column: span 2 !important;"></div>
                     </div>
                 </div>
 
@@ -943,11 +989,13 @@
                             <div class="inquiry-form-input-wrapper">
                                 <i class="bi bi-building inquiry-input-icon"></i>
                                 <input type="text" id="address1Input" name="ADDRESS1" value="{{ old('ADDRESS1', $inquiry->ADDRESS1 ?? '') }}" maxlength="255" class="inquiry-form-input has-icon" placeholder="Enter address line 1">
-                                @php
-                                    $address2Value = old('ADDRESS2', $inquiry->ADDRESS2 ?? '');
-                                    $hasAddress2Value = trim((string) $address2Value) !== '';
-                                @endphp
-                                <button type="button" class="inquiry-inline-toggle" id="address2ToggleBtn" aria-controls="address2FieldWrap" aria-expanded="{{ $hasAddress2Value ? 'true' : 'false' }}" style="right: 12px; top: 50%; transform: translateY(-50%); position: absolute; font-size: 0.8rem; font-weight: 600;">
+                            </div>
+                            @php
+                                $address2Value = old('ADDRESS2', $inquiry->ADDRESS2 ?? '');
+                                $hasAddress2Value = trim((string) $address2Value) !== '';
+                            @endphp
+                            <div style="margin-top: 5px; display: flex; justify-content: flex-start;">
+                                <button type="button" class="inquiry-inline-toggle" id="address2ToggleBtn" aria-controls="address2FieldWrap" aria-expanded="{{ $hasAddress2Value ? 'true' : 'false' }}" style="font-size: 0.8rem; font-weight: 600;">
                                     {{ $hasAddress2Value ? '- Remove Address 2' : '+ Add Address 2' }}
                                 </button>
                             </div>
@@ -1059,6 +1107,15 @@
                                 <input type="hidden" name="DEMOMODE" id="demoModeInput" value="{{ $demoOld }}">
                             </div>
 
+                            <!-- Bottom: Message (Moved here for mobile layout) -->
+                            <label class="inquiry-form-label full inquiry-message-field" style="margin-top: 0px;">
+                                <span class="inquiry-form-label-title">Message</span>
+                                <div class="inquiry-form-input-wrapper">
+                                    <i class="bi bi-chat-left-text inquiry-input-icon" style="top: 14px;"></i>
+                                    <textarea name="DESCRIPTION" rows="4" maxlength="4000" class="inquiry-form-input has-icon" placeholder="Type the customer message / notes..." style="padding-top: 10px;">{{ old('DESCRIPTION', $inquiry->DESCRIPTION ?? '') }}</textarea>
+                                </div>
+                            </label>
+
                             <label class="inquiry-form-label">
                                 <span class="inquiry-form-label-title">Referral code</span>
                                 <div class="inquiry-form-input-wrapper">
@@ -1067,15 +1124,6 @@
                                 </div>
                             </label>
                         </div>
-
-                        <!-- Bottom: Message (12 columns) -->
-                        <label class="inquiry-form-label full" style="margin-top: 8px;">
-                            <span class="inquiry-form-label-title">Message</span>
-                            <div class="inquiry-form-input-wrapper">
-                                <i class="bi bi-chat-left-text inquiry-input-icon" style="top: 14px;"></i>
-                                <textarea name="DESCRIPTION" rows="4" maxlength="4000" class="inquiry-form-input has-icon" placeholder="Type the customer message / notes..." style="padding-top: 10px;">{{ old('DESCRIPTION', $inquiry->DESCRIPTION ?? '') }}</textarea>
-                            </div>
-                        </label>
                     </div>
                 </div>
 
@@ -1089,10 +1137,6 @@
                 </div>
             </div>
         </form>
-            </div>
-
-            <div class="inquiry-create-fox">
-                <img src="{{ asset('NewInquiries-FoxIcon.png') }}" alt="New inquiry" class="inquiry-create-fox-img">
             </div>
         </div>
     </div>

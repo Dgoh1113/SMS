@@ -816,6 +816,10 @@ html.theme-dark .admin-dashboard-page .dashboard-badge {
 }
 
 @media (max-width: 768px) {
+  .admin-dashboard-page .dashboard-metrics {
+    grid-template-columns: 1fr;
+  }
+
   .dashboard-charts-container {
     padding: 16px 14px;
   }
