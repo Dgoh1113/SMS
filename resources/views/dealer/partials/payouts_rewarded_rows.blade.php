@@ -110,5 +110,9 @@
         </td>
     </tr>
 @empty
-    <tr><td colspan="22" class="inquiries-empty">No rewarded payouts.</td></tr>
+    <tr class="inquiries-empty-row">
+        <td colspan="22" class="inquiries-empty-cell">
+            <div class="dealer-table-empty">No rewarded payouts found.</div>
+        </td>
+    </tr>
 @endforelse

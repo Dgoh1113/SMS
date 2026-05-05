@@ -50,6 +50,21 @@
             font-weight: 700;
             margin-bottom: 4px;
         }
+        .dealer-inquiries-panel .inquiries-empty-row .inquiries-empty-cell {
+            padding: 0 !important;
+            vertical-align: middle;
+        }
+        .dealer-inquiries-panel .inquiries-empty-row .dealer-table-empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            min-height: 100%;
+            padding: 24px;
+            text-align: center;
+            box-sizing: border-box;
+        }
         @media (max-width: 768px) {
             .inquiry-step {
                 padding: 4px 8px;
@@ -765,6 +780,23 @@ function initDealerInquiriesPage() {
             return measureDealerInquiryRowHeight(referenceRow);
         }
 
+        function resetDealerEmptyRowHeight(tbody) {
+            if (!tbody) return null;
+            var emptyRow = Array.prototype.slice.call(tbody.querySelectorAll('tr')).find(function(row) {
+                return !row.classList.contains('inquiry-row') && !!row.querySelector('.dealer-table-empty, .inquiries-empty, .inquiries-empty-cell');
+            }) || null;
+            if (!emptyRow) return null;
+
+            emptyRow.style.display = '';
+            var emptyCell = emptyRow.querySelector('.inquiries-empty-cell, .inquiries-empty');
+            if (emptyCell) {
+                emptyCell.style.height = '';
+                emptyCell.style.minHeight = '';
+            }
+
+            return emptyRow;
+        }
+
         function ensureFixedHeight(visibleDataCount) {
             var tbody = table.querySelector('tbody');
             if (!tbody) return;
@@ -773,7 +805,15 @@ function initDealerInquiriesPage() {
             var allowZeroFill = allRows.length > 0;
             var useShortHeight = (visibleDataCount > 0 && visibleDataCount < perPage) || (visibleDataCount === 0 && allowZeroFill);
             var targetRows = getDealerPaginationTargetRows();
-            var placeholderRowHeight = getDealerReferenceRowHeight(tbody);
+            var placeholderRowHeight = getDealerReferenceRowHeight(tbody) || 57;
+            var emptyRow = resetDealerEmptyRowHeight(tbody);
+            var emptyCell = emptyRow ? emptyRow.querySelector('.inquiries-empty-cell, .inquiries-empty') : null;
+
+            if (visibleDataCount === 0 && allRows.length === 0 && emptyCell && targetRows > 0) {
+                var targetBodyHeight = placeholderRowHeight * targetRows;
+                emptyCell.style.height = targetBodyHeight + 'px';
+                emptyCell.style.minHeight = targetBodyHeight + 'px';
+            }
 
             if (visibleDataCount < targetRows && (visibleDataCount > 0 || allowZeroFill)) {
                 var visibleHeaderCount = Array.prototype.slice.call(table.querySelectorAll('thead tr:first-child th')).filter(function(cell) {

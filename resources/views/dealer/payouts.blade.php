@@ -2,6 +2,23 @@
 @section('title', 'Pending Payouts - SQL LMS Dealer Console')
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/pages/dealer-payouts.css') }}?v=20260422-01">
+    <style>
+        .dealer-payouts-panel .inquiries-empty-row .inquiries-empty-cell {
+            padding: 0 !important;
+            vertical-align: middle;
+        }
+        .dealer-payouts-panel .inquiries-empty-row .dealer-table-empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            min-height: 100%;
+            padding: 24px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+    </style>
 @endpush
 @section('content')
 @php
@@ -485,6 +502,23 @@ function initDealerPendingPayoutsPage() {
         return measurePayoutRowHeight(table, referenceRow);
     }
 
+    function resetPayoutEmptyRowHeight(tbody) {
+        if (!tbody) return null;
+        var emptyRow = Array.prototype.slice.call(tbody.querySelectorAll('tr')).find(function(row) {
+            return !row.classList.contains('payouts-row') && !!row.querySelector('.dealer-table-empty, .inquiries-empty, .inquiries-empty-cell');
+        }) || null;
+        if (!emptyRow) return null;
+
+        emptyRow.style.display = '';
+        var emptyCell = emptyRow.querySelector('.inquiries-empty-cell, .inquiries-empty');
+        if (emptyCell) {
+            emptyCell.style.height = '';
+            emptyCell.style.minHeight = '';
+        }
+
+        return emptyRow;
+    }
+
     var completedPayoutSort = { col: null, dir: 1 };
 
     function getCompletedPayoutSortValue(row, col) {
@@ -584,7 +618,15 @@ function initDealerPendingPayoutsPage() {
         var allowZeroFill = allRows.length > 0;
         var useShortHeight = (visibleDataCount > 0 && visibleDataCount < perPage) || (visibleDataCount === 0 && allowZeroFill);
         var targetRows = perPage;
-        var placeholderRowHeight = getPayoutReferenceRowHeight(table, tbody);
+        var placeholderRowHeight = getPayoutReferenceRowHeight(table, tbody) || 57;
+        var emptyRow = resetPayoutEmptyRowHeight(tbody);
+        var emptyCell = emptyRow ? emptyRow.querySelector('.inquiries-empty-cell, .inquiries-empty') : null;
+
+        if (visibleDataCount === 0 && allRows.length === 0 && emptyCell && targetRows > 0) {
+            var targetBodyHeight = placeholderRowHeight * targetRows;
+            emptyCell.style.height = targetBodyHeight + 'px';
+            emptyCell.style.minHeight = targetBodyHeight + 'px';
+        }
 
         if (tbody && visibleDataCount < targetRows && (visibleDataCount > 0 || allowZeroFill)) {
             var visibleHeaderCount = Array.prototype.slice.call(table.querySelectorAll('thead tr:first-child th')).filter(function(cell) {

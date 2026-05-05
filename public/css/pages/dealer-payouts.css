@@ -172,7 +172,7 @@ html.theme-dark .inquiries-tab-count[data-tooltip]::after {
 }
 
 .dealer-payouts-panel .inquiries-btn,
-.dealer-payouts-panel .inquiries-columns-dropdown > .inquiries-btn {
+.dealer-payouts-panel .inquiries-columns-dropdown>.inquiries-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -292,7 +292,8 @@ html.theme-dark .inquiries-tab-count[data-tooltip]::after {
   }
 }
 
-@media (min-width: 769px) and (max-width: 1366px), (min-width: 769px) and (max-height: 900px) {
+@media (min-width: 769px) and (max-width: 1366px),
+(min-width: 769px) and (max-height: 900px) {
   .dashboard-main-body {
     padding: 10px 12px 12px;
     gap: 8px;
@@ -318,8 +319,8 @@ html.theme-dark .inquiries-tab-count[data-tooltip]::after {
     flex-direction: column;
   }
 
-  #completedPanel > .dealer-payouts-panel.inquiries-mgmt-panel,
-  #rewardedPanel > .dealer-payouts-panel.inquiries-mgmt-panel {
+  #completedPanel>.dealer-payouts-panel.inquiries-mgmt-panel,
+  #rewardedPanel>.dealer-payouts-panel.inquiries-mgmt-panel {
     display: flex;
     flex-direction: column;
   }
@@ -335,8 +336,8 @@ html.theme-dark .inquiries-tab-count[data-tooltip]::after {
     gap: 6px;
   }
 
-  #completedPanel > .dealer-payouts-panel.inquiries-mgmt-panel > .inquiries-table-wrap,
-  #rewardedPanel > .dealer-payouts-panel.inquiries-mgmt-panel > .inquiries-table-wrap {
+  #completedPanel>.dealer-payouts-panel.inquiries-mgmt-panel>.inquiries-table-wrap,
+  #rewardedPanel>.dealer-payouts-panel.inquiries-mgmt-panel>.inquiries-table-wrap {
     flex: 1 1 auto;
     min-height: 0;
   }
@@ -428,7 +429,7 @@ html.theme-dark .inquiries-tab-count[data-tooltip]::after {
   }
 
   .dealer-payouts-panel .inquiries-btn,
-  .dealer-payouts-panel .inquiries-columns-dropdown > .inquiries-btn {
+  .dealer-payouts-panel .inquiries-columns-dropdown>.inquiries-btn {
     min-height: 24px;
     padding: 3px 8px;
     font-size: 10px;
@@ -550,8 +551,8 @@ html.theme-dark .inquiries-tab-count[data-tooltip]::after {
     margin-bottom: 4px;
   }
 
-  #completedPanel > .dealer-payouts-panel.inquiries-mgmt-panel,
-  #rewardedPanel > .dealer-payouts-panel.inquiries-mgmt-panel {
+  #completedPanel>.dealer-payouts-panel.inquiries-mgmt-panel,
+  #rewardedPanel>.dealer-payouts-panel.inquiries-mgmt-panel {
     display: flex;
     flex-direction: column;
     margin-bottom: 22px;
@@ -562,8 +563,8 @@ html.theme-dark .inquiries-tab-count[data-tooltip]::after {
     gap: 8px;
   }
 
-  #completedPanel > .dealer-payouts-panel.inquiries-mgmt-panel > .inquiries-table-wrap,
-  #rewardedPanel > .dealer-payouts-panel.inquiries-mgmt-panel > .inquiries-table-wrap {
+  #completedPanel>.dealer-payouts-panel.inquiries-mgmt-panel>.inquiries-table-wrap,
+  #rewardedPanel>.dealer-payouts-panel.inquiries-mgmt-panel>.inquiries-table-wrap {
     flex: 1 1 auto;
     min-height: 0;
   }
@@ -741,10 +742,10 @@ html.theme-dark .inquiries-title-count {
 
 .inquiries-table.inquiries-table--fit th[data-col="status"],
 .inquiries-table.inquiries-table--fit td[data-col="status"] {
-    width: 130px !important;
+  width: 130px !important;
 }
 
 .status-multi-filter-toggle {
-    padding: 6px 8px;
-    min-height: 32px;
+  padding: 6px 8px;
+  min-height: 32px;
 }

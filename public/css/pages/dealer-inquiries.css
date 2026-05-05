@@ -95,12 +95,16 @@ html.theme-dark .inquiry-row--notif-highlight td span:not(.inquiries-badge):not(
 
 .dealer-console-tabs {
   position: sticky;
-  top: -10px; /* Adjust for parent padding-top */
-  z-index: 900; /* Below topbar (950) but above content */
+  top: -10px;
+  /* Adjust for parent padding-top */
+  z-index: 900;
+  /* Below topbar (950) but above content */
   display: flex;
   align-items: center;
-  background: #f5f4ff; /* Match dashboard background */
-  margin: -10px -18px 12px -18px; /* Offset parent padding */
+  background: #f5f4ff;
+  /* Match dashboard background */
+  margin: -10px -18px 12px -18px;
+  /* Offset parent padding */
   padding: 10px 18px 0;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   width: calc(100% + 36px);
@@ -115,7 +119,8 @@ html.theme-dark .inquiry-row--notif-highlight td span:not(.inquiries-badge):not(
   white-space: nowrap;
   width: 100%;
   padding-bottom: 8px;
-  scrollbar-width: none; /* Hide scrollbar for cleaner look */
+  scrollbar-width: none;
+  /* Hide scrollbar for cleaner look */
 }
 
 .dealer-console-tabs-inner::-webkit-scrollbar {
@@ -272,7 +277,7 @@ html.theme-dark .inquiries-tab-count[data-tooltip]::after {
 }
 
 .dealer-inquiries-panel .inquiries-btn,
-.dealer-inquiries-panel .inquiries-columns-dropdown > .inquiries-btn {
+.dealer-inquiries-panel .inquiries-columns-dropdown>.inquiries-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -435,7 +440,8 @@ html.theme-dark .inquiries-tab-count[data-tooltip]::after {
   }
 }
 
-@media (min-width: 769px) and (max-width: 1366px), (min-width: 769px) and (max-height: 900px) {
+@media (min-width: 769px) and (max-width: 1366px),
+(min-width: 769px) and (max-height: 900px) {
   .dashboard-main-body {
     padding: 8px 12px 10px;
     gap: 6px;
@@ -466,12 +472,12 @@ html.theme-dark .inquiries-tab-count[data-tooltip]::after {
     gap: 5px;
   }
 
-  .dashboard-content.inquiries-page-wrap > .dealer-inquiries-panel.inquiries-mgmt-panel {
+  .dashboard-content.inquiries-page-wrap>.dealer-inquiries-panel.inquiries-mgmt-panel {
     display: flex;
     flex-direction: column;
   }
 
-  .dashboard-content.inquiries-page-wrap > .dealer-inquiries-panel.inquiries-mgmt-panel > .inquiries-table-wrap {
+  .dashboard-content.inquiries-page-wrap>.dealer-inquiries-panel.inquiries-mgmt-panel>.inquiries-table-wrap {
     flex: 1 1 auto;
     min-height: 0;
   }
@@ -547,7 +553,7 @@ html.theme-dark .inquiries-tab-count[data-tooltip]::after {
     gap: 8px;
   }
 
-  .dealer-inquiries-panel.inquiries-mgmt-panel > .inquiries-table-wrap {
+  .dealer-inquiries-panel.inquiries-mgmt-panel>.inquiries-table-wrap {
     flex: 1 1 auto;
     min-height: 0;
   }
@@ -716,7 +722,7 @@ html.theme-dark .inquiries-tab-count[data-tooltip]::after {
     max-width: 200px;
   }
 
-  #dealerInquiriesTable td[data-col="customer"] > span {
+  #dealerInquiriesTable td[data-col="customer"]>span {
     display: block;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -777,7 +783,7 @@ html.theme-dark .inquiries-tab-count[data-tooltip]::after {
   }
 
   .dealer-inquiries-panel .inquiries-btn,
-  .dealer-inquiries-panel .inquiries-columns-dropdown > .inquiries-btn {
+  .dealer-inquiries-panel .inquiries-columns-dropdown>.inquiries-btn {
     min-height: 24px;
     padding: 3px 8px;
     font-size: 10px;
@@ -888,153 +894,160 @@ html.theme-dark .inquiries-tab-count[data-tooltip]::after {
 }
 
 .status-multi-filter-cell {
-    overflow: visible !important;
+  overflow: visible !important;
 }
 
 /* Status Multi-Filter */
 .status-multi-filter {
-    position: relative;
-    width: 100%;
+  position: relative;
+  width: 100%;
 }
 
 .status-multi-filter-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    padding: 6px 10px;
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 12px;
-    color: #475569;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-align: left;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    gap: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 6px 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  gap: 6px;
 }
 
 .status-multi-filter-toggle:hover {
-    border-color: #7c3aed;
-    background: #fdfaff;
+  border-color: #7c3aed;
+  background: #fdfaff;
 }
 
 .status-multi-filter-toggle .bi-chevron-down {
-    font-size: 10px;
-    color: #94a3b8;
-    flex-shrink: 0;
+  font-size: 10px;
+  color: #94a3b8;
+  flex-shrink: 0;
 }
 
 .status-multi-filter-label {
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .status-multi-filter-menu {
-    position: absolute;
-    top: calc(100% + 6px);
-    left: 0;
-    z-index: 100;
-    min-width: 180px;
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
-    padding: 10px;
-    animation: statusMenuIn 0.2s ease-out;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 100;
+  min-width: 180px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+  padding: 10px;
+  animation: statusMenuIn 0.2s ease-out;
 }
 
 @keyframes statusMenuIn {
-    from { opacity: 0; transform: translateY(-4px); }
-    to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .status-multi-filter-actions {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 10px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .status-multi-filter-action-btn {
-    flex: 1;
-    padding: 4px 8px;
-    font-size: 11px;
-    font-weight: 500;
-    color: #6366f1;
-    background: #f5f3ff;
-    border: 1px solid #e0e7ff;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.15s ease;
+  flex: 1;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #6366f1;
+  background: #f5f3ff;
+  border: 1px solid #e0e7ff;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
 .status-multi-filter-action-btn:hover {
-    background: #e0e7ff;
-    color: #4338ca;
+  background: #e0e7ff;
+  color: #4338ca;
 }
 
 .status-multi-filter-options {
-    max-height: 240px;
-    overflow-y: auto;
-    padding-right: 4px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .status-multi-filter-options::-webkit-scrollbar {
-    width: 4px;
+  width: 4px;
 }
 
 .status-multi-filter-options::-webkit-scrollbar-thumb {
-    background: #e2e8f0;
-    border-radius: 10px;
+  background: #e2e8f0;
+  border-radius: 10px;
 }
 
 .status-multi-filter-option {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 6px 4px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 13px;
-    color: #334155;
-    transition: background 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 4px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #334155;
+  transition: background 0.15s ease;
 }
 
 .status-multi-filter-option.inquiries-columns-check {
-    gap: 10px;
+  gap: 10px;
 }
 
 .status-multi-filter-option:hover {
-    background: #f8fafc;
+  background: #f8fafc;
 }
 
 .status-multi-filter-option input[type="checkbox"],
 .status-multi-filter-option .status-multi-filter-checkbox {
-    appearance: auto;
-    -webkit-appearance: checkbox;
-    width: 16px;
-    min-width: 16px;
-    height: 16px;
-    padding: 0;
-    margin: 0;
-    flex: 0 0 16px;
-    border: 1px solid #cbd5e1;
-    border-radius: 4px;
-    cursor: pointer;
-    accent-color: #6366f1;
-    background: #ffffff;
-    background-image: none;
-    box-shadow: none;
+  appearance: auto;
+  -webkit-appearance: checkbox;
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0;
+  margin: 0;
+  flex: 0 0 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  cursor: pointer;
+  accent-color: #6366f1;
+  background: #ffffff;
+  background-image: none;
+  box-shadow: none;
 }
 
 .status-multi-filter-option .status-multi-filter-option-label {
-    flex: 1;
+  flex: 1;
 }
 
 .inquiries-title-count {
@@ -1050,10 +1063,10 @@ html.theme-dark .inquiries-title-count {
 
 .inquiries-table.inquiries-table--fit th[data-col="status"],
 .inquiries-table.inquiries-table--fit td[data-col="status"] {
-    width: 130px !important;
+  width: 130px !important;
 }
 
 .status-multi-filter-toggle {
-    padding: 6px 8px;
-    min-height: 32px;
+  padding: 6px 8px;
+  min-height: 32px;
 }
