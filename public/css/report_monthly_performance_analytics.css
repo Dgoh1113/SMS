@@ -1103,7 +1103,7 @@ html.theme-dark .reports-page .report-legend {
   }
 
   .reports-page .dashboard-metrics-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-template-columns: 1fr !important;
     gap: 12px;
   }
 
