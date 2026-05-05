@@ -8712,7 +8712,7 @@ html.theme-dark .inquiries-status-timeline-wrap .inquiry-activity-attachment-lin
 
 @media (max-width: 768px) {
   .reports-metrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
   }
 
   .reports-product-panel {

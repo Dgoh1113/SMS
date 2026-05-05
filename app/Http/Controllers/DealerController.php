@@ -1260,8 +1260,8 @@ class DealerController extends Controller
                 // status within the same minute, preserve the previous row's exact
                 // timestamp (including milliseconds),
                 // so the newer LEAD_ACTID becomes the real latest activity.
-                if ($newComparableDt->equalTo($lastComparableDt) && $newDt->lt($lastDt)) {
-                    $creationDate = $formatTimestampForDb($lastDt);
+                if ($newComparableDt->equalTo($lastComparableDt) && $newDt->lte($lastDt)) {
+                    $creationDate = $formatTimestampForDb($lastDt->copy()->addSecond());
                 }
             } catch (\Throwable $e) {
                 // If parsing fails, skip this validation.
@@ -1343,11 +1343,13 @@ class DealerController extends Controller
                     $oldDesc = trim((string) ($latestActRow->DESCRIPTION ?? ''));
                     $divider = "\n" . str_repeat('-', 30) . "\n" . now()->format('d/m/Y H:i') . ":\n";
                     $newDesc = $oldDesc . ($oldDesc !== '' ? $divider : '') . $remark;
-                    DB::update('UPDATE "LEAD_ACT" SET "DESCRIPTION" = ? WHERE "LEAD_ACTID" = ?', [$newDesc, $latestActRow->LEAD_ACTID]);
+                    DB::update('UPDATE "LEAD_ACT" SET "DESCRIPTION" = ?, "CREATIONDATE" = ? WHERE "LEAD_ACTID" = ?', [$newDesc, $creationDate, $latestActRow->LEAD_ACTID]);
+                } else {
+                    DB::update('UPDATE "LEAD_ACT" SET "CREATIONDATE" = ? WHERE "LEAD_ACTID" = ?', [$creationDate, $latestActRow->LEAD_ACTID]);
                 }
 
                 // Sync the main lead status
-                DB::update('UPDATE "LEAD" SET "STATUS" = ?, "LASTMODIFIED" = CURRENT_TIMESTAMP WHERE "LEADID" = ?', [$statusDb, $leadId]);
+                DB::update('UPDATE "LEAD" SET "LASTMODIFIED" = CURRENT_TIMESTAMP WHERE "LEADID" = ?', [$leadId]);
 
                 return response()->json([
                     'success' => true,
@@ -1405,6 +1407,7 @@ class DealerController extends Controller
             );
         }
 
+        // Sync the main lead status for non-iterative updates too
         DB::update('UPDATE "LEAD" SET "LASTMODIFIED" = CURRENT_TIMESTAMP WHERE "LEADID" = ?', [$leadId]);
 
         $updatedCounts = $this->getDealerConsoleCounts($dealerId);
@@ -1467,12 +1470,12 @@ class DealerController extends Controller
                         'SELECT a."LEADID", a."STATUS"
                          FROM "LEAD_ACT" a
                          JOIN (
-                             SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
+                             SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD, MAX("LEAD_ACTID") AS MAXID
                              FROM "LEAD_ACT"
                              WHERE "LEADID" IN (' . $placeholders . ')
                              GROUP BY "LEADID"
                          ) x
-                           ON x."LEADID" = a."LEADID" AND x.MAXCD = a."CREATIONDATE"
+                           ON x."LEADID" = a."LEADID" AND x.MAXCD = a."CREATIONDATE" AND x.MAXID = a."LEAD_ACTID"
                          WHERE a."LEADID" IN (' . $placeholders . ')',
                         array_merge($leadIds, $leadIds)
                     );
@@ -1505,11 +1508,11 @@ class DealerController extends Controller
                         'SELECT a."LEADID", a."DEALTPRODUCT"
                          FROM "LEAD_ACT" a
                          JOIN (
-                             SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
+                             SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD, MAX("LEAD_ACTID") AS MAXID
                              FROM "LEAD_ACT"
                              WHERE UPPER(TRIM("STATUS")) = \'COMPLETED\' AND "LEADID" IN (' . $placeholders . ')
                              GROUP BY "LEADID"
-                         ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
+                         ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE" AND m.MAXID = a."LEAD_ACTID"
                          WHERE UPPER(TRIM(a."STATUS")) = \'COMPLETED\' AND a."LEADID" IN (' . $placeholders . ')',
                         array_merge($leadIds, $leadIds)
                     );
@@ -1541,7 +1544,7 @@ class DealerController extends Controller
                         'SELECT a."LEADID", a."CREATIONDATE" AS "ASSIGNDATE"
                          FROM "LEAD_ACT" a
                          JOIN (
-                             SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
+                             SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD, MAX("LEAD_ACTID") AS MAXID
                              FROM "LEAD_ACT"
                              WHERE "LEADID" IN (' . $placeholders . ')
                                AND (
@@ -1549,7 +1552,7 @@ class DealerController extends Controller
                                    OR UPPER(TRIM(COALESCE("DESCRIPTION", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
                                )
                              GROUP BY "LEADID"
-                         ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
+                         ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE" AND m.MAXID = a."LEAD_ACTID"
                          WHERE a."LEADID" IN (' . $placeholders . ')
                            AND (
                                UPPER(TRIM(COALESCE(a."SUBJECT", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
@@ -1601,12 +1604,12 @@ class DealerController extends Controller
                         'SELECT a."LEADID", a."LEAD_ACTID", a."ATTACHMENT"
                          FROM "LEAD_ACT" a
                          JOIN (
-                             SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
+                             SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD, MAX("LEAD_ACTID") AS MAXID
                              FROM "LEAD_ACT"
                              WHERE UPPER(TRIM("STATUS")) = \'COMPLETED\'
                                AND "LEADID" IN (' . $placeholders . ')
                              GROUP BY "LEADID"
-                         ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
+                         ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE" AND m.MAXID = a."LEAD_ACTID"
                          WHERE UPPER(TRIM(a."STATUS")) = \'COMPLETED\'
                            AND a."LEADID" IN (' . $placeholders . ')',
                         array_merge($completedIds, $completedIds)
@@ -1646,12 +1649,12 @@ class DealerController extends Controller
                         'SELECT a."LEADID", a."CREATIONDATE"
                          FROM "LEAD_ACT" a
                          JOIN (
-                             SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
+                             SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD, MAX("LEAD_ACTID") AS MAXID
                              FROM "LEAD_ACT"
                              WHERE UPPER(TRIM("STATUS")) = \'COMPLETED\'
                                AND "LEADID" IN (' . $placeholders . ')
                              GROUP BY "LEADID"
-                         ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
+                         ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE" AND m.MAXID = a."LEAD_ACTID"
                          WHERE UPPER(TRIM(a."STATUS")) = \'COMPLETED\'
                            AND a."LEADID" IN (' . $placeholders . ')',
                         array_merge($rewardedIds, $rewardedIds)
@@ -1667,12 +1670,12 @@ class DealerController extends Controller
                         'SELECT a."LEADID", a."LEAD_ACTID", a."ATTACHMENT", a."CREATIONDATE"
                          FROM "LEAD_ACT" a
                          JOIN (
-                             SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
+                             SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD, MAX("LEAD_ACTID") AS MAXID
                              FROM "LEAD_ACT"
                              WHERE UPPER(TRIM("STATUS")) IN (\'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\')
                                AND "LEADID" IN (' . $placeholders . ')
                              GROUP BY "LEADID"
-                         ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
+                         ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE" AND m.MAXID = a."LEAD_ACTID"
                          WHERE UPPER(TRIM(a."STATUS")) IN (\'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\')
                            AND a."LEADID" IN (' . $placeholders . ')',
                         array_merge($rewardedIds, $rewardedIds)
@@ -1897,10 +1900,10 @@ class DealerController extends Controller
                      SELECT a."LEADID", a."STATUS"
                      FROM "LEAD_ACT" a
                      JOIN (
-                         SELECT "LEADID", MAX("CREATIONDATE") AS max_created
+                         SELECT "LEADID", MAX("CREATIONDATE") AS max_created, MAX("LEAD_ACTID") AS max_id
                          FROM "LEAD_ACT"
                          GROUP BY "LEADID"
-                     ) m ON m."LEADID" = a."LEADID" AND m.max_created = a."CREATIONDATE"
+                     ) m ON m."LEADID" = a."LEADID" AND m.max_created = a."CREATIONDATE" AND m.max_id = a."LEAD_ACTID"
                  ) latest
                  JOIN "LEAD" l ON l."LEADID" = latest."LEADID"
                  WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
