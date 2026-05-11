@@ -108,23 +108,15 @@
                 </tbody>
             </table>
         </div>
-        <div class="inquiries-assigned-pagination"
-             id="completedPagination"
-             data-total="{{ $completedTotal }}"
-             data-per-page="{{ $completedPerPage }}"
-             data-current-page="1"
-             data-last-page="{{ $completedLastPage }}">
-            <span class="inquiries-assigned-pagination-info" id="completedPaginationInfo">Showing {{ $completedTotal === 0 ? 0 : 1 }} to {{ $completedTo }} of {{ $completedTotal }} entries (Page 1)</span>
-            <div class="inquiries-assigned-pagination-nav">
-                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="completedPaginationFirst" data-page="first" aria-label="First page" @disabled($completedLastPage <= 1)>First</button>
-                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="completedPaginationPrev" data-page="prev" aria-label="Previous page" @disabled($completedLastPage <= 1)>Previous</button>
-                <span class="inquiries-assigned-page-numbers" id="completedPageNumbers">
-                    <button type="button" class="inquiries-pagination-num inquiries-pagination-num-active" data-page="1" aria-label="Page 1" aria-current="page">1</button>
-                </span>
-                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="completedPaginationNext" data-page="next" aria-label="Next page" @disabled($completedLastPage <= 1)>Next</button>
-                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="completedPaginationLast" data-page="last" aria-label="Last page" @disabled($completedLastPage <= 1)>Last</button>
-            </div>
-        </div>
+        @include('partials.common_pagination', [
+            'id' => 'completedPagination',
+            'total' => $completedTotal,
+            'perPage' => $completedPerPage,
+            'currentPage' => 1,
+            'lastPage' => $completedLastPage,
+            'pageNumbersId' => 'completedPageNumbers',
+            'slot' => '<button type="button" class="inquiries-pagination-num inquiries-pagination-num-active" data-page="1" aria-label="Page 1" aria-current="page">1</button>'
+        ])
     </div>
 </section>
 </div>
@@ -580,39 +572,118 @@ function initDealerPendingPayoutsPage() {
         clearPayoutPlaceholderRows(table);
         if (tbody) tbody.style.minHeight = '';
         if (!scrollWrap) return;
-        var allRows = Array.prototype.slice.call(table.querySelectorAll('tbody tr.payouts-row'));
-        var allowZeroFill = allRows.length > 0;
-        var useShortHeight = (visibleDataCount > 0 && visibleDataCount < perPage) || (visibleDataCount === 0 && allowZeroFill);
-        var targetRows = perPage;
-        var placeholderRowHeight = getPayoutReferenceRowHeight(table, tbody);
-
-        if (tbody && visibleDataCount < targetRows && (visibleDataCount > 0 || allowZeroFill)) {
-            var visibleHeaderCount = Array.prototype.slice.call(table.querySelectorAll('thead tr:first-child th')).filter(function(cell) {
-                return cell.style.display !== 'none' && window.getComputedStyle(cell).display !== 'none';
-            }).length || 1;
-
-            for (var i = visibleDataCount; i < targetRows; i++) {
-                var row = document.createElement('tr');
-                row.className = 'inquiries-placeholder-row';
-                row.setAttribute('aria-hidden', 'true');
-
-                var cell = document.createElement('td');
-                cell.className = 'inquiries-placeholder-cell';
-                cell.colSpan = visibleHeaderCount;
-                if (placeholderRowHeight > 0) {
-                    row.style.height = placeholderRowHeight + 'px';
-                    cell.style.height = placeholderRowHeight + 'px';
-                    cell.style.minHeight = placeholderRowHeight + 'px';
-                }
-
-                row.appendChild(cell);
-                tbody.appendChild(row);
-            }
-        }
-
-        scrollWrap.classList.toggle('inquiries-table-scroll-empty', visibleDataCount === 0 && !allowZeroFill);
-        scrollWrap.classList.toggle('inquiries-table-scroll-short', useShortHeight);
+        
+        // Disabled placeholder rows to avoid empty space/floating pagination
+        scrollWrap.classList.toggle('inquiries-table-scroll-empty', visibleDataCount === 0);
+        scrollWrap.classList.toggle('inquiries-table-scroll-short', false);
     }
+
+    function buildSmartPageNumbers(pageNumbersEl, current, lastPage, goToPageFn) {
+        if (!pageNumbersEl) return;
+        pageNumbersEl.innerHTML = '';
+        
+        var maxVisible = 3;
+        if (lastPage <= maxVisible + 2) {
+            for (var p = 1; p <= lastPage; p++) {
+                addPayoutPageButton(pageNumbersEl, p, p === current, goToPageFn);
+            }
+        } else {
+            // Always show page 1
+            addPayoutPageButton(pageNumbersEl, 1, 1 === current, goToPageFn);
+            
+            var start = Math.max(2, current - 1);
+            var end = Math.min(lastPage - 1, current + 1);
+            
+            if (current <= 3) {
+                start = 2;
+                end = 4;
+            } else if (current >= lastPage - 2) {
+                start = lastPage - 3;
+                end = lastPage - 1;
+            }
+
+            if (start > 2) {
+                addPayoutEllipsis(pageNumbersEl, goToPageFn, lastPage, current);
+            }
+            
+            for (var p = start; p <= end; p++) {
+                addPayoutPageButton(pageNumbersEl, p, p === current, goToPageFn);
+            }
+            
+            if (end < lastPage - 1) {
+                addPayoutEllipsis(pageNumbersEl, goToPageFn, lastPage, current);
+            }
+
+            // Always show last page
+            addPayoutPageButton(pageNumbersEl, lastPage, lastPage === current, goToPageFn);
+        }
+    }
+
+    function addPayoutPageButton(container, p, isActive, goToPageFn) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'inquiries-pagination-num' + (isActive ? ' inquiries-pagination-num-active' : '');
+        btn.setAttribute('data-page', String(p));
+        btn.textContent = String(p);
+        btn.style.position = 'relative';
+        btn.style.zIndex = '5';
+        btn.addEventListener('click', function(e) { 
+            e.stopPropagation();
+            if (!isActive) goToPageFn(p); 
+        });
+        container.appendChild(btn);
+    }
+
+    function addPayoutEllipsis(container, goToPageFn, lastPage, current) {
+        var span = document.createElement('span');
+        span.className = 'inquiries-pagination-num inquiries-pagination-dots';
+        span.textContent = '...';
+        span.setAttribute('data-page', 'dots');
+        span.style.cursor = 'pointer';
+        span.style.position = 'relative';
+        span.style.zIndex = '5';
+        span.addEventListener('click', function(e) { 
+            e.stopPropagation();
+            
+            var input = document.createElement('input');
+            input.type = 'number';
+            input.className = 'inquiries-pagination-num inquiries-pagination-jump-input';
+            input.min = '1';
+            input.max = lastPage;
+            input.placeholder = '#';
+            input.style.width = '45px';
+            input.style.padding = '0 4px';
+            input.style.textAlign = 'center';
+            input.style.border = '1px solid #7c3aed';
+            input.style.borderRadius = '4px';
+            input.style.height = '28px';
+            input.style.outline = 'none';
+            input.style.margin = '0 2px';
+            
+            var doJump = function() {
+                var val = parseInt(input.value, 10);
+                if (!isNaN(val) && val >= 1 && val <= lastPage) {
+                    goToPageFn(val);
+                } else {
+                    input.parentElement.replaceChild(span, input);
+                }
+            };
+            
+            input.addEventListener('blur', doJump);
+            input.addEventListener('keypress', function(ev) {
+                if (ev.key === 'Enter') {
+                    ev.preventDefault();
+                    doJump();
+                }
+            });
+            
+            span.parentElement.replaceChild(input, span);
+            input.focus();
+        });
+        container.appendChild(span);
+    }
+
+    // Legacy popout removed in favor of inline jump input
 
     function applyCompletedPagination() {
         var table = document.getElementById('completedTable');
@@ -653,21 +724,7 @@ function initDealerPendingPayoutsPage() {
             }
         });
         if (pageNumbersEl) {
-            pageNumbersEl.innerHTML = '';
-            for (var p = 1; p <= lastPage; p++) {
-                var btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'inquiries-pagination-num' + (p === current ? ' inquiries-pagination-num-active' : '');
-                btn.setAttribute('data-page', String(p));
-                btn.setAttribute('aria-label', 'Page ' + p);
-                if (p === current) btn.setAttribute('aria-current', 'page');
-                btn.textContent = String(p);
-                btn.addEventListener('click', function() {
-                    var page = parseInt(this.getAttribute('data-page') || '1', 10);
-                    goToCompletedPage(page);
-                });
-                pageNumbersEl.appendChild(btn);
-            }
+            buildSmartPageNumbers(pageNumbersEl, current, lastPage, goToCompletedPage);
         }
     }
 
@@ -676,6 +733,13 @@ function initDealerPendingPayoutsPage() {
         if (!pagEl) return;
         pagEl.setAttribute('data-current-page', String(parseInt(page || '1', 10) || 1));
         applyCompletedPagination();
+    }
+
+    function goToRewardedPage(page) {
+        var pagEl = document.getElementById('rewardedPagination');
+        if (!pagEl) return;
+        pagEl.setAttribute('data-current-page', String(parseInt(page || '1', 10) || 1));
+        applyRewardedPagination();
     }
 
     function applyRewardedPagination() {
@@ -714,19 +778,7 @@ function initDealerPendingPayoutsPage() {
         if (nextBtn) nextBtn.disabled = current >= lastPage;
         if (lastBtn) lastBtn.disabled = current >= lastPage;
         if (pageNumbersEl) {
-            var html = '';
-            for (var p = 1; p <= lastPage; p++) {
-                var active = p === current;
-                html += '<button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn inquiries-page-num' + (active ? ' active' : '') + '" data-page="' + p + '" aria-label="Page ' + p + '"' + (active ? ' aria-current="page"' : '') + '>' + p + '</button>';
-            }
-            pageNumbersEl.innerHTML = html;
-            pageNumbersEl.querySelectorAll('[data-page]').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    var p = parseInt(btn.getAttribute('data-page'), 10);
-                    pagEl.setAttribute('data-current-page', String(p));
-                    applyRewardedPagination();
-                });
-            });
+            buildSmartPageNumbers(pageNumbersEl, current, lastPage, goToRewardedPage);
         }
     }
 

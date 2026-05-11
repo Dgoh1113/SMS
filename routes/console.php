@@ -138,3 +138,6 @@ Artisan::command('leads:auto-fail', function () {
 // Run auto-fail check every 2 minutes
 Schedule::command('leads:auto-fail')->everyTwoMinutes()->withoutOverlapping();
 
+// Run inquiry email fetch every minute
+Schedule::command('inquiries:fetch')->everyMinute()->withoutOverlapping();
+

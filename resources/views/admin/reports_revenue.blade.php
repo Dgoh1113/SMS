@@ -3,6 +3,102 @@
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/shared/reports-tabs.css') }}?v=20260424-1">
     <link rel="stylesheet" href="{{ asset('css/report_dealer_revenue_production.css') }}?v=20260423-3">
+    <style>
+        .reports-range-input {
+            padding-right: 12px;
+            width: 100%;
+        }
+        .reports-range-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            align-items: flex-end;
+            gap: 6px;
+        }
+
+        @media (max-width: 768px) {
+            .rrp-chart-scroll-wrapper {
+                position: relative;
+                display: block !important;
+                width: 100% !important;
+                overflow-x: auto !important;
+                overflow-y: hidden !important;
+                -webkit-overflow-scrolling: touch !important;
+                padding-bottom: 20px !important; /* space for scrollbar */
+                cursor: grab;
+            }
+            /* High-Visibility Custom Scrollbar */
+            .rrp-chart-scroll-wrapper::-webkit-scrollbar {
+                height: 10px !important;
+            }
+            .rrp-chart-scroll-wrapper::-webkit-scrollbar-track {
+                background: #f1f5f9 !important;
+                border-radius: 10px !important;
+                margin: 0 30px !important;
+            }
+            .rrp-chart-scroll-wrapper::-webkit-scrollbar-thumb {
+                background: #7c3aed !important;
+                border-radius: 10px !important;
+                border: 2px solid #f1f5f9 !important;
+            }
+            .rrp-chart-wrap#rrpVolumeChartWrapper {
+                width: 800px !important;
+                min-width: 800px !important;
+                height: 280px !important;
+            }
+            .rrp-chart-wrap#rrpVolumeChartWrapper canvas {
+                width: 100% !important;
+                touch-action: pan-x !important;
+            }
+        }
+
+        /* Global Fullscreen Button Styles */
+        .reports-fullscreen-btn {
+            display: none;
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            z-index: 50;
+            background: rgba(255, 255, 255, 0.94);
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 6px;
+            color: #64748b;
+            cursor: pointer;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        /* Fullscreen Pseudo-class Overrides */
+        .rrp-panel:-webkit-full-screen {
+            background: #ffffff !important;
+            padding: 16px !important;
+            overflow: auto !important;
+            display: flex !important;
+            flex-direction: column !important;
+            position: fixed !important;
+            z-index: 9999;
+            height: 100vh !important;
+            width: 100vw !important;
+        }
+        .rrp-panel:fullscreen {
+            background: #ffffff !important;
+            padding: 16px !important;
+            overflow: auto !important;
+            display: flex !important;
+            flex-direction: column !important;
+            position: fixed !important;
+            z-index: 9999;
+            height: 100vh !important;
+            width: 100vw !important;
+        }
+
+        @media (max-width: 768px) {
+            .reports-fullscreen-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+    </style>
 @endpush
 @section('content')
 <div class="rrp-page">
@@ -41,7 +137,7 @@
                 @endif
             @endforeach
 
-            <div class="reports-filter-container rv2-filter" style="width: 240px; min-height: 90px; display: flex; flex-direction: column; align-self: auto;">
+            <div class="reports-filter-container rv2-filter" style="width: 340px; min-height: 90px; display: flex; flex-direction: column;">
                 <div class="reports-range-label" style="display: flex; align-items: center; font-size: 9px; font-weight: 800; height: 1.6em;">PERIOD</div>
                 <div style="flex: 1; display: flex; align-items: flex-end;">
                     <select name="days" class="rrp-filter-select" aria-label="Select period" id="reportsPeriodSelect" style="display: {{ request('from') || request('to') ? 'none' : 'block' }}; width: 100%;">
@@ -60,14 +156,19 @@
                             <label class="reports-range-label" style="font-size: 9px; opacity: 0.8;">Ending</label>
                             <input type="date" name="to" id="reportsRangeTo" value="{{ request('to', now()->format('Y-m-d')) }}" class="reports-range-input" aria-label="To date" style="width: 100%;">
                         </div>
-                        <button type="button" class="reports-range-back-btn" id="reportsRangeReset" style="right: 4px; top: 4px;">
-                            <i class="bi bi-x-lg"></i>
-                        </button>
+                        <div class="reports-range-col" style="display: flex; flex-direction: column; gap: 4px; align-items: center; justify-content: flex-end; padding-bottom: 2px;">
+                            <button type="button" class="reports-range-back-btn" id="reportsRangeReset" title="Reset" style="position: static; margin: 0; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-x-lg" style="font-size: 11px;"></i>
+                            </button>
+                            <button type="button" class="reports-range-back-btn" id="reportsRangeSubmit" title="Search" style="position: static; margin: 0; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-search" style="font-size: 11px;"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="reports-filter-container rv2-filter" style="width: 240px; min-height: 90px; display: flex; flex-direction: column; align-self: auto;">
+            <div class="reports-filter-container rv2-filter" style="width: 189px; min-height: 90px; display: flex; flex-direction: column;">
                 <div class="reports-range-label" style="display: flex; align-items: center; font-size: 9px; font-weight: 800; height: 1.6em;">DEALER SCOPE</div>
                 <div style="flex: 1; display: flex; align-items: flex-end;">
                     <div style="width: 100%; max-width: 100%; --report-scope-picker-width: 100%;">
@@ -116,7 +217,12 @@
     </section>
 
     <section class="rrp-panel">
-        <div class="rrp-panel-header">
+        <div class="rrp-panel-header" style="position: relative; padding-right: 40px;">
+            <button type="button" class="reports-fullscreen-btn" onclick="toggleChartFullscreen(this.closest('.rrp-panel'))" aria-label="Toggle Fullscreen">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="20" height="20">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4h4M4 4l5 5M20 8V4h-4M20 4l-5 5M4 16v4h4M4 20l5-5M20 16v4h-4M20 20l-5-5" />
+                </svg>
+            </button>
             <div>
                 <div class="rrp-panel-title">Dealer Volume vs Outcomes</div>
                 <div class="rrp-panel-subtitle">Top dealers for {{ $periodLabel ?? 'selected period' }}</div>
@@ -131,8 +237,10 @@
             @if (empty($chartLabels))
                 <p class="rrp-empty">No dealer performance data for selected period.</p>
             @else
-                <div class="rrp-chart-wrap">
-                    <canvas id="rrpVolumeChart"></canvas>
+                <div class="rrp-chart-scroll-wrapper">
+                    <div class="rrp-chart-wrap" id="rrpVolumeChartWrapper">
+                        <canvas id="rrpVolumeChart"></canvas>
+                    </div>
                 </div>
             @endif
         </div>
@@ -183,6 +291,35 @@
 @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        function toggleChartFullscreen(element) {
+            if (!document.fullscreenElement) {
+                if (element.requestFullscreen) {
+                    element.requestFullscreen().then(() => {
+                        if (screen.orientation && screen.orientation.lock) {
+                            screen.orientation.lock('landscape').catch(() => {});
+                        }
+                    }).catch(err => {
+                        console.error(`Fullscreen failed: ${err.message}`);
+                    });
+                } else if (element.webkitRequestFullscreen) {
+                    element.webkitRequestFullscreen();
+                } else if (element.msRequestFullscreen) {
+                    element.msRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                    if (screen.orientation && screen.orientation.unlock) {
+                        screen.orientation.unlock();
+                    }
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             const form = document.querySelector('.rrp-filter-form');
             if (!form) return;
@@ -266,7 +403,9 @@
                 if (select.name === 'days') {
                     select.addEventListener('change', function() {
                         syncRange(select);
-                        submitReportFilters();
+                        if (select.value !== 'custom') {
+                            submitReportFilters();
+                        }
                     });
                 } else {
                     select.addEventListener('change', submitReportFilters);
@@ -287,8 +426,27 @@
                 if (inputs.length === 2) {
                     const fromInput = inputs[0];
                     const toInput = inputs[1];
-                    fromInput.addEventListener('change', submitReportFilters);
-                    toInput.addEventListener('change', submitReportFilters);
+                    const handleDateSubmit = function(e) {
+                        if (e && e.type === 'keydown' && e.key !== 'Enter') return;
+                        if (e && e.type === 'keydown' && e.key === 'Enter') e.preventDefault();
+                        if (fromInput.value && fromInput.value.length >= 10 && 
+                            toInput.value && toInput.value.length >= 10) {
+                            submitReportFilters();
+                        }
+                    };
+
+                    fromInput.addEventListener('keydown', handleDateSubmit);
+                    toInput.addEventListener('keydown', handleDateSubmit);
+                    
+                    const rangeSubmitBtn = document.getElementById('reportsRangeSubmit');
+                    if (rangeSubmitBtn) {
+                        rangeSubmitBtn.addEventListener('click', function(e) {
+                            handleDateSubmit(e);
+                        });
+                    }
+
+                    fromInput.removeEventListener('change', submitReportFilters);
+                    toInput.removeEventListener('change', submitReportFilters);
                     
                     fromInput.addEventListener('input', function() {
                         toInput.min = fromInput.value || '';
@@ -387,10 +545,10 @@
                         backgroundColor: 'rgba(79, 70, 229, 0.88)',
                         borderColor: 'rgba(67, 56, 202, 1)',
                         borderWidth: 1.2,
-                        borderRadius: 8,
+                        borderRadius: 4,
                         maxBarThickness: chartBarThickness,
-                        barPercentage: 0.85,
-                        categoryPercentage: 0.9,
+                        barPercentage: 1.0,
+                        categoryPercentage: 0.8,
                     },
                     {
                         label: 'Closed Leads',
@@ -398,10 +556,10 @@
                         backgroundColor: 'rgba(234, 179, 8, 0.88)',
                         borderColor: 'rgba(202, 138, 4, 1)',
                         borderWidth: 1.2,
-                        borderRadius: 8,
+                        borderRadius: 4,
                         maxBarThickness: chartBarThickness,
-                        barPercentage: 0.85,
-                        categoryPercentage: 0.9,
+                        barPercentage: 1.0,
+                        categoryPercentage: 0.8,
                     },
                     {
                         label: 'Rewarded Leads',
@@ -409,10 +567,10 @@
                         backgroundColor: 'rgba(22, 163, 74, 0.88)',
                         borderColor: 'rgba(21, 128, 61, 1)',
                         borderWidth: 1.2,
-                        borderRadius: 8,
+                        borderRadius: 4,
                         maxBarThickness: chartBarThickness,
-                        barPercentage: 0.85,
-                        categoryPercentage: 0.9,
+                        barPercentage: 1.0,
+                        categoryPercentage: 0.8,
                     }
                 ]
             };

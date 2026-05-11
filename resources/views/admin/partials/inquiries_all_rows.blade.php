@@ -1,5 +1,5 @@
 @forelse($allRows ?? [] as $r)
-<tr class="inquiry-row" data-search="{{ strtolower(($r->COMPANYNAME ?? '') . ' ' . ($r->CONTACTNAME ?? '') . ' ' . ($r->LEADID ?? '')) }}">
+<tr class="inquiry-row" data-lead-id="{{ $r->LEADID }}" data-page="{{ (int) floor(($loop->index ?? 0) / 10) + 1 }}" data-search="{{ strtolower(($r->COMPANYNAME ?? '') . ' ' . ($r->CONTACTNAME ?? '') . ' ' . ($r->LEADID ?? '')) }}">
     <td data-col="inquiryid">#SQL-{{ $r->LEADID }}</td>
     <td data-col="date">{{ $r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '-' }}</td>
     @php

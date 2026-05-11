@@ -2,6 +2,18 @@
 @section('title', 'Inquiries Management – Admin')
 @push('styles')
 <link rel="stylesheet" href="{{ asset('css/pages/admin-inquiries.css') }}?v=20260424-03">
+<style>
+    @keyframes inquiryHighlightBeam {
+        0% { background-color: rgba(168, 85, 247, 0.25); box-shadow: inset 6px 0 0 #a855f7, 0 0 20px rgba(168, 85, 247, 0.15); }
+        50% { background-color: rgba(168, 85, 247, 0.1); box-shadow: inset 6px 0 0 #a855f7, 0 0 10px rgba(168, 85, 247, 0.1); }
+        100% { background-color: transparent; box-shadow: inset 6px 0 0 #a855f7; }
+    }
+    .inquiry-row--focused {
+        animation: inquiryHighlightBeam 2s ease-in-out infinite alternate;
+        position: relative;
+        z-index: 10;
+    }
+</style>
 @endpush
 @section('content')
 @php
@@ -132,7 +144,7 @@
             </thead>
             <tbody>
                 @forelse($unassigned as $r)
-                <tr class="inquiry-row" data-search="{{ strtolower(($r->COMPANYNAME ?? '').' '.($r->CONTACTNAME ?? '').' '.($r->LEADID ?? '')) }}">
+                <tr class="inquiry-row" data-lead-id="{{ $r->LEADID }}" data-page="{{ (int) floor(($loop->index ?? 0) / 10) + 1 }}" data-search="{{ strtolower(($r->COMPANYNAME ?? '').' '.($r->CONTACTNAME ?? '').' '.($r->LEADID ?? '')) }}">
                     <td data-col="inquiryid">#SQL-{{ $r->LEADID }}</td>
                     <td data-col="date">{{ $r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '—' }}</td>
                     @php
@@ -262,11 +274,11 @@
                 Showing {{ $incomingTotal === 0 ? 0 : 1 }} to {{ $incomingTo }} of {{ $incomingTotal }} entries (Page 1)
             </span>
             <div class="inquiries-assigned-pagination-nav">
-                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="incomingPaginationFirst" aria-label="First page">First</button>
-                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="incomingPaginationPrev" aria-label="Previous page">Previous</button>
+                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="incomingPaginationFirst" title="First Page" aria-label="First page"><i class="bi bi-chevron-double-left"></i></button>
+                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="incomingPaginationPrev" title="Previous Page" aria-label="Previous page"><i class="bi bi-chevron-left"></i></button>
                 <span class="inquiries-assigned-page-numbers" id="incomingPageNumbers"></span>
-                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="incomingPaginationNext" aria-label="Next page">Next</button>
-                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="incomingPaginationLast" aria-label="Last page">Last</button>
+                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="incomingPaginationNext" title="Next Page" aria-label="Next page"><i class="bi bi-chevron-right"></i></button>
+                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="incomingPaginationLast" title="Last Page" aria-label="Last page"><i class="bi bi-chevron-double-right"></i></button>
             </div>
         </div>
     </div>
@@ -355,7 +367,7 @@
                 </thead>
                 <tbody>
                 @forelse($assigned as $r)
-                <tr class="inquiry-row" data-search="{{ strtolower(($r->COMPANYNAME ?? '').' '.($r->CONTACTNAME ?? '').' '.($r->LEADID ?? '')) }}">
+                <tr class="inquiry-row" data-lead-id="{{ $r->LEADID }}" data-page="{{ (int) floor(($loop->index ?? 0) / 10) + 1 }}" data-search="{{ strtolower(($r->COMPANYNAME ?? '').' '.($r->CONTACTNAME ?? '').' '.($r->LEADID ?? '')) }}">
                     <td data-col="inquiryid">#SQL-{{ $r->LEADID }}</td>
                     <td data-col="date">{{ $r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '—' }}</td>
                     @php
@@ -501,21 +513,15 @@
                 </tbody>
             </table>
         </div>
-        <div class="inquiries-assigned-pagination" id="assignedPagination" data-assigned-total="{{ $assignedTotal ?? 0 }}" data-assigned-last-page="{{ $assignedLastPage ?? 1 }}" data-assigned-current-page="1" data-assigned-per-page="{{ $assignedPerPage ?? 10 }}" data-assigned-page-url="{{ route('admin.inquiries.assigned-page') }}">
-            @php
-    $assignedPagPerPage = $assignedPerPage ?? 10;
-    $assignedPagTotal = $assignedTotal ?? 0;
-    $assignedPagTo = $assignedPagTotal === 0 ? 0 : min($assignedPagPerPage, $assignedPagTotal);
-@endphp
-            <span class="inquiries-assigned-pagination-info" id="assignedPaginationInfo">Showing {{ $assignedPagTotal === 0 ? 0 : 1 }} to {{ $assignedPagTo }} of {{ $assignedPagTotal }} entries (Page 1)</span>
-            <div class="inquiries-assigned-pagination-nav">
-                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="assignedPaginationFirst" aria-label="First page (latest inquiries)" title="First page – latest inquiries">First</button>
-                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="assignedPaginationPrev" aria-label="Previous page">Previous</button>
-                <span class="inquiries-assigned-page-numbers" id="assignedPageNumbers"></span>
-                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="assignedPaginationNext" aria-label="Next page">Next</button>
-                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="assignedPaginationLast" aria-label="Last page (oldest inquiries)" title="Last page – oldest inquiries">Last</button>
-            </div>
-        </div>
+        @include('partials.common_pagination', [
+            'id' => 'assignedPagination',
+            'total' => $assignedTotal ?? 0,
+            'perPage' => $assignedPerPage ?? 10,
+            'currentPage' => 1,
+            'lastPage' => $assignedLastPage ?? 1,
+            'pageNumbersId' => 'assignedPageNumbers',
+            'attributes' => 'data-assigned-page-url="' . route('admin.inquiries.assigned-page') . '"'
+        ])
     </div>
 </section>
 </div>
@@ -611,16 +617,14 @@
             $allTotalValue = $allTotal ?? count($allRows ?? []);
             $allToValue = $allTotalValue === 0 ? 0 : min($allPerPageValue, $allTotalValue);
         @endphp
-        <div class="inquiries-assigned-pagination" id="allPagination" data-all-total="{{ $allTotalValue }}" data-all-per-page="{{ $allPerPageValue }}" data-all-current-page="1">
-            <span class="inquiries-assigned-pagination-info" id="allPaginationInfo">Showing {{ $allTotalValue === 0 ? 0 : 1 }} to {{ $allToValue }} of {{ $allTotalValue }} entries (Page 1)</span>
-            <div class="inquiries-assigned-pagination-nav">
-                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="allPaginationFirst" aria-label="First page">First</button>
-                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="allPaginationPrev" aria-label="Previous page">Previous</button>
-                <span class="inquiries-assigned-page-numbers" id="allPageNumbers"></span>
-                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="allPaginationNext" aria-label="Next page">Next</button>
-                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="allPaginationLast" aria-label="Last page">Last</button>
-            </div>
-        </div>
+        @include('partials.common_pagination', [
+            'id' => 'allPagination',
+            'total' => $allTotalValue,
+            'perPage' => $allPerPageValue,
+            'currentPage' => 1,
+            'lastPage' => $allLastPage ?? 1,
+            'pageNumbersId' => 'allPageNumbers'
+        ])
     </div>
 </section>
 </div>
@@ -2517,6 +2521,114 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 4000);
     }
 
+    function buildSmartPageNumbers(pageNumbersEl, current, lastPage, goToPageFn) {
+        if (!pageNumbersEl) return;
+        pageNumbersEl.innerHTML = '';
+        
+        var maxVisible = 3;
+        if (lastPage <= maxVisible + 2) {
+            for (var p = 1; p <= lastPage; p++) {
+                addInquiryPageButton(pageNumbersEl, p, p === current, goToPageFn);
+            }
+        } else {
+            // Always show page 1
+            addInquiryPageButton(pageNumbersEl, 1, 1 === current, goToPageFn);
+            
+            var start = Math.max(2, current - 1);
+            var end = Math.min(lastPage - 1, current + 1);
+            
+            if (current <= 3) {
+                start = 2;
+                end = 4;
+            } else if (current >= lastPage - 2) {
+                start = lastPage - 3;
+                end = lastPage - 1;
+            }
+
+            if (start > 2) {
+                addInquiryEllipsis(pageNumbersEl, goToPageFn, lastPage, current);
+            }
+            
+            for (var p = start; p <= end; p++) {
+                addInquiryPageButton(pageNumbersEl, p, p === current, goToPageFn);
+            }
+            
+            if (end < lastPage - 1) {
+                addInquiryEllipsis(pageNumbersEl, goToPageFn, lastPage, current);
+            }
+
+            // Always show last page
+            addInquiryPageButton(pageNumbersEl, lastPage, lastPage === current, goToPageFn);
+        }
+    }
+
+    function addInquiryPageButton(container, p, isActive, goToPageFn) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'inquiries-pagination-num' + (isActive ? ' inquiries-pagination-num-active' : '');
+        btn.setAttribute('data-page', String(p));
+        btn.textContent = String(p);
+        btn.style.position = 'relative';
+        btn.style.zIndex = '5';
+        btn.addEventListener('click', function(e) { 
+            e.stopPropagation();
+            if (!isActive) goToPageFn(p); 
+        });
+        container.appendChild(btn);
+    }
+
+    function addInquiryEllipsis(container, goToPageFn, lastPage, current) {
+        var span = document.createElement('span');
+        span.className = 'inquiries-pagination-num inquiries-pagination-dots';
+        span.textContent = '...';
+        span.setAttribute('data-page', 'dots');
+        span.style.cursor = 'pointer';
+        span.style.position = 'relative';
+        span.style.zIndex = '5';
+        span.addEventListener('click', function(e) { 
+            e.stopPropagation();
+            
+            // Inline Jump Input Replacement
+            var input = document.createElement('input');
+            input.type = 'number';
+            input.className = 'inquiries-pagination-num inquiries-pagination-jump-input';
+            input.min = '1';
+            input.max = lastPage;
+            input.placeholder = '#';
+            input.style.width = '45px';
+            input.style.padding = '0 4px';
+            input.style.textAlign = 'center';
+            input.style.border = '1px solid #7c3aed';
+            input.style.borderRadius = '4px';
+            input.style.height = '28px';
+            input.style.outline = 'none';
+            input.style.margin = '0 2px';
+            
+            var doJump = function() {
+                var val = parseInt(input.value, 10);
+                if (!isNaN(val) && val >= 1 && val <= lastPage) {
+                    goToPageFn(val);
+                } else {
+                    input.parentElement.replaceChild(span, input);
+                }
+            };
+            
+            input.addEventListener('blur', doJump);
+            input.addEventListener('keypress', function(ev) {
+                if (ev.key === 'Enter') {
+                    ev.preventDefault();
+                    doJump();
+                }
+            });
+            
+            span.parentElement.replaceChild(input, span);
+            input.focus();
+        });
+        container.appendChild(span);
+    }
+
+    // Legacy popout removed in favor of inline jump input
+
     var inquiriesCountFormatter = new Intl.NumberFormat();
     function setInquiryTabCount(elementId, count) {
         var el = document.getElementById(elementId);
@@ -2906,15 +3018,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (lastBtn) lastBtn.disabled = current >= lastPage;
 
             if (pageNumbersEl) {
-                pageNumbersEl.innerHTML = '';
-                for (var i = 1; i <= lastPage; i++) {
-                    var b = document.createElement('button');
-                    b.type = 'button';
-                    b.className = 'inquiries-pagination-num' + (i === current ? ' inquiries-pagination-num-active' : '');
-                    b.textContent = String(i);
-                    b.setAttribute('data-page', String(i));
-                    pageNumbersEl.appendChild(b);
-                }
+                buildSmartPageNumbers(pageNumbersEl, current, lastPage, applyPage);
             }
         }
 
@@ -2945,8 +3049,10 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        window.refreshIncomingPagination = function() {
-            applyPage(1);
+        window.applyPage = applyPage;
+        window.refreshIncomingPagination = function(toPage) {
+            var cur = (toPage !== undefined) ? toPage : parseInt(paginationEl.getAttribute('data-incoming-current-page') || '1', 10);
+            applyPage(cur);
         };
     })();
 
@@ -2992,16 +3098,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         window.renderAssignedPageNumbers = function(current, lastPage) {
-            if (!pageNumbersEl) return;
-            pageNumbersEl.innerHTML = '';
-            for (var i = 1; i <= lastPage; i++) {
-                var a = document.createElement('button');
-                a.type = 'button';
-                a.className = 'inquiries-pagination-num' + (i === current ? ' inquiries-pagination-num-active' : '');
-                a.textContent = String(i);
-                a.setAttribute('data-page', String(i));
-                pageNumbersEl.appendChild(a);
-            }
+            buildSmartPageNumbers(pageNumbersEl, current, lastPage, applyAssignedPage);
         };
 
         function ensureFixedHeight(visibleDataCount) {
@@ -3034,7 +3131,11 @@ document.addEventListener('DOMContentLoaded', function() {
             renderAssignedPageNumbers(current, lastPage);
         }
 
-        window.refreshAssignedPagination = function() { applyAssignedPage(1); };
+        window.applyAssignedPage = applyAssignedPage;
+        window.refreshAssignedPagination = function(toPage) {
+            var cur = (toPage !== undefined) ? toPage : parseInt(paginationEl.getAttribute('data-assigned-current-page') || '1', 10);
+            applyAssignedPage(cur);
+        };
 
         applyAssignedPage(1);
 
@@ -3089,16 +3190,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         function renderAllPageNumbers(current, lastPage) {
-            if (!pageNumbersEl) return;
-            pageNumbersEl.innerHTML = '';
-            for (var i = 1; i <= lastPage; i++) {
-                var btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'inquiries-pagination-num' + (i === current ? ' inquiries-pagination-num-active' : '');
-                btn.textContent = String(i);
-                btn.setAttribute('data-page', String(i));
-                pageNumbersEl.appendChild(btn);
-            }
+            buildSmartPageNumbers(pageNumbersEl, current, lastPage, applyAllPage);
         }
         function ensureFixedHeight(visibleDataCount) {
             tbody.style.minHeight = '';
@@ -3134,7 +3226,11 @@ document.addEventListener('DOMContentLoaded', function() {
             updateInfoText(current, lastPage, total);
         }
 
-        window.refreshAllPagination = function() { applyAllPage(1); };
+        window.applyAllPage = applyAllPage;
+        window.refreshAllPagination = function(toPage) {
+            var cur = (toPage !== undefined) ? toPage : parseInt(paginationEl.getAttribute('data-all-current-page') || '1', 10);
+            applyAllPage(cur);
+        };
         applyAllPage(1);
 
         var navEl = document.querySelector('#allPagination .inquiries-assigned-pagination-nav');
@@ -3266,6 +3362,69 @@ document.addEventListener('DOMContentLoaded', function() {
               attributeFilter: ['class', 'data-theme']
           });
       }
+
+      // Handle focused lead from notifications with Light Purple Beaming effect
+      (function handleFocusedLead() {
+          var focusId = "{{ $focusLeadId ?? 0 }}";
+          if (!focusId || focusId === "0") return;
+
+          // Give time for pagination and tables to initialize
+          setTimeout(function() {
+              var row = document.querySelector('.inquiry-row[data-lead-id="' + focusId + '"]');
+              if (!row) {
+                  // If not found in current table, it might be in another tab. 
+                  // We'll try to find it in the "All" tab which has everything.
+                  setInquiriesTab('all', true);
+                  setTimeout(function() {
+                      row = document.querySelector('#allTable .inquiry-row[data-lead-id="' + focusId + '"]');
+                      if (row) finishFocus(row, 'all');
+                  }, 100);
+                  return;
+              }
+
+              var panel = row.closest('.inquiries-tab-panel');
+              var tabName = panel ? panel.id.replace('Panel', '') : 'incoming';
+              finishFocus(row, tabName);
+          }, 600);
+
+          function finishFocus(row, tabName) {
+              setInquiriesTab(tabName, true);
+              
+              var page = parseInt(row.getAttribute('data-page') || '0', 10);
+              
+              // If page is not in attribute, try to calculate it
+              if (page === 0) {
+                  var panel = document.getElementById(tabName + 'Panel');
+                  var paginationEl = document.getElementById(tabName + 'Pagination');
+                  var perPageAttr = tabName === 'incoming' ? 'data-incoming-per-page' : (tabName === 'assigned' ? 'data-assigned-per-page' : 'data-all-per-page');
+                  
+                  if (paginationEl) {
+                      var perPage = parseInt(paginationEl.getAttribute(perPageAttr) || '10', 10);
+                      var tbody = panel.querySelector('tbody');
+                      var allRowsInTbody = Array.from(tbody.querySelectorAll('tr.inquiry-row'));
+                      var rowIndex = allRowsInTbody.indexOf(row);
+                      if (rowIndex !== -1) {
+                          page = Math.floor(rowIndex / perPage) + 1;
+                      }
+                  }
+              }
+
+              if (page > 0) {
+                  if (tabName === 'incoming' && typeof window.applyPage === 'function') window.applyPage(page);
+                  else if (tabName === 'assigned' && typeof window.applyAssignedPage === 'function') window.applyAssignedPage(page);
+                  else if (tabName === 'all' && typeof window.applyAllPage === 'function') window.applyAllPage(page);
+              }
+
+              // Scroll and highlight
+              row.classList.add('inquiry-row--focused');
+              setTimeout(function() {
+                  row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }, 150);
+              
+              // Remove "infinite" animation after 10 seconds to save CPU but keep the border
+              setTimeout(function() { if (row) row.style.animationIterationCount = '1'; }, 10000);
+          }
+      })();
   });
   </script>
   @endsection

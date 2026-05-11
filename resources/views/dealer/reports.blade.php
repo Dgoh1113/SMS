@@ -35,12 +35,29 @@
     .dealer-reports-page .reports-period-quick-group:focus-within { transform:translateY(-1px); border-color:rgba(124,91,255,.34); box-shadow:0 0 0 3px rgba(124,91,255,.1), 0 12px 26px rgba(91,63,215,.13), inset 0 1px 0 rgba(255,255,255,.95); }
     .dealer-reports-page .reports-period-quick-group .reports-period-select--dealer { flex:1 1 auto; min-width:0; height:100%; padding:0 22px 0 16px; border:0; border-radius:0; outline:0; background:transparent; box-shadow:none; color:#111827; font-family:"Public Sans", sans-serif; font-size:13px; font-weight:800; line-height:1; letter-spacing:.045em; cursor:pointer; }
     .dealer-reports-page .reports-period-quick-group .reports-period-select--dealer:focus, .dealer-reports-page .reports-period-quick-group .reports-period-select--dealer:focus-visible { outline:0; box-shadow:none; }
-    .dealer-reports-page .reports-period-range-inline { display:inline-flex; gap:0; align-items:center; box-sizing:border-box; height:var(--dealer-report-action-height); overflow:hidden; border:1px solid rgba(124,91,255,.18); border-radius:14px; background:linear-gradient(180deg,#fff 0%,#fcfbff 100%); box-shadow:0 8px 18px rgba(91,63,215,.07), inset 0 1px 0 rgba(255,255,255,.95); transition:border-color .18s ease, box-shadow .18s ease; }
-    .dealer-reports-page .reports-period-range-inline:focus-within { border-color:rgba(124,91,255,.32); box-shadow:0 0 0 3px rgba(124,91,255,.09), 0 10px 22px rgba(91,63,215,.09), inset 0 1px 0 rgba(255,255,255,.95); }
-    .dealer-reports-page .reports-period-range-inline .reports-period-date { width:150px; min-width:150px; height:100%; padding:0 12px 0 14px; border:0; border-radius:0; outline:0; background:transparent; box-shadow:none; color:#111827; font-weight:700; }
-    .dealer-reports-page .reports-period-range-inline .reports-period-date::-webkit-calendar-picker-indicator { margin-left:8px; margin-right:2px; opacity:.68; cursor:pointer; }
-    .dealer-reports-page .reports-period-range-inline .reports-period-date + .reports-period-date { border-left:1px solid rgba(124,91,255,.12); }
-    .dealer-reports-page .reports-period-range-inline .reports-period-date:focus, .dealer-reports-page .reports-period-range-inline .reports-period-date:focus-visible { outline:0; box-shadow:none; }
+    .dealer-reports-page .reports-range-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr auto;
+        align-items: flex-end;
+        gap: 6px;
+        width: 100%;
+        margin-top: 8px;
+    }
+    .dealer-reports-page .reports-range-input {
+        width: 100%;
+        padding-right: 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        color: #0f172a;
+    }
+    .dealer-reports-page .reports-range-label {
+        display: block;
+        font-size: 9px;
+        font-weight: 800;
+        color: #94a3b8;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+    }
     .dealer-reports-page .reports-period-range-inline.is-hidden { display:none; }
     .dealer-reports-page .report-status-body { display:flex; flex-direction:column; align-items:center; gap:16px; }
     .dealer-reports-page .report-donut-wrapper { display:flex; justify-content:center; width:100%; }
@@ -122,6 +139,123 @@
         .dealer-reports-page .reports-inquiry-meta { justify-content:flex-start; }
         .dealer-reports-page .report-legend { grid-template-columns:1fr; }
     }
+    .dealer-reports-page .reports-admin-metric-trend { display:flex; align-items:center; gap:4px; margin-top:10px; font-size:11px; font-weight:600; }
+    .dealer-reports-page .reports-admin-metric-trend--up { color:#10b981; }
+    .dealer-reports-page .reports-admin-metric-trend--down { color:#ef4444; }
+    .dealer-reports-page .reports-admin-metric-trend--same { color:#94a3b8; }
+    .dealer-reports-page .reports-admin-metric-trend-icon { width:14px; height:14px; flex-shrink:0; }
+    .dealer-reports-page .reports-admin-metric-trend-icon--same { transform:rotate(-90deg); }
+    html.theme-dark .dealer-reports-page .reports-admin-metric-trend--up { color:#34d399; }
+    html.theme-dark .dealer-reports-page .reports-admin-metric-trend--down { color:#f87171; }
+    html.theme-dark .dealer-reports-page .reports-admin-metric-trend--same { color:#64748b; }
+    
+    .reports-fullscreen-btn {
+        display: none;
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        z-index: 50;
+        background: rgba(255, 255, 255, 0.94);
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 6px;
+        color: #64748b;
+        cursor: pointer;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    }
+
+    .dashboard-panel:-webkit-full-screen {
+        background: #ffffff !important;
+        padding: 16px !important;
+        overflow: auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+        position: fixed !important;
+        z-index: 9999;
+        height: 100vh !important;
+        width: 100vw !important;
+    }
+    .dashboard-panel:fullscreen {
+        background: #ffffff !important;
+        padding: 16px !important;
+        overflow: auto !important;
+        display: flex !important;
+        flex-direction: column !important;
+        position: fixed !important;
+        z-index: 9999;
+        height: 100vh !important;
+        width: 100vw !important;
+    }
+    .dashboard-panel:-webkit-full-screen .reports-product-chart-mobile-wrapper {
+        display: block !important;
+    }
+    .dashboard-panel:fullscreen .reports-product-chart-mobile-wrapper {
+        display: block !important;
+    }
+    .dashboard-panel:-webkit-full-screen .reports-product-chart-desktop-wrapper {
+        display: none !important;
+    }
+    .dashboard-panel:fullscreen .reports-product-chart-desktop-wrapper {
+        display: none !important;
+    }
+
+    @media (max-width: 768px) {
+        .reports-fullscreen-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .reports-inquiry-section .dashboard-panel-body {
+            padding: 0 8px 12px !important;
+        }
+        .dealer-reports-card {
+            max-width: 100% !important;
+            overflow: hidden !important;
+        }
+        .dealer-reports-chart-scroll-wrapper {
+            position: relative;
+            display: block !important;
+            width: 100% !important;
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
+            -webkit-overflow-scrolling: touch !important;
+            padding-bottom: 20px !important;
+            cursor: grab;
+        }
+        .dealer-reports-chart-scroll-wrapper::-webkit-scrollbar {
+            height: 10px !important;
+        }
+        .dealer-reports-chart-scroll-wrapper::-webkit-scrollbar-track {
+            background: #f1f5f9 !important;
+            border-radius: 10px !important;
+            margin: 0 30px !important;
+        }
+        .dealer-reports-chart-scroll-wrapper::-webkit-scrollbar-thumb {
+            background: #7c3aed !important;
+            border-radius: 10px !important;
+            border: 2px solid #f1f5f9 !important;
+        }
+        .dealer-reports-chart-wrapper#dealerInquiryTrendChartWrapper {
+            width: 900px !important;
+            min-width: 900px !important;
+            height: 260px !important;
+        }
+        .dealer-reports-chart-wrapper#dealerInquiryTrendChartWrapper canvas {
+            width: 100% !important;
+            touch-action: pan-x !important;
+        }
+        .reports-product-chart-desktop-wrapper {
+            display: none !important;
+        }
+        .reports-product-chart-mobile-wrapper {
+            display: block !important;
+        }
+        .reports-product-chart-wrapper#dealerProductConversionChartMobileWrapper canvas {
+            width: 100% !important;
+            height: 100% !important;
+            touch-action: pan-x !important;
+        }
+    }
 </style>
 @endpush
 @section('content')
@@ -129,7 +263,7 @@
     <header class="reports-header reports-header--dealer">
         <div class="reports-header-actions">
             <form method="get" action="{{ route('dealer.reports') }}" class="reports-period-form reports-period-form-compact reports-period-form--dealer" id="reportsPeriodForm">
-                <div class="reports-period-date-group-wrapper reports-filter-container">
+                <div class="reports-period-date-group-wrapper reports-filter-container" style="width: 340px; min-height: 90px; display: flex; flex-direction: column;">
                     <div class="reports-range-label">PERIOD</div>
                     <select name="period" id="reportsPeriodSelect" class="reports-period-select reports-period-select--dealer" aria-label="Report period" style="display: {{ ($period ?? '60_days') === 'range' ? 'none' : 'block' }};">
                         <option value="30_days" {{ ($period ?? '60_days') === '30_days' ? 'selected' : '' }}>Last 30 Days</option>
@@ -146,9 +280,14 @@
                             <label class="reports-range-label">Ending</label>
                             <input type="date" name="to" id="reportsRangeTo" value="{{ $to ?? '' }}" class="reports-range-input" aria-label="To date">
                         </div>
-                        <button type="button" class="reports-range-back-btn" id="reportsRangeReset">
-                            <i class="bi bi-x-lg"></i>
-                        </button>
+                        <div class="reports-range-col" style="display: flex; flex-direction: column; gap: 4px; align-items: center; justify-content: flex-end; padding-bottom: 2px;">
+                            <button type="button" class="reports-range-back-btn" id="reportsRangeReset" title="Reset" style="position: static; margin: 0; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-x-lg" style="font-size: 11px;"></i>
+                            </button>
+                            <button type="button" class="reports-range-back-btn" id="reportsRangeSubmit" title="Search" style="position: static; margin: 0; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-search" style="font-size: 11px;"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <button type="button" class="report-filter-export reports-period-export" data-export-report-pdf data-export-title="Dealer Performance Report - {{ $periodLabel ?? 'Current Month' }}" data-export-target=".dashboard-content.reports-page" style="flex-shrink: 0;">Export PDF</button>
@@ -158,41 +297,42 @@
 
     {{-- Metric Cards --}}
     <section class="reports-metrics">
-        <div class="reports-metric-card">
-            <div class="reports-metric-icon reports-metric-icon-pending"><i class="bi bi-file-earmark"></i></div>
-            <div class="reports-metric-value">{{ $statusCounts['PENDING'] ?? 0 }}</div>
-            <div class="reports-metric-label">PENDING</div>
-        </div>
-        <div class="reports-metric-card">
-            <div class="reports-metric-icon reports-metric-icon-followup"><i class="bi bi-calendar-event"></i></div>
-            <div class="reports-metric-value">{{ $statusCounts['FOLLOW UP'] ?? 0 }}</div>
-            <div class="reports-metric-label">FOLLOW UP</div>
-        </div>
-        <div class="reports-metric-card">
-            <div class="reports-metric-icon reports-metric-icon-demo"><i class="bi bi-person-video2"></i></div>
-            <div class="reports-metric-value">{{ $statusCounts['DEMO'] ?? 0 }}</div>
-            <div class="reports-metric-label">DEMO</div>
-        </div>
-        <div class="reports-metric-card">
-            <div class="reports-metric-icon reports-metric-icon-confirmed"><i class="bi bi-check-circle"></i></div>
-            <div class="reports-metric-value">{{ $statusCounts['CONFIRMED'] ?? 0 }}</div>
-            <div class="reports-metric-label">CONFIRMED</div>
-        </div>
-        <div class="reports-metric-card">
-            <div class="reports-metric-icon reports-metric-icon-completed"><i class="bi bi-box-seam"></i></div>
-            <div class="reports-metric-value">{{ $statusCounts['COMPLETED'] ?? 0 }}</div>
-            <div class="reports-metric-label">COMPLETED</div>
-        </div>
-        <div class="reports-metric-card">
-            <div class="reports-metric-icon reports-metric-icon-reward"><i class="bi bi-gift"></i></div>
-            <div class="reports-metric-value">{{ $statusCounts['REWARDED'] ?? 0 }}</div>
-            <div class="reports-metric-label">REWARDED</div>
-        </div>
-        <div class="reports-metric-card">
-            <div class="reports-metric-icon reports-metric-icon-failed dealer-reports-failed-icon"><i class="bi bi-x-circle"></i></div>
-            <div class="reports-metric-value">{{ $statusCounts['FAILED'] ?? 0 }}</div>
-            <div class="reports-metric-label">FAILED</div>
-        </div>
+        @php
+            $metricCards = [
+                ['label' => 'PENDING', 'key' => 'PENDING', 'icon' => 'bi-file-earmark', 'icon_class' => 'reports-metric-icon-pending'],
+                ['label' => 'FOLLOW UP', 'key' => 'FOLLOW UP', 'icon' => 'bi-calendar-event', 'icon_class' => 'reports-metric-icon-followup'],
+                ['label' => 'DEMO', 'key' => 'DEMO', 'icon' => 'bi-person-video2', 'icon_class' => 'reports-metric-icon-demo'],
+                ['label' => 'CONFIRMED', 'key' => 'CONFIRMED', 'icon' => 'bi-check-circle', 'icon_class' => 'reports-metric-icon-confirmed'],
+                ['label' => 'COMPLETED', 'key' => 'COMPLETED', 'icon' => 'bi-box-seam', 'icon_class' => 'reports-metric-icon-completed'],
+                ['label' => 'REWARDED', 'key' => 'REWARDED', 'icon' => 'bi-gift', 'icon_class' => 'reports-metric-icon-reward'],
+                ['label' => 'FAILED', 'key' => 'FAILED', 'icon' => 'bi-x-circle', 'icon_class' => 'reports-metric-icon-failed dealer-reports-failed-icon'],
+            ];
+        @endphp
+
+        @foreach($metricCards as $card)
+            @php
+                $val = $statusCounts[$card['key']] ?? 0;
+                $pct = $metricPercent[$card['key']] ?? 0;
+                $trend = $pct > 0 ? 'up' : ($pct < 0 ? 'down' : 'same');
+            @endphp
+            <div class="reports-metric-card">
+                <div class="reports-metric-icon {{ $card['icon_class'] }}"><i class="bi {{ $card['icon'] }}"></i></div>
+                <div class="reports-metric-value">{{ $val }}</div>
+                <div class="reports-metric-label">{{ $card['label'] }}</div>
+                <div class="reports-admin-metric-trend reports-admin-metric-trend--{{ $trend }}">
+                    @if ($trend === 'up')
+                        <svg class="reports-admin-metric-trend-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v13m0-13 4 4m-4-4-4 4"/></svg>
+                        <span>+{{ $pct }}% vs last period</span>
+                    @elseif ($trend === 'down')
+                        <svg class="reports-admin-metric-trend-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19V5m0 0-4 4m4-4 4 4"/></svg>
+                        <span>{{ $pct }}% vs last period</span>
+                    @else
+                        <svg class="reports-admin-metric-trend-icon reports-admin-metric-trend-icon--same" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-4 4 4-4m0 0 4-4"/></svg>
+                        <span>No change</span>
+                    @endif
+                </div>
+            </div>
+        @endforeach
     </section>
 
     @php
@@ -266,7 +406,12 @@
 
     <section class="dashboard-panels-two-column">
         <section class="dashboard-panel reports-inquiry-section">
-            <div class="dashboard-panel-header">
+            <div class="dashboard-panel-header" style="position: relative; padding-right: 40px;">
+                <button type="button" class="reports-fullscreen-btn" onclick="toggleChartFullscreen(this.closest('.dashboard-panel'))" aria-label="Toggle Fullscreen">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="20" height="20">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4h4M4 4l5 5M20 8V4h-4M20 4l-5 5M4 16v4h4M4 20l5-5M20 16v4h-4M20 20l-5-5" />
+                    </svg>
+                </button>
                 <div class="reports-inquiry-heading">
                     <div class="dashboard-panel-title">Inquiry Trends</div>
                     <div class="reports-inquiry-subtitle">Inquiries for {{ $periodLabel ?? 'Current Month' }}</div>
@@ -283,9 +428,11 @@
                     @if (!$hasInquiryTrendData)
                         <p class="dealer-reports-empty">No leads created in this period yet.</p>
                     @else
-                        <div class="dealer-reports-chart-wrapper" style="height: 336px;">
-                            <p class="dealer-reports-chart-fallback">Unable to load inquiry trend chart.</p>
-                            <canvas id="dealerInquiryTrendChart"></canvas>
+                        <div class="dealer-reports-chart-scroll-wrapper">
+                            <div class="dealer-reports-chart-wrapper" id="dealerInquiryTrendChartWrapper" style="height: 336px;">
+                                <p class="dealer-reports-chart-fallback">Unable to load inquiry trend chart.</p>
+                                <canvas id="dealerInquiryTrendChart"></canvas>
+                            </div>
                         </div>
                     @endif
                 </div>
@@ -330,7 +477,12 @@
     </section>
 
     <section class="dashboard-panel dashboard-table-panel reports-product-section">
-        <div class="dashboard-panel-header">
+        <div class="dashboard-panel-header" style="position: relative; padding-right: 40px;">
+            <button type="button" class="reports-fullscreen-btn" onclick="toggleChartFullscreen(this.closest('.dashboard-panel'))" aria-label="Toggle Fullscreen">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="20" height="20">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4h4M4 4l5 5M20 8V4h-4M20 4l-5 5M4 16v4h4M4 20l5-5M20 16v4h-4M20 20l-5-5" />
+                </svg>
+            </button>
             <div class="reports-product-heading">
                 <div class="dashboard-panel-title">Product Conversion Rate</div>
                 <div class="reports-product-subtitle">Closed-case conversions by product for {{ $periodLabel ?? 'Current Month' }}</div>
@@ -343,9 +495,24 @@
         </div>
         <div class="dashboard-panel-body">
             <div class="reports-product-card">
-                <div class="reports-product-chart-wrapper" style="height: {{ $productChartHeightPx }}px;">
+                @php
+                    $itemCount = $productConversionDisplay->count();
+                    $barHeightPx = 20;
+                    $gapPx = 10;
+                    $paddingPx = 44;
+                    $chartHeightPx = max(220, $itemCount * ($barHeightPx + $gapPx) + $paddingPx);
+                    $mobileChartWidthPx = max(750, $itemCount * 110);
+                @endphp
+                <div class="reports-product-chart-desktop-wrapper" id="dealerProductConversionChartDesktopWrapper" style="height: {{ $chartHeightPx }}px;">
                     <p class="reports-product-chart-fallback">Unable to load product conversion chart.</p>
-                    <canvas id="dealerProductConversionChart"></canvas>
+                    <canvas id="dealerProductConversionChartDesktop"></canvas>
+                </div>
+                
+                <div class="dealer-reports-chart-scroll-wrapper reports-product-chart-mobile-wrapper" style="display: none;">
+                    <div class="reports-product-chart-wrapper" id="dealerProductConversionChartMobileWrapper" style="width: {{ $mobileChartWidthPx }}px; min-width: {{ $mobileChartWidthPx }}px; height: 300px;">
+                        <p class="reports-product-chart-fallback">Unable to load product conversion chart.</p>
+                        <canvas id="dealerProductConversionChartMobile"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -356,6 +523,35 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+function toggleChartFullscreen(element) {
+    if (!document.fullscreenElement) {
+        if (element.requestFullscreen) {
+            element.requestFullscreen().then(() => {
+                if (screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('landscape').catch(() => {});
+                }
+            }).catch(err => {
+                console.error(`Fullscreen failed: ${err.message}`);
+            });
+        } else if (element.webkitRequestFullscreen) {
+            element.webkitRequestFullscreen();
+        } else if (element.msRequestFullscreen) {
+            element.msRequestFullscreen();
+        }
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+            if (screen.orientation && screen.orientation.unlock) {
+                screen.orientation.unlock();
+            }
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+        }
+    }
+}
+
 function initDealerReportsPage() {
     var periodSelect = document.getElementById('reportsPeriodSelect');
     var rangeWrap = document.getElementById('reportsRangeInline');
@@ -423,7 +619,6 @@ function initDealerReportsPage() {
                 rangeFrom.value = rangeFrom.value || todayValue;
                 rangeTo.value = rangeTo.value || todayValue;
                 rangeTo.min = rangeFrom.value || '';
-                scheduleRangeSubmit();
                 return;
             }
 
@@ -431,16 +626,37 @@ function initDealerReportsPage() {
             rangeTo.value = '';
             submitReportFilter();
         });
-        rangeFrom.addEventListener('change', scheduleRangeSubmit);
+        var handleDateSubmit = function(e) {
+            if (e.type === 'keydown' && e.key !== 'Enter') {
+                return;
+            }
+            if (e.type === 'keydown' && e.key === 'Enter') {
+                e.preventDefault();
+            }
+            var from = rangeFrom.value;
+            var to = rangeTo.value;
+            if (from && from.length >= 10 && to && to.length >= 10 && from <= to) {
+                submitReportFilter();
+            }
+        };
+
+        var rangeSubmitBtn = document.getElementById('reportsRangeSubmit');
+        if (rangeSubmitBtn) {
+            rangeSubmitBtn.addEventListener('click', function(e) {
+                handleDateSubmit(e);
+            });
+        }
+
+        rangeFrom.addEventListener('keydown', handleDateSubmit);
+        rangeTo.addEventListener('keydown', handleDateSubmit);
+        
+        // Date inputs will only submit via Enter key (handled above) or the Search button.
         rangeFrom.addEventListener('input', function() {
             rangeTo.min = rangeFrom.value || '';
             if (rangeTo.value && rangeFrom.value && rangeTo.value < rangeFrom.value) {
                 rangeTo.value = rangeFrom.value;
             }
-            scheduleRangeSubmit();
         });
-        rangeTo.addEventListener('change', scheduleRangeSubmit);
-        rangeTo.addEventListener('input', scheduleRangeSubmit);
 
         var rangeReset = document.getElementById('reportsRangeReset');
         if (rangeReset) {
@@ -560,69 +776,21 @@ function initDealerReportsPage() {
                 return normalized;
             });
 
-            function buildMonthlyWeekBuckets(labels, values) {
-                var monthStart = new Date(Date.UTC(Number(currentYear), Math.max(Number(currentMonthNumber) - 1, 0), 1));
-                var daysInMonth = new Date(Date.UTC(Number(currentYear), Number(currentMonthNumber), 0)).getUTCDate();
-                var firstWeekday = monthStart.getUTCDay();
-                var mondayOffset = firstWeekday === 0 ? 6 : firstWeekday - 1;
-                var totalWeeks = Math.floor((mondayOffset + daysInMonth - 1) / 7) + 1;
-
-                var bucketLabels = [];
-                var bucketValues = new Array(totalWeeks).fill(0);
-                var bucketRanges = new Array(totalWeeks).fill(null).map(function() {
-                    return { firstDay: null, lastDay: null };
-                });
-
-                for (var weekIndex = 0; weekIndex < totalWeeks; weekIndex++) {
-                    bucketLabels.push('Week ' + (weekIndex + 1));
-                }
-
-                labels.forEach(function(label, index) {
-                    var dayNumber = parseInt(String(label || '').trim(), 10);
-                    if (!Number.isFinite(dayNumber) || dayNumber < 1 || dayNumber > daysInMonth) {
-                        return;
-                    }
-
-                    var weekIndex = Math.floor((mondayOffset + dayNumber - 1) / 7);
-                    var safeWeekIndex = Math.max(0, Math.min(totalWeeks - 1, weekIndex));
-                    bucketValues[safeWeekIndex] += Number(values[index]) || 0;
-
-                    if (bucketRanges[safeWeekIndex].firstDay === null || dayNumber < bucketRanges[safeWeekIndex].firstDay) {
-                        bucketRanges[safeWeekIndex].firstDay = dayNumber;
-                    }
-
-                    if (bucketRanges[safeWeekIndex].lastDay === null || dayNumber > bucketRanges[safeWeekIndex].lastDay) {
-                        bucketRanges[safeWeekIndex].lastDay = dayNumber;
-                    }
-                });
-
-                var bucketTooltips = bucketRanges.map(function(range, index) {
-                    if (range.firstDay !== null && range.lastDay !== null) {
-                        return currentMonthName + ' ' + range.firstDay + ', ' + currentYear + ' - ' + currentMonthName + ' ' + range.lastDay + ', ' + currentYear;
-                    }
-
-                    return 'Week ' + (index + 1);
-                });
-
-                return {
-                    labels: bucketLabels,
-                    values: bucketValues,
-                    tooltips: bucketTooltips
-                };
+            var totalDays = inquiryLabels.length;
+            var tickStep = 15;
+            if (totalDays > 180) {
+                tickStep = 30;
+            } else if (totalDays >= 30 && totalDays <= 45) {
+                tickStep = 3;
+            } else if (totalDays < 30) {
+                if (totalDays <= 7) tickStep = 1;
+                else if (totalDays <= 14) tickStep = 2;
+                else tickStep = 3;
+            } else {
+                tickStep = 15;
             }
 
-            if (reportPeriod === 'month') {
-                var monthBuckets = buildMonthlyWeekBuckets(inquiryLabels, inquiryValues);
-                inquiryLabels = monthBuckets.labels;
-                inquiryValues = monthBuckets.values;
-                tooltipLabels = monthBuckets.tooltips;
-            }
-
-            var showAllMonthWeekTicks = reportPeriod === 'month';
-            var showAllYearTicks = reportPeriod === 'year';
-            var showAllPeriodTicks = showAllMonthWeekTicks || showAllYearTicks;
-            var maxTickCount = inquiryLabels.length > 24 ? 11 : (inquiryLabels.length > 14 ? 9 : (inquiryLabels.length > 7 ? 7 : inquiryLabels.length));
-            var tickStep = inquiryLabels.length > 24 ? 3 : (inquiryLabels.length > 14 ? 2 : 1);
+            var maxTickCount = Math.ceil(totalDays / tickStep) + 2;
             var maxInquiryValue = inquiryValues.length ? Math.max.apply(null, inquiryValues) : 0;
             function clearInquiryHover(chart) {
                 chart.setActiveElements([]);
@@ -838,26 +1006,20 @@ function initDealerReportsPage() {
                                 color: tickColor,
                                 padding: 4,
                                 font: {
-                                    size: showAllMonthWeekTicks ? 10 : (showAllYearTicks ? 10 : (inquiryLabels.length > 10 ? 10 : 11)),
+                                    size: 10,
                                     weight: '500'
                                 },
-                                autoSkip: !showAllPeriodTicks,
-                                maxTicksLimit: showAllPeriodTicks ? inquiryLabels.length : maxTickCount,
+                                autoSkip: false,
+                                maxTicksLimit: inquiryLabels.length,
                                 callback: function(value, index) {
                                     var label = this.getLabelForValue(value);
-                                    if (showAllPeriodTicks) {
-                                        return label;
-                                    }
-                                    if (inquiryLabels.length <= maxTickCount) {
-                                        return label;
-                                    }
                                     if (index === 0 || index === inquiryLabels.length - 1 || index % tickStep === 0) {
                                         return label;
                                     }
                                     return '';
                                 },
-                                maxRotation: showAllMonthWeekTicks ? 0 : (showAllYearTicks ? 0 : (inquiryLabels.length > 7 ? 35 : 0)),
-                                minRotation: showAllMonthWeekTicks ? 0 : (showAllYearTicks ? 0 : (inquiryLabels.length > 7 ? 35 : 0))
+                                maxRotation: 0,
+                                minRotation: 0
                             }
                         },
                         y: {
@@ -896,10 +1058,12 @@ function initDealerReportsPage() {
         }
     }
 
-    var productCanvas = document.getElementById('dealerProductConversionChart');
-    if (productCanvas) {
-        var productWrapper = productCanvas.closest('.reports-product-chart-wrapper');
-        var productFallback = productWrapper ? productWrapper.querySelector('.reports-product-chart-fallback') : null;
+
+    var renderProductChart = function(canvasId, wrapperId, isMobileChart) {
+        var canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        var wrapper = document.getElementById(wrapperId);
+        var fallback = wrapper ? wrapper.querySelector('.reports-product-chart-fallback') : null;
 
         try {
             var rawProducts = @json($productConversionDisplay->values());
@@ -929,7 +1093,7 @@ function initDealerReportsPage() {
             var axisMax = maxValue > 0 ? Math.max(maxValue + 1, Math.ceil(maxValue * 1.35)) : 1;
 
             var endValueLabels = {
-                id: 'dealerEndValueLabels',
+                id: 'dealerEndValueLabels_' + canvasId,
                 afterDatasetsDraw: function(chart) {
                     var meta = chart.getDatasetMeta(0);
                     if (!meta || !meta.data || !meta.data.length) return;
@@ -939,71 +1103,60 @@ function initDealerReportsPage() {
                     ctx.save();
                     ctx.font = '600 12px "Public Sans", sans-serif';
                     ctx.fillStyle = darkTheme ? '#c8d2eb' : '#475569';
-                    ctx.textBaseline = 'middle';
+                    
+                    if (isMobileChart) {
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'bottom';
+                    } else {
+                        ctx.textAlign = 'left';
+                        ctx.textBaseline = 'middle';
+                    }
 
                     meta.data.forEach(function(bar, index) {
                         var value = dataValues[index] || 0;
                         var pct = totalValue > 0 ? Math.round((value / totalValue) * 100) : 0;
-                        var text = value + ' (' + pct + '%)';
-                        var textWidth = ctx.measureText(text).width;
-                        var x = bar.x + 10;
-                        if (x + textWidth > chartArea.right - 4) {
-                            x = chartArea.right - textWidth - 4;
+                        var text = value + (isMobileChart ? '' : ' (' + pct + '%)');
+                        
+                        if (isMobileChart) {
+                            var y = bar.y - 8;
+                            if (y < chartArea.top + 12) y = chartArea.top + 12;
+                            ctx.fillText(text, bar.x, y);
+                        } else {
+                            var textWidth = ctx.measureText(text).width;
+                            var x = bar.x + 10;
+                            if (x + textWidth > chartArea.right - 4) {
+                                x = chartArea.right - textWidth - 4;
+                            }
+                            ctx.fillText(text, x, bar.y);
                         }
-                        ctx.fillText(text, x, bar.y);
                     });
 
                     ctx.restore();
                 }
             };
 
-            new Chart(productCanvas.getContext('2d'), {
+            var chartConfig = {
                 type: 'bar',
                 plugins: [endValueLabels],
                 data: {
                     labels: labels,
                     datasets: [{
-                        axis: 'y',
                         label: 'Product conversions',
                         data: dataValues,
-                        backgroundColor: function(context) {
-                            return barColors[context.dataIndex] || '#94a3b8';
-                        },
-                        borderColor: function(context) {
-                            return borderColors[context.dataIndex] || '#64748b';
-                        },
+                        backgroundColor: function(context) { return barColors[context.dataIndex] || '#94a3b8'; },
+                        borderColor: function(context) { return borderColors[context.dataIndex] || '#64748b'; },
                         borderWidth: 1,
                         borderSkipped: false,
                         borderRadius: 8,
-                        barThickness: 14,
-                        maxBarThickness: 16,
-                        categoryPercentage: 0.78,
-                        barPercentage: 0.82,
-                        hoverBackgroundColor: function(context) {
-                            return borderColors[context.dataIndex] || '#475569';
-                        }
+                        hoverBackgroundColor: function(context) { return borderColors[context.dataIndex] || '#475569'; }
                     }]
                 },
                 options: {
-                    indexAxis: 'y',
                     maintainAspectRatio: false,
                     responsive: true,
-                    animation: {
-                        duration: 260,
-                        easing: 'easeOutCubic'
-                    },
-                    layout: {
-                        padding: {
-                            top: 4,
-                            right: 72,
-                            bottom: 0,
-                            left: 6
-                        }
-                    },
+                    animation: { duration: 260, easing: 'easeOutCubic' },
                     plugins: {
-                        legend: {
-                            display: false
-                        },
+                        legend: { display: false },
                         tooltip: {
                             displayColors: false,
                             backgroundColor: 'rgba(15, 23, 42, 0.94)',
@@ -1012,11 +1165,9 @@ function initDealerReportsPage() {
                             padding: 12,
                             cornerRadius: 10,
                             callbacks: {
-                                title: function(items) {
-                                    return items[0] && items[0].label ? items[0].label : 'Product';
-                                },
+                                title: function(items) { return items[0] && items[0].label ? items[0].label : 'Product'; },
                                 label: function(context) {
-                                    var value = context.parsed && typeof context.parsed.x === 'number' ? Math.round(context.parsed.x) : 0;
+                                    var value = context.parsed && typeof context.parsed[isMobileChart ? 'y' : 'x'] === 'number' ? Math.round(context.parsed[isMobileChart ? 'y' : 'x']) : 0;
                                     var pct = totalValue > 0 ? ((value / totalValue) * 100).toFixed(1) : '0.0';
                                     return 'Conversions: ' + value + ' (' + pct + '%)';
                                 },
@@ -1026,59 +1177,91 @@ function initDealerReportsPage() {
                                 }
                             }
                         }
-                    },
-                    scales: {
-                        x: {
-                            beginAtZero: true,
-                            max: axisMax,
-                            grid: {
-                                color: darkTheme ? 'rgba(148, 163, 184, 0.14)' : 'rgba(148, 163, 184, 0.10)',
-                                drawBorder: false,
-                                drawTicks: false
-                            },
-                            border: {
-                                display: false
-                            },
-                            ticks: {
-                                color: darkTheme ? '#9fb0d4' : '#94a3b8',
-                                font: {
-                                    size: 11,
-                                    weight: '600'
-                                },
-                                padding: 8,
-                                stepSize: maxValue <= 10 ? 1 : undefined,
-                                callback: function(value) {
-                                    return Math.round(value);
-                                }
-                            }
-                        },
-                        y: {
-                            grid: {
-                                display: false
-                            },
-                            border: {
-                                display: false
-                            },
-                            ticks: {
-                                autoSkip: false,
-                                padding: 10,
-                                color: darkTheme ? '#eef2ff' : '#0f172a',
-                                font: {
-                                    size: 11,
-                                    weight: '600'
-                                }
-                            }
-                        }
                     }
                 }
-            });
+            };
 
-            if (productWrapper) productWrapper.classList.remove('is-error');
+            if (isMobileChart) {
+                chartConfig.options.indexAxis = 'x';
+                chartConfig.data.datasets[0].barThickness = 32;
+                chartConfig.data.datasets[0].maxBarThickness = 48;
+                chartConfig.options.layout = { padding: { top: 24, right: 0, bottom: 0, left: 0 } };
+                chartConfig.options.scales = {
+                    x: {
+                        grid: { display: false },
+                        border: { display: false },
+                        ticks: {
+                            color: darkTheme ? '#9fb0d4' : '#94a3b8',
+                            font: { size: 10, weight: '600' },
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        max: axisMax,
+                        grid: {
+                            color: darkTheme ? 'rgba(148, 163, 184, 0.14)' : 'rgba(148, 163, 184, 0.10)',
+                            drawBorder: false,
+                            drawTicks: false,
+                            borderDash: [4, 4]
+                        },
+                        border: { display: false },
+                        ticks: {
+                            color: darkTheme ? '#9fb0d4' : '#94a3b8',
+                            font: { size: 11, weight: '600' },
+                            padding: 8,
+                            stepSize: maxValue <= 10 ? 1 : undefined,
+                            callback: function(value) { return Math.round(value); }
+                        }
+                    }
+                };
+            } else {
+                chartConfig.options.indexAxis = 'y';
+                chartConfig.data.datasets[0].barThickness = 14;
+                chartConfig.data.datasets[0].maxBarThickness = 16;
+                chartConfig.options.layout = { padding: { top: 4, right: 72, bottom: 0, left: 6 } };
+                chartConfig.options.scales = {
+                    x: {
+                        beginAtZero: true,
+                        max: axisMax,
+                        grid: {
+                            color: darkTheme ? 'rgba(148, 163, 184, 0.14)' : 'rgba(148, 163, 184, 0.10)',
+                            drawBorder: false,
+                            drawTicks: false
+                        },
+                        border: { display: false },
+                        ticks: {
+                            color: darkTheme ? '#9fb0d4' : '#94a3b8',
+                            font: { size: 11, weight: '600' },
+                            padding: 8,
+                            stepSize: maxValue <= 10 ? 1 : undefined,
+                            callback: function(value) { return Math.round(value); }
+                        }
+                    },
+                    y: {
+                        grid: { display: false },
+                        border: { display: false },
+                        ticks: {
+                            autoSkip: false,
+                            padding: 10,
+                            color: darkTheme ? '#eef2ff' : '#0f172a',
+                            font: { size: 11, weight: '600' }
+                        }
+                    }
+                };
+            }
+
+            new Chart(canvas.getContext('2d'), chartConfig);
+            if (wrapper) wrapper.classList.remove('is-error');
         } catch (error) {
             console.error('Dealer product conversion chart failed to render.', error);
-            showChartFallback(productWrapper, productFallback, 'Unable to render product conversion chart.');
+            showChartFallback(wrapper, fallback, 'Unable to render product conversion chart.');
         }
-    }
+    };
+
+    renderProductChart('dealerProductConversionChartDesktop', 'dealerProductConversionChartDesktopWrapper', false);
+    renderProductChart('dealerProductConversionChartMobile', 'dealerProductConversionChartMobileWrapper', true);
 }
 
 if (document.readyState === 'loading') {

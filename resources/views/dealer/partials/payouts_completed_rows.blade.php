@@ -107,6 +107,7 @@
                     data-lead-id="{{ $r->LEADID }}"
                     data-customer="{{ $custDisp }}"
                     data-status="{{ $statusDisp }}"
+                    data-non-failed-status="{{ $r->ACT_NON_FAILED_STATUS ?? '' }}"
                     data-referral-code="{{ trim((string) ($r->REFERRALCODE ?? '')) }}"
                     title="Update"
                     aria-label="Update">

@@ -48,7 +48,7 @@ class AdminController extends Controller
                     TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) AS UID,
                     COUNT(*) AS TOTAL_LEAD,
                     SUM(CASE WHEN ls."LATEST_STATUS" IN (\'PENDING\', \'FOLLOWUP\', \'FOLLOW UP\', \'DEMO\', \'CONFIRMED\') THEN 1 ELSE 0 END) AS TOTAL_ONGOING,
-                    SUM(CASE WHEN ls."LATEST_STATUS" IN (\'COMPLETED\', \'REWARDED\') THEN 1 ELSE 0 END) AS TOTAL_CLOSED,
+                    SUM(CASE WHEN ls."LATEST_STATUS" IN (\'COMPLETED\', \'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\') THEN 1 ELSE 0 END) AS TOTAL_CLOSED,
                     SUM(CASE WHEN ls."LATEST_STATUS" = \'FAILED\' THEN 1 ELSE 0 END) AS TOTAL_FAILED
                  FROM "LEAD" l
                  LEFT JOIN (
@@ -875,8 +875,50 @@ class AdminController extends Controller
         return view('admin.dashboard', array_merge($this->dashboardData(), ['currentPage' => 'dashboard']));
     }
 
-    public function inquiries(): View
+    public function notifications(): JsonResponse
     {
+        try {
+            $rows = DB::select(
+                'SELECT FIRST 10
+                    "LEADID", "COMPANYNAME", "CONTACTNAME", "CREATEDAT", "DESCRIPTION"
+                 FROM "LEAD"
+                 WHERE COALESCE("ISDELETED", FALSE) = FALSE
+                   AND ("ASSIGNEDTO" IS NULL OR TRIM("ASSIGNEDTO") = \'\')
+                 ORDER BY "LEADID" DESC'
+            );
+
+            $items = array_map(function ($r) {
+                $leadId = (int) ($r->LEADID ?? 0);
+                $company = trim((string) ($r->COMPANYNAME ?? ''));
+                $contact = trim((string) ($r->CONTACTNAME ?? ''));
+                $createdAt = $r->CREATEDAT ?? '';
+                $desc = trim((string) ($r->DESCRIPTION ?? ''));
+
+                $title = $company ?: $contact ?: ('Inquiry #SQL-' . $leadId);
+                if ($company && $contact) {
+                    $title = $company . ' (' . $contact . ')';
+                }
+
+                return [
+                    'id' => $leadId,
+                    'lead_id' => $leadId,
+                    'title' => $title,
+                    'description' => Str::limit($desc, 60),
+                    'time' => $createdAt ? Carbon::parse($createdAt)->diffForHumans() : '',
+                    'target_url' => route('admin.inquiries', ['lead' => $leadId])
+                ];
+            }, $rows);
+
+            return response()->json(['items' => $items]);
+        } catch (\Throwable $e) {
+            return response()->json(['items' => [], 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function inquiries(Request $request): View
+    {
+        $focusLeadId = (int) $request->query('lead', 0);
+
         $rows = DB::select(
             'SELECT FIRST 200
                 "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL","ADDRESS1","ADDRESS2","CITY","STATE","COUNTRY","POSTCODE",
@@ -886,6 +928,30 @@ class AdminController extends Controller
             WHERE COALESCE("ISDELETED", FALSE) = FALSE
             ORDER BY "LEADID" DESC'
         );
+
+        if ($focusLeadId > 0) {
+            $found = false;
+            foreach ($rows as $r) {
+                if ((int) ($r->LEADID ?? 0) === $focusLeadId) {
+                    $found = true;
+                    break;
+                }
+            }
+            if (!$found) {
+                $focusRow = DB::selectOne(
+                    'SELECT
+                        "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL","ADDRESS1","ADDRESS2","CITY","STATE","COUNTRY","POSTCODE",
+                        "BUSINESSNATURE","USERCOUNT","EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION","REFERRALCODE",
+                        "CREATEDAT","CREATEDBY","ASSIGNEDTO" AS "assignedTo","LASTMODIFIED"
+                    FROM "LEAD"
+                    WHERE "LEADID" = ? AND COALESCE("ISDELETED", FALSE) = FALSE',
+                    [$focusLeadId]
+                );
+                if ($focusRow) {
+                    array_unshift($rows, $focusRow);
+                }
+            }
+        }
 
         // Derive CURRENTSTATUS from latest LEAD_ACT status per LEADID
         try {
@@ -953,7 +1019,7 @@ class AdminController extends Controller
         usort($unassigned, function ($a, $b) {
             $ta = strtotime($a->CREATEDAT ?? '0');
             $tb = strtotime($b->CREATEDAT ?? '0');
-            return $ta <=> $tb;
+            return $tb <=> $ta;
         });
         usort($assigned, function ($a, $b) {
             $ta = strtotime($a->LASTMODIFIED ?? $a->CREATEDAT ?? '0');
@@ -1038,7 +1104,7 @@ class AdminController extends Controller
                                        FROM "LEAD_ACT" la
                                        WHERE la."LEADID" = l."LEADID"
                                        ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
-                                      ) IN (\'COMPLETED\', \'REWARDED\') THEN 1 ELSE 0 END) AS TOTAL_CLOSED
+                                      ) IN (\'COMPLETED\', \'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\') THEN 1 ELSE 0 END) AS TOTAL_CLOSED
                      FROM "LEAD" l
                      WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
                        AND l."ASSIGNEDTO" IS NOT NULL AND TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) <> \'\'
@@ -1095,6 +1161,7 @@ class AdminController extends Controller
             'productLabels' => $productLabels,
             'dealers' => $dealers,
             'currentPage' => 'inquiries',
+            'focusLeadId' => $focusLeadId
         ]);
     }
 
@@ -2608,7 +2675,7 @@ class AdminController extends Controller
             'SELECT
                 CASE
                     WHEN ls.latest_status IN (\'PENDING\', \'FOLLOWUP\', \'FOLLOW UP\', \'DEMO\', \'CONFIRMED\') THEN \'Ongoing\'
-                    WHEN ls.latest_status IN (\'COMPLETED\', \'REWARDED\') THEN \'Closed\'
+                    WHEN ls.latest_status IN (\'COMPLETED\', \'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\') THEN \'Closed\'
                     WHEN ls.latest_status = \'FAILED\' THEN \'Failed\'
                     ELSE \'Open\'
                 END AS status,
@@ -2630,7 +2697,7 @@ class AdminController extends Controller
              GROUP BY
                 CASE
                     WHEN ls.latest_status IN (\'PENDING\', \'FOLLOWUP\', \'FOLLOW UP\', \'DEMO\', \'CONFIRMED\') THEN \'Ongoing\'
-                    WHEN ls.latest_status IN (\'COMPLETED\', \'REWARDED\') THEN \'Closed\'
+                    WHEN ls.latest_status IN (\'COMPLETED\', \'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\') THEN \'Closed\'
                     WHEN ls.latest_status = \'FAILED\' THEN \'Failed\'
                     ELSE \'Open\'
                 END',
@@ -2654,7 +2721,7 @@ class AdminController extends Controller
             'SELECT
                 CASE
                     WHEN ls.latest_status IN (\'PENDING\', \'FOLLOWUP\', \'FOLLOW UP\', \'DEMO\', \'CONFIRMED\') THEN \'Ongoing\'
-                    WHEN ls.latest_status IN (\'COMPLETED\', \'REWARDED\') THEN \'Closed\'
+                    WHEN ls.latest_status IN (\'COMPLETED\', \'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\') THEN \'Closed\'
                     WHEN ls.latest_status = \'FAILED\' THEN \'Failed\'
                     ELSE \'Open\'
                 END AS status,
@@ -2676,7 +2743,7 @@ class AdminController extends Controller
              GROUP BY
                 CASE
                     WHEN ls.latest_status IN (\'PENDING\', \'FOLLOWUP\', \'FOLLOW UP\', \'DEMO\', \'CONFIRMED\') THEN \'Ongoing\'
-                    WHEN ls.latest_status IN (\'COMPLETED\', \'REWARDED\') THEN \'Closed\'
+                    WHEN ls.latest_status IN (\'COMPLETED\', \'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\') THEN \'Closed\'
                     WHEN ls.latest_status = \'FAILED\' THEN \'Failed\'
                     ELSE \'Open\'
                 END',
@@ -2857,31 +2924,12 @@ class AdminController extends Controller
             }
         }
         $inquiryTrend = [];
-        if ($currentRangeDays >= 60) {
-            $trendByWeek = [];
-            foreach ($trendByDay as $dayKey => $count) {
-                $dt = Carbon::parse($dayKey);
-                $weekStart = $dt->copy()->startOfWeek();
-                $weekKey = $weekStart->format('Y-m-d');
-                if (!isset($trendByWeek[$weekKey])) {
-                    $weekEnd = $weekStart->copy()->endOfWeek();
-                    $trendByWeek[$weekKey] = [
-                        'day' => 'Week ' . $weekStart->weekOfYear,
-                        'full_day' => $weekStart->format('d/m/Y') . ' - ' . $weekEnd->format('d/m/Y'),
-                        'count' => 0
-                    ];
-                }
-                $trendByWeek[$weekKey]['count'] += $count;
-            }
-            $inquiryTrend = array_values($trendByWeek);
-        } else {
-            foreach ($trendByDay as $dayKey => $count) {
-                $inquiryTrend[] = [
-                    'day' => Carbon::parse($dayKey)->format('M j'),
-                    'full_day' => Carbon::parse($dayKey)->format('d/m/Y'),
-                    'count' => $count
-                ];
-            }
+        foreach ($trendByDay as $dayKey => $count) {
+            $inquiryTrend[] = [
+                'day' => Carbon::parse($dayKey)->format('M j'),
+                'full_day' => Carbon::parse($dayKey)->format('d/m/Y'),
+                'count' => $count
+            ];
         }
 
         $currentMonthTotal = array_sum($trendByDay);
@@ -3072,7 +3120,7 @@ class AdminController extends Controller
                                        FROM "LEAD_ACT" la
                                        WHERE la."LEADID" = l."LEADID"
                                        ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
-                                      ) IN (\'COMPLETED\', \'REWARDED\') THEN 1 ELSE 0 END) AS closed_c
+                                      ) IN (\'COMPLETED\', \'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\') THEN 1 ELSE 0 END) AS closed_c
                  FROM "LEAD" l
                  JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
                  WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL
@@ -3091,7 +3139,7 @@ class AdminController extends Controller
                                        FROM "LEAD_ACT" la
                                        WHERE la."LEADID" = l."LEADID"
                                        ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
-                                      ) IN (\'COMPLETED\', \'REWARDED\') THEN 1 ELSE 0 END) AS closed_c
+                                      ) IN (\'COMPLETED\', \'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\') THEN 1 ELSE 0 END) AS closed_c
                  FROM "LEAD" l
                  JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
                  WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL
@@ -3136,7 +3184,7 @@ class AdminController extends Controller
                         FROM "LEAD_ACT" la
                         WHERE la."LEADID" = l."LEADID"
                         ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
-                       ) IN (\'COMPLETED\', \'REWARDED\')
+                       ) IN (\'COMPLETED\', \'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\')
                    AND NOT EXISTS (SELECT 1 FROM "LEAD_ACT" a WHERE a."LEADID" = l."LEADID" AND UPPER(TRIM(a."STATUS")) = \'COMPLETED\')
                    ' . $dealerScopeSql . '
                  GROUP BY l."ASSIGNEDTO"',
@@ -3152,7 +3200,7 @@ class AdminController extends Controller
                         FROM "LEAD_ACT" la
                         WHERE la."LEADID" = l."LEADID"
                         ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
-                       ) IN (\'COMPLETED\', \'REWARDED\')
+                       ) IN (\'COMPLETED\', \'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\')
                    AND NOT EXISTS (SELECT 1 FROM "LEAD_ACT" a WHERE a."LEADID" = l."LEADID" AND UPPER(TRIM(a."STATUS")) = \'COMPLETED\')
                    ' . $dealerScopeSql . '
                  GROUP BY l."ASSIGNEDTO"',
@@ -3441,7 +3489,7 @@ class AdminController extends Controller
                         FROM "LEAD_ACT" la
                         WHERE la."LEADID" = l."LEADID"
                         ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
-                       ) IN (\'COMPLETED\', \'REWARDED\')
+                       ) IN (\'COMPLETED\', \'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\')
                    ' . $dealerScopeSql . '
                  GROUP BY l."ASSIGNEDTO", COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL")
                  ORDER BY closed_c DESC',
@@ -3460,7 +3508,7 @@ class AdminController extends Controller
                         FROM "LEAD_ACT" la
                         WHERE la."LEADID" = l."LEADID"
                         ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
-                       ) IN (\'COMPLETED\', \'REWARDED\')
+                       ) IN (\'COMPLETED\', \'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\')
                    ' . $dealerScopeSql . '
                  GROUP BY l."ASSIGNEDTO", COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL")
                  ORDER BY closed_c DESC',
@@ -3595,7 +3643,7 @@ class AdminController extends Controller
                                    FROM "LEAD_ACT" la
                                    WHERE la."LEADID" = l."LEADID"
                                    ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
-                                  ) IN (\'COMPLETED\', \'REWARDED\') THEN 1 ELSE 0 END) AS closed_leads,
+                                  ) IN (\'COMPLETED\', \'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\') THEN 1 ELSE 0 END) AS closed_leads,
                     SUM(CASE WHEN (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
                                    FROM "LEAD_ACT" la
                                    WHERE la."LEADID" = l."LEADID"
@@ -3605,7 +3653,7 @@ class AdminController extends Controller
                      FROM "LEAD_ACT" a
                      INNER JOIN "LEAD" l2 ON l2."LEADID" = a."LEADID" AND l2."ASSIGNEDTO" = u."USERID"
                        AND l2."CREATEDAT" >= ? AND l2."CREATEDAT" <= ?
-                     WHERE UPPER(TRIM(COALESCE(a."STATUS", \'\'))) = ?) AS rewarded_leads
+                     WHERE UPPER(TRIM(COALESCE(a."STATUS", \'\'))) IN (\'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\')) AS rewarded_leads
              FROM "LEAD" l
               JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
                WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL
@@ -3615,7 +3663,7 @@ class AdminController extends Controller
                 ' . $leadScopeSql . '
               GROUP BY u."USERID", u."EMAIL", u."COMPANY", u."ALIAS"
               ORDER BY total_leads DESC';
-        $rowsBindings = [$startStr, $endStr, 'REWARDED', $startStr, $endStr];
+        $rowsBindings = [$startStr, $endStr, $startStr, $endStr];
         $rowsBindings = array_merge($rowsBindings, $leadScopeBindings);
         if ($selectedArea) {
             $rowsBindings[] = $selectedArea;

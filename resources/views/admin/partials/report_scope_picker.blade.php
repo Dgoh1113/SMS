@@ -219,6 +219,9 @@
                                     this.control_input.setAttribute('placeholder', 'Type Company Name or Alias');
                                 }
                                 syncScopeOptgroups(this, '');
+                                // Set title for hover preview on truncated text
+                                var itemEl = this.control ? this.control.querySelector('.item') : null;
+                                if (itemEl) itemEl.setAttribute('title', itemEl.textContent.trim());
                             },
                             onDropdownOpen: function () {
                                 if (this.control_input) {
@@ -233,6 +236,9 @@
                             onDropdownClose: function () {
                                 resetScopeQuery(this);
                                 syncScopeOptgroups(this, '');
+                                // Update title for hover preview on truncated text
+                                var itemEl = this.control ? this.control.querySelector('.item') : null;
+                                if (itemEl) itemEl.setAttribute('title', itemEl.textContent.trim());
                             }
                         });
                     });

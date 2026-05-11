@@ -50,6 +50,17 @@
             font-weight: 700;
             margin-bottom: 4px;
         }
+        /* Stabilize layouts to prevent jump */
+        .inquiry-progression {
+            min-height: 90px;
+        }
+        .inquiry-latest-failed-notice:not([hidden]) {
+            display: block !important;
+            min-height: 80px;
+        }
+        #inquiryHistoryRemarkWrap {
+            min-height: 50px;
+        }
         @media (max-width: 768px) {
             .inquiry-step {
                 padding: 4px 8px;
@@ -156,22 +167,14 @@
                 $dealerLastPage = $dealerTotal > 0 ? (int) ceil($dealerTotal / $dealerPerPage) : 1;
                 $dealerTo = $dealerTotal === 0 ? 0 : min($dealerPerPage, $dealerTotal);
             @endphp
-            <div class="inquiries-assigned-pagination" id="dealerInquiriesPagination"
-                 data-total="{{ $dealerTotal }}"
-                 data-per-page="{{ $dealerPerPage }}"
-                 data-current-page="1"
-                 data-last-page="{{ $dealerLastPage }}">
-                <span class="inquiries-assigned-pagination-info">
-                    Showing {{ $dealerTotal === 0 ? 0 : 1 }} to {{ $dealerTo }} of {{ $dealerTotal }} entries (Page 1)
-                </span>
-                <div class="inquiries-assigned-pagination-nav">
-                    <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" data-page="first">First</button>
-                    <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" data-page="prev">Previous</button>
-                    <span class="inquiries-assigned-page-numbers" id="dealerInquiriesPageNumbers"></span>
-                    <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" data-page="next">Next</button>
-                    <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" data-page="last">Last</button>
-                </div>
-            </div>
+            @include('partials.common_pagination', [
+                'id' => 'dealerInquiriesPagination',
+                'total' => $dealerTotal,
+                'perPage' => $dealerPerPage,
+                'currentPage' => 1,
+                'lastPage' => $dealerLastPage,
+                'pageNumbersId' => 'dealerInquiriesPageNumbers'
+            ])
         </div>
     </section>
 </div>
@@ -805,21 +808,115 @@ function initDealerInquiriesPage() {
             }
         }
 
-        function buildPageNumbers(currentPage, lastPage) {
-            if (!pageNumbersEl) return;
-            pageNumbersEl.innerHTML = '';
-            for (var p = 1; p <= lastPage; p++) {
-                var btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'inquiries-pagination-num' + (p === currentPage ? ' inquiries-pagination-num-active' : '');
-                btn.setAttribute('data-page', String(p));
-                btn.textContent = String(p);
-                btn.addEventListener('click', function() {
-                    var page = parseInt(this.getAttribute('data-page') || '1', 10);
-                    window.dealerGoToPage(page);
-                });
-                pageNumbersEl.appendChild(btn);
+        function buildSmartPageNumbers(container, current, lastPage) {
+            if (!container) return;
+            container.innerHTML = '';
+            
+            var maxVisible = 3;
+            if (lastPage <= maxVisible + 2) {
+                for (var p = 1; p <= lastPage; p++) {
+                    addInquiryPageButton(container, p, p === current);
+                }
+            } else {
+                // Always show page 1
+                addInquiryPageButton(container, 1, 1 === current);
+                
+                var start = Math.max(2, current - 1);
+                var end = Math.min(lastPage - 1, current + 1);
+                
+                if (current <= 3) {
+                    start = 2;
+                    end = 4;
+                } else if (current >= lastPage - 2) {
+                    start = lastPage - 3;
+                    end = lastPage - 1;
+                }
+
+                if (start > 2) {
+                    addInquiryEllipsis(container, lastPage, current);
+                }
+                
+                for (var p = start; p <= end; p++) {
+                    addInquiryPageButton(container, p, p === current);
+                }
+                
+                if (end < lastPage - 1) {
+                    addInquiryEllipsis(container, lastPage, current);
+                }
+
+                // Always show last page
+                addInquiryPageButton(container, lastPage, lastPage === current);
             }
+        }
+
+        function addInquiryPageButton(container, p, isActive) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'inquiries-pagination-num' + (isActive ? ' inquiries-pagination-num-active' : '');
+            btn.setAttribute('data-page', String(p));
+            btn.textContent = String(p);
+            btn.style.position = 'relative';
+            btn.style.zIndex = '5';
+            btn.addEventListener('click', function(e) { 
+                e.stopPropagation();
+                if (!isActive) window.dealerGoToPage(p); 
+            });
+            container.appendChild(btn);
+        }
+
+        function addInquiryEllipsis(container, lastPage, current) {
+            var span = document.createElement('span');
+            span.className = 'inquiries-pagination-num inquiries-pagination-dots';
+            span.textContent = '...';
+            span.setAttribute('data-page', 'dots');
+            span.style.cursor = 'pointer';
+            span.style.position = 'relative';
+            span.style.zIndex = '5';
+            span.addEventListener('click', function(e) { 
+                e.stopPropagation();
+                
+                var input = document.createElement('input');
+                input.type = 'number';
+                input.className = 'inquiries-pagination-num inquiries-pagination-jump-input';
+                input.min = '1';
+                input.max = lastPage;
+                input.placeholder = '#';
+                input.style.width = '45px';
+                input.style.padding = '0 4px';
+                input.style.textAlign = 'center';
+                input.style.border = '1px solid #7c3aed';
+                input.style.borderRadius = '4px';
+                input.style.height = '28px';
+                input.style.outline = 'none';
+                input.style.margin = '0 2px';
+                
+                var doJump = function() {
+                    var val = parseInt(input.value, 10);
+                    if (!isNaN(val) && val >= 1 && val <= lastPage) {
+                        window.dealerGoToPage(val);
+                    } else {
+                        input.parentElement.replaceChild(span, input);
+                    }
+                };
+                
+                input.addEventListener('blur', doJump);
+                input.addEventListener('keypress', function(ev) {
+                    if (ev.key === 'Enter') {
+                        ev.preventDefault();
+                        doJump();
+                    }
+                });
+                
+                span.parentElement.replaceChild(input, span);
+                input.focus();
+            });
+            container.appendChild(span);
+        }
+
+        // Legacy popout removed in favor of inline jump input
+
+        function buildPageNumbers(currentPage, lastPage) {
+            buildSmartPageNumbers(pageNumbersEl, currentPage, lastPage);
         }
 
         window.dealerApplyPagination = function() {
@@ -1253,7 +1350,8 @@ if (document.readyState === 'loading') {
         var metaEl = document.getElementById('inquiryLatestFailedMeta');
         if (!noticeEl || !reasonEl || !metaEl) return;
 
-        var shouldShow = normalizeStatus(latestStatusRaw) === 'FAILED' && !!activity;
+        var isFailed = normalizeStatus(latestStatusRaw) === 'FAILED';
+        var shouldShow = isFailed;
         noticeEl.hidden = !shouldShow;
         if (!shouldShow) {
             reasonEl.textContent = '—';
@@ -1261,9 +1359,14 @@ if (document.readyState === 'loading') {
             return;
         }
 
-        var parsed = parseFailedDescription(activity.description || '');
-        reasonEl.textContent = prettifyFailedReason(parsed.reason || 'No failure reason recorded.');
-        metaEl.textContent = buildFailedMeta(activity);
+        if (activity) {
+            var parsed = parseFailedDescription(activity.description || '');
+            reasonEl.textContent = prettifyFailedReason(parsed.reason || 'No failure reason recorded.');
+            metaEl.textContent = buildFailedMeta(activity);
+        } else {
+            reasonEl.textContent = 'Loading reason...';
+            metaEl.textContent = '...';
+        }
     }
 
     function getProgressionStep(stepName) {
@@ -1510,13 +1613,17 @@ if (document.readyState === 'loading') {
         if (act && act.description) {
             historyWrap.style.display = 'block';
             historyEl.textContent = act.description;
+        } else if (isLoadingActivities && !viewMode) {
+            // Show a placeholder while loading to prevent jump
+            historyWrap.style.display = 'block';
+            historyEl.textContent = 'Loading previous remarks...';
         } else {
             historyWrap.style.display = 'none';
         }
 
         if (!viewMode) {
             remarkField.closest('.inquiry-field').style.display = 'block';
-            if (isSameStatusUpdate && act && act.description) {
+            if (isSameStatusUpdate && (act || isLoadingActivities)) {
                 dateWrap.style.display = 'block';
                 dateBadge.textContent = new Date().toLocaleDateString('en-GB'); // d/m/Y
                 remarkField.placeholder = "Add your NEW notes for " + selectedName + " here...";
@@ -1924,51 +2031,37 @@ if (document.readyState === 'loading') {
         });
     }
 
+    var isLoadingActivities = false;
     function loadActivity(leadId) {
         var url = '{{ route("dealer.inquiries.activity", ["leadId" => "__ID__"]) }}'.replace('__ID__', leadId);
+        isLoadingActivities = true;
         fetch(url, { headers: { 'Accept': 'application/json' } })
             .then(function(r) { return r.json(); })
             .then(function(data) {
+                isLoadingActivities = false;
                 cachedActivities = sortInquiryActivitiesLatestFirst(data.activities || []);
                 latestStatusRaw = normalizeStatus(data && data.latest_status);
                 latestNonFailedStatusRaw = normalizeStatus(data && data.latest_non_failed_status);
                 renderActivity(cachedActivities);
                 refreshStepLabels();
                 renderLatestFailedNotice(findLatestFailedActivity());
+                if (typeof refreshRemarkHistoryDisplay === 'function') refreshRemarkHistoryDisplay();
 
                 // Re-compute the latest status from DB activities (by created_at) to keep UI in sync
                 // with whatever Firebird considers the latest row.
+                // Re-compute the latest status from DB activities (by created_at) to keep UI in sync
+                // with whatever Firebird considers the latest row.
                 if (!userPickedStep) {
-                    // Prefer server-computed latest (based on CREATIONDATE + LEAD_ACTID).
-                    if (data && data.latest_status) {
-                        setProgression(getDisplayProgressionStatus(data.latest_status, data.latest_non_failed_status));
+                    var serverDisplayStatus = getDisplayProgressionStatus(data && data.latest_status, data && data.latest_non_failed_status);
+                    var currentModalStatus = statusOrder[currentStatusIdx] || 'PENDING';
+
+                    // Only update if the server status is different from what we initialized with from the table row.
+                    if (serverDisplayStatus !== currentModalStatus) {
+                        setProgression(serverDisplayStatus);
                     }
-
-                    // If opened from the edit icon, auto-select only a real NEXT status for editing.
-                    if (openStartNext) {
-                        var nextStatusIdx = getDefaultSelectedStatusIdx(currentStatusIdx);
-                        if (nextStatusIdx > currentStatusIdx) {
-                            // Switch to edit mode and re-run progression so the NEXT step becomes active.
-                            // (setProgression chooses next step when viewMode=false)
-                            viewMode = false;
-                            if (data && data.latest_status) {
-                                setProgression(getDisplayProgressionStatus(data.latest_status, data.latest_non_failed_status));
-                            }
-                            setFieldsReadOnly(false);
-                            setRemarkPlaceholder(getSelectedStatusName());
-                            setDateTimeLabels(getSelectedStatusName());
-
-                            var remarkEl = document.getElementById('inquiryRemark');
-                            var dateEl = document.getElementById('inquiryFollowupDate');
-                            var timeEl = document.getElementById('inquiryFollowupTime');
-                            if (remarkEl) remarkEl.value = '';
-                            if (dateEl) dateEl.value = getDefaultDate();
-                            if (timeEl) timeEl.value = getDefaultTime();
-                        }
-
-                        // One-shot behavior per open.
-                        openStartNext = false;
-                    }
+                    
+                    // Reset startNext once we've processed the first load.
+                    openStartNext = false;
                 }
 
                 latestMinDate = '';
@@ -2070,6 +2163,9 @@ if (document.readyState === 'loading') {
 
         // Update the button's data-status so next modal open uses the new status
         buttonEl.dataset.status = rawUpper;
+        if (rawUpper !== 'FAILED') {
+            buttonEl.dataset.nonFailedStatus = rawUpper;
+        }
 
         // Update the badge text + class
         statusCell.textContent = label;
@@ -2280,7 +2376,7 @@ if (document.readyState === 'loading') {
 
     var openStartNext = false;
 
-    function openModal(leadId, customer, status, startNext, referralCode) {
+    function openModal(leadId, customer, status, startNext, referralCode, nonFailedStatus) {
         currentLeadId = leadId;
         currentReferralCode = String(referralCode || '').trim();
         currentCustomer = customer || '—';
@@ -2288,32 +2384,55 @@ if (document.readyState === 'loading') {
         openStartNext = !!startNext;
         cachedActivities = [];
         latestStatusRaw = normalizeStatus(status);
-        latestNonFailedStatusRaw = '';
+        latestNonFailedStatusRaw = normalizeStatus(nonFailedStatus || '');
         renderLatestFailedNotice(null);
-        // Default: show the LAST submitted status details from DB (read-only).
-        // Dealer must click the next step to create a new update.
-        viewMode = true;
+        
+        // Determine viewMode immediately to avoid flickering.
+        // If startNext is true, we want to jump to the NEXT status for editing.
+        viewMode = !openStartNext;
+        
         subtitle.textContent = 'Inquiry ID: #SQL-' + leadId + ' • ' + currentCustomer;
         if (activityLink) activityLink.textContent = '#SQL-' + leadId;
+        
+        // setProgression will now use the correct viewMode and currentReferralCode
+        // to either stay on the current status (view) or jump to the next one (edit).
         setProgression(status || 'PENDING');
+
         var remarkEl = document.getElementById('inquiryRemark');
         var dateEl = document.getElementById('inquiryFollowupDate');
         var timeEl = document.getElementById('inquiryFollowupTime');
-        if (remarkEl) remarkEl.value = '';
-         if (dateEl) {
-             dateEl.value = '';
+
+        if (!viewMode) {
+            setFieldsReadOnly(false);
+            setRemarkPlaceholder(getSelectedStatusName());
+            if (remarkEl) remarkEl.value = '';
+            if (dateEl) dateEl.value = getDefaultDate();
+            if (timeEl) timeEl.value = getDefaultTime();
+        } else {
+            setFieldsReadOnly(true);
+            if (remarkEl) remarkEl.value = '';
+            if (dateEl) dateEl.value = '';
+            if (timeEl) timeEl.value = '';
+        }
+
+        if (dateEl) {
              var maxD = new Date();
              maxD.setDate(maxD.getDate() + 3);
              var dateD = maxD.toISOString().split('T')[0];
              dateEl.setAttribute('max', dateD);
-         }
-         if (timeEl) timeEl.value = '';
+        }
+
         var productBoxes = document.querySelectorAll('.inquiry-product-checkbox');
         if (productBoxes.length) productBoxes.forEach(function(b) { b.checked = false; });
+        
         clearAttachmentPreviews();
-        setFieldsReadOnly(true);
         setDateTimeLabels(getSelectedStatusName());
+        toggleAddCalendarButton();
+        toggleProductChecklist();
+        toggleUpdateButton();
+        
         loadActivity(leadId);
+        
         modal.setAttribute('aria-hidden', 'false');
         modal.classList.add('inquiry-modal-open');
         document.body.style.overflow = 'hidden';
@@ -2532,7 +2651,7 @@ if (document.readyState === 'loading') {
             e.preventDefault();
             currentUpdateButtonEl = updateBtnEl;
             // Clicking edit icon should jump to the next status to be updated.
-            openModal(updateBtnEl.dataset.leadId, updateBtnEl.dataset.customer, updateBtnEl.dataset.status, true, updateBtnEl.dataset.referralCode);
+            openModal(updateBtnEl.dataset.leadId, updateBtnEl.dataset.customer, updateBtnEl.dataset.status, true, updateBtnEl.dataset.referralCode, updateBtnEl.dataset.nonFailedStatus);
             return;
         }
 
@@ -2545,7 +2664,8 @@ if (document.readyState === 'loading') {
                 viewBtnEl.dataset.customer,
                 viewBtnEl.dataset.status || 'FAILED',
                 false,
-                viewBtnEl.dataset.referralCode
+                viewBtnEl.dataset.referralCode,
+                viewBtnEl.dataset.nonFailedStatus
             );
         }
     });

@@ -1,17 +1,3 @@
-.inquiries-role-select {
-  min-width: 140px;
-  padding: 12px 14px;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  background: #ffffff;
-  color: #1f2933;
-  font-size: 14px;
-}
-
-.inquiries-role-select:focus {
-  outline: none;
-  border-color: #9ca3af;
-}
 
 .maintain-users-filters-form {
   display: flex;
@@ -25,50 +11,23 @@
   max-width: 320px;
 }
 
-.inquiries-search-section .inquiries-search-wrap {
-  min-width: 160px;
-  max-width: 260px;
-}
 
-.inquiries-search-section .inquiries-search-input {
-  min-width: 80px;
-  padding: 6px 4px 6px 0;
-  font-size: 12px;
-}
-
-.inquiries-search-section .inquiries-search-icon {
-  padding: 0 8px;
-  font-size: 12px;
-}
-
-.dashboard-panel-header .inquiries-search-wrap {
-  min-width: 140px;
-  max-width: 220px;
-}
-
-.dashboard-panel-header .inquiries-search-input {
-  padding: 6px 4px 6px 0;
-  font-size: 12px;
-}
-
-.dashboard-panel-header .inquiries-search-icon {
-  padding: 0 8px;
-  font-size: 12px;
-}
 
 .maintain-users-page {
   display: flex;
-  flex: 1 1 auto;
   flex-direction: column;
-  min-height: 0;
   padding: 22px 24px;
   text-align: left;
   width: 100%;
 }
 
+.maintain-users-pagination {
+  margin-top: 16px;
+}
+
 .dashboard-main-body:has(> .maintain-users-page) {
   gap: 0;
-  overflow: hidden;
+  overflow: auto;
   padding: 12px 16px 8px;
 }
 
@@ -180,7 +139,6 @@
 .maintain-users-table-wrap {
   --maintain-users-placeholder-row-adjust: 0px;
   display: flex;
-  flex: 1 1 auto;
   flex-direction: column;
   margin-top: 12px;
   min-height: 0;
@@ -289,7 +247,7 @@
 .maintain-users-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 80;
+  z-index: 1000;
   display: none;
   align-items: center;
   justify-content: center;
@@ -1262,9 +1220,7 @@ html.theme-dark .maintain-users-batch-toggle {
 
   .maintain-users-pagination .inquiries-pagination-btn,
   .maintain-users-pagination .inquiries-pagination-num {
-    min-width: 24px;
-    padding: 3px 6px;
-    font-size: 12px;
+    /* Inherit from app.css for consistency */
   }
 
   .maintain-users-table.dashboard-table {
@@ -1410,13 +1366,7 @@ html.theme-dark .maintain-users-batch-toggle {
 
 @media (max-width: 900px) {
   .maintain-users-pagination {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .maintain-users-pagination .inquiries-assigned-pagination-nav {
-    justify-content: flex-start;
-    width: 100%;
+    /* Styles moved to app.css for system-wide consistency */
   }
 }
 
@@ -1451,6 +1401,12 @@ html.theme-dark .maintain-users-batch-toggle {
 @media (max-width: 768px) {
   .maintain-users-page {
     padding: 14px 12px;
+    min-height: auto;
+    flex: 0 0 auto;
+  }
+
+  .maintain-users-pagination {
+    margin-top: 20px;
   }
 
   .maintain-users-table-wrap {
@@ -1459,11 +1415,51 @@ html.theme-dark .maintain-users-batch-toggle {
   }
 
   .maintain-users-table-wrap .dashboard-table-wrapper {
+    overflow-y: visible;
+    padding-bottom: 8px;
     border-radius: 10px;
   }
 
+  .maintain-users-table.dashboard-table {
+    width: max-content;
+    min-width: 100%;
+    table-layout: auto;
+    border-collapse: collapse;
+  }
+
+  .maintain-users-table.dashboard-table th,
+  .maintain-users-table.dashboard-table td {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .maintain-users-table.dashboard-table td[data-col="email"] {
+    word-break: normal;
+    white-space: nowrap;
+  }
+
+  .maintain-users-table.dashboard-table th:nth-child(1),
+  .maintain-users-table.dashboard-table td:nth-child(1) {
+    width: auto;
+  }
+
+  .maintain-users-table.dashboard-table th:nth-child(2),
+  .maintain-users-table.dashboard-table td:nth-child(2) {
+    width: auto;
+  }
+
+  .maintain-users-table.dashboard-table th.maintain-users-col-action,
+  .maintain-users-table.dashboard-table td.maintain-users-col-action {
+    width: auto;
+    position: sticky;
+    right: 0;
+    z-index: 2;
+    background: #ffffff;
+    box-shadow: -4px 0 8px rgba(0, 0, 0, 0.06);
+  }
+
   .maintain-users-modal {
-    max-height: calc(100vh - 24px);
+    max-height: calc(100vh - 40px);
     overflow-y: auto;
     padding: 18px 16px;
     width: min(100%, calc(100vw - 20px));

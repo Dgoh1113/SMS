@@ -1693,6 +1693,99 @@
         }, 5000);
     }
 
+    // Admin notifications dropdown (interactive bell)
+    (function initAdminNotifications() {
+        var aTrigger = document.getElementById('adminNotificationsTrigger');
+        var aMenu = document.getElementById('adminNotificationsMenu');
+        var aList = document.getElementById('adminNotificationsList');
+        var aDot = document.getElementById('adminNotificationsDot');
+        if (!aTrigger || !aMenu || !aList) return;
+
+        var aLoaded = false;
+        var ADMIN_SEEN_KEY = 'admin.notifications.seen.v1';
+
+        function getAdminSeen() {
+            try { return JSON.parse(localStorage.getItem(ADMIN_SEEN_KEY) || '{}') || {}; } catch (e) { return {}; }
+        }
+        function setAdminSeen(obj) {
+            try { localStorage.setItem(ADMIN_SEEN_KEY, JSON.stringify(obj || {})); } catch (e) {}
+        }
+
+        function renderAdminNotifications(items) {
+            if (!items || !items.length) {
+                aList.innerHTML = '<div class="dashboard-notifications-empty">No new inquiries</div>';
+                if (aDot) aDot.hidden = true;
+                return;
+            }
+
+            var seen = getAdminSeen();
+            var hasUnseen = false;
+            aList.innerHTML = '';
+
+            items.forEach(function(it) {
+                var id = String(it.id || '');
+                var isSeen = !!seen[id];
+                if (!isSeen) hasUnseen = true;
+
+                var a = document.createElement('a');
+                a.href = it.target_url;
+                a.className = 'dashboard-notification-item' + (isSeen ? '' : ' dashboard-notification-item--new');
+                a.innerHTML = 
+                    '<div class="dashboard-notification-title">' + (it.title || 'Inquiry').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>' +
+                    (it.description ? '<div class="dashboard-notification-desc">' + it.description.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>' : '') +
+                    (it.time ? '<div class="dashboard-notification-time">' + it.time + '</div>' : '');
+
+                a.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    var s = getAdminSeen();
+                    s[id] = Date.now();
+                    setAdminSeen(s);
+                    window.location.href = it.target_url;
+                });
+                aList.appendChild(a);
+            });
+
+            if (aDot) aDot.hidden = !hasUnseen;
+        }
+
+        function loadAdminNotifications() {
+            fetch('{{ route('admin.notifications') }}', { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(function(r) { return r.json(); })
+                .then(function(data) { renderAdminNotifications(data.items || []); })
+                .catch(function() { 
+                    if (!aMenu.hidden && !aLoaded) {
+                        aList.innerHTML = '<div class="dashboard-notifications-empty">Failed to load</div>';
+                    }
+                });
+        }
+
+        aTrigger.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var open = !aMenu.hidden;
+            aMenu.hidden = open;
+            aTrigger.setAttribute('aria-expanded', String(!open));
+            if (!open) {
+                aLoaded = true;
+                loadAdminNotifications();
+            }
+        });
+
+        document.addEventListener('click', function() {
+            if (!aMenu.hidden) {
+                aMenu.hidden = true;
+                aTrigger.setAttribute('aria-expanded', 'false');
+            }
+        });
+        aMenu.addEventListener('click', function(e) { e.stopPropagation(); });
+
+        // Initial check and regular refresh
+        loadAdminNotifications();
+        setInterval(function() {
+            if (aMenu.hidden) loadAdminNotifications();
+        }, 5000);
+    })();
+
     // Sidebar: apply preload state immediately (avoids flicker) on desktop only
     if (!window.matchMedia('(max-width: 768px)').matches &&
         document.documentElement.classList.contains('dashboard-root-sidebar-collapsed-preload')) {

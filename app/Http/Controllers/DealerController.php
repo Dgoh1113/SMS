@@ -496,7 +496,15 @@ class DealerController extends Controller
                                   WHERE la."LEADID" = l."LEADID"
                                   ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC),
                                 \'Pending\'
-                            ) AS "ACT_STATUS"
+                            ) AS "ACT_STATUS",
+                            COALESCE(
+                                (SELECT FIRST 1 la_nf."STATUS"
+                                   FROM "LEAD_ACT" la_nf
+                                  WHERE la_nf."LEADID" = l."LEADID"
+                                    AND UPPER(TRIM(la_nf."STATUS")) <> \'FAILED\'
+                                  ORDER BY la_nf."CREATIONDATE" DESC, la_nf."LEAD_ACTID" DESC),
+                                \'Pending\'
+                            ) AS "ACT_NON_FAILED_STATUS"
                         FROM "LEAD" l
                         LEFT JOIN "USERS" u ON u."USERID" = l."CREATEDBY"
                         WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
@@ -1467,7 +1475,12 @@ class DealerController extends Controller
                 if (!empty($leadIds)) {
                     $placeholders = implode(',', array_fill(0, count($leadIds), '?'));
                     $acts = DB::select(
-                        'SELECT a."LEADID", a."STATUS"
+                        'SELECT a."LEADID", a."STATUS",
+                                (SELECT FIRST 1 la_nf."STATUS"
+                                   FROM "LEAD_ACT" la_nf
+                                  WHERE la_nf."LEADID" = a."LEADID"
+                                    AND UPPER(TRIM(la_nf."STATUS")) <> \'FAILED\'
+                                  ORDER BY la_nf."CREATIONDATE" DESC, la_nf."LEAD_ACTID" DESC) AS "NON_FAILED_STATUS"
                          FROM "LEAD_ACT" a
                          JOIN (
                              SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD, MAX("LEAD_ACTID") AS MAXID
@@ -1480,10 +1493,12 @@ class DealerController extends Controller
                         array_merge($leadIds, $leadIds)
                     );
                     $statusMap = [];
+                    $nonFailedStatusMap = [];
                     foreach ($acts as $a) {
                         $lid = (int) ($a->LEADID ?? 0);
                         if ($lid > 0) {
                             $statusMap[$lid] = trim((string) ($a->STATUS ?? ''));
+                            $nonFailedStatusMap[$lid] = trim((string) ($a->NON_FAILED_STATUS ?? ''));
                         }
                     }
                     foreach ($rows as $r) {
@@ -1491,12 +1506,16 @@ class DealerController extends Controller
                         $r->CURRENTSTATUS = ($lid > 0 && isset($statusMap[$lid]) && $statusMap[$lid] !== '')
                             ? $statusMap[$lid]
                             : 'Created';
+                        $r->ACT_NON_FAILED_STATUS = ($lid > 0 && isset($nonFailedStatusMap[$lid]) && $nonFailedStatusMap[$lid] !== '')
+                            ? $nonFailedStatusMap[$lid]
+                            : 'Pending';
                     }
                 }
             } catch (\Throwable $e) {
-                // default to Created if override fails
+                // default values if override fails
                 foreach ($rows as $r) {
                     if (!isset($r->CURRENTSTATUS)) $r->CURRENTSTATUS = 'Created';
+                    if (!isset($r->ACT_NON_FAILED_STATUS)) $r->ACT_NON_FAILED_STATUS = 'Pending';
                 }
             }
 
@@ -1932,22 +1951,23 @@ class DealerController extends Controller
     $trendLabels = [];
 
     $days = 0;
-    if ($period === 'range' && !empty($fromInput) && !empty($toInput)) {
-        $dateFrom = Carbon::parse($fromInput)->startOfDay();
-        $dateTo = Carbon::parse($toInput)->endOfDay();
-        $periodLabel = $dateFrom->isSameDay($dateTo)
-            ? $dateFrom->format('M j, Y')
-            : $dateFrom->format('M j, Y') . ' – ' . $dateTo->format('M j, Y');
-        $days = (int) ($dateFrom->diffInDays($dateTo) + 1);
-        $days = max(1, $days);
-        
-        if ($days <= 7) {
-            $trendLabels = array_map(fn($i) => $dateFrom->copy()->addDays($i)->format('D'), range(0, $days - 1));
-        } elseif ($days <= 31) {
-            $trendLabels = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+    if ($period === 'range') {
+        if (!empty($fromInput) && !empty($toInput)) {
+            $dateFrom = Carbon::parse($fromInput)->startOfDay();
+            $dateTo = Carbon::parse($toInput)->endOfDay();
+            $periodLabel = $dateFrom->isSameDay($dateTo)
+                ? $dateFrom->format('M j, Y')
+                : $dateFrom->format('M j, Y') . ' – ' . $dateTo->format('M j, Y');
+            $days = (int) ($dateFrom->diffInDays($dateTo) + 1);
+            $days = max(1, $days);
         } else {
-            $trendLabels = ['Month 1', 'Month 2', 'Month 3', 'Month 4', 'Month 5', 'Month 6'];
+            // Default to last 30 days if range is selected but dates are missing
+            $dateFrom = Carbon::now()->subDays(29)->startOfDay();
+            $dateTo = Carbon::now()->endOfDay();
+            $periodLabel = 'Custom Range';
+            $days = 30;
         }
+        $trendLabels = []; // Will be populated later
     } elseif ($period === '30_days') {
         $dateFrom = Carbon::now()->subDays(29)->startOfDay();
         $dateTo = Carbon::now()->endOfDay();
@@ -2079,63 +2099,50 @@ class DealerController extends Controller
         );
         $totalInquiry = (int) ($totalRow->CNT ?? 0);
 
-        $numBuckets = count($trendLabels);
-        if ($days <= 7) {
-            $dayCounts = [];
-            for ($i = 0; $i < $numBuckets; $i++) {
-                $d = $dateFrom->copy()->addDays($i)->format('Y-m-d');
-                $row = DB::selectOne(
-                    'SELECT COUNT(*) AS "CNT"
-                     FROM "LEAD" l
-                     JOIN (' . $dealerPendingDateSql . ') p ON p."LEADID" = l."LEADID"
-                     WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
-                       AND UPPER(TRIM(COALESCE((SELECT FIRST 1 la2."STATUS" FROM "LEAD_ACT" la2 WHERE la2."LEADID" = l."LEADID" ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC), \'\'))) <> \'CANCELLED\'
-                       AND CAST(p."PENDING_AT" AS DATE) = ?',
-                    ['PENDING', $dealerId, $d]
-                );
-                $dayCounts[] = (int) ($row->CNT ?? 0);
-            }
-            $inquiryTrendData = $dayCounts;
-        } elseif ($period === 'year' || ($period === 'range' && $days > 31)) {
-            $monthCounts = [];
-            $y = $dateFrom->year;
-            for ($m = 1; $m <= 12; $m++) {
-                $row = DB::selectOne(
-                    'SELECT COUNT(*) AS "CNT"
-                     FROM "LEAD" l
-                     JOIN (' . $dealerPendingDateSql . ') p ON p."LEADID" = l."LEADID"
-                     WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
-                       AND UPPER(TRIM(COALESCE((SELECT FIRST 1 la2."STATUS" FROM "LEAD_ACT" la2 WHERE la2."LEADID" = l."LEADID" ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC), \'\'))) <> \'CANCELLED\'
-                       AND p."PENDING_AT" IS NOT NULL
-                       AND p."PENDING_AT" >= ? AND p."PENDING_AT" <= ?
-                       AND EXTRACT(YEAR FROM p."PENDING_AT") = ?
-                       AND EXTRACT(MONTH FROM p."PENDING_AT") = ?',
-                    ['PENDING', $dealerId, $df, $dt, $y, $m]
-                );
-                $monthCounts[] = (int) ($row->CNT ?? 0);
-            }
-            $inquiryTrendData = $monthCounts;
-        } elseif ($period === 'range' && $days >= 8 && $days <= 31) {
-            $bucketDays = (int) ceil($days / 4);
-            $weekCounts = [];
-            for ($i = 0; $i < 4; $i++) {
-                $bStart = $dateFrom->copy()->addDays($i * $bucketDays)->startOfDay()->format('Y-m-d H:i:s');
-                $bEnd = $dateFrom->copy()->addDays(min(($i + 1) * $bucketDays, $days) - 1)->endOfDay()->format('Y-m-d H:i:s');
-                $row = DB::selectOne(
-                    'SELECT COUNT(*) AS "CNT"
-                     FROM "LEAD" l
-                     JOIN (' . $dealerPendingDateSql . ') p ON p."LEADID" = l."LEADID"
-                     WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
-                       AND UPPER(TRIM(COALESCE((SELECT FIRST 1 la2."STATUS" FROM "LEAD_ACT" la2 WHERE la2."LEADID" = l."LEADID" ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC), \'\'))) <> \'CANCELLED\'
-                       AND p."PENDING_AT" >= ? AND p."PENDING_AT" <= ?',
-                    ['PENDING', $dealerId, $bStart, $bEnd]
-                );
-                $bucketCounts[] = (int) ($row->CNT ?? 0);
-            }
-            $inquiryTrendData = $bucketCounts;
+        $inquiryTrendData = [];
+        $trendLabels = [];
+        
+        $currentDate = $dateFrom->copy();
+        while ($currentDate->lte($dateTo)) {
+            $d = $currentDate->format('Y-m-d');
+            $row = DB::selectOne(
+                'SELECT COUNT(*) AS "CNT"
+                 FROM "LEAD" l
+                 JOIN (' . $dealerPendingDateSql . ') p ON p."LEADID" = l."LEADID"
+                 WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
+                   AND UPPER(TRIM(COALESCE((SELECT FIRST 1 la2."STATUS" FROM "LEAD_ACT" la2 WHERE la2."LEADID" = l."LEADID" ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC), \'\'))) <> \'CANCELLED\'
+                   AND CAST(p."PENDING_AT" AS DATE) = ?',
+                ['PENDING', $dealerId, $d]
+            );
+            $inquiryTrendData[] = (int) ($row->CNT ?? 0);
+            $trendLabels[] = $currentDate->format('M j');
+            $currentDate->addDay();
         }
 
         $statusCounts = $buildStatusCounts($dateFrom, $dateTo);
+
+        // Trend indicators logic (comparison with previous period)
+        $currentRangeDays = (int) ($dateFrom->diffInDays($dateTo) + 1);
+        $prevDateFrom = $dateFrom->copy()->subDays($currentRangeDays)->startOfDay();
+        $prevDateTo = $dateFrom->copy()->subSecond();
+        $prevStatusCounts = $buildStatusCounts($prevDateFrom, $prevDateTo);
+
+        $percentChange = function ($current, $previous) {
+            if ($previous == 0) {
+                return $current > 0 ? 100 : 0;
+            }
+            return (int) round(($current - $previous) / $previous * 100);
+        };
+
+        $metricPercent = [
+            'PENDING' => $percentChange($statusCounts['PENDING'], $prevStatusCounts['PENDING']),
+            'FOLLOW UP' => $percentChange($statusCounts['FOLLOW UP'], $prevStatusCounts['FOLLOW UP']),
+            'DEMO' => $percentChange($statusCounts['DEMO'], $prevStatusCounts['DEMO']),
+            'CONFIRMED' => $percentChange($statusCounts['CONFIRMED'], $prevStatusCounts['CONFIRMED']),
+            'COMPLETED' => $percentChange($statusCounts['COMPLETED'], $prevStatusCounts['COMPLETED']),
+            'FAILED' => $percentChange($statusCounts['FAILED'], $prevStatusCounts['FAILED']),
+            'REWARDED' => $percentChange($statusCounts['REWARDED'], $prevStatusCounts['REWARDED']),
+        ];
 
         $productRows = DB::select(
             'SELECT la."DEALTPRODUCT" FROM "LEAD_ACT" la
@@ -2164,6 +2171,7 @@ class DealerController extends Controller
         'totalInquiry' => $totalInquiry,
         'inquiryTrendData' => $inquiryTrendData,
         'trendLabels' => $trendLabels,
+        'metricPercent' => $metricPercent,
         'period' => $period,
         'periodLabel' => $periodLabel,
         'from' => $fromInput,

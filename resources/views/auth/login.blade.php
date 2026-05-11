@@ -201,6 +201,7 @@
                 <i class="bi bi-moon-fill" data-theme-icon aria-hidden="true"></i>
             </button>
             <button class="login-bell" type="button" aria-label="Notifications"><i class="bi bi-bell-fill" aria-hidden="true"></i></button>
+            <button class="login-help-link" type="button" id="loginSearchBtn"><i class="bi bi-search" style="margin-right: 6px;"></i>Check Status</button>
             <button class="login-help-link" type="button" id="loginHelpBtn">Help</button>
         </div>
     </header>
@@ -327,6 +328,78 @@
         </div>
     </div>
 </div>
+
+<!-- Customer Search Modal -->
+<div id="loginSearchModal" class="login-help-modal" aria-hidden="true" style="display: none;">
+    <div class="login-help-modal-overlay"></div>
+    <div class="login-help-modal-container" style="max-width: 600px; border-radius: 24px; padding: 32px;">
+        <button type="button" class="login-help-modal-close" id="closeSearchModal" aria-label="Close">
+            <i class="bi bi-x"></i>
+        </button>
+        <div class="login-help-modal-content">
+            <div class="login-help-modal-header" style="margin-bottom: 24px;">
+                <i class="bi bi-person-badge-fill" style="color: #6366f1;"></i>
+                <h2 style="font-size: 22px;">SQL Account Status Check</h2>
+                <p style="color: var(--text-muted); font-size: 14px; margin-top: 8px;">Check your company support status and details.</p>
+            </div>
+            
+            <div class="login-search-box" style="display: flex; gap: 8px; margin-bottom: 24px;">
+                <div style="position: relative; flex: 1;">
+                    <input type="text" id="customerSearchInput" placeholder="Enter Company Name or Customer Code..." 
+                        style="width: 100%; height: 48px; padding: 0 16px 0 44px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 15px; outline: none; transition: border-color 0.2s;">
+                    <i class="bi bi-search" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 18px;"></i>
+                </div>
+                <button type="button" id="execCustomerSearchBtn" class="login-primary-btn" style="height: 48px; min-width: 100px; padding: 0 20px; font-size: 14px; border-radius: 12px; position: static;">Search</button>
+            </div>
+
+            <div id="customerSearchResults" style="max-height: 350px; overflow-y: auto; display: none; padding-right: 4px;">
+                <!-- Results populated here -->
+            </div>
+
+            <div id="customerSearchEmpty" style="display: none; text-align: center; padding: 40px 20px;">
+                <i class="bi bi-search" style="font-size: 40px; color: #e2e8f0; display: block; margin-bottom: 12px;"></i>
+                <p style="color: #64748b; font-size: 15px;">No results found. Try a different keyword.</p>
+            </div>
+
+            <div id="customerSearchLoading" style="display: none; text-align: center; padding: 40px 20px;">
+                <div class="login-spinner" style="width: 32px; height: 32px; border: 3px solid #f3f3f3; border-top: 3px solid #6366f1; border-radius: 50%; display: inline-block; animation: spin 1s linear infinite;"></div>
+                <p style="color: #64748b; font-size: 14px; margin-top: 12px;">Searching SQL database...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.customer-result-item {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    transition: all 0.2s;
+}
+.customer-result-item:hover {
+    border-color: #6366f1;
+    background: #f1f5f9;
+}
+.customer-result-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+.badge-active { background: #dcfce7; color: #15803d; }
+.badge-inactive { background: #fee2e2; color: #b91c1c; }
+.customer-result-title { font-weight: 700; font-size: 15px; color: #1e293b; margin-bottom: 4px; display: block; }
+.customer-result-code { font-family: monospace; color: #64748b; font-size: 13px; }
+.customer-result-details { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed #cbd5e1; }
+.customer-detail-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; display: block; margin-bottom: 2px; }
+.customer-detail-value { font-size: 13px; font-weight: 600; color: #475569; }
+</style>
 
 <script>
 (function () {
@@ -541,6 +614,97 @@
         if (closeOverlay) closeOverlay.addEventListener('click', handleClose);
         if (closeX) closeX.addEventListener('click', handleClose);
         if (closeBtn) closeBtn.addEventListener('click', handleClose);
+    }
+
+    // Customer Search logic
+    var loginSearchBtn = document.getElementById('loginSearchBtn');
+    if (loginSearchBtn) {
+        var searchModal = document.getElementById('loginSearchModal');
+        var closeX = document.getElementById('closeSearchModal');
+        var input = document.getElementById('customerSearchInput');
+        var execBtn = document.getElementById('execCustomerSearchBtn');
+        var resultsArea = document.getElementById('customerSearchResults');
+        var loadingArea = document.getElementById('customerSearchLoading');
+        var emptyArea = document.getElementById('customerSearchEmpty');
+
+        loginSearchBtn.addEventListener('click', function() {
+            if (searchModal) {
+                searchModal.style.display = 'flex';
+                setTimeout(function() {
+                    searchModal.classList.add('is-active');
+                    searchModal.setAttribute('aria-hidden', 'false');
+                    input.focus();
+                }, 10);
+            }
+        });
+
+        function closeSearch() {
+            if (searchModal) {
+                searchModal.classList.remove('is-active');
+                searchModal.setAttribute('aria-hidden', 'true');
+                setTimeout(function() { searchModal.style.display = 'none'; }, 300);
+            }
+        }
+
+        if (closeX) closeX.addEventListener('click', closeSearch);
+        var overlay = searchModal ? searchModal.querySelector('.login-help-modal-overlay') : null;
+        if (overlay) overlay.addEventListener('click', closeSearch);
+
+        function performSearch() {
+            var val = input.value.trim();
+            if (val.length < 3) return;
+
+            resultsArea.style.display = 'none';
+            emptyArea.style.display = 'none';
+            loadingArea.style.display = 'block';
+
+            fetch('{{ route("customer.search") }}?q=' + encodeURIComponent(val), {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                loadingArea.style.display = 'none';
+                if (data.customers && data.customers.length > 0) {
+                    resultsArea.innerHTML = '';
+                    data.customers.forEach(function(c) {
+                        var div = document.createElement('div');
+                        div.className = 'customer-result-item';
+                        var status = (c.status || '').toUpperCase() === 'A' ? 'Active' : 'Inactive';
+                        var statusClass = status === 'Active' ? 'badge-active' : 'badge-inactive';
+                        var expiry = c.udf_expirydate || 'N/A';
+                        var agent = c.agent || 'N/A';
+                        var biz = c.biznature || 'N/A';
+                        var brn = c.brn2 || c.brn || 'N/A';
+                        
+                        div.innerHTML = 
+                            '<span class="customer-result-badge ' + statusClass + '">' + status + '</span>' +
+                            '<span class="customer-result-title">' + (c.companyname || 'Unknown Company') + '</span>' +
+                            '<span class="customer-result-code">Code: ' + (c.code || '-') + '</span>' +
+                            '<div class="customer-result-details">' +
+                                '<div><span class="customer-detail-label">Support Expiry</span><span class="customer-detail-value">' + expiry + '</span></div>' +
+                                '<div><span class="customer-detail-label">Agent</span><span class="customer-detail-value">' + agent + '</span></div>' +
+                                '<div><span class="customer-detail-label">BRN</span><span class="customer-detail-value">' + brn + '</span></div>' +
+                                '<div><span class="customer-detail-label">Business Nature</span><span class="customer-detail-value">' + biz + '</span></div>' +
+                            '</div>';
+                        resultsArea.appendChild(div);
+                    });
+                    resultsArea.style.display = 'block';
+                } else {
+                    emptyArea.style.display = 'block';
+                }
+            })
+            .catch(function(err) {
+                loadingArea.style.display = 'none';
+                alert('Search failed. Please try again later.');
+            });
+        }
+
+        if (execBtn) execBtn.addEventListener('click', performSearch);
+        if (input) {
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') performSearch();
+            });
+        }
     }
 
     function resetPasskeyScreenState() {

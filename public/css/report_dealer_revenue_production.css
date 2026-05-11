@@ -653,9 +653,13 @@ html.theme-dark .rrp-pill-purple {
   }
 
   .rrp-period-date-group,
-  .rrp-filter-form .report-scope-field {
+  .rrp-filter-form .report-scope-field,
+  .reports-filter-container,
+  .rv2-filter {
     width: 100% !important;
     max-width: none !important;
+    min-width: 0 !important;
+    box-sizing: border-box;
   }
 
   .rrp-period-date-group,
@@ -663,14 +667,24 @@ html.theme-dark .rrp-pill-purple {
   .report-scope-field,
   .report-scope-field .report-scope-ts-wrapper,
   .rrp-filter-check,
-  .rrp-filter-actions .report-filter-apply,
-  .rrp-filter-actions .report-filter-clear,
-  .rrp-filter-actions .report-filter-export {
+  .reports-period-actions.report-filter-actions .report-filter-apply,
+  .reports-period-actions.report-filter-actions .report-filter-clear {
     width: 100% !important;
     min-width: 0 !important;
     height: 44px;
     font-size: 14px;
     box-sizing: border-box;
+  }
+  
+  .reports-period-actions.report-filter-actions .report-filter-export {
+    width: auto !important;
+    min-width: 0 !important;
+    height: 44px;
+    font-size: 14px;
+    box-sizing: border-box;
+    justify-self: start;
+    padding-left: 14px;
+    padding-right: 18px;
   }
 
   .rrp-filter-form .report-scope-field .report-scope-ts-wrapper.single .ts-control,
@@ -693,12 +707,14 @@ html.theme-dark .rrp-pill-purple {
     justify-content: flex-start;
   }
 
-  .rrp-filter-actions {
+  .reports-period-actions.report-filter-actions {
     width: 100%;
     display: grid;
     grid-template-columns: 1fr;
     gap: 8px;
     align-items: stretch;
+    margin-left: 0 !important;
+    justify-content: flex-start !important;
   }
 
   .rrp-top-grid {

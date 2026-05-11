@@ -200,6 +200,55 @@
   border-radius: 10px;
   background: #ffffff;
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+  overflow: visible;
+}
+
+/* Prevent Tom Select / scope picker from expanding filter container width */
+.rv2-filter .report-scope-ts-wrapper,
+.rv2-filter .report-scope-field {
+  max-width: 100%;
+  overflow: visible;
+}
+
+/* Truncate long selected values with ellipsis, show full text on hover */
+.rv2-filter .report-scope-ts-wrapper .ts-control .item {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  display: block !important;
+  max-width: 100%;
+  line-height: 1.3;
+  position: relative;
+  cursor: default;
+}
+
+.rv2-filter .report-scope-ts-wrapper .ts-control {
+  overflow: hidden !important;
+}
+
+.rv2-filter .report-scope-ts-dropdown {
+  position: absolute;
+  z-index: 100;
+  left: 0;
+  right: 0;
+  width: 100% !important;
+  min-width: 0;
+  max-width: none;
+  box-sizing: border-box;
+}
+
+.rv2-filter .report-scope-ts-dropdown .option,
+.rv2-filter .report-scope-ts-dropdown .optgroup-header {
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Area select dropdown — match container width, wrap long text */
+.rv2-filter .report-scope-field select {
+  width: 100% !important;
+  max-width: 100%;
+  text-overflow: ellipsis;
 }
 .rv2-filter-label {
   margin-bottom: 4px;
@@ -937,14 +986,24 @@ html.theme-dark .rv2-page-ellipsis {
     display: flex;
     width: 100%;
     gap: 8px;
+    margin-left: 0 !important;
+    justify-content: flex-start !important;
   }
 
-  .rv2-filter-actions .report-filter-apply,
-  .rv2-filter-actions .report-filter-export {
+  .rv2-filter-actions .report-filter-apply {
     flex: 1;
     width: 100%;
     min-height: 44px;
     min-width: 0;
+  }
+  .rv2-filter-actions .report-filter-export {
+    flex: 0 0 auto;
+    width: auto !important;
+    min-height: 44px;
+    min-width: 0;
+    align-self: flex-start;
+    padding-left: 14px;
+    padding-right: 18px;
   }
 
   .rv2-date-range {

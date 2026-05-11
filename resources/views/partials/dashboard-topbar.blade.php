@@ -27,9 +27,25 @@
                     </div>
                 </div>
             @else
-                <button type="button" class="dashboard-icon-btn top-right-btn dashboard-topbar-icon-btn dashboard-bell-btn" title="Notifications" aria-label="Notifications">
-                    <i class="bi bi-bell-fill dashboard-topbar-icon-symbol" aria-hidden="true"></i>
-                </button>
+                <div class="dashboard-notifications">
+                    <button type="button" class="dashboard-icon-btn top-right-btn dashboard-topbar-icon-btn dashboard-bell-btn" id="adminNotificationsTrigger" aria-expanded="false" aria-haspopup="true" title="Notifications" aria-label="Notifications">
+                        <i class="bi bi-bell-fill dashboard-topbar-icon-symbol" aria-hidden="true"></i>
+                        @if(isset($adminNewInquiryCount) && $adminNewInquiryCount > 0)
+                            <span class="dashboard-notifications-dot" id="adminNotificationsDot"></span>
+                        @else
+                            <span class="dashboard-notifications-dot" id="adminNotificationsDot" hidden></span>
+                        @endif
+                    </button>
+                    <div class="dashboard-notifications-menu" id="adminNotificationsMenu" hidden>
+                        <div class="dashboard-notifications-header">
+                            <span>New Inquiries</span>
+                            <a href="{{ route('admin.inquiries', ['tab' => 'incoming']) }}" class="dashboard-notifications-mark-read">View all</a>
+                        </div>
+                        <div class="dashboard-notifications-list" id="adminNotificationsList">
+                            <div class="dashboard-notifications-empty">Loading...</div>
+                        </div>
+                    </div>
+                </div>
             @endif
             @php
                 $avatarInitial = strtoupper(substr(session('user_email', 'U'), 0, 1));

@@ -100,10 +100,10 @@
                 $isFailed = $actStatus === 'FAILED';
             @endphp
             @if ($isFailed)
-                <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-edit-inquiry-btn inquiries-update-btn" data-lead-id="{{ $r->LEADID }}" data-customer="{{ $customerName }}" data-status="{{ $actStatus }}" data-referral-code="{{ trim((string) ($r->REFERRALCODE ?? '')) }}" title="Update" aria-label="Update"><i class="bi bi-pencil-square" aria-hidden="true"></i></button>
+                <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-edit-inquiry-btn inquiries-update-btn" data-lead-id="{{ $r->LEADID }}" data-customer="{{ $customerName }}" data-status="{{ $actStatus }}" data-non-failed-status="{{ $r->ACT_NON_FAILED_STATUS ?? '' }}" data-referral-code="{{ trim((string) ($r->REFERRALCODE ?? '')) }}" title="Update" aria-label="Update"><i class="bi bi-pencil-square" aria-hidden="true"></i></button>
                 <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-view-status-btn inquiries-view-btn" data-lead-id="{{ $r->LEADID }}" data-customer="{{ $customerName }}" data-status="{{ $actStatus }}" data-referral-code="{{ trim((string) ($r->REFERRALCODE ?? '')) }}" title="View" aria-label="View"><i class="bi bi-eye" aria-hidden="true"></i></button>
             @else
-                <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-edit-inquiry-btn inquiries-update-btn" data-lead-id="{{ $r->LEADID }}" data-customer="{{ $customerName }}" data-status="{{ $actStatus }}" data-referral-code="{{ trim((string) ($r->REFERRALCODE ?? '')) }}" title="Update" aria-label="Update"><i class="bi bi-pencil-square" aria-hidden="true"></i></button>
+                <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-edit-inquiry-btn inquiries-update-btn" data-lead-id="{{ $r->LEADID }}" data-customer="{{ $customerName }}" data-status="{{ $actStatus }}" data-non-failed-status="{{ $r->ACT_NON_FAILED_STATUS ?? '' }}" data-referral-code="{{ trim((string) ($r->REFERRALCODE ?? '')) }}" title="Update" aria-label="Update"><i class="bi bi-pencil-square" aria-hidden="true"></i></button>
             @endif
         </td>
     </tr>

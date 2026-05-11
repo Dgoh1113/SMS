@@ -4,6 +4,102 @@
     <link rel="stylesheet" href="{{ asset('css/shared/reports-tabs.css') }}?v=20260424-1">
     <link rel="stylesheet" href="{{ asset('css/report_dealer_sales_overtime.css') }}?v=20260423-4">
     <link rel="stylesheet" href="{{ asset('css/pages/admin-reports-v2.css') }}?v=20260324-9">
+    <style>
+        .reports-range-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            align-items: flex-end;
+            gap: 6px;
+        }
+        .reports-range-input {
+            padding-right: 12px;
+            width: 100%;
+        }
+
+        @media (max-width: 768px) {
+            .rv2-chart-scroll-wrapper {
+                position: relative;
+                display: block !important;
+                width: 100% !important;
+                overflow-x: auto !important;
+                overflow-y: hidden !important;
+                -webkit-overflow-scrolling: touch !important;
+                padding-bottom: 20px !important; /* space for scrollbar */
+                cursor: grab;
+            }
+            /* High-Visibility Custom Scrollbar */
+            .rv2-chart-scroll-wrapper::-webkit-scrollbar {
+                height: 10px !important;
+            }
+            .rv2-chart-scroll-wrapper::-webkit-scrollbar-track {
+                background: #f1f5f9 !important;
+                border-radius: 10px !important;
+                margin: 0 30px !important;
+            }
+            .rv2-chart-scroll-wrapper::-webkit-scrollbar-thumb {
+                background: #7c3aed !important;
+                border-radius: 10px !important;
+                border: 2px solid #f1f5f9 !important;
+            }
+            .rv2-bar-chart-wrap-full#top10FailedClosedChartWrapper {
+                width: 700px !important;
+                min-width: 700px !important;
+                height: 240px !important;
+            }
+            .rv2-bar-chart-wrap-full#top10FailedClosedChartWrapper canvas {
+                width: 100% !important;
+                touch-action: pan-x !important;
+            }
+        }
+
+        /* Global Fullscreen Button Styles */
+        .reports-fullscreen-btn {
+            display: none;
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            z-index: 50;
+            background: rgba(255, 255, 255, 0.94);
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 6px;
+            color: #64748b;
+            cursor: pointer;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        /* Fullscreen Pseudo-class Overrides */
+        .rv2-panel:-webkit-full-screen {
+            background: #ffffff !important;
+            padding: 16px !important;
+            overflow: auto !important;
+            display: flex !important;
+            flex-direction: column !important;
+            position: fixed !important;
+            z-index: 9999;
+            height: 100vh !important;
+            width: 100vw !important;
+        }
+        .rv2-panel:fullscreen {
+            background: #ffffff !important;
+            padding: 16px !important;
+            overflow: auto !important;
+            display: flex !important;
+            flex-direction: column !important;
+            position: fixed !important;
+            z-index: 9999;
+            height: 100vh !important;
+            width: 100vw !important;
+        }
+
+        @media (max-width: 768px) {
+            .reports-fullscreen-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+    </style>
 @endpush
 @section('content')
 <div class="rv2-page">
@@ -38,14 +134,14 @@
 
     <div class="rv2-filtered-layer">
         <div class="rv2-filtered-layer-head reports-filter-bar">
-            <form method="GET" action="{{ route('admin.reports.v2') }}" class="reports-period-form reports-period-form-compact rv2-filters-form" data-auto-submit-report-filters style="display: flex; flex-direction: row; align-items: flex-end; gap: 12px; flex-wrap: wrap;">
+            <form method="GET" action="{{ route('admin.reports.v2') }}" class="reports-period-form reports-period-form-compact rv2-filters-form" data-auto-submit-report-filters style="display: flex; flex-direction: row; align-items: flex-end; gap: 8px; flex-wrap: nowrap; justify-content: flex-end; padding-bottom: 4px;">
                 @foreach(request()->query() as $key => $val)
                     @if($key !== 'days' && $key !== 'primary_from' && $key !== 'primary_to' && $key !== 'compare_days' && $key !== 'compare_from' && $key !== 'compare_to' && $key !== 'report_area' && $key !== 'report_scope')
                         <input type="hidden" name="{{ $key }}" value="{{ $val }}">
                     @endif
                 @endforeach
 
-                <div class="reports-filter-container rv2-filter" style="width: 240px; min-height: 90px; display: flex; flex-direction: column;">
+                <div class="reports-filter-container rv2-filter" style="flex: 1 1 340px; max-width: 340px; min-width: 280px; min-height: 90px; display: flex; flex-direction: column;">
                     <div class="reports-range-label" style="height: 1.6em; display: flex; align-items: center;">PERIOD</div>
                     <div style="flex: 1; display: flex; align-items: flex-end;">
                         <select name="days" class="rv2-filter-select" id="rv2PrimarySelect" style="display: {{ request('primary_from') || request('primary_to') ? 'none' : 'block' }}; width: 100%;">
@@ -55,7 +151,7 @@
                             <option value="90" {{ $primaryDays === 90 ? 'selected' : '' }}>Last 90 days</option>
                             <option value="custom" {{ request('primary_from') || request('primary_to') ? 'selected' : '' }}>Custom range…</option>
                         </select>
-                        <div id="rv2PrimaryRangeInline" class="reports-range-grid" style="display: {{ request('primary_from') || request('primary_to') ? 'grid' : 'none' }}; width: 100%; min-width: 0; gap: 10px;">
+                        <div id="rv2PrimaryRangeInline" class="reports-range-grid" style="display: {{ request('primary_from') || request('primary_to') ? 'grid' : 'none' }}; width: 100%; min-width: 0; gap: 4px;">
                             <div class="reports-range-col">
                                 <label class="reports-range-label" style="font-size: 9px; opacity: 0.8;">Starting</label>
                                 <input type="date" name="primary_from" id="rv2PrimaryFrom" value="{{ request('primary_from', now()->subMonth()->format('Y-m-d')) }}" class="reports-range-input" style="width: 100%;">
@@ -64,14 +160,19 @@
                                 <label class="reports-range-label" style="font-size: 9px; opacity: 0.8;">Ending</label>
                                 <input type="date" name="primary_to" id="rv2PrimaryTo" value="{{ request('primary_to', now()->format('Y-m-d')) }}" class="reports-range-input" style="width: 100%;">
                             </div>
-                            <button type="button" class="reports-range-back-btn rv2-range-reset" data-target="rv2PrimarySelect" style="right: 4px; top: 4px;">
-                                <i class="bi bi-x-lg"></i>
-                            </button>
+                            <div class="reports-range-col" style="display: flex; flex-direction: column; gap: 4px; align-items: center; justify-content: flex-end; padding-bottom: 2px;">
+                                <button type="button" class="reports-range-back-btn rv2-range-reset" data-target="rv2PrimarySelect" title="Reset" style="position: static; margin: 0; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="bi bi-x-lg" style="font-size: 11px;"></i>
+                                </button>
+                                <button type="button" class="reports-range-back-btn" id="rv2PrimarySubmit" title="Search" style="position: static; margin: 0; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="bi bi-search" style="font-size: 11px;"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="reports-filter-container rv2-filter" style="width: 240px; min-height: 90px; display: flex; flex-direction: column;">
+                <div class="reports-filter-container rv2-filter" style="flex: 1 1 340px; max-width: 340px; min-width: 280px; min-height: 90px; display: flex; flex-direction: column;">
                     <div class="reports-range-label" style="height: 1.6em; display: flex; align-items: center;">COMPARE AGAINST</div>
                     <div style="flex: 1; display: flex; align-items: flex-end;">
                         @php $compareDays = (int) request('compare_days', 30); @endphp
@@ -81,7 +182,7 @@
                             <option value="90" {{ $compareDays === 90 ? 'selected' : '' }}>Last 90 days</option>
                             <option value="custom" {{ request('compare_from') || request('compare_to') ? 'selected' : '' }}>Custom range…</option>
                         </select>
-                        <div id="rv2CompareRangeInline" class="reports-range-grid" style="display: {{ request('compare_from') || request('compare_to') ? 'grid' : 'none' }}; width: 100%; min-width: 0; gap: 10px;">
+                        <div id="rv2CompareRangeInline" class="reports-range-grid" style="display: {{ request('compare_from') || request('compare_to') ? 'grid' : 'none' }}; width: 100%; min-width: 0; gap: 4px;">
                             <div class="reports-range-col">
                                 <label class="reports-range-label" style="font-size: 9px; opacity: 0.8;">Starting</label>
                                 <input type="date" name="compare_from" id="rv2CompareFrom" value="{{ request('compare_from', now()->subMonths(2)->format('Y-m-d')) }}" class="reports-range-input" style="width: 100%;">
@@ -90,14 +191,19 @@
                                 <label class="reports-range-label" style="font-size: 9px; opacity: 0.8;">Ending</label>
                                 <input type="date" name="compare_to" id="rv2CompareTo" value="{{ request('compare_to', now()->subMonth()->format('Y-m-d')) }}" class="reports-range-input" style="width: 100%;">
                             </div>
-                            <button type="button" class="reports-range-back-btn rv2-range-reset" data-target="rv2CompareSelect" style="right: 4px; top: 4px;">
-                                <i class="bi bi-x-lg"></i>
-                            </button>
+                            <div class="reports-range-col" style="display: flex; flex-direction: column; gap: 4px; align-items: center; justify-content: flex-end; padding-bottom: 2px;">
+                                <button type="button" class="reports-range-back-btn rv2-range-reset" data-target="rv2CompareSelect" title="Reset" style="position: static; margin: 0; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="bi bi-x-lg" style="font-size: 11px;"></i>
+                                </button>
+                                <button type="button" class="reports-range-back-btn" id="rv2CompareSubmit" title="Search" style="position: static; margin: 0; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="bi bi-search" style="font-size: 11px;"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="reports-filter-container rv2-filter" style="width: 240px; min-height: 90px; display: flex; flex-direction: column;">
+                <div class="reports-filter-container rv2-filter" style="flex: 1 1 189px; max-width: 189px; min-width: 140px; min-height: 90px; display: flex; flex-direction: column;">
                     <div class="reports-range-label" style="height: 1.6em; display: flex; align-items: center; white-space: nowrap;">DEALER SCOPE</div>
                     <div style="flex: 1; display: flex; align-items: flex-end;">
                         <div style="width: 100%; max-width: 100%; --report-scope-picker-width: 100%;">
@@ -109,7 +215,7 @@
                     </div>
                 </div>
 
-                <div class="reports-filter-container rv2-filter" style="width: 240px; min-height: 90px; display: flex; flex-direction: column;">
+                <div class="reports-filter-container rv2-filter" style="flex: 1 1 189px; max-width: 189px; min-width: 140px; min-height: 90px; display: flex; flex-direction: column;">
                     <div class="reports-range-label" style="height: 1.6em; display: flex; align-items: center;">AREA</div>
                     <div class="report-scope-field" style="flex: 1; display: flex; align-items: flex-end; width: 100%;">
                         <select name="report_area" id="adminSalesAreaSelect" class="report-scope-select" aria-label="Select area" style="width: 100%; font-size: 13px;">
@@ -138,7 +244,12 @@
         </div>
 
         <section class="rv2-panel rv2-panel-in-layer">
-            <div class="rv2-panel-head">
+            <div class="rv2-panel-head" style="position: relative; padding-right: 40px;">
+                <button type="button" class="reports-fullscreen-btn" onclick="toggleChartFullscreen(this.closest('.rv2-panel'))" aria-label="Toggle Fullscreen">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="20" height="20">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4h4M4 4l5 5M20 8V4h-4M20 4l-5 5M4 16v4h4M4 20l5-5M20 16v4h-4M20 20l-5-5" />
+                    </svg>
+                </button>
                 <div>
                     <div class="rv2-section-title rv2-section-title-prominent">Top 5 Dealer &mdash; Failed vs Closed</div>
                 </div>
@@ -148,8 +259,10 @@
                     <div class="rv2-bar-chart-title rv2-bar-chart-title-failed">Top 5 Failed (left)</div>
                     <div class="rv2-bar-chart-title rv2-bar-chart-title-closed">Top 5 Closed (right)</div>
                 </div>
-                <div class="rv2-chart-wrap rv2-bar-chart-wrap rv2-bar-chart-wrap-full">
-                    <canvas id="top10FailedClosedChart"></canvas>
+                <div class="rv2-chart-scroll-wrapper">
+                    <div class="rv2-chart-wrap rv2-bar-chart-wrap rv2-bar-chart-wrap-full" id="top10FailedClosedChartWrapper">
+                        <canvas id="top10FailedClosedChart"></canvas>
+                    </div>
                 </div>
             </div>
         </section>
@@ -255,6 +368,35 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script>
+        function toggleChartFullscreen(element) {
+            if (!document.fullscreenElement) {
+                if (element.requestFullscreen) {
+                    element.requestFullscreen().then(() => {
+                        if (screen.orientation && screen.orientation.lock) {
+                            screen.orientation.lock('landscape').catch(() => {});
+                        }
+                    }).catch(err => {
+                        console.error(`Fullscreen failed: ${err.message}`);
+                    });
+                } else if (element.webkitRequestFullscreen) {
+                    element.webkitRequestFullscreen();
+                } else if (element.msRequestFullscreen) {
+                    element.msRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                    if (screen.orientation && screen.orientation.unlock) {
+                        screen.orientation.unlock();
+                    }
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             // Title dropdown
             const dropdownBtn = document.getElementById('dropdownHoverButton');
@@ -440,7 +582,10 @@
                         if (select.name === 'days' || select.name === 'compare_days') {
                             syncRange(select);
                         }
-                        submitReportFilters();
+                        // Only submit if not custom
+                        if (select.value !== 'custom') {
+                            submitReportFilters();
+                        }
                     });
 
                     const bindTomSelectChange = function () {
@@ -467,7 +612,12 @@
                         allowEmptyOption: false,
                         copyClassesToDropdown: false,
                         onDropdownOpen: function() { this.clearCache(); },
-                        onChange: function() { submitReportFilters(); },
+                        onChange: function() {
+                            // Set title on selected item for hover tooltip
+                            var itemEl = this.control ? this.control.querySelector('.item') : null;
+                            if (itemEl) itemEl.setAttribute('title', itemEl.textContent.trim());
+                            submitReportFilters();
+                        },
                         onInitialize: function () {
                             if (this.wrapper) {
                                 this.wrapper.classList.add('report-scope-ts-wrapper');
@@ -475,6 +625,9 @@
                             }
                             if (this.control) this.control.classList.add('report-scope-ts-control');
                             if (this.dropdown) this.dropdown.classList.add('report-scope-ts-dropdown');
+                            // Set title on initial selected item
+                            var itemEl = this.control ? this.control.querySelector('.item') : null;
+                            if (itemEl) itemEl.setAttribute('title', itemEl.textContent.trim());
                         }
                     });
                 }
@@ -491,14 +644,38 @@
                     });
                 });
 
+                const handleDateSubmit = function(e) {
+                    if (e && e.type === 'keydown' && e.key !== 'Enter') return;
+                    if (e && e.type === 'keydown' && e.key === 'Enter') e.preventDefault();
+                    submitReportFilters();
+                };
+
+                const primarySubmitBtn = document.getElementById('rv2PrimarySubmit');
+                if (primarySubmitBtn) {
+                    primarySubmitBtn.addEventListener('click', function(e) {
+                        handleDateSubmit(e);
+                    });
+                }
+                const compareSubmitBtn = document.getElementById('rv2CompareSubmit');
+                if (compareSubmitBtn) {
+                    compareSubmitBtn.addEventListener('click', function(e) {
+                        handleDateSubmit(e);
+                    });
+                }
+
                 form.querySelectorAll('.reports-range-grid').forEach(function(grid) {
                     const inputs = grid.querySelectorAll('input[type="date"]');
                     if (inputs.length === 2) {
                         const fromInput = inputs[0];
                         const toInput = inputs[1];
 
-                        fromInput.addEventListener('change', submitReportFilters);
-                        toInput.addEventListener('change', submitReportFilters);
+                        fromInput.addEventListener('keydown', handleDateSubmit);
+                        toInput.addEventListener('keydown', handleDateSubmit);
+                        
+                        // STRICT: Remove all automatic change triggers to stop refresh while typing
+                        // User must press Enter or click the Search button.
+                        fromInput.removeEventListener('change', submitReportFilters);
+                        toInput.removeEventListener('change', submitReportFilters);
 
                         fromInput.addEventListener('input', function() {
                             toInput.min = fromInput.value || '';

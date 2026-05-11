@@ -103,22 +103,15 @@
                 </tbody>
             </table>
             </div>
-            <div class="inquiries-assigned-pagination maintain-users-pagination" id="maintainUsersPagination"
-                 data-total="{{ $maintainUsersTotal }}"
-                 data-per-page="{{ $maintainUsersPerPage }}"
-                 data-current-page="1"
-                 data-last-page="{{ $maintainUsersLastPage }}">
-                <span class="inquiries-assigned-pagination-info">
-                    Showing {{ $maintainUsersTotal === 0 ? 0 : 1 }} to {{ $maintainUsersTo }} of {{ $maintainUsersTotal }} entries (Page 1)
-                </span>
-                <div class="inquiries-assigned-pagination-nav">
-                    <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" data-page="first">First</button>
-                    <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" data-page="prev">Previous</button>
-                    <span class="inquiries-assigned-page-numbers" id="maintainUsersPageNumbers"></span>
-                    <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" data-page="next">Next</button>
-                    <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" data-page="last">Last</button>
-                </div>
-            </div>
+            @include('partials.common_pagination', [
+                'id' => 'maintainUsersPagination',
+                'total' => $maintainUsersTotal,
+                'perPage' => $maintainUsersPerPage,
+                'currentPage' => 1,
+                'lastPage' => $maintainUsersLastPage,
+                'containerClass' => 'maintain-users-pagination',
+                'pageNumbersId' => 'maintainUsersPageNumbers'
+            ])
         @endif
     </div>
 </div>
@@ -651,52 +644,118 @@
                     if (!tbody) return;
                     clearPlaceholderRows();
 
-                    const visibleCount = Array.isArray(visibleRows) ? visibleRows.length : 0;
-                    if (visibleCount > 0 && visibleCount < perPage) {
-                        const sampleRow = (Array.isArray(visibleRows) ? visibleRows.find(function (row) {
-                            return row && row.style.display !== 'none';
-                        }) : null) || tbody.querySelector('tr.maintain-users-row:not([style*="display: none"])') || tbody.querySelector('tr.maintain-users-row');
-                        const tableWrap = table.closest('.maintain-users-table-wrap');
-                        const rowHeightAdjust = tableWrap
-                            ? (parseFloat(getComputedStyle(tableWrap).getPropertyValue('--maintain-users-placeholder-row-adjust')) || 0)
-                            : 0;
-                        let rowHeight = sampleRow
-                            ? Math.ceil(sampleRow.getBoundingClientRect().height + rowHeightAdjust)
-                            : Math.ceil(52 + rowHeightAdjust);
-                        if (!rowHeight || rowHeight < 40) rowHeight = Math.ceil(52 + rowHeightAdjust);
-
-                        const headerCount = table.querySelectorAll('thead tr:first-child th').length || 1;
-                        for (let i = visibleCount; i < perPage; i++) {
-                            const row = document.createElement('tr');
-                            row.className = 'maintain-users-placeholder-row';
-                            row.setAttribute('aria-hidden', 'true');
-
-                            const cell = document.createElement('td');
-                            cell.className = 'maintain-users-placeholder-cell';
-                            cell.colSpan = headerCount;
-                            cell.style.height = rowHeight + 'px';
-
-                            row.appendChild(cell);
-                            tbody.appendChild(row);
-                        }
-                    }
+                    // Disabled placeholder rows as per user request to avoid empty space
+                    return;
                 }
 
                 function buildPageNumbers(currentPage, lastPage) {
                     if (!pageNumbersEl) return;
                     pageNumbersEl.innerHTML = '';
-                    for (let p = 1; p <= lastPage; p++) {
-                        const btn = document.createElement('button');
-                        btn.type = 'button';
-                        btn.className = 'inquiries-pagination-num' + (p === currentPage ? ' inquiries-pagination-num-active' : '');
-                        btn.setAttribute('data-page', String(p));
-                        btn.textContent = String(p);
-                        btn.addEventListener('click', function () {
-                            window.maintainUsersGoToPage(p);
-                        });
-                        pageNumbersEl.appendChild(btn);
+                    
+                    const maxVisible = 3;
+                    if (lastPage <= maxVisible + 2) {
+                        for (let p = 1; p <= lastPage; p++) {
+                            addPageButton(p, p === currentPage);
+                        }
+                    } else {
+                        // Always show page 1
+                        addPageButton(1, 1 === currentPage);
+                        
+                        let start = Math.max(2, currentPage - 1);
+                        let end = Math.min(lastPage - 1, currentPage + 1);
+                        
+                        if (currentPage <= 3) {
+                            start = 2;
+                            end = 4;
+                        } else if (currentPage >= lastPage - 2) {
+                            start = lastPage - 3;
+                            end = lastPage - 1;
+                        }
+
+                        if (start > 2) {
+                            addEllipsis();
+                        }
+                        
+                        for (let p = start; p <= end; p++) {
+                            addPageButton(p, p === currentPage);
+                        }
+                        
+                        if (end < lastPage - 1) {
+                            addEllipsis();
+                        }
+
+                        // Always show last page
+                        addPageButton(lastPage, lastPage === currentPage);
                     }
                 }
+
+                function addPageButton(p, isActive) {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'inquiries-pagination-num' + (isActive ? ' inquiries-pagination-num-active' : '');
+                    btn.setAttribute('data-page', String(p));
+                    btn.textContent = String(p);
+                    btn.style.position = 'relative';
+                    btn.style.zIndex = '5';
+                    btn.addEventListener('click', function (e) {
+                        e.stopPropagation();
+                        if (!isActive) window.maintainUsersGoToPage(p);
+                    });
+                    pageNumbersEl.appendChild(btn);
+                }
+
+                function addEllipsis() {
+                    const span = document.createElement('span');
+                    span.className = 'inquiries-pagination-num inquiries-pagination-dots';
+                    span.textContent = '...';
+                    span.style.cursor = 'pointer';
+                    span.title = 'Click to jump to page';
+                    span.setAttribute('data-page', 'dots');
+                    span.style.position = 'relative';
+                    span.style.zIndex = '5';
+                    span.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        
+                        const lastPage = parseInt(pagination.getAttribute('data-last-page') || '1', 10);
+                        const input = document.createElement('input');
+                        input.type = 'number';
+                        input.className = 'inquiries-pagination-num inquiries-pagination-jump-input';
+                        input.min = '1';
+                        input.max = lastPage;
+                        input.placeholder = '#';
+                        input.style.width = '45px';
+                        input.style.padding = '0 4px';
+                        input.style.textAlign = 'center';
+                        input.style.border = '1px solid #7c3aed';
+                        input.style.borderRadius = '4px';
+                        input.style.height = '28px';
+                        input.style.outline = 'none';
+                        input.style.margin = '0 2px';
+                        
+                        const doJump = function() {
+                            const val = parseInt(input.value, 10);
+                            if (!isNaN(val) && val >= 1 && val <= lastPage) {
+                                window.maintainUsersGoToPage(val);
+                            } else {
+                                input.parentElement.replaceChild(span, input);
+                            }
+                        };
+                        
+                        input.addEventListener('blur', doJump);
+                        input.addEventListener('keypress', function(ev) {
+                            if (ev.key === 'Enter') {
+                                ev.preventDefault();
+                                doJump();
+                            }
+                        });
+                        
+                        span.parentElement.replaceChild(input, span);
+                        input.focus();
+                    });
+                    pageNumbersEl.appendChild(span);
+                }
+
+                // Legacy popout removed in favor of inline jump input
 
                 function renderPage(page) {
                     const matchingRows = getMatchingRows();

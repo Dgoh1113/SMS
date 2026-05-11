@@ -11,12 +11,15 @@
             min-width: 0;
         }
 
-        .reports-range-input {
-            padding-right: 32px;
+        .reports-range-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            align-items: flex-end;
+            gap: 6px;
         }
-
-        .reports-range-input::-webkit-calendar-picker-indicator {
-            display: none;
+        .reports-range-input {
+            padding-right: 12px;
+            width: 100%;
         }
 
         .reports-custom-calendar-icon {
@@ -889,7 +892,7 @@
             @endif
         @endforeach
 
-        <div class="reports-filter-container rv2-filter" style="width: 240px; min-height: 90px; display: flex; flex-direction: column; align-self: auto;">
+        <div class="reports-filter-container rv2-filter" style="width: 340px; min-height: 90px; display: flex; flex-direction: column;">
             <div class="reports-range-label" style="display: flex; align-items: center; font-size: 9px; font-weight: 800; height: 1.6em;">PERIOD</div>
             <div style="flex: 1; display: flex; align-items: flex-end;">
                 <select name="days" class="reports-period-select" aria-label="Select period" id="reportsPeriodSelect" style="display: {{ request('from') || request('to') ? 'none' : 'block' }}; width: 100%;">
@@ -908,14 +911,19 @@
                         <label class="reports-range-label" style="font-size: 9px; opacity: 0.8;">Ending</label>
                         <input type="date" name="to" id="reportsRangeTo" value="{{ request('to', now()->format('Y-m-d')) }}" class="reports-range-input" aria-label="To date" style="width: 100%;">
                     </div>
-                    <button type="button" class="reports-range-back-btn" id="reportsRangeReset" style="right: 4px; top: 4px;">
-                        <i class="bi bi-x-lg"></i>
-                    </button>
+                    <div class="reports-range-col" style="display: flex; flex-direction: column; gap: 4px; align-items: center; justify-content: flex-end; padding-bottom: 2px;">
+                        <button type="button" class="reports-range-back-btn" id="reportsRangeReset" title="Reset" style="position: static; margin: 0; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-x-lg" style="font-size: 11px;"></i>
+                        </button>
+                        <button type="button" class="reports-range-back-btn" id="reportsRangeSubmit" title="Search" style="position: static; margin: 0; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-search" style="font-size: 11px;"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="reports-filter-container rv2-filter" style="width: 240px; min-height: 90px; display: flex; flex-direction: column; align-self: auto;">
+        <div class="reports-filter-container rv2-filter" style="width: 189px; min-height: 90px; display: flex; flex-direction: column;">
             <div class="reports-range-label" style="display: flex; align-items: center; font-size: 9px; font-weight: 800; height: 1.6em;">DEALER SCOPE</div>
             <div style="flex: 1; display: flex; align-items: flex-end;">
                 <div style="width: 100%; max-width: 100%; --report-scope-picker-width: 100%;">
@@ -927,7 +935,7 @@
             </div>
         </div>
 
-        <div class="reports-period-actions report-filter-actions" style="align-self: flex-end; padding-bottom: 8px;">
+        <div class="reports-period-actions report-filter-actions" style="margin-left: auto; align-self: flex-end; padding-bottom: 8px;">
             @include('admin.partials.report_filter_actions', [
                 'wrapperClass' => 'reports-period-actions-inner',
                 'applyClass' => 'report-filter-apply',
@@ -988,7 +996,12 @@
 
 <section class="dashboard-panels-two-column">
     <section class="dashboard-panel reports-inquiry-section">
-        <div class="dashboard-panel-header">
+        <div class="dashboard-panel-header" style="position: relative; padding-right: 40px;">
+            <button type="button" class="reports-fullscreen-btn" onclick="toggleChartFullscreen(this.closest('.dashboard-panel'))" aria-label="Toggle Fullscreen">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="20" height="20">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4h4M4 4l5 5M20 8V4h-4M20 4l-5 5M4 16v4h4M4 20l5-5M20 16v4h-4M20 20l-5-5" />
+                </svg>
+            </button>
             <div class="reports-inquiry-heading">
                 <div class="dashboard-panel-title">Inquiry Trends</div>
                 <div class="reports-inquiry-subtitle">Inquiries for {{ $periodLabel ?? 'selected period' }}</div>
@@ -1005,9 +1018,11 @@
                 @if (!$hasInquiryTrendData)
                     <p class="dealer-reports-empty">No leads created in this period yet.</p>
                 @else
-                    <div class="dealer-reports-chart-wrapper" style="height: 272px;">
-                        <p class="dealer-reports-chart-fallback">Unable to load inquiry trend chart.</p>
-                        <canvas id="adminInquiryTrendChart"></canvas>
+                    <div class="dealer-reports-chart-scroll-wrapper">
+                        <div class="dealer-reports-chart-wrapper" id="adminInquiryTrendChartWrapper" style="height: 272px;">
+                            <p class="dealer-reports-chart-fallback">Unable to load inquiry trend chart.</p>
+                            <canvas id="adminInquiryTrendChart"></canvas>
+                        </div>
                     </div>
                     <div class="admin-inquiry-trend-legend" id="adminInquiryTrendLegend">
                         <button type="button"
@@ -1114,7 +1129,12 @@
 @endphp
 
 <section class="dashboard-panel dashboard-table-panel reports-product-section">
-    <div class="dashboard-panel-header">
+    <div class="dashboard-panel-header" style="position: relative; padding-right: 40px;">
+        <button type="button" class="reports-fullscreen-btn" onclick="toggleChartFullscreen(this.closest('.dashboard-panel'))" aria-label="Toggle Fullscreen">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="20" height="20">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4h4M4 4l5 5M20 8V4h-4M20 4l-5 5M4 16v4h4M4 20l5-5M20 16v4h-4M20 20l-5-5" />
+            </svg>
+        </button>
         <div class="reports-product-heading">
             <div class="dashboard-panel-title">Product Conversion Rate</div>
             <div class="reports-product-subtitle">Closed-case conversions by product for {{ $periodLabel ?? 'selected period' }}</div>
@@ -1145,10 +1165,18 @@
                 $gapPx = 10;
                 $paddingPx = 44;
                 $chartHeightPx = max(220, $itemCount * ($barHeightPx + $gapPx) + $paddingPx);
+                $mobileChartWidthPx = max(750, $itemCount * 110);
             @endphp
-            <div class="reports-product-chart-wrapper" style="height: {{ $chartHeightPx }}px;">
+            <div class="reports-product-chart-desktop-wrapper" id="productConversionChartDesktopWrapper" style="height: {{ $chartHeightPx }}px;">
                 <p class="reports-product-chart-fallback">Unable to load product conversion chart.</p>
-                <canvas id="productConversionChart"></canvas>
+                <canvas id="productConversionChartDesktop"></canvas>
+            </div>
+            
+            <div class="dealer-reports-chart-scroll-wrapper reports-product-chart-mobile-wrapper" style="display: none;">
+                <div class="reports-product-chart-wrapper" id="productConversionChartMobileWrapper" style="width: {{ $mobileChartWidthPx }}px; min-width: {{ $mobileChartWidthPx }}px; height: 300px;">
+                    <p class="reports-product-chart-fallback">Unable to load product conversion chart.</p>
+                    <canvas id="productConversionChartMobile"></canvas>
+                </div>
             </div>
         @endif
         </div>
@@ -1160,8 +1188,160 @@
 
 @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1"></script>
+    <style>
+        /* Global Fullscreen Button Styles */
+        .reports-fullscreen-btn {
+            display: none;
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            z-index: 50;
+            background: rgba(255, 255, 255, 0.94);
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 6px;
+            color: #64748b;
+            cursor: pointer;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        /* Fullscreen Pseudo-class Overrides */
+        .dashboard-panel:-webkit-full-screen {
+            background: #ffffff !important;
+            padding: 16px !important;
+            overflow: auto !important;
+            display: flex !important;
+            flex-direction: column !important;
+            position: fixed !important;
+            z-index: 9999;
+            height: 100vh !important;
+            width: 100vw !important;
+        }
+        .dashboard-panel:fullscreen {
+            background: #ffffff !important;
+            padding: 16px !important;
+            overflow: auto !important;
+            display: flex !important;
+            flex-direction: column !important;
+            position: fixed !important;
+            z-index: 9999;
+            height: 100vh !important;
+            width: 100vw !important;
+        }
+        /* Force Mobile Chart Visibility during Fullscreen */
+        .dashboard-panel:-webkit-full-screen .reports-product-chart-mobile-wrapper {
+            display: block !important;
+        }
+        .dashboard-panel:fullscreen .reports-product-chart-mobile-wrapper {
+            display: block !important;
+        }
+        .dashboard-panel:-webkit-full-screen .reports-product-chart-desktop-wrapper {
+            display: none !important;
+        }
+        .dashboard-panel:fullscreen .reports-product-chart-desktop-wrapper {
+            display: none !important;
+        }
+
+        @media (max-width: 768px) {
+            .reports-fullscreen-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .reports-inquiry-section .dashboard-panel-body {
+                padding: 0 8px 12px !important;
+            }
+            .dealer-reports-card {
+                max-width: 100% !important;
+                overflow: hidden !important;
+            }
+            .dealer-reports-chart-scroll-wrapper {
+                position: relative;
+                display: block !important;
+                width: 100% !important;
+                overflow-x: auto !important;
+                overflow-y: hidden !important;
+                -webkit-overflow-scrolling: touch !important;
+                padding-bottom: 20px !important; /* Increased space for scrollbar */
+                cursor: grab;
+            }
+            /* High-Visibility Custom Scrollbar (Indicator) */
+            .dealer-reports-chart-scroll-wrapper::-webkit-scrollbar {
+                height: 10px !important;
+            }
+            .dealer-reports-chart-scroll-wrapper::-webkit-scrollbar-track {
+                background: #f1f5f9 !important; /* Lighter, solid background */
+                border-radius: 10px !important;
+                margin: 0 30px !important;
+            }
+            .dealer-reports-chart-scroll-wrapper::-webkit-scrollbar-thumb {
+                background: #7c3aed !important; /* Solid vibrant purple */
+                border-radius: 10px !important;
+                border: 2px solid #f1f5f9 !important; /* Crisp border to prevent blur */
+            }
+            .admin-inquiry-trend-legend {
+                margin-top: 0 !important;
+                padding-bottom: 10px !important;
+            }
+            .dealer-reports-chart-wrapper#adminInquiryTrendChartWrapper {
+                width: 900px !important;
+                min-width: 900px !important;
+                height: 260px !important; /* Adjust height to fit indicator */
+            }
+            .dealer-reports-chart-wrapper#adminInquiryTrendChartWrapper canvas {
+                width: 100% !important;
+                touch-action: pan-x !important;
+            }
+            .reports-product-chart-desktop-wrapper {
+                display: none !important;
+            }
+            .reports-product-chart-mobile-wrapper {
+                display: block !important;
+            }
+            .reports-product-chart-wrapper#productConversionChartMobileWrapper canvas {
+                width: 100% !important;
+                height: 100% !important;
+                touch-action: pan-x !important;
+            }
+        }
+    </style>
     <script>
+        function toggleChartFullscreen(element) {
+            if (!document.fullscreenElement) {
+                if (element.requestFullscreen) {
+                    element.requestFullscreen().then(() => {
+                        if (screen.orientation && screen.orientation.lock) {
+                            screen.orientation.lock('landscape').catch(() => {});
+                        }
+                    }).catch(err => {
+                        console.error(`Fullscreen failed: ${err.message}`);
+                    });
+                } else if (element.webkitRequestFullscreen) {
+                    element.webkitRequestFullscreen();
+                } else if (element.msRequestFullscreen) {
+                    element.msRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                    if (screen.orientation && screen.orientation.unlock) {
+                        screen.orientation.unlock();
+                    }
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+            }
+        }
+        
         document.addEventListener('DOMContentLoaded', function () {
+            if (typeof Chart !== 'undefined' && typeof ChartZoom !== 'undefined') {
+                Chart.register(ChartZoom);
+            }
+            const isMobile = window.matchMedia('(max-width: 768px)').matches;
             // Title dropdown (light purple)
             const dropdownBtn = document.getElementById('dropdownHoverButton');
             const dropdown = document.getElementById('dropdownHover');
@@ -1238,13 +1418,16 @@
                     wrapper.style.display = isCustom ? 'grid' : 'none';
                     
                     if (isCustom) {
-                        select.style.display = 'none';
-                        if (select.tomselect) select.tomselect.wrapper.style.display = 'none';
+                        select.style.setProperty('display', 'none', 'important');
+                        if (select.tomselect && select.tomselect.wrapper) {
+                            select.tomselect.wrapper.style.setProperty('display', 'none', 'important');
+                        }
                     } else {
-                        if (select.tomselect) {
-                            select.tomselect.wrapper.style.display = 'block';
+                        if (select.tomselect && select.tomselect.wrapper) {
+                            select.tomselect.wrapper.style.setProperty('display', 'block', 'important');
+                            select.style.setProperty('display', 'none', 'important');
                         } else {
-                            select.style.display = 'block';
+                            select.style.setProperty('display', 'block', 'important');
                         }
                     }
                     
@@ -1310,7 +1493,9 @@
                         syncRange(select);
                         select.addEventListener('change', function() {
                             syncRange(select);
-                            submitReportFilters();
+                            if (select.value !== 'custom') {
+                                submitReportFilters();
+                            }
                         });
                     } else {
                         select.addEventListener('change', submitReportFilters);
@@ -1322,7 +1507,16 @@
                         }
 
                         select.dataset.autoSubmitTomSelectReady = '1';
-                        select.tomselect.on('change', submitReportFilters);
+                        select.tomselect.on('change', function() {
+                            if (select.name === 'days') {
+                                syncRange(select);
+                                if (select.value !== 'custom') {
+                                    submitReportFilters();
+                                }
+                            } else {
+                                submitReportFilters();
+                            }
+                        });
                     };
 
                     bindTomSelectChange();
@@ -1355,8 +1549,34 @@
                         const fromInput = inputs[0];
                         const toInput = inputs[1];
 
-                        fromInput.addEventListener('change', submitReportFilters);
-                        toInput.addEventListener('change', submitReportFilters);
+                        const handleDateSubmit = function(e) {
+                            if (e && e.type === 'keydown' && e.key !== 'Enter') {
+                                return;
+                            }
+                            
+                            if (e && e.type === 'keydown' && e.key === 'Enter') {
+                                e.preventDefault();
+                            }
+
+                            if (fromInput.value && fromInput.value.length >= 10 && 
+                                toInput.value && toInput.value.length >= 10) {
+                                submitReportFilters();
+                            }
+                        };
+
+                        fromInput.addEventListener('keydown', handleDateSubmit);
+                        toInput.addEventListener('keydown', handleDateSubmit);
+                        
+                        const rangeSubmitBtn = document.getElementById('reportsRangeSubmit');
+                        if (rangeSubmitBtn) {
+                            rangeSubmitBtn.addEventListener('click', function(e) {
+                                handleDateSubmit(e);
+                            });
+                        }
+                        
+                        // Explicitly remove any other automatic triggers for these inputs
+                        fromInput.removeEventListener('change', submitReportFilters);
+                        toInput.removeEventListener('change', submitReportFilters);
 
                         fromInput.addEventListener('input', function() {
                             toInput.min = fromInput.value || '';
@@ -1398,13 +1618,11 @@
                 : null;
             const inquiryLegend = document.getElementById('adminInquiryTrendLegend');
 
-            const el = document.getElementById('productConversionChart');
-            const productChartWrapper = el
-                ? el.closest('.reports-product-chart-wrapper')
-                : document.querySelector('.reports-product-chart-wrapper');
-            const productChartFallback = productChartWrapper
-                ? productChartWrapper.querySelector('.reports-product-chart-fallback')
-                : null;
+            const desktopCanvas = document.getElementById('productConversionChartDesktop');
+            const mobileCanvas = document.getElementById('productConversionChartMobile');
+            
+            const productChartWrapper = desktopCanvas ? desktopCanvas.closest('.reports-product-chart-desktop-wrapper') : null;
+            const productChartFallback = productChartWrapper ? productChartWrapper.querySelector('.reports-product-chart-fallback') : null;
 
             if (typeof Chart === 'undefined') {
                 showChartFallback(inquiryWrapper, inquiryFallback, 'Inquiry trend chart could not be loaded right now.');
@@ -1721,7 +1939,7 @@
                         },
                         options: {
                             maintainAspectRatio: false,
-                            responsive: true,
+                            responsive: !isMobile,
                             interaction: {
                                 mode: 'index',
                                 axis: 'x',
@@ -1761,6 +1979,22 @@
                                             const value = typeof context.parsed.y === 'number' ? context.parsed.y : 0;
                                             return context.dataset.label + ': ' + Math.round(value);
                                         }
+                                    }
+                                },
+                                zoom: {
+                                    pan: {
+                                        enabled: false,
+                                        mode: 'x',
+                                        threshold: 10
+                                    },
+                                    zoom: {
+                                        wheel: {
+                                            enabled: isMobile,
+                                        },
+                                        pinch: {
+                                            enabled: isMobile,
+                                        },
+                                        mode: 'x',
                                     }
                                 }
                             },
@@ -1859,7 +2093,7 @@
                 }
             }
 
-            if (!el) return;
+            if (!desktopCanvas && !mobileCanvas) return;
 
             const rawProducts = @json($productConversionDisplay->values());
             const products = rawProducts
@@ -1901,159 +2135,185 @@
             const borderColors = toneMap.map(function (tone) { return tone.border; });
             const axisMax = maxValue > 0 ? Math.max(maxValue + 1, Math.ceil(maxValue * 1.35)) : 1;
 
-            const endValueLabels = {
-                id: 'endValueLabels',
-                afterDatasetsDraw(chart) {
-                    const meta = chart.getDatasetMeta(0);
-                    if (!meta || !meta.data || !meta.data.length) return;
+            const initProductChart = function(canvasEl, isMobileMode) {
+                if (!canvasEl) return;
 
-                    const ctx = chart.ctx;
-                    const chartArea = chart.chartArea;
-                    ctx.save();
-                    ctx.font = '600 12px "Public Sans", sans-serif';
-                    ctx.fillStyle = '#475569';
-                    ctx.textBaseline = 'middle';
+                const endValueLabels = {
+                    id: 'endValueLabels',
+                    afterDatasetsDraw(chart) {
+                        const meta = chart.getDatasetMeta(0);
+                        if (!meta || !meta.data || !meta.data.length) return;
 
-                    meta.data.forEach(function (bar, index) {
-                        const value = dataValues[index] || 0;
-                        const pct = totalValue > 0 ? Math.round((value / totalValue) * 100) : 0;
-                        const text = value + ' (' + pct + '%)';
-                        const textWidth = ctx.measureText(text).width;
-                        let x = bar.x + 10;
-                        if (x + textWidth > chartArea.right - 4) {
-                            x = chartArea.right - textWidth - 4;
-                        }
-                        ctx.fillText(text, x, bar.y);
-                    });
+                        const ctx = chart.ctx;
+                        const chartArea = chart.chartArea;
+                        ctx.save();
+                        ctx.font = isMobileMode ? '800 12px "Public Sans", sans-serif' : '700 11px "Public Sans", sans-serif';
+                        ctx.fillStyle = isMobileMode ? '#1e293b' : '#475569';
+                        ctx.textBaseline = 'middle';
 
-                    ctx.restore();
-                }
-            };
+                        meta.data.forEach(function (bar, index) {
+                            const value = dataValues[index] || 0;
+                            const pct = totalValue > 0 ? Math.round((value / totalValue) * 100) : 0;
+                            const text = value + ' (' + pct + '%)';
+                            
+                            if (!isMobileMode) {
+                                const textWidth = ctx.measureText(text).width;
+                                let x = bar.x + 10;
+                                if (x + textWidth > chartArea.right - 4) {
+                                    x = chartArea.right - textWidth - 4;
+                                }
+                                ctx.textAlign = 'left';
+                                ctx.textBaseline = 'middle';
+                                ctx.fillText(text, x, bar.y);
+                            } else {
+                                ctx.textAlign = 'center';
+                                ctx.textBaseline = 'bottom';
+                                ctx.fillText(text, bar.x, bar.y - 4);
+                            }
+                        });
 
-            const data = {
-                labels: labels,
-                datasets: [{
-                    axis: 'y',
-                    label: 'Product conversions',
-                    data: dataValues,
-                    backgroundColor: (ctx) => barColors[ctx.dataIndex] || '#94a3b8',
-                    borderColor: (ctx) => borderColors[ctx.dataIndex] || '#64748b',
-                    borderWidth: 1,
-                    borderSkipped: false,
-                    borderRadius: 8,
-                    barThickness: 18,
-                    maxBarThickness: 20,
-                    categoryPercentage: 0.78,
-                    barPercentage: 0.82,
-                    hoverBackgroundColor: (ctx) => borderColors[ctx.dataIndex] || '#475569',
-                }]
-            };
+                        ctx.restore();
+                    }
+                };
 
-            const config = {
-                type: 'bar',
-                data: data,
-                plugins: [endValueLabels],
-                options: {
-                    indexAxis: 'y',
-                    maintainAspectRatio: false,
-                    responsive: true,
-                    animation: {
-                        duration: 260,
-                        easing: 'easeOutCubic'
-                    },
-                    layout: {
-                        padding: {
-                            top: 4,
-                            right: 72,
-                            bottom: 0,
-                            left: 6,
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            display: false,
+                const data = {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Product conversions',
+                        data: dataValues,
+                        backgroundColor: (ctx) => barColors[ctx.dataIndex] || '#94a3b8',
+                        borderColor: (ctx) => borderColors[ctx.dataIndex] || '#64748b',
+                        borderWidth: 1,
+                        borderSkipped: false,
+                        borderRadius: isMobileMode ? { topLeft: 8, topRight: 8, bottomLeft: 0, bottomRight: 0 } : 8,
+                        barThickness: isMobileMode ? 32 : 18,
+                        maxBarThickness: isMobileMode ? 40 : 24,
+                        categoryPercentage: 0.8,
+                        barPercentage: isMobileMode ? 0.9 : 0.85,
+                        hoverBackgroundColor: (ctx) => borderColors[ctx.dataIndex] || '#475569',
+                    }]
+                };
+
+                const config = {
+                    type: 'bar',
+                    data: data,
+                    plugins: [endValueLabels],
+                    options: {
+                        indexAxis: isMobileMode ? 'x' : 'y',
+                        maintainAspectRatio: false,
+                        responsive: true,
+                        animation: {
+                            duration: 260,
+                            easing: 'easeOutCubic'
                         },
-                        tooltip: {
-                            displayColors: false,
-                            backgroundColor: 'rgba(15, 23, 42, 0.94)',
-                            titleColor: '#fff',
-                            bodyColor: '#fff',
-                            padding: 12,
-                            cornerRadius: 10,
-                            callbacks: {
-                                title: function(items) {
-                                    return items[0] && items[0].label ? items[0].label : 'Product';
-                                },
-                                label: function(ctx) {
-                                    const index = ctx.dataIndex;
-                                    const val = ctx.parsed && typeof ctx.parsed.x === 'number' ? Math.round(ctx.parsed.x) : 0;
-                                    const pct = totalValue > 0 ? ((val / totalValue) * 100).toFixed(1) : '0.0';
-                                    return 'Conversions: ' + val + ' (' + pct + '%)';
-                                },
-                                afterLabel: function(ctx) {
-                                    const tone = toneMap[ctx.dataIndex];
-                                    return tone ? 'Performance: ' + tone.level : '';
+                        layout: {
+                            padding: {
+                                top: isMobileMode ? 32 : 4,
+                                right: isMobileMode ? 6 : 72,
+                                bottom: isMobileMode ? 6 : 0,
+                                left: 6,
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false,
+                            },
+                            tooltip: {
+                                displayColors: false,
+                                backgroundColor: 'rgba(15, 23, 42, 0.94)',
+                                titleColor: '#fff',
+                                bodyColor: '#fff',
+                                padding: 12,
+                                cornerRadius: 10,
+                                callbacks: {
+                                    title: function(items) {
+                                        return items[0] && items[0].label ? items[0].label : 'Product';
+                                    },
+                                    label: function(ctx) {
+                                        const val = ctx.parsed ? Math.round(isMobileMode ? ctx.parsed.y : ctx.parsed.x) : 0;
+                                        const pct = totalValue > 0 ? ((val / totalValue) * 100).toFixed(1) : '0.0';
+                                        return 'Conversions: ' + val + ' (' + pct + '%)';
+                                    },
+                                    afterLabel: function(ctx) {
+                                        const tone = toneMap[ctx.dataIndex];
+                                        return tone ? 'Performance: ' + tone.level : '';
+                                    }
                                 }
                             }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            beginAtZero: true,
-                            max: axisMax,
-                            grid: {
-                                color: 'rgba(148, 163, 184, 0.10)',
-                                drawBorder: false,
-                                drawTicks: false,
+                        },
+                        scales: isMobileMode ? {
+                            x: {
+                                grid: { display: false, drawBorder: false, drawTicks: false },
+                                border: { display: false },
+                                ticks: {
+                                    color: '#475569',
+                                    font: { size: 12, weight: '800' },
+                                    padding: 8,
+                                    autoSkip: false,
+                                    maxRotation: 45,
+                                    minRotation: 0,
+                                }
                             },
-                            border: {
-                                display: false,
+                            y: {
+                                beginAtZero: true,
+                                max: axisMax,
+                                grid: { display: true, color: 'rgba(148, 163, 184, 0.10)' },
+                                border: { display: false },
+                                ticks: {
+                                    display: true,
+                                    padding: 6,
+                                    color: '#64748b',
+                                    font: { size: 9, weight: '600' },
+                                    stepSize: maxValue <= 10 ? 1 : undefined,
+                                }
+                            }
+                        } : {
+                            x: {
+                                beginAtZero: true,
+                                max: axisMax,
+                                grid: { color: 'rgba(148, 163, 184, 0.10)', display: true, drawBorder: false, drawTicks: false },
+                                border: { display: false },
+                                ticks: {
+                                    color: '#94a3b8',
+                                    font: { size: 11, weight: '600' },
+                                    padding: 8,
+                                    stepSize: maxValue <= 10 ? 1 : undefined,
+                                }
                             },
-                            ticks: {
-                                color: '#94a3b8',
-                                font: {
-                                    size: 11,
-                                    weight: '600',
+                            y: {
+                                grid: { display: false },
+                                border: { display: false },
+                                afterFit: function(scale) {
+                                    scale.width = Math.max(scale.width, 132);
                                 },
-                                padding: 8,
-                                stepSize: maxValue <= 10 ? 1 : undefined,
-                                callback: function(v) { return Math.round(v); }
+                                ticks: {
+                                    display: true,
+                                    autoSkip: false,
+                                    maxTicksLimit: labels.length,
+                                    padding: 12,
+                                    color: '#0f172a',
+                                    font: { size: 12, weight: '600' },
+                                }
                             }
                         },
-                        y: {
-                            grid: {
-                                display: false,
-                            },
-                            border: {
-                                display: false,
-                            },
-                            afterFit: function(scale) {
-                                scale.width = Math.max(scale.width, 132);
-                            },
-                            ticks: {
-                                autoSkip: false,
-                                maxTicksLimit: labels.length,
-                                padding: 12,
-                                color: '#0f172a',
-                                font: {
-                                    size: 12,
-                                    weight: '600',
-                                },
-                            },
-                        },
                     },
-                },
-            };
+                };
 
-            try {
-                new Chart(el.getContext('2d'), config);
-                if (productChartWrapper) {
-                    productChartWrapper.classList.remove('is-error');
+                try {
+                    new Chart(canvasEl.getContext('2d'), config);
+                    const wrapper = canvasEl.closest('.reports-product-chart-wrapper, .reports-product-chart-desktop-wrapper');
+                    if (wrapper) {
+                        wrapper.classList.remove('is-error');
+                        const fallbackText = wrapper.querySelector('.reports-product-chart-fallback');
+                        if (fallbackText) fallbackText.style.display = 'none';
+                    }
+                } catch (error) {
+                    console.error('Product conversion chart failed to render.', error);
                 }
-            } catch (error) {
-                console.error('Product conversion chart failed to render.', error);
-                showChartFallback(productChartWrapper, productChartFallback, 'Unable to render product conversion chart.');
-            }
+            };
+            
+            initProductChart(desktopCanvas, false);
+            initProductChart(mobileCanvas, true);
         });
     </script>
 @endpush

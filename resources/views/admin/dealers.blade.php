@@ -493,22 +493,15 @@ html.theme-dark #dealersTable tbody tr.dealer-placeholder-row:hover td {
                 </tbody>
             </table>
             </div>
-            <div class="inquiries-assigned-pagination dealers-pagination" id="dealersPagination"
-             data-total="{{ $dealersTotal }}"
-             data-per-page="{{ $dealersPerPage }}"
-             data-current-page="1"
-             data-last-page="{{ $dealersLastPage }}">
-            <span class="inquiries-assigned-pagination-info">
-                Showing {{ $dealersTotal === 0 ? 0 : 1 }} to {{ $dealersTo }} of {{ $dealersTotal }} entries (Page 1)
-            </span>
-            <div class="inquiries-assigned-pagination-nav">
-                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" data-page="first">First</button>
-                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" data-page="prev">Previous</button>
-                <span class="inquiries-assigned-page-numbers" id="dealersPageNumbers"></span>
-                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" data-page="next">Next</button>
-                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" data-page="last">Last</button>
-            </div>
-        </div>
+            @include('partials.common_pagination', [
+                'id' => 'dealersPagination',
+                'total' => $dealersTotal,
+                'perPage' => $dealersPerPage,
+                'currentPage' => 1,
+                'lastPage' => $dealersLastPage,
+                'containerClass' => 'dealers-pagination',
+                'pageNumbersId' => 'dealersPageNumbers'
+            ])
         </div>
     </div>
 </section>
@@ -831,21 +824,115 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        function buildPageNumbers(currentPage, lastPage) {
-            if (!pageNumbersEl) return;
-            pageNumbersEl.innerHTML = '';
-            for (var p = 1; p <= lastPage; p++) {
-                var btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'inquiries-pagination-num' + (p === currentPage ? ' inquiries-pagination-num-active' : '');
-                btn.setAttribute('data-page', String(p));
-                btn.textContent = String(p);
-                btn.addEventListener('click', function(e) {
-                    var target = e.currentTarget.getAttribute('data-page') || '1';
-                    window.dealersGoToPage(target);
-                });
-                pageNumbersEl.appendChild(btn);
+        function buildSmartPageNumbers(container, current, lastPage) {
+            if (!container) return;
+            container.innerHTML = '';
+            
+            var maxVisible = 3;
+            if (lastPage <= maxVisible + 2) {
+                for (var p = 1; p <= lastPage; p++) {
+                    addDealerPageButton(container, p, p === current);
+                }
+            } else {
+                // Always show page 1
+                addDealerPageButton(container, 1, 1 === current);
+                
+                var start = Math.max(2, current - 1);
+                var end = Math.min(lastPage - 1, current + 1);
+                
+                if (current <= 3) {
+                    start = 2;
+                    end = 4;
+                } else if (current >= lastPage - 2) {
+                    start = lastPage - 3;
+                    end = lastPage - 1;
+                }
+
+                if (start > 2) {
+                    addDealerEllipsis(container, lastPage, current);
+                }
+                
+                for (var p = start; p <= end; p++) {
+                    addDealerPageButton(container, p, p === current);
+                }
+                
+                if (end < lastPage - 1) {
+                    addDealerEllipsis(container, lastPage, current);
+                }
+
+                // Always show last page
+                addDealerPageButton(container, lastPage, lastPage === current);
             }
+        }
+
+        function addDealerPageButton(container, p, isActive) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'inquiries-pagination-num' + (isActive ? ' inquiries-pagination-num-active' : '');
+            btn.setAttribute('data-page', String(p));
+            btn.textContent = String(p);
+            btn.style.position = 'relative';
+            btn.style.zIndex = '5';
+            btn.addEventListener('click', function(e) { 
+                e.stopPropagation();
+                if (!isActive) window.dealersGoToPage(p); 
+            });
+            container.appendChild(btn);
+        }
+
+        function addDealerEllipsis(container, lastPage, current) {
+            var span = document.createElement('span');
+            span.className = 'inquiries-pagination-num inquiries-pagination-dots';
+            span.textContent = '...';
+            span.setAttribute('data-page', 'dots');
+            span.style.cursor = 'pointer';
+            span.style.position = 'relative';
+            span.style.zIndex = '5';
+            span.addEventListener('click', function(e) { 
+                e.stopPropagation();
+                
+                var input = document.createElement('input');
+                input.type = 'number';
+                input.className = 'inquiries-pagination-num inquiries-pagination-jump-input';
+                input.min = '1';
+                input.max = lastPage;
+                input.placeholder = '#';
+                input.style.width = '45px';
+                input.style.padding = '0 4px';
+                input.style.textAlign = 'center';
+                input.style.border = '1px solid #7c3aed';
+                input.style.borderRadius = '4px';
+                input.style.height = '28px';
+                input.style.outline = 'none';
+                input.style.margin = '0 2px';
+                
+                var doJump = function() {
+                    var val = parseInt(input.value, 10);
+                    if (!isNaN(val) && val >= 1 && val <= lastPage) {
+                        window.dealersGoToPage(val);
+                    } else {
+                        input.parentElement.replaceChild(span, input);
+                    }
+                };
+                
+                input.addEventListener('blur', doJump);
+                input.addEventListener('keypress', function(ev) {
+                    if (ev.key === 'Enter') {
+                        ev.preventDefault();
+                        doJump();
+                    }
+                });
+                
+                span.parentElement.replaceChild(input, span);
+                input.focus();
+            });
+            container.appendChild(span);
+        }
+
+        // Legacy popout removed in favor of inline jump input
+
+        function buildPageNumbers(currentPage, lastPage) {
+            buildSmartPageNumbers(pageNumbersEl, currentPage, lastPage);
         }
 
         function renderPage(page) {

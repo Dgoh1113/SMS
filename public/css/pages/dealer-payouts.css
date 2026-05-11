@@ -213,18 +213,18 @@ html.theme-dark .inquiries-tab-count[data-tooltip]::after {
 
 .dealer-payouts-panel .inquiries-table-scroll {
   flex: 0 0 auto;
-  min-height: clamp(420px, calc(100vh - 290px), 560px) !important;
+  min-height: auto !important;
   max-height: none;
   overflow-x: auto;
   overflow-y: hidden;
 }
 
 .dealer-payouts-panel .inquiries-table-scroll.inquiries-table-scroll-empty {
-  min-height: clamp(320px, calc(100vh - 330px), 420px) !important;
+  min-height: auto !important;
 }
 
 .dealer-payouts-panel .inquiries-table-scroll.inquiries-table-scroll-short {
-  min-height: clamp(340px, calc(100vh - 350px), 420px) !important;
+  min-height: auto !important;
 }
 
 .dealer-payouts-panel .inquiries-assigned-pagination {
@@ -263,7 +263,7 @@ html.theme-dark .inquiries-tab-count[data-tooltip]::after {
   }
 
   .dealer-payouts-panel .inquiries-table-scroll {
-    min-height: 340px !important;
+    min-height: auto !important;
   }
 
   .dealer-payouts-panel .inquiries-table thead .inquiries-header-row th {
@@ -325,7 +325,7 @@ html.theme-dark .inquiries-tab-count[data-tooltip]::after {
   }
 
   .dealer-payouts-panel {
-    min-height: clamp(500px, calc(100vh - 180px), 580px);
+    min-height: auto;
     height: auto;
     margin-bottom: 6px;
   }
@@ -343,21 +343,21 @@ html.theme-dark .inquiries-tab-count[data-tooltip]::after {
 
   .dealer-payouts-panel .inquiries-table-scroll {
     flex: 1 1 auto;
-    min-height: clamp(360px, calc(100vh - 320px), 440px) !important;
+    min-height: auto !important;
     height: auto;
     max-height: none;
   }
 
   .dealer-payouts-panel .inquiries-table-scroll.inquiries-table-scroll-empty {
     flex: 1 1 auto;
-    min-height: clamp(360px, calc(100vh - 320px), 440px) !important;
+    min-height: auto !important;
     height: auto;
     max-height: none;
   }
 
   .dealer-payouts-panel .inquiries-table-scroll.inquiries-table-scroll-short {
     flex: 1 1 auto;
-    min-height: clamp(360px, calc(100vh - 320px), 440px) !important;
+    min-height: auto !important;
     height: auto;
     max-height: none;
   }
@@ -410,7 +410,7 @@ html.theme-dark .inquiries-tab-count[data-tooltip]::after {
   }
 
   .dealer-payouts-panel {
-    min-height: clamp(330px, calc(100vh - 340px), 382px);
+    min-height: auto;
     margin-bottom: 0;
   }
 
@@ -512,12 +512,12 @@ html.theme-dark .inquiries-tab-count[data-tooltip]::after {
   }
 
   .dealer-payouts-panel .inquiries-table-scroll {
-    min-height: clamp(160px, calc(100vh - 552px), 204px) !important;
+    min-height: auto !important;
   }
 
   .dealer-payouts-panel .inquiries-table-scroll.inquiries-table-scroll-empty,
   .dealer-payouts-panel .inquiries-table-scroll.inquiries-table-scroll-short {
-    min-height: clamp(160px, calc(100vh - 552px), 204px) !important;
+    min-height: auto !important;
   }
 
   .dealer-payouts-panel .inquiries-assigned-pagination {
@@ -569,15 +569,15 @@ html.theme-dark .inquiries-tab-count[data-tooltip]::after {
   }
 
   .dealer-payouts-panel .inquiries-table-scroll {
-    min-height: clamp(290px, calc(100vh - 440px), 455px) !important;
+    min-height: auto !important;
   }
 
   .dealer-payouts-panel .inquiries-table-scroll.inquiries-table-scroll-empty {
-    min-height: clamp(290px, calc(100vh - 440px), 455px) !important;
+    min-height: auto !important;
   }
 
   .dealer-payouts-panel .inquiries-table-scroll.inquiries-table-scroll-short {
-    min-height: clamp(300px, calc(100vh - 450px), 455px) !important;
+    min-height: auto !important;
   }
 
   .dealer-payouts-panel .inquiries-table thead .inquiries-header-row th {
@@ -673,15 +673,15 @@ html.theme-dark .inquiries-tab-count[data-tooltip]::after {
   }
 
   .dealer-payouts-panel .inquiries-table-scroll {
-    min-height: 260px !important;
+    min-height: auto !important;
   }
 
   .dealer-payouts-panel .inquiries-table-scroll.inquiries-table-scroll-short {
-    min-height: 320px !important;
+    min-height: auto !important;
   }
 
   .dealer-payouts-panel .inquiries-table-scroll.inquiries-table-scroll-empty {
-    min-height: 220px !important;
+    min-height: auto !important;
   }
 
   .dealer-payouts-panel .inquiries-assigned-pagination {

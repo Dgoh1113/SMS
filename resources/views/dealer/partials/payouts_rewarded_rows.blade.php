@@ -103,6 +103,7 @@
                     data-lead-id="{{ $r->LEADID }}"
                     data-customer="{{ $custDisp }}"
                     data-status="{{ $statusDisp }}"
+                    data-non-failed-status="{{ $r->ACT_NON_FAILED_STATUS ?? '' }}"
                     title="Update"
                     aria-label="Update">
                 <i class="bi bi-pencil-square" aria-hidden="true"></i>

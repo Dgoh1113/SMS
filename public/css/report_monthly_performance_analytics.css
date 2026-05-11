@@ -1065,6 +1065,14 @@ html.theme-dark .reports-page .report-legend {
     align-items: stretch;
   }
 
+  .reports-filter-container,
+  .rv2-filter {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    box-sizing: border-box;
+  }
+
   .reports-period-filter-controls {
     display: grid;
     grid-template-columns: 1fr;
@@ -1078,14 +1086,25 @@ html.theme-dark .reports-page .report-legend {
   .report-scope-field .report-scope-ts-wrapper,
   .reports-period-check,
   .reports-period-actions .report-filter-clear,
-  .reports-period-actions .report-filter-apply,
-  .reports-period-actions .report-filter-export {
+  .reports-period-actions .report-filter-apply {
     width: 100% !important;
     min-width: 0 !important;
     height: 44px;
     font-size: 14px;
     box-sizing: border-box;
     flex: 1 1 auto;
+  }
+
+  .reports-period-actions .report-filter-export {
+    width: auto !important;
+    min-width: 0 !important;
+    height: 44px;
+    font-size: 14px;
+    box-sizing: border-box;
+    flex: 0 0 auto;
+    justify-self: start;
+    padding-left: 12px;
+    padding-right: 16px;
   }
 
   .reports-period-check {
@@ -1100,6 +1119,8 @@ html.theme-dark .reports-page .report-legend {
     grid-template-columns: 1fr;
     gap: 8px;
     align-items: stretch;
+    margin-left: 0 !important;
+    justify-content: flex-start !important;
   }
 
   .reports-page .dashboard-metrics-grid {

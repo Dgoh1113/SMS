@@ -519,7 +519,7 @@
   #incomingPanel .inquiries-table-scroll,
   #assignedPanel .inquiries-table-scroll,
   #allPanel .inquiries-table-scroll {
-    min-height: 340px;
+    min-height: auto;
   }
 
   .inquiries-table thead .inquiries-header-row th {
@@ -564,9 +564,8 @@
   #allPanel > .inquiries-mgmt-panel > .inquiries-table-wrap {
     display: flex;
     flex-direction: column;
-    flex: 0 0 auto;
-    height: clamp(620px, calc(100vh - 180px), 760px);
-    min-height: clamp(620px, calc(100vh - 180px), 760px);
+    height: auto;
+    min-height: 0;
   }
 
   #incomingPanel > .inquiries-mgmt-panel > .inquiries-table-wrap.inquiries-table-wrap-filled,
@@ -646,11 +645,6 @@
     padding-bottom: 4px;
   }
 
-  .inquiries-page-wrap .inquiries-status,
-  .inquiries-page-wrap .inquiries-pill {
-    padding: 2px 7px;
-    font-size: 10px;
-  }
 
   .inquiries-page-wrap .inquiries-action-cell > * + * {
     margin-left: 4px;
@@ -703,7 +697,7 @@
   #incomingPanel .inquiries-table-scroll,
   #assignedPanel .inquiries-table-scroll,
   #allPanel .inquiries-table-scroll {
-    min-height: 460px;
+    min-height: auto;
   }
 
   /* Fixed-height container for laptop view – keeps all tabs the same height */
@@ -719,9 +713,8 @@
   #allPanel > .inquiries-mgmt-panel > .inquiries-table-wrap {
     display: flex;
     flex-direction: column;
-    flex: 0 0 auto;
-    height: calc(100vh - 155px);
-    min-height: calc(100vh - 155px);
+    height: auto;
+    min-height: 0;
   }
 
   #incomingPanel > .inquiries-mgmt-panel > .inquiries-table-wrap.inquiries-table-wrap-filled,

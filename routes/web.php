@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DealerController;
 use App\Http\Controllers\PasskeyController;
 use Illuminate\Support\Facades\Route;
@@ -10,6 +11,7 @@ Route::get('/', fn () => redirect()->route('login'));
 
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
+Route::get('/customer/search', [CustomerController::class, 'search'])->name('customer.search');
 Route::match(['GET', 'POST'], '/login/testing/{role}', [AuthController::class, 'testingLogin'])->name('login.testing');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
@@ -27,6 +29,7 @@ Route::middleware(['auth.sms'])->group(function () {
 
 Route::middleware(['auth.sms', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+    Route::get('/notifications', [AdminController::class, 'notifications'])->name('notifications');
     Route::get('/inquiries', [AdminController::class, 'inquiries'])->name('inquiries');
     Route::get('/inquiries/sync', [AdminController::class, 'inquiriesSync'])->name('inquiries.sync');
     Route::get('/inquiries/assigned-page', [AdminController::class, 'inquiriesAssignedPage'])->name('inquiries.assigned-page');

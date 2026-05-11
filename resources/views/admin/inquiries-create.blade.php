@@ -251,7 +251,7 @@
             top: -15px !important; 
             right: -25px !important; 
             width: 200px !important; /* Reduced size */
-            z-index: 1000 !important;
+            z-index: 900 !important;
             filter: drop-shadow(0 15px 35px rgba(0,0,0,0.25));
             height: auto !important;
             max-width: none !important;
@@ -906,14 +906,20 @@
                     </div>
                     <div class="inquiry-form-grid">
                         <div class="inquiry-form-label inquiry-company-field" style="grid-column: span 12;">
-                            <label for="companyInput" class="inquiry-form-label-title">Company name <span class="required">*</span></label>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                                <label for="companyInput" class="inquiry-form-label-title" style="margin-bottom: 0;">Company name <span class="required">*</span></label>
+                                <button type="button" id="sqlSearchBtn" class="inquiry-inline-toggle" style="font-size: 11px; display: flex; align-items: center; gap: 4px;">
+                                    <i class="bi bi-database-check"></i> Search SQL Account
+                                </button>
+                            </div>
                             <div class="inquiry-form-input-wrapper">
                                 <i class="bi bi-building inquiry-input-icon"></i>
                                 <input type="text" name="COMPANYNAME" id="companyInput" value="{{ old('COMPANYNAME', $inquiry->COMPANYNAME ?? '') }}" maxlength="200" required class="inquiry-form-input has-icon" placeholder="Enter company name" autocomplete="off">
-                                <button type="button" class="inquiry-lookup-btn" id="lookupCompanyBtn" title="Load existing company data">
+                                <button type="button" class="inquiry-lookup-btn" id="lookupCompanyBtn" title="Load existing internal company data">
                                     <i class="bi bi-search" style="font-size: 11px; font-weight: 800;"></i>
                                 </button>
                             </div>
+                            <div id="sqlSearchResults" style="display: none; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; margin-top: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-height: 250px; overflow-y: auto; z-index: 1000; position: absolute; width: 100%;"></div>
                         </div>
                         <label class="inquiry-form-label" style="grid-column: span 5;">
                             <span class="inquiry-form-label-title">Business nature <span class="required">*</span></span>
@@ -1478,10 +1484,105 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    if (postcodeInput) {
-        postcodeInput.addEventListener('input', syncLocationFromPostcode);
-        postcodeInput.addEventListener('change', syncLocationFromPostcode);
-        syncLocationFromPostcode();
+    // SQL Account API Lookup Logic
+    var sqlSearchBtn = document.getElementById('sqlSearchBtn');
+    var sqlSearchResults = document.getElementById('sqlSearchResults');
+    var sqlSearchUrl = "{{ route('customer.search') }}";
+
+    if (sqlSearchBtn && companyInput && sqlSearchResults) {
+        sqlSearchBtn.addEventListener('click', function() {
+            var val = (companyInput.value || '').trim();
+            if (val.length < 3) {
+                alert('Please enter at least 3 characters in the Company Name field.');
+                return;
+            }
+
+            sqlSearchBtn.disabled = true;
+            sqlSearchBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Searching...';
+            sqlSearchResults.style.display = 'none';
+            sqlSearchResults.innerHTML = '';
+
+            fetch(sqlSearchUrl + '?q=' + encodeURIComponent(val))
+                .then(response => response.json())
+                .then(data => {
+                    sqlSearchBtn.disabled = false;
+                    sqlSearchBtn.innerHTML = '<i class="bi bi-database-check"></i> Search SQL Account';
+
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+
+                    var customers = data.customers || [];
+                    if (customers.length === 0) {
+                        sqlSearchResults.innerHTML = '<div style="padding: 12px; color: #64748b; text-align: center;">No matching customers found in SQL Account.</div>';
+                        sqlSearchResults.style.display = 'block';
+                        return;
+                    }
+
+                    customers.forEach(customer => {
+                        var item = document.createElement('div');
+                        item.style.padding = '10px 12px';
+                        item.style.cursor = 'pointer';
+                        item.style.borderBottom = '1px solid #f1f5f9';
+                        item.style.transition = 'background 0.2s';
+                        item.className = 'sql-result-item';
+                        item.innerHTML = `
+                            <div style="font-weight: 600; color: #1e293b; font-size: 13px;">${customer.companyname}</div>
+                            <div style="font-size: 11px; color: #64748b;">Code: ${customer.code} | Agent: ${customer.agent || 'N/A'}</div>
+                        `;
+
+                        item.addEventListener('mouseover', () => item.style.background = '#f8fafc');
+                        item.addEventListener('mouseout', () => item.style.background = 'transparent');
+
+                        item.addEventListener('click', function() {
+                            // Populate the form
+                            if (document.getElementById('companyInput')) document.getElementById('companyInput').value = customer.companyname || '';
+                            if (document.querySelector('[name="BUSINESSNATURE"]')) document.querySelector('[name="BUSINESSNATURE"]').value = customer.businessnature || '';
+                            if (document.getElementById('address1Input')) document.getElementById('address1Input').value = customer.address1 || '';
+                            
+                            if (customer.address2 && customer.address2.trim() !== '') {
+                                if (document.getElementById('address2Input')) document.getElementById('address2Input').value = customer.address2;
+                                setAddress2Expanded(true);
+                            }
+
+                            if (document.getElementById('postcodeInput')) {
+                                document.getElementById('postcodeInput').value = (customer.postcode || '').substring(0, 5);
+                                // Trigger postcode sync
+                                syncLocationFromPostcode();
+                            }
+
+                            // If city/state/country weren't filled by postcode sync, fill them manually
+                            setTimeout(() => {
+                                if (customer.city && (!document.getElementById('cityInput').value)) document.getElementById('cityInput').value = customer.city;
+                                if (customer.state && (!document.getElementById('stateInput').value)) document.getElementById('stateInput').value = customer.state;
+                                if (customer.email && (!document.querySelector('[name="EMAIL"]').value)) document.querySelector('[name="EMAIL"]').value = customer.email;
+                                if (customer.contactname && (!document.querySelector('[name="CONTACTNAME"]').value)) document.querySelector('[name="CONTACTNAME"]').value = customer.contactname;
+                                if (customer.contactno && (!document.querySelector('[name="CONTACTNO"]').value)) document.querySelector('[name="CONTACTNO"]').value = customer.contactno;
+                            }, 100);
+
+                            sqlSearchResults.style.display = 'none';
+                        });
+
+                        sqlSearchResults.appendChild(item);
+                    });
+
+                    sqlSearchResults.style.display = 'block';
+                })
+                .catch(err => {
+                    sqlSearchBtn.disabled = false;
+                    sqlSearchBtn.innerHTML = '<i class="bi bi-database-check"></i> Search SQL Account';
+                    console.error('SQL Search error:', err);
+                    alert('An error occurred while searching SQL Account.');
+                });
+        });
+
+        // Close results when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!sqlSearchBtn.contains(e.target) && !sqlSearchResults.contains(e.target)) {
+                sqlSearchResults.style.display = 'none';
+            }
+        });
     }
 
 

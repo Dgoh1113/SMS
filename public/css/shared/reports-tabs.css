@@ -369,6 +369,8 @@
   line-height: 1;
   letter-spacing: 0.045em;
   box-shadow: 0 10px 22px rgba(91, 63, 215, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  transform: scale(0.92) translateX(2px);
+  transform-origin: left center;
 }
 
 .report-filter-export::before {
@@ -623,18 +625,24 @@ html.theme-dark .report-filter-export:focus-visible {
     min-width: 0;
   }
 
-  .report-scope-ts-dropdown {
-    max-width: calc(100vw - 32px);
+  .reports-filter-container,
+  .rv2-filter {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    box-sizing: border-box;
   }
 
   .report-filter-export {
-    width: 100%;
+    width: auto !important;
     min-width: 0;
     min-height: 48px;
     gap: 11px;
     padding: 8px 16px;
     font-size: 14px;
     border-radius: 12px;
+    align-self: flex-start;
+    margin-right: auto;
   }
 
   .report-filter-export::before {
