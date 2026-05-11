@@ -897,14 +897,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 input.min = '1';
                 input.max = lastPage;
                 input.placeholder = '#';
-                input.style.width = '45px';
-                input.style.padding = '0 4px';
-                input.style.textAlign = 'center';
-                input.style.border = '1px solid #7c3aed';
-                input.style.borderRadius = '4px';
-                input.style.height = '28px';
-                input.style.outline = 'none';
-                input.style.margin = '0 2px';
                 
                 var doJump = function() {
                     var val = parseInt(input.value, 10);

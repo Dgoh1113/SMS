@@ -266,21 +266,14 @@
             $incomingTotal = isset($unassignedTotal) ? $unassignedTotal : count($unassigned);
             $incomingTo = $incomingTotal === 0 ? 0 : min($incomingPerPage, $incomingTotal);
         @endphp
-        <div class="inquiries-assigned-pagination" id="incomingPagination"
-             data-incoming-total="{{ $incomingTotal }}"
-             data-incoming-per-page="{{ $incomingPerPage }}"
-             data-incoming-current-page="1">
-            <span class="inquiries-assigned-pagination-info" id="incomingPaginationInfo">
-                Showing {{ $incomingTotal === 0 ? 0 : 1 }} to {{ $incomingTo }} of {{ $incomingTotal }} entries (Page 1)
-            </span>
-            <div class="inquiries-assigned-pagination-nav">
-                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="incomingPaginationFirst" title="First Page" aria-label="First page"><i class="bi bi-chevron-double-left"></i></button>
-                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="incomingPaginationPrev" title="Previous Page" aria-label="Previous page"><i class="bi bi-chevron-left"></i></button>
-                <span class="inquiries-assigned-page-numbers" id="incomingPageNumbers"></span>
-                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="incomingPaginationNext" title="Next Page" aria-label="Next page"><i class="bi bi-chevron-right"></i></button>
-                <button type="button" class="inquiries-btn inquiries-btn-secondary inquiries-pagination-btn" id="incomingPaginationLast" title="Last Page" aria-label="Last page"><i class="bi bi-chevron-double-right"></i></button>
-            </div>
-        </div>
+        @include('partials.common_pagination', [
+            'id' => 'incomingPagination',
+            'total' => $incomingTotal,
+            'perPage' => $incomingPerPage,
+            'currentPage' => 1,
+            'lastPage' => $incomingLastPage ?? 1,
+            'pageNumbersId' => 'incomingPageNumbers'
+        ])
     </div>
 </section>
 </div>
@@ -2595,14 +2588,6 @@ document.addEventListener('DOMContentLoaded', function() {
             input.min = '1';
             input.max = lastPage;
             input.placeholder = '#';
-            input.style.width = '45px';
-            input.style.padding = '0 4px';
-            input.style.textAlign = 'center';
-            input.style.border = '1px solid #7c3aed';
-            input.style.borderRadius = '4px';
-            input.style.height = '28px';
-            input.style.outline = 'none';
-            input.style.margin = '0 2px';
             
             var doJump = function() {
                 var val = parseInt(input.value, 10);

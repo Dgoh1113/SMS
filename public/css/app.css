@@ -5508,7 +5508,7 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-wrap: wrap; /* allow controls to wrap when space is small */
+  flex-wrap: nowrap; /* Prevent wrapping for stability */
 }
 
 @media (max-height: 900px) {
@@ -5546,8 +5546,32 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
 }
 .inquiries-assigned-pagination .inquiries-btn:disabled,
 .inquiries-assigned-pagination .inquiries-pagination-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.35;
   cursor: not-allowed;
+}
+.inquiries-pagination-jump-input {
+  width: 45px !important;
+  height: 28px !important;
+  padding: 0 4px !important;
+  text-align: center !important;
+  border: 1px solid #7c3aed !important;
+  border-radius: 4px !important;
+  outline: none !important;
+  margin: 0 2px !important;
+  background: #fff !important;
+  color: #5b21b6 !important;
+  font-size: 12px !important;
+  box-sizing: border-box !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+}
+.inquiries-pagination-jump-input::-webkit-inner-spin-button,
+.inquiries-pagination-jump-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.inquiries-pagination-jump-input[type=number] {
+  -moz-appearance: textfield;
 }
 .inquiries-assigned-page-numbers {
   display: inline-flex;
