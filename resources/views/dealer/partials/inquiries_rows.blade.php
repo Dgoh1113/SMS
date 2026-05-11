@@ -1,3 +1,19 @@
+@php
+    $currentDealerTab = $dealerConsoleTab ?? 'inquiries';
+    $dealerEmptyMessages = [
+        'pending' => 'No pending inquiries found.',
+        'followup' => 'No follow up inquiries found.',
+        'demo' => 'No demo inquiries found.',
+        'confirmed' => 'No confirmed inquiries found.',
+        'completed' => 'No completed inquiries found.',
+        'rewarded' => 'No rewarded inquiries found.',
+        'cancelled' => 'No cancelled inquiries found.',
+        'failed' => 'No failed inquiries found.',
+        'inquiries' => 'No inquiries assigned yet.',
+    ];
+    $dealerEmptyMessage = $dealerEmptyMessages[$currentDealerTab] ?? 'No inquiries found.';
+@endphp
+
 @forelse($leads as $r)
     @php
         $productIds = [];
@@ -110,7 +126,7 @@
 @empty
     <tr class="inquiries-empty-row">
         <td colspan="{{ ($dealerConsoleTab ?? 'inquiries') === 'inquiries' ? 24 : 23 }}" class="inquiries-empty-cell">
-            <div class="dealer-table-empty">No inquiries assigned yet.</div>
+            <div class="dealer-table-empty">{{ $dealerEmptyMessage }}</div>
         </td>
     </tr>
 @endforelse

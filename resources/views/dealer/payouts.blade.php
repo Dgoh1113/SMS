@@ -2,6 +2,23 @@
 @section('title', 'Pending Payouts - SQL LMS Dealer Console')
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/pages/dealer-payouts.css') }}?v=20260422-01">
+    <style>
+        .dealer-payouts-panel .inquiries-empty-row .inquiries-empty-cell {
+            padding: 0 !important;
+            vertical-align: middle;
+        }
+        .dealer-payouts-panel .inquiries-empty-row .dealer-table-empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            min-height: 100%;
+            padding: 24px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+    </style>
 @endpush
 @section('content')
 @php
@@ -477,6 +494,23 @@ function initDealerPendingPayoutsPage() {
         return measurePayoutRowHeight(table, referenceRow);
     }
 
+    function resetPayoutEmptyRowHeight(tbody) {
+        if (!tbody) return null;
+        var emptyRow = Array.prototype.slice.call(tbody.querySelectorAll('tr')).find(function(row) {
+            return !row.classList.contains('payouts-row') && !!row.querySelector('.dealer-table-empty, .inquiries-empty, .inquiries-empty-cell');
+        }) || null;
+        if (!emptyRow) return null;
+
+        emptyRow.style.display = '';
+        var emptyCell = emptyRow.querySelector('.inquiries-empty-cell, .inquiries-empty');
+        if (emptyCell) {
+            emptyCell.style.height = '';
+            emptyCell.style.minHeight = '';
+        }
+
+        return emptyRow;
+    }
+
     var completedPayoutSort = { col: null, dir: 1 };
 
     function getCompletedPayoutSortValue(row, col) {
@@ -572,10 +606,10 @@ function initDealerPendingPayoutsPage() {
         clearPayoutPlaceholderRows(table);
         if (tbody) tbody.style.minHeight = '';
         if (!scrollWrap) return;
-        
         // Disabled placeholder rows to avoid empty space/floating pagination
         scrollWrap.classList.toggle('inquiries-table-scroll-empty', visibleDataCount === 0);
         scrollWrap.classList.toggle('inquiries-table-scroll-short', false);
+    }
     }
 
     function buildSmartPageNumbers(pageNumbersEl, current, lastPage, goToPageFn) {
@@ -651,14 +685,6 @@ function initDealerPendingPayoutsPage() {
             input.min = '1';
             input.max = lastPage;
             input.placeholder = '#';
-            input.style.width = '45px';
-            input.style.padding = '0 4px';
-            input.style.textAlign = 'center';
-            input.style.border = '1px solid #7c3aed';
-            input.style.borderRadius = '4px';
-            input.style.height = '28px';
-            input.style.outline = 'none';
-            input.style.margin = '0 2px';
             
             var doJump = function() {
                 var val = parseInt(input.value, 10);
