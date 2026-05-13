@@ -93,7 +93,7 @@
         5 => 'SQL Ecommerce', 6 => 'SQL EBI Wellness POS', 7 => 'SQL X Suduai', 8 => 'SQL X-Store',
         9 => 'SQL Vision', 10 => 'SQL HRMS', 11 => 'Others',
     ];
-    $statusFilterOptions = ['Followup', 'Demo', 'Confirmed', 'Completed', 'Rewarded', 'Failed'];
+    $statusFilterOptions = ['Followup', 'Demo', 'Confirmed', 'Completed', 'Rewarded', 'Cancelled', 'Failed'];
 @endphp
 <div class="dashboard-content inquiries-page-wrap">
     @include('dealer.partials.console-inquiries-tabs', [
@@ -865,11 +865,11 @@ function initDealerInquiriesPage() {
                 var start = Math.max(2, current - 1);
                 var end = Math.min(lastPage - 1, current + 1);
                 
-                if (current <= 3) {
+                if (current <= 2) {
                     start = 2;
-                    end = 4;
-                } else if (current >= lastPage - 2) {
-                    start = lastPage - 3;
+                    end = 3;
+                } else if (current >= lastPage - 1) {
+                    start = lastPage - 2;
                     end = lastPage - 1;
                 }
 

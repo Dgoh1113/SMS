@@ -94,7 +94,8 @@
                                 'PENDING' => 'PENDING', 'FOLLOW UP' => 'FOLLOW UP', 'FOLLOWUP' => 'FOLLOW UP',
                                 'DEMO' => 'DEMO', 'CONFIRMED' => 'CONFIRMED', 'CASE CONFIRMED' => 'CONFIRMED',
                                 'COMPLETED' => 'COMPLETED', 'CASE COMPLETED' => 'COMPLETED',
-                                'REWARD' => 'REWARDED', 'REWARDED' => 'REWARDED', 'REWARD DISTRIBUTED' => 'REWARDED'
+                                'REWARD' => 'REWARDED', 'REWARDED' => 'REWARDED', 'REWARD DISTRIBUTED' => 'REWARDED',
+                                'CANCELLED' => 'CANCELLED'
                             ];
                             $rawStatus = strtoupper(trim($r->ACT_STATUS ?? 'PENDING'));
                             $status = $statusMap[$rawStatus] ?? 'PENDING';

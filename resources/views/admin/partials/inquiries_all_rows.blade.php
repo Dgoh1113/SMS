@@ -29,6 +29,7 @@
             case 'REWARD DISTRIBUTED':
             case 'PAID': $statusClass = 'inquiries-status-rewarded'; break;
             case 'FAILED': $statusClass = 'inquiries-status-failed'; break;
+            case 'CANCELLED': $statusClass = 'inquiries-status-cancelled'; break;
             default: $statusClass = 'inquiries-status-new'; break;
         }
         $fullMsg = trim((string) ($r->DESCRIPTION ?? ''));

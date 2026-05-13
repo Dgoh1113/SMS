@@ -5544,6 +5544,27 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
     flex-wrap: nowrap;
   }
 }
+
+/* Mobile specific: Move arrows to next line */
+@media (max-width: 480px) {
+  .inquiries-assigned-pagination {
+    height: auto !important;
+    min-height: unset !important;
+    padding: 10px 5px !important;
+  }
+  .inquiries-assigned-pagination-nav {
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    row-gap: 8px !important;
+  }
+  .inquiries-assigned-page-numbers {
+    order: -1 !important;
+    width: 100% !important;
+    display: flex !important;
+    justify-content: center !important;
+    margin: 0 0 4px 0 !important;
+  }
+}
 .inquiries-assigned-pagination .inquiries-btn:disabled,
 .inquiries-assigned-pagination .inquiries-pagination-btn:disabled {
   opacity: 0.35;
@@ -6353,6 +6374,10 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
   background: #434343;
   color: #fff;
 }
+.inquiries-status-cancelled {
+  background: #64748b;
+  color: #fff;
+}
 .inquiries-action-cell {
   display: table-cell;
   white-space: nowrap;
@@ -6508,6 +6533,11 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
 }
 .inquiries-status-timeline-wrap .inquiries-status-item[data-tone="failed"] .inquiry-activity-bullet {
   background: #434343;
+  box-shadow: 0 0 0 4px rgba(67, 67, 67, 0.15);
+}
+.inquiries-status-timeline-wrap .inquiries-status-item[data-tone="cancelled"] .inquiry-activity-bullet {
+  background: #64748b;
+  box-shadow: 0 0 0 4px rgba(100, 116, 139, 0.15);
 }
 .inquiries-status-timeline-wrap .inquiries-status-entry-head {
   display: flex;
@@ -6571,6 +6601,11 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
 .inquiries-status-timeline-wrap .inquiries-status-badge--failed {
   background: #434343;
   border-color: #434343;
+  color: #ffffff;
+}
+.inquiries-status-timeline-wrap .inquiries-status-badge--cancelled {
+  background: #64748b;
+  border-color: #64748b;
   color: #ffffff;
 }
 .inquiries-status-timeline-wrap .inquiries-status-badge--default {
@@ -6935,6 +6970,12 @@ html.theme-dark .inquiries-status-timeline-wrap .inquiry-activity-attachment-lin
   background: linear-gradient(135deg, #374151 0%, #1f2937 55%, #111827 100%);
   color: #ffffff;
   box-shadow: 0 12px 24px rgba(17, 24, 39, 0.22);
+}
+
+.reports-metric-icon-cancelled {
+  background: linear-gradient(135deg, #64748b 0%, #475569 55%, #334155 100%);
+  color: #ffffff;
+  box-shadow: 0 12px 24px rgba(71, 85, 105, 0.22);
 }
 
 .reports-metric-icon-reward {

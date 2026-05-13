@@ -2672,35 +2672,36 @@ class AdminController extends Controller
 
         // Lead status summary (derived from LEAD_ACT)
         $leadStatusRows = DB::select(
-            'SELECT
+            "SELECT
                 CASE
-                    WHEN ls.latest_status IN (\'PENDING\', \'FOLLOWUP\', \'FOLLOW UP\', \'DEMO\', \'CONFIRMED\') THEN \'Ongoing\'
-                    WHEN ls.latest_status IN (\'COMPLETED\', \'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\') THEN \'Closed\'
-                    WHEN ls.latest_status = \'FAILED\' THEN \'Failed\'
-                    ELSE \'Open\'
+                    WHEN ls.latest_status IN ('PENDING', 'FOLLOWUP', 'FOLLOW UP', 'DEMO', 'CONFIRMED') THEN 'Ongoing'
+                    WHEN ls.latest_status IN ('COMPLETED', 'REWARDED', 'PAID', 'REWARD DISTRIBUTED') THEN 'Closed'
+                    WHEN ls.latest_status = 'FAILED' THEN 'Failed'
+                    WHEN ls.latest_status = 'CANCELLED' THEN 'Cancelled'
+                    ELSE 'Open'
                 END AS status,
                 COUNT(*) AS c
-             FROM "LEAD" l
-             LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
+             FROM \"LEAD\" l
+             LEFT JOIN \"USERS\" u ON u.\"USERID\" = l.\"ASSIGNEDTO\"
              LEFT JOIN (
-                 SELECT a."LEADID", UPPER(TRIM(a."STATUS")) AS latest_status
-                 FROM "LEAD_ACT" a
+                 SELECT a.\"LEADID\", UPPER(TRIM(a.\"STATUS\" )) AS latest_status
+                 FROM \"LEAD_ACT\" a
                  JOIN (
-                     SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
-                     FROM "LEAD_ACT"
-                     GROUP BY "LEADID"
-                 ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
-             ) ls ON ls."LEADID" = l."LEADID"
-             WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
-             AND COALESCE(ls.latest_status, \'\') <> \'CANCELLED\'
-             ' . $leadScopeSql . '
+                     SELECT \"LEADID\", MAX(\"CREATIONDATE\") AS MAXCD
+                     FROM \"LEAD_ACT\"
+                     GROUP BY \"LEADID\"
+                 ) m ON m.\"LEADID\" = a.\"LEADID\" AND m.MAXCD = a.\"CREATIONDATE\"
+             ) ls ON ls.\"LEADID\" = l.\"LEADID\"
+             WHERE COALESCE(l.\"ISDELETED\", FALSE) = FALSE AND l.\"CREATEDAT\" >= ? AND l.\"CREATEDAT\" <= ?
+             " . $leadScopeSql . "
              GROUP BY
                 CASE
-                    WHEN ls.latest_status IN (\'PENDING\', \'FOLLOWUP\', \'FOLLOW UP\', \'DEMO\', \'CONFIRMED\') THEN \'Ongoing\'
-                    WHEN ls.latest_status IN (\'COMPLETED\', \'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\') THEN \'Closed\'
-                    WHEN ls.latest_status = \'FAILED\' THEN \'Failed\'
-                    ELSE \'Open\'
-                END',
+                    WHEN ls.latest_status IN ('PENDING', 'FOLLOWUP', 'FOLLOW UP', 'DEMO', 'CONFIRMED') THEN 'Ongoing'
+                    WHEN ls.latest_status IN ('COMPLETED', 'REWARDED', 'PAID', 'REWARD DISTRIBUTED') THEN 'Closed'
+                    WHEN ls.latest_status = 'FAILED' THEN 'Failed'
+                    WHEN ls.latest_status = 'CANCELLED' THEN 'Cancelled'
+                    ELSE 'Open'
+                END",
             array_merge([$startStr, $endStr], $leadScopeBindings)
         );
         $leadStatus = [
@@ -2708,6 +2709,7 @@ class AdminController extends Controller
             'Ongoing' => 0,
             'Closed' => 0,
             'Failed' => 0,
+            'Cancelled' => 0,
         ];
         foreach ($leadStatusRows as $row) {
             $key = (string) $get($row, 'status');
@@ -2718,35 +2720,36 @@ class AdminController extends Controller
 
         // Last month lead status summary for month-over-month status comparisons.
         $lastMonthLeadStatusRows = DB::select(
-            'SELECT
+            "SELECT
                 CASE
-                    WHEN ls.latest_status IN (\'PENDING\', \'FOLLOWUP\', \'FOLLOW UP\', \'DEMO\', \'CONFIRMED\') THEN \'Ongoing\'
-                    WHEN ls.latest_status IN (\'COMPLETED\', \'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\') THEN \'Closed\'
-                    WHEN ls.latest_status = \'FAILED\' THEN \'Failed\'
-                    ELSE \'Open\'
+                    WHEN ls.latest_status IN ('PENDING', 'FOLLOWUP', 'FOLLOW UP', 'DEMO', 'CONFIRMED') THEN 'Ongoing'
+                    WHEN ls.latest_status IN ('COMPLETED', 'REWARDED', 'PAID', 'REWARD DISTRIBUTED') THEN 'Closed'
+                    WHEN ls.latest_status = 'FAILED' THEN 'Failed'
+                    WHEN ls.latest_status = 'CANCELLED' THEN 'Cancelled'
+                    ELSE 'Open'
                 END AS status,
                 COUNT(*) AS c
-             FROM "LEAD" l
-             LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
+             FROM \"LEAD\" l
+             LEFT JOIN \"USERS\" u ON u.\"USERID\" = l.\"ASSIGNEDTO\"
              LEFT JOIN (
-                 SELECT a."LEADID", UPPER(TRIM(a."STATUS")) AS latest_status
-                 FROM "LEAD_ACT" a
+                 SELECT a.\"LEADID\", UPPER(TRIM(a.\"STATUS\")) AS latest_status
+                 FROM \"LEAD_ACT\" a
                  JOIN (
-                     SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
-                     FROM "LEAD_ACT"
-                     GROUP BY "LEADID"
-                 ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
-             ) ls ON ls."LEADID" = l."LEADID"
-             WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
-             AND COALESCE(ls.latest_status, \'\') <> \'CANCELLED\'
-             ' . $leadScopeSql . '
+                     SELECT \"LEADID\", MAX(\"CREATIONDATE\") AS MAXCD
+                     FROM \"LEAD_ACT\"
+                     GROUP BY \"LEADID\"
+                 ) m ON m.\"LEADID\" = a.\"LEADID\" AND m.MAXCD = a.\"CREATIONDATE\"
+             ) ls ON ls.\"LEADID\" = l.\"LEADID\"
+             WHERE COALESCE(l.\"ISDELETED\", FALSE) = FALSE AND l.\"CREATEDAT\" >= ? AND l.\"CREATEDAT\" <= ?
+             " . $leadScopeSql . "
              GROUP BY
                 CASE
-                    WHEN ls.latest_status IN (\'PENDING\', \'FOLLOWUP\', \'FOLLOW UP\', \'DEMO\', \'CONFIRMED\') THEN \'Ongoing\'
-                    WHEN ls.latest_status IN (\'COMPLETED\', \'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\') THEN \'Closed\'
-                    WHEN ls.latest_status = \'FAILED\' THEN \'Failed\'
-                    ELSE \'Open\'
-                END',
+                    WHEN ls.latest_status IN ('PENDING', 'FOLLOWUP', 'FOLLOW UP', 'DEMO', 'CONFIRMED') THEN 'Ongoing'
+                    WHEN ls.latest_status IN ('COMPLETED', 'REWARDED', 'PAID', 'REWARD DISTRIBUTED') THEN 'Closed'
+                    WHEN ls.latest_status = 'FAILED' THEN 'Failed'
+                    WHEN ls.latest_status = 'CANCELLED' THEN 'Cancelled'
+                    ELSE 'Open'
+                END",
             array_merge([$prevStartStr, $prevEndStr], $leadScopeBindings)
         );
         $lastMonthLeadStatus = [
@@ -2754,6 +2757,7 @@ class AdminController extends Controller
             'Ongoing' => 0,
             'Closed' => 0,
             'Failed' => 0,
+            'Cancelled' => 0,
         ];
         foreach ($lastMonthLeadStatusRows as $row) {
             $key = (string) $get($row, 'status');
@@ -2779,6 +2783,7 @@ class AdminController extends Controller
                 'CONFIRMED', 'CASE CONFIRMED' => 'Confirmed',
                 'COMPLETED', 'CASE COMPLETED', 'CLOSED' => 'Completed',
                 'FAILED' => 'Failed',
+                'CANCELLED' => 'Cancelled',
                 'REWARDED', 'REWARD', 'REWARD DISTRIBUTED', 'PAID' => 'reward',
                 default => null,
             };
@@ -2796,7 +2801,7 @@ class AdminController extends Controller
              ) m ON m."LEADID" = a."LEADID" AND m.max_created = a."CREATIONDATE"
              JOIN "LEAD" l ON l."LEADID" = a."LEADID"
              LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
-             WHERE UPPER(TRIM(COALESCE(a."STATUS", \'\'))) <> \'CANCELLED\'
+             WHERE 1=1
              ' . $leadScopeSql . '
              GROUP BY a."STATUS"',
             array_merge([$startStr, $endStr], $leadScopeBindings)
@@ -2809,6 +2814,7 @@ class AdminController extends Controller
             'Confirmed' => 0,
             'Completed' => 0,
             'Failed' => 0,
+            'Cancelled' => 0,
             'reward' => 0,
         ];
         foreach ($pendingActs as $row) {
@@ -2830,7 +2836,7 @@ class AdminController extends Controller
              ) m ON m."LEADID" = a."LEADID" AND m.max_created = a."CREATIONDATE"
              JOIN "LEAD" l ON l."LEADID" = a."LEADID"
              LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
-             WHERE UPPER(TRIM(COALESCE(a."STATUS", \'\'))) <> \'CANCELLED\'
+             WHERE 1=1
              ' . $leadScopeSql . '
              GROUP BY a."STATUS"',
             array_merge([$prevStartStr, $prevEndStr], $leadScopeBindings)
@@ -2843,6 +2849,7 @@ class AdminController extends Controller
             'Confirmed' => 0,
             'Completed' => 0,
             'Failed' => 0,
+            'Cancelled' => 0,
             'reward' => 0,
         ];
         foreach ($lastMonthActs as $row) {
@@ -2903,7 +2910,6 @@ class AdminController extends Controller
              FROM "LEAD" l
              LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
              WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
-             AND COALESCE((SELECT FIRST 1 UPPER(TRIM(la2."STATUS")) FROM "LEAD_ACT" la2 WHERE la2."LEADID" = l."LEADID" ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC), \'\') <> \'CANCELLED\'
              ' . $leadScopeSql . '
              GROUP BY CAST(l."CREATEDAT" AS DATE)
              ORDER BY CAST(l."CREATEDAT" AS DATE)',
@@ -2938,7 +2944,6 @@ class AdminController extends Controller
              FROM "LEAD" l
              LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
              WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
-             AND COALESCE((SELECT FIRST 1 UPPER(TRIM(la2."STATUS")) FROM "LEAD_ACT" la2 WHERE la2."LEADID" = l."LEADID" ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC), \'\') <> \'CANCELLED\'
              ' . $leadScopeSql,
             array_merge([$prevStartStr, $prevEndStr], $leadScopeBindings)
         );
@@ -2962,6 +2967,7 @@ class AdminController extends Controller
             'Confirmed' => $percentChange($activityStatus['Confirmed'] ?? 0, $lastMonthActivity['Confirmed'] ?? 0),
             'Completed' => $percentChange($activityStatus['Completed'] ?? 0, $lastMonthActivity['Completed'] ?? 0),
             'Failed' => $percentChange($activityStatus['Failed'] ?? 0, $lastMonthActivity['Failed'] ?? 0),
+            'Cancelled' => $percentChange($activityStatus['Cancelled'] ?? 0, $lastMonthActivity['Cancelled'] ?? 0),
             'Rewarded' => $percentChange($activityStatus['reward'] ?? 0, $lastMonthActivity['reward'] ?? 0),
         ];
 
@@ -3826,25 +3832,44 @@ class AdminController extends Controller
     public function history(Request $request): View
     {
         $historyDateFilter = $this->resolveHistoryDateFilter($request);
+        
+        $perPage = (int) $request->query('per_page', 10);
+        $page = (int) $request->query('page', 1);
+        if ($perPage < 1) $perPage = 10;
+        if ($page < 1) $page = 1;
+        $skip = ($page - 1) * $perPage;
 
+        $where = 'WHERE a."CREATIONDATE" >= ? AND a."CREATIONDATE" <= ?';
+        $bindings = [
+            $historyDateFilter['rangeStart']->format('Y-m-d H:i:s'),
+            $historyDateFilter['rangeEnd']->format('Y-m-d H:i:s'),
+        ];
+
+        // Total Count
+        $totalRow = DB::selectOne("SELECT COUNT(*) AS c FROM \"LEAD_ACT\" a $where", $bindings);
+        $total = (int) ($totalRow->C ?? $totalRow->c ?? 0);
+        $lastPage = (int) ceil($total / $perPage);
+
+        // Paginated Rows
         $rows = DB::select(
-            'SELECT FIRST 100
-                a."LEAD_ACTID", a."LEADID", a."USERID", a."CREATIONDATE", a."SUBJECT", a."DESCRIPTION", a."ATTACHMENT", a."STATUS",
-                u."ALIAS",
-                l."POSTCODE", l."CITY", l."COMPANYNAME", l."CONTACTNAME"
-            FROM "LEAD_ACT" a
-            LEFT JOIN "USERS" u ON a."USERID" = u."USERID"
-            LEFT JOIN "LEAD" l ON a."LEADID" = l."LEADID"
-            WHERE a."CREATIONDATE" >= ? AND a."CREATIONDATE" <= ?
-            ORDER BY "LEAD_ACTID" DESC',
-            [
-                $historyDateFilter['rangeStart']->format('Y-m-d H:i:s'),
-                $historyDateFilter['rangeEnd']->format('Y-m-d H:i:s'),
-            ]
+            "SELECT FIRST $perPage SKIP $skip
+                a.\"LEAD_ACTID\", a.\"LEADID\", a.\"USERID\", a.\"CREATIONDATE\", a.\"SUBJECT\", a.\"DESCRIPTION\", a.\"ATTACHMENT\", a.\"STATUS\",
+                u.\"ALIAS\",
+                l.\"POSTCODE\", l.\"CITY\", l.\"COMPANYNAME\", l.\"CONTACTNAME\"
+            FROM \"LEAD_ACT\" a
+            LEFT JOIN \"USERS\" u ON a.\"USERID\" = u.\"USERID\"
+            LEFT JOIN \"LEAD\" l ON a.\"LEADID\" = l.\"LEADID\"
+            $where
+            ORDER BY \"LEAD_ACTID\" DESC",
+            $bindings
         );
 
         return view('admin.history', array_merge($historyDateFilter, [
             'items' => $rows,
+            'total' => $total,
+            'perPage' => $perPage,
+            'currentPageNum' => $page,
+            'lastPage' => $lastPage,
             'currentPage' => 'history',
         ]));
     }
@@ -3874,27 +3899,23 @@ class AdminController extends Controller
             $rangeStart = Carbon::now()->startOfWeek(Carbon::MONDAY)->startOfDay();
             $rangeEnd = Carbon::now()->endOfDay();
         } elseif ($dateRange === 'custom') {
-            $customStart = $this->parseHistoryFilterDate($startDateInput);
-            $customEnd = $this->parseHistoryFilterDate($endDateInput);
-
-            if ($customStart === null && $customEnd !== null) {
-                $customStart = $customEnd->copy();
-            }
-            if ($customEnd === null && $customStart !== null) {
-                $customEnd = $customStart->copy();
-            }
-
-            if ($customStart === null || $customEnd === null) {
-                $dateRange = 'today';
-            } else {
-                if ($customStart->gt($customEnd)) {
-                    [$customStart, $customEnd] = [$customEnd, $customStart];
+            if ($startDateInput !== '' && $endDateInput !== '') {
+                try {
+                    $rangeStart = Carbon::parse($startDateInput)->startOfDay();
+                    $rangeEnd = Carbon::parse($endDateInput)->endOfDay();
+                } catch (\Throwable $e) {
+                    $dateRange = 'today';
                 }
+            } else {
+                // Default to 1 week ago if custom is selected but no dates provided yet
+                $rangeStart = Carbon::now()->subDays(7)->startOfDay();
+                $rangeEnd = Carbon::now()->endOfDay();
+                $startDateInput = $rangeStart->format('Y-m-d');
+                $endDateInput = $rangeEnd->format('Y-m-d');
+            }
 
-                $rangeStart = $customStart->copy()->startOfDay();
-                $rangeEnd = $customEnd->copy()->endOfDay();
-                $startDateInput = $customStart->format('Y-m-d');
-                $endDateInput = $customEnd->format('Y-m-d');
+            if ($rangeStart->gt($rangeEnd)) {
+                [$rangeStart, $rangeEnd] = [$rangeEnd, $rangeStart];
             }
         }
 
@@ -3914,21 +3935,6 @@ class AdminController extends Controller
         ];
     }
 
-    private function parseHistoryFilterDate(string $value): ?Carbon
-    {
-        $value = trim($value);
-        if ($value === '') {
-            return null;
-        }
-
-        try {
-            $date = Carbon::createFromFormat('Y-m-d', $value);
-
-            return $date && $date->format('Y-m-d') === $value ? $date : null;
-        } catch (\Throwable $e) {
-            return null;
-        }
-    }
 
     private function ensureMaintainUsersAccess(Request $request): ?RedirectResponse
     {
@@ -4348,9 +4354,7 @@ class AdminController extends Controller
             return redirect()->route('admin.maintain-users')->with('error', 'User not found.');
         }
 
-        if ($user->LASTLOGIN !== null) {
-            return redirect()->route('admin.maintain-users')->with('error', 'Passkey setup links can only be sent to users who have never logged in.');
-        }
+        // Allow sending setup links to all users, acts as a reset if they have already logged in
 
         try {
             $this->sendMaintainUserPasskeySetupLink($user);

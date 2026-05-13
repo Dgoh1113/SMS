@@ -42,7 +42,7 @@
 
         .reports-page .reports-metrics--admin {
             display: grid;
-            grid-template-columns: repeat(8, minmax(0, 1fr));
+            grid-template-columns: repeat(9, minmax(0, 1fr));
             gap: 16px;
             margin-bottom: 2px;
         }
@@ -578,35 +578,32 @@
             .reports-page .reports-period-form-compact {
                 width: 100%;
                 justify-content: center;
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 16px !important;
             }
 
-            .reports-page .reports-period-select {
-                text-align: center;
-                text-align-last: center;
+            .reports-range-grid {
+                grid-template-columns: 1fr 1fr !important;
             }
 
-            .reports-page .report-scope-field .report-scope-ts-wrapper.single .ts-control,
-            .reports-page .report-scope-field .report-scope-ts-wrapper.single.input-active .ts-control {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 0 14px;
+            .reports-range-grid .reports-range-col:last-child {
+                grid-column: span 2;
+                flex-direction: row !important;
+                justify-content: flex-end !important;
+                gap: 8px !important;
+                padding-top: 4px !important;
             }
 
-            .reports-page .report-scope-field .report-scope-ts-wrapper.single .ts-control > .item,
-            .reports-page .report-scope-field .report-scope-ts-wrapper.single .ts-control > input {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                width: 100%;
-                min-height: 100%;
-                margin: 0;
-                line-height: 1.2;
-                text-align: center;
+            .rv2-filter {
+                max-width: none !important;
+                width: 100% !important;
+                min-width: 0 !important;
             }
 
             .reports-page .report-filter-actions {
                 justify-content: center;
+                margin-left: 0 !important;
             }
 
             .reports-page .report-filter-apply,
@@ -694,7 +691,7 @@
                 gap: 4px !important;
             }
             .reports-metrics--admin {
-                grid-template-columns: repeat(8, 1fr) !important;
+                grid-template-columns: repeat(9, 1fr) !important;
                 gap: 4px !important;
                 margin-bottom: 4px !important;
             }
@@ -854,6 +851,13 @@
             'icon' => 'bi bi-x-octagon',
             'icon_class' => 'reports-metric-icon-failed',
         ],
+        [
+            'key' => 'Cancelled',
+            'label' => 'CANCELLED',
+            'value' => $metricActivityStatus['Cancelled'] ?? 0,
+            'icon' => 'bi bi-slash-circle',
+            'icon_class' => 'reports-metric-icon-cancelled',
+        ],
     ];
 @endphp
 
@@ -867,6 +871,7 @@
         ['label' => 'Completed', 'value' => (int) ($activityStatus['Completed'] ?? 0), 'color' => '#22c55e'],
         ['label' => 'Rewarded', 'value' => (int) ($activityStatus['reward'] ?? 0), 'color' => '#15803d'],
         ['label' => 'Failed', 'value' => (int) ($activityStatus['Failed'] ?? 0), 'color' => '#374151'],
+        ['label' => 'Cancelled', 'value' => (int) ($activityStatus['Cancelled'] ?? 0), 'color' => '#64748b'],
     ];
     $totalStatus = max(array_sum(array_column($statusReportData, 'value')), 1);
     $selectedDays = max((int) ($days ?? 60), 1);

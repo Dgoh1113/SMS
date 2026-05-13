@@ -16,6 +16,32 @@
         }
 
         @media (max-width: 768px) {
+            .reports-period-form-compact {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 16px !important;
+                width: 100% !important;
+            }
+            .reports-range-grid {
+                grid-template-columns: 1fr 1fr !important;
+                width: 100% !important;
+            }
+            .reports-range-grid .reports-range-col:last-child {
+                grid-column: span 2;
+                flex-direction: row !important;
+                justify-content: flex-end !important;
+                gap: 8px !important;
+                padding-top: 4px !important;
+            }
+            .rv2-filter {
+                max-width: none !important;
+                width: 100% !important;
+                min-width: 0 !important;
+            }
+            .report-filter-actions {
+                justify-content: center !important;
+                margin-left: 0 !important;
+            }
             .rrp-chart-scroll-wrapper {
                 position: relative;
                 display: block !important;

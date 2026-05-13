@@ -14,6 +14,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/customer/search', [CustomerController::class, 'search'])->name('customer.search');
 Route::match(['GET', 'POST'], '/login/testing/{role}', [AuthController::class, 'testingLogin'])->name('login.testing');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+Route::post('/switch-role', [AuthController::class, 'switchRole'])->name('switch-role');
 
 Route::get('/passkey/setup', [AuthController::class, 'showPasskeySetupForm'])->name('passkey.setup.form');
 

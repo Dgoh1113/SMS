@@ -38,6 +38,26 @@
         #historyTable td {
             vertical-align: top;
         }
+        .history-range-grid {
+            display: grid;
+            grid-template-columns: auto auto auto;
+            align-items: flex-end;
+            gap: 12px;
+        }
+        .history-range-apply-col {
+            display: flex;
+            align-items: flex-end;
+            padding-bottom: 2px;
+        }
+        @media (max-width: 768px) {
+            .history-range-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .history-range-apply-col {
+                grid-column: span 2;
+                justify-content: flex-end;
+            }
+        }
     </style>
 @endpush
 @section('content')
@@ -56,17 +76,21 @@
                     </select>
                 </label>
                 <div class="history-custom-range" id="historyCustomRange" @if($dateRange !== 'custom') hidden @endif>
-                    <label class="history-date-input-field" for="historyStartDate" style="position: relative;">
-                        <span>Start</span>
-                        <input type="date" id="historyStartDate" name="start_date" value="{{ $startDateInput }}">
-                        <i class="bi bi-calendar3 history-custom-calendar-icon" onclick="document.getElementById('historyStartDate').showPicker()"></i>
-                    </label>
-                    <label class="history-date-input-field" for="historyEndDate" style="position: relative;">
-                        <span>End</span>
-                        <input type="date" id="historyEndDate" name="end_date" value="{{ $endDateInput }}">
-                        <i class="bi bi-calendar3 history-custom-calendar-icon" onclick="document.getElementById('historyEndDate').showPicker()"></i>
-                    </label>
-                    <button type="submit" class="inquiries-btn inquiries-btn-secondary history-apply-btn" style="display: none;">Apply</button>
+                    <div class="history-range-grid">
+                        <label class="history-date-input-field" for="historyStartDate" style="position: relative;">
+                            <span>Start</span>
+                            <input type="date" id="historyStartDate" name="start_date" value="{{ $startDateInput }}">
+                            <i class="bi bi-calendar3 history-custom-calendar-icon" onclick="document.getElementById('historyStartDate').showPicker()"></i>
+                        </label>
+                        <label class="history-date-input-field" for="historyEndDate" style="position: relative;">
+                            <span>End</span>
+                            <input type="date" id="historyEndDate" name="end_date" value="{{ $endDateInput }}">
+                            <i class="bi bi-calendar3 history-custom-calendar-icon" onclick="document.getElementById('historyEndDate').showPicker()"></i>
+                        </label>
+                        <div class="history-range-apply-col">
+                            <button type="submit" class="inquiries-btn inquiries-btn-secondary history-apply-btn">Apply</button>
+                        </div>
+                    </div>
                 </div>
                 <div class="history-date-summary" id="historyDateSummary" @if($dateRange === 'custom') hidden @endif>
                     <span><strong>Start:</strong> {{ $filterStartDate }}</span>
@@ -156,6 +180,15 @@
                 </tbody>
             </table>
         </div>
+        
+        @include('partials.common_pagination', [
+            'id' => 'historyPagination',
+            'total' => $total,
+            'perPage' => $perPage,
+            'currentPage' => $currentPageNum,
+            'lastPage' => $lastPage,
+            'containerClass' => 'history-pagination-container'
+        ])
     </div>
 </section>
 @endsection
@@ -236,34 +269,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (startDateField) startDateField.value = '';
                 if (endDateField) endDateField.value = '';
                 dateFilterForm.submit();
-            } else if (dateRangeSelect.value === 'custom') {
-                var today = new Date();
-                var yyyy = today.getFullYear();
-                var mm = String(today.getMonth() + 1).padStart(2, '0');
-                var dd = String(today.getDate()).padStart(2, '0');
-                var todayStr = yyyy + '-' + mm + '-' + dd;
-                if (startDateField && !startDateField.value) startDateField.value = todayStr;
-                if (endDateField && !endDateField.value) endDateField.value = todayStr;
-                if (dateFilterForm) dateFilterForm.submit();
             }
         });
         syncDateRangeUi();
     }
     
-    if (startDateField) {
-        startDateField.addEventListener('change', function() {
-            if (dateRangeSelect && dateRangeSelect.value === 'custom' && dateFilterForm) {
-                dateFilterForm.submit();
-            }
-        });
-    }
-    if (endDateField) {
-        endDateField.addEventListener('change', function() {
-            if (dateRangeSelect && dateRangeSelect.value === 'custom' && dateFilterForm) {
-                dateFilterForm.submit();
-            }
-        });
-    }
+    // Removed auto-submit on individual date changes to allow picking range then clicking Apply
     if (systemMarkedFailOnly) {
         systemMarkedFailOnly.addEventListener('change', applyTableFilter);
     }
@@ -359,6 +370,89 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         contextMenu.classList.add('hidden');
     });
+
+    // Pagination Logic
+    function buildHistorySmartPageNumbers() {
+        var paginationEl = document.getElementById('historyPagination');
+        if (!paginationEl) return;
+        var pageNumbersEl = document.getElementById('historyPaginationPageNumbers');
+        if (!pageNumbersEl) return;
+        
+        var current = parseInt(paginationEl.dataset.currentPage);
+        var lastPage = parseInt(paginationEl.dataset.lastPage);
+        
+        pageNumbersEl.innerHTML = '';
+        
+        function addBtn(p, isActive) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'inquiries-pagination-num' + (isActive ? ' inquiries-pagination-num-active' : '');
+            btn.textContent = p;
+            btn.addEventListener('click', function() {
+                if (!isActive) goToHistoryPage(p);
+            });
+            pageNumbersEl.appendChild(btn);
+        }
+        
+        function addDots() {
+            var span = document.createElement('span');
+            span.className = 'inquiries-pagination-num inquiries-pagination-dots';
+            span.textContent = '...';
+            pageNumbersEl.appendChild(span);
+        }
+
+        if (lastPage <= 5) {
+            for (var i = 1; i <= lastPage; i++) addBtn(i, i === current);
+        } else {
+            if (current <= 3) {
+                addBtn(1, current === 1);
+                addBtn(2, current === 2);
+                addBtn(3, current === 3);
+                addDots();
+                addBtn(lastPage, false);
+            } else if (current >= lastPage - 2) {
+                addBtn(1, false);
+                addDots();
+                addBtn(lastPage - 2, current === lastPage - 2);
+                addBtn(lastPage - 1, current === lastPage - 1);
+                addBtn(lastPage, current === lastPage);
+            } else {
+                addBtn(1, false);
+                addDots();
+                addBtn(current, true);
+                addBtn(current + 1, false);
+                addDots();
+                addBtn(lastPage, false);
+            }
+        }
+    }
+
+    function goToHistoryPage(p) {
+        var url = new URL(window.location.href);
+        url.searchParams.set('page', p);
+        window.location.href = url.toString();
+    }
+
+    document.querySelectorAll('.inquiries-pagination-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var paginationEl = document.getElementById('historyPagination');
+            if (!paginationEl) return;
+            
+            var action = this.dataset.page;
+            var current = parseInt(paginationEl.dataset.currentPage);
+            var lastPage = parseInt(paginationEl.dataset.lastPage);
+            var target = current;
+
+            if (action === 'first') target = 1;
+            else if (action === 'prev') target = Math.max(1, current - 1);
+            else if (action === 'next') target = Math.min(lastPage, current + 1);
+            else if (action === 'last') target = lastPage;
+
+            if (target !== current) goToHistoryPage(target);
+        });
+    });
+
+    buildHistorySmartPageNumbers();
 });
 </script>
 @endpush

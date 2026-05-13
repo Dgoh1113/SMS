@@ -664,11 +664,11 @@
                         let start = Math.max(2, currentPage - 1);
                         let end = Math.min(lastPage - 1, currentPage + 1);
                         
-                        if (currentPage <= 3) {
+                        if (currentPage <= 2) {
                             start = 2;
-                            end = 4;
-                        } else if (currentPage >= lastPage - 2) {
-                            start = lastPage - 3;
+                            end = 3;
+                        } else if (currentPage >= lastPage - 1) {
+                            start = lastPage - 2;
                             end = lastPage - 1;
                         }
 

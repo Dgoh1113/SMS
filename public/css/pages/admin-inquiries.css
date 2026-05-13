@@ -26,6 +26,8 @@
 
 .inquiries-page-wrap .inquiries-table-scroll {
   position: relative;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .inquiries-page-wrap .inquiries-empty-message-viewport {

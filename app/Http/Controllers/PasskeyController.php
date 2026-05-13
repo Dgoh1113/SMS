@@ -24,9 +24,7 @@ class PasskeyController extends Controller
     {
         $host = $request->getHost();
         $h = strtolower(trim($host));
-        if ($h === '127.0.0.1' || $h === '::1' || $h === '[::1]') {
-            return 'localhost';
-        }
+
         $configured = (string) (config('passkeys.rp_id') ?? '');
         if ($configured !== '') {
             return $configured;
@@ -75,7 +73,7 @@ class PasskeyController extends Controller
 
         try {
             $row = DB::selectOne(
-                'SELECT "USERID", "EMAIL" FROM "USERS" WHERE "EMAIL" = ? AND ("ISACTIVE" = 1 OR "ISACTIVE" IS NULL OR "ISACTIVE" = true)',
+                'SELECT FIRST 1 "USERID", "EMAIL" FROM "USERS" WHERE "EMAIL" = ? AND ("ISACTIVE" = 1 OR "ISACTIVE" IS NULL OR "ISACTIVE" = true)',
                 [$sessionEmail]
             );
             if ($row) {
@@ -87,7 +85,7 @@ class PasskeyController extends Controller
 
         try {
             return DB::selectOne(
-                'SELECT "USERID", "EMAIL" FROM "USERS" WHERE "EMAIL" = ?',
+                'SELECT FIRST 1 "USERID", "EMAIL" FROM "USERS" WHERE "EMAIL" = ?',
                 [$sessionEmail]
             );
         } catch (\Throwable $e) {
@@ -333,9 +331,9 @@ class PasskeyController extends Controller
                 $userName,
                 $userDisplayName,
                 60,
-                false,
-                'preferred',
-                null,
+                true,
+                'required',
+                'platform',
                 $excludeCredentialIds
             );
         } catch (\Throwable $e) {

@@ -127,7 +127,16 @@
     }
     @media (max-width:1200px) { .dealer-reports-page .dashboard-panels-two-column { grid-template-columns:minmax(0,1fr); } }
     @media (max-width:768px) {
-        .dealer-reports-page .reports-period-form--dealer { --dealer-report-action-width:100%; --dealer-report-action-height:46px; width:100%; display:grid; grid-template-columns:1fr; justify-content:stretch; }
+        .dealer-reports-page .reports-period-form--dealer { --dealer-report-action-width:100%; --dealer-report-action-height:46px; width:100%; display:flex; flex-direction:column; justify-content:stretch; gap: 16px; }
+        .dealer-reports-page .reports-filter-container { width: 100% !important; max-width: none !important; }
+        .dealer-reports-page .reports-range-grid { grid-template-columns: 1fr 1fr !important; }
+        .dealer-reports-page .reports-range-grid .reports-range-col:last-child {
+            grid-column: span 2;
+            flex-direction: row !important;
+            justify-content: flex-end !important;
+            gap: 8px !important;
+            padding-top: 4px !important;
+        }
         .dealer-reports-page .reports-period-quick-group, .dealer-reports-page .reports-period-export { width:100%; min-width:0; }
         .dealer-reports-page .reports-period-range-inline { width:100%; display:flex; }
         .dealer-reports-page .reports-period-range-inline.is-hidden { display:none; }

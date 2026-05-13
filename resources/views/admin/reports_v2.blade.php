@@ -98,6 +98,33 @@
                 align-items: center;
                 justify-content: center;
             }
+            .reports-range-grid {
+                grid-template-columns: 1fr 1fr !important;
+            }
+            .reports-range-grid .reports-range-col:last-child {
+                grid-column: span 2;
+                flex-direction: row !important;
+                justify-content: flex-end !important;
+                gap: 8px !important;
+                padding-top: 4px !important;
+            }
+            .rv2-filters-form {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 16px !important;
+            }
+            .rv2-filter {
+                max-width: none !important;
+                width: 100% !important;
+                min-width: 0 !important;
+            }
+            .report-filter-actions {
+                margin-left: 0 !important;
+                width: 100% !important;
+            }
+            .reports-period-actions-inner {
+                justify-content: center !important;
+            }
         }
     </style>
 @endpush

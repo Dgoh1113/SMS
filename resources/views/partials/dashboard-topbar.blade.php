@@ -66,6 +66,29 @@
                             <button type="button" class="dashboard-profile-passkey-link" id="profileRegisterPasskeyBtn">
                                 <span>Manage Passkey</span>
                             </button>
+
+                            @php
+                                $otherRoleRow = \Illuminate\Support\Facades\DB::selectOne(
+                                    'SELECT FIRST 1 "SYSTEMROLE" FROM "USERS" WHERE "EMAIL" = ? AND CAST("USERID" AS VARCHAR(50)) <> ? AND "ISACTIVE" = TRUE',
+                                    [session('user_email'), (string)session('user_id')]
+                                );
+                            @endphp
+
+                            @if($otherRoleRow)
+                                <form action="{{ route('switch-role') }}" method="POST" class="dashboard-profile-signout-form">
+                                    @csrf
+                                    <button type="submit" class="dashboard-profile-passkey-link" style="color: var(--primary); margin-bottom: 8px;">
+                                        @php
+                                            $otherRole = match(strtoupper(trim($otherRoleRow->SYSTEMROLE))) {
+                                                'ADMIN', 'MANAGER' => 'Admin',
+                                                default => 'Dealer'
+                                            };
+                                        @endphp
+                                        <span>Switch to {{ $otherRole }} Page</span>
+                                    </button>
+                                </form>
+                            @endif
+
                             <form action="{{ route('logout') }}" method="POST" class="dashboard-profile-signout-form">
                                 @csrf
                                 <button type="submit" class="dashboard-profile-signout-btn">

@@ -20,8 +20,8 @@
     $assignUndo = session('assign_undo');
     $assignEmailPending = session('assign_email_pending');
     $incomingStatusFilterOptions = ['Created'];
-    $assignedStatusFilterOptions = ['Assigned', 'Followup', 'Demo', 'Confirmed', 'Completed', 'Rewarded', 'Failed'];
-    $allStatusFilterOptions = ['Created', 'Assigned', 'Followup', 'Demo', 'Confirmed', 'Completed', 'Rewarded', 'Failed'];
+    $assignedStatusFilterOptions = ['Assigned', 'Followup', 'Demo', 'Confirmed', 'Completed', 'Rewarded', 'Failed', 'Cancelled'];
+    $allStatusFilterOptions = ['Created', 'Assigned', 'Followup', 'Demo', 'Confirmed', 'Completed', 'Rewarded', 'Failed', 'Cancelled'];
     $incomingTabCountValue = (int) ($totalNewInquiries ?? 0);
     $assignedTabCountValue = (int) ($totalOngoing ?? 0);
     $allInquiryCount = (int) ($allTotal ?? count($allRows ?? []));
@@ -240,6 +240,7 @@
                             case 'REWARD DISTRIBUTED': $statusClass = 'inquiries-status-rewarded'; break;
                             case 'PAID':       $statusClass = 'inquiries-status-rewarded'; break;
                             case 'FAILED':     $statusClass = 'inquiries-status-failed'; break;
+                            case 'CANCELLED':  $statusClass = 'inquiries-status-cancelled'; break;
                             default:           $statusClass = 'inquiries-status-new'; break;
                         }
                     @endphp
@@ -487,6 +488,7 @@
                             case 'REWARD DISTRIBUTED': $astatusClass = 'inquiries-status-rewarded'; break;
                             case 'PAID':       $astatusClass = 'inquiries-status-rewarded'; break;
                             case 'FAILED':     $astatusClass = 'inquiries-status-failed'; break;
+                            case 'CANCELLED':  $astatusClass = 'inquiries-status-cancelled'; break;
                             default:           $astatusClass = 'inquiries-status-new'; break;
                         }
                     @endphp
@@ -2518,40 +2520,34 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!pageNumbersEl) return;
         pageNumbersEl.innerHTML = '';
         
-        var maxVisible = 3;
-        if (lastPage <= maxVisible + 2) {
+        if (lastPage <= 5) {
             for (var p = 1; p <= lastPage; p++) {
                 addInquiryPageButton(pageNumbersEl, p, p === current, goToPageFn);
             }
         } else {
-            // Always show page 1
-            addInquiryPageButton(pageNumbersEl, 1, 1 === current, goToPageFn);
-            
-            var start = Math.max(2, current - 1);
-            var end = Math.min(lastPage - 1, current + 1);
-            
+            // Always show 5 buttons total. Button 1 is always '1', Button 5 is always 'lastPage'.
             if (current <= 3) {
-                start = 2;
-                end = 4;
-            } else if (current >= lastPage - 2) {
-                start = lastPage - 3;
-                end = lastPage - 1;
-            }
-
-            if (start > 2) {
+                // [1] [2] [3] [...] [Last]
+                addInquiryPageButton(pageNumbersEl, 1, current === 1, goToPageFn);
+                addInquiryPageButton(pageNumbersEl, 2, current === 2, goToPageFn);
+                addInquiryPageButton(pageNumbersEl, 3, current === 3, goToPageFn);
                 addInquiryEllipsis(pageNumbersEl, goToPageFn, lastPage, current);
-            }
-            
-            for (var p = start; p <= end; p++) {
-                addInquiryPageButton(pageNumbersEl, p, p === current, goToPageFn);
-            }
-            
-            if (end < lastPage - 1) {
+                addInquiryPageButton(pageNumbersEl, lastPage, false, goToPageFn);
+            } else if (current >= lastPage - 1) {
+                // [1] [...] [Last-2] [Last-1] [Last]
+                addInquiryPageButton(pageNumbersEl, 1, false, goToPageFn);
                 addInquiryEllipsis(pageNumbersEl, goToPageFn, lastPage, current);
+                addInquiryPageButton(pageNumbersEl, lastPage - 2, current === lastPage - 2, goToPageFn);
+                addInquiryPageButton(pageNumbersEl, lastPage - 1, current === lastPage - 1, goToPageFn);
+                addInquiryPageButton(pageNumbersEl, lastPage, current === lastPage, goToPageFn);
+            } else {
+                // [1] [...] [Current] [Current+1] [Last]
+                addInquiryPageButton(pageNumbersEl, 1, false, goToPageFn);
+                addInquiryEllipsis(pageNumbersEl, goToPageFn, lastPage, current);
+                addInquiryPageButton(pageNumbersEl, current, true, goToPageFn);
+                addInquiryPageButton(pageNumbersEl, current + 1, false, goToPageFn);
+                addInquiryPageButton(pageNumbersEl, lastPage, false, goToPageFn);
             }
-
-            // Always show last page
-            addInquiryPageButton(pageNumbersEl, lastPage, lastPage === current, goToPageFn);
         }
     }
 

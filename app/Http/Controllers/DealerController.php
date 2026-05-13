@@ -252,23 +252,14 @@ class DealerController extends Controller
                 $conversionTrend = 0.0;
             }
 
-            $pendingFollowupsSql = $dealerEmail
-                ? 'SELECT COUNT(*) AS "CNT" FROM "LEAD" l
-                  WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
-                    AND l."ASSIGNEDTO" = (SELECT "USERID" FROM "USERS" WHERE "EMAIL" = ?)
-                  AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
-                       FROM "LEAD_ACT" la
-                       WHERE la."LEADID" = l."LEADID"
-                       ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
-                      ) IN (\'PENDING\', \'FOLLOWUP\', \'FOLLOW UP\', \'DEMO\', \'CONFIRMED\')'
-                : 'SELECT COUNT(*) AS "CNT" FROM "LEAD" l
+            $pendingFollowupsSql = 'SELECT COUNT(*) AS "CNT" FROM "LEAD" l
                   WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                   AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
                        FROM "LEAD_ACT" la
                        WHERE la."LEADID" = l."LEADID"
                        ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
                       ) IN (\'PENDING\', \'FOLLOWUP\', \'FOLLOW UP\', \'DEMO\', \'CONFIRMED\')';
-            $pendingFollowupsParams = $dealerEmail ? [$dealerEmail] : [$dealerId];
+            $pendingFollowupsParams = [$dealerId];
             $pendingFollowupsRow = DB::selectOne($pendingFollowupsSql, $pendingFollowupsParams);
             $pendingFollowupsCount = (int) ($pendingFollowupsRow->CNT ?? 0);
 

@@ -22,7 +22,7 @@
             $lastLoginStr
         );
         $setupLinkTitle = ($u['PASSKEY_SETUP_LINK_SENT'] ?? false)
-            ? 'Passkey setup link already emailed - send again'
+            ? 'Resend passkey setup link'
             : 'Send passkey setup link';
     @endphp
     <tr class="maintain-users-row" data-search="{{ $searchHaystack }}"
@@ -70,14 +70,23 @@
                 <button type="button" class="maintain-users-edit-btn" data-userid="{{ $u['USERID'] }}" title="Edit" aria-label="Edit user">
                     <i class="bi bi-pencil-square" aria-hidden="true"></i>
                 </button>
-                @if (!($u['HAS_LOGGED_IN'] ?? false))
-                    <form method="POST" action="{{ route('admin.maintain-users.send-passkey-setup-link', $u['USERID']) }}" class="maintain-users-inline-form">
-                        @csrf
-                        <button type="submit" class="maintain-users-temp-send-btn" title="{{ $setupLinkTitle }}" aria-label="Send passkey setup link">
-                            <i class="bi {{ ($u['PASSKEY_SETUP_LINK_SENT'] ?? false) ? 'bi-envelope-fill' : 'bi-envelope' }}" aria-hidden="true"></i>
-                        </button>
-                    </form>
-                @endif
+                @php
+                    $isProtected = ($u['HAS_LOGGED_IN'] ?? false);
+                    $isResend = ($u['PASSKEY_SETUP_LINK_SENT'] ?? false) || $isProtected;
+                    $confirmMsg = $isProtected
+                        ? 'This user is already Protected. Sending a new setup link will allow them to reset/add a new passkey. Proceed for ' . e($u['EMAIL']) . '?'
+                        : ($isResend 
+                            ? 'Are you sure you want to resend the passkey setup link to ' . e($u['EMAIL']) . '?' 
+                            : 'Send passkey setup link to ' . e($u['EMAIL']) . '?');
+                @endphp
+                <form method="POST" action="{{ route('admin.maintain-users.send-passkey-setup-link', $u['USERID']) }}" 
+                      class="maintain-users-inline-form"
+                      onsubmit="return confirm('{{ $confirmMsg }}')">
+                    @csrf
+                    <button type="submit" class="maintain-users-temp-send-btn" title="{{ $isResend ? 'Resend/Reset passkey' : 'Send passkey setup link' }}" aria-label="Send passkey setup link">
+                        <i class="bi {{ $isResend ? 'bi-arrow-clockwise' : 'bi-envelope' }}" aria-hidden="true"></i>
+                    </button>
+                </form>
             </div>
         </td>
     </tr>

@@ -96,6 +96,39 @@ class AuthController extends Controller
         return redirect('/login');
     }
 
+    public function switchRole(Request $request): RedirectResponse
+    {
+        $email = $request->session()->get('user_email');
+        $currentId = $request->session()->get('user_id');
+
+        if (!$email || !$currentId) {
+            return redirect()->route('login');
+        }
+
+        // Find another active account with same email but different ID
+        $otherAccount = DB::selectOne(
+            'SELECT FIRST 1 "USERID", "SYSTEMROLE", "ALIAS"
+             FROM "USERS"
+             WHERE "EMAIL" = ? AND CAST("USERID" AS VARCHAR(50)) <> ? AND "ISACTIVE" = TRUE',
+            [$email, (string) $currentId]
+        );
+
+        if (!$otherAccount) {
+            return redirect()->back()->with('error', 'No other role available for this account.');
+        }
+
+        $sessionRole = $this->systemRoleToSessionRole((string) ($otherAccount->SYSTEMROLE ?? ''));
+
+        // Update session with new account details
+        $request->session()->put('user_id', (string) $otherAccount->USERID);
+        $request->session()->put('user_role', $sessionRole);
+        $request->session()->put('user_alias', (string) ($otherAccount->ALIAS ?? ''));
+        $request->session()->put('last_activity_ts', time());
+
+        return redirect($this->dashboardPathForRole($request, $sessionRole))
+            ->with('success', 'Switched to ' . strtoupper($sessionRole) . ' dashboard.');
+    }
+
     public function testingLogin(Request $request, string $role): RedirectResponse
     {
         if (!$this->testLoginShortcutsEnabled()) {

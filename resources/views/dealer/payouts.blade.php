@@ -628,11 +628,11 @@ function initDealerPendingPayoutsPage() {
             var start = Math.max(2, current - 1);
             var end = Math.min(lastPage - 1, current + 1);
             
-            if (current <= 3) {
+            if (current <= 2) {
                 start = 2;
-                end = 4;
-            } else if (current >= lastPage - 2) {
-                start = lastPage - 3;
+                end = 3;
+            } else if (current >= lastPage - 1) {
+                start = lastPage - 2;
                 end = lastPage - 1;
             }
 
