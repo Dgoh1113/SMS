@@ -141,3 +141,7 @@ Schedule::command('leads:auto-fail')->everyTwoMinutes()->withoutOverlapping();
 // Run inquiry email fetch every minute
 Schedule::command('inquiries:fetch')->everyMinute()->withoutOverlapping();
 
+// Run dealer sync every 30 seconds in the background
+Schedule::command('dealers:sync')->everyThirtySeconds()->withoutOverlapping();
+
+

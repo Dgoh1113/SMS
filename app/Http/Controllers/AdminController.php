@@ -4100,9 +4100,11 @@ class AdminController extends Controller
     private function maintainUsersBatchEligible(array $users): array
     {
         return array_values(array_filter($users, static function ($u) {
+            $email = trim((string) ($u['EMAIL'] ?? ''));
             return !($u['HAS_LOGGED_IN'] ?? false)
                 && (bool) ($u['ISACTIVE'] ?? false)
-                && trim((string) ($u['EMAIL'] ?? '')) !== '';
+                && $email !== ''
+                && !str_ends_with(strtolower($email), '@noemail.local');
         }));
     }
 
@@ -4417,7 +4419,7 @@ class AdminController extends Controller
         $userId = trim((string) ($user->USERID ?? ''));
         $email = trim((string) ($user->EMAIL ?? ''));
         $isActive = (bool) ($user->ISACTIVE ?? false);
-        if ($userId === '' || $email === '' || !$isActive) {
+        if ($userId === '' || $email === '' || !$isActive || str_ends_with(strtolower($email), '@noemail.local')) {
             return false;
         }
 

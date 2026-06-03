@@ -867,6 +867,12 @@
                 });
             }
 
+            // Default: filter active = "Yes"
+            const activeFilter = table ? table.querySelector('thead .inquiries-grid-filter[data-col="active"]') : null;
+            if (activeFilter && !activeFilter.value) {
+                activeFilter.value = 'Yes';
+            }
+
             initMaintainUsersPagination();
             applyTableFilter(false);
             window.addEventListener('resize', syncMaintainUsersMeasuredFilters);

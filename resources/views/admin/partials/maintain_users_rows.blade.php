@@ -18,7 +18,7 @@
             $passkeyStatus . ' ' .
             (($u['HAS_LOGGED_IN'] ?? false) ? 'logged in' : 'not logged in') . ' ' .
             $roleUpper . ' ' .
-            ($u['ISACTIVE'] ? 'active' : 'inactive') . ' ' .
+            ($u['ISACTIVE'] ? 'yes' : 'no') . ' ' .
             $lastLoginStr
         );
         $setupLinkTitle = ($u['PASSKEY_SETUP_LINK_SENT'] ?? false)
@@ -55,7 +55,7 @@
         </td>
         <td data-col="active">
             <span class="maintain-users-pill-active {{ $u['ISACTIVE'] ? 'yes' : 'no' }}">
-                {{ $u['ISACTIVE'] ? 'Active' : 'Inactive' }}
+                {{ $u['ISACTIVE'] ? 'Yes' : 'No' }}
             </span>
         </td>
         <td data-col="lastlogin">
@@ -71,6 +71,7 @@
                     <i class="bi bi-pencil-square" aria-hidden="true"></i>
                 </button>
                 @php
+                    $isNoEmail = str_ends_with(strtolower($u['EMAIL'] ?? ''), '@noemail.local');
                     $isProtected = ($u['HAS_LOGGED_IN'] ?? false);
                     $isResend = ($u['PASSKEY_SETUP_LINK_SENT'] ?? false) || $isProtected;
                     $confirmMsg = $isProtected
@@ -79,6 +80,11 @@
                             ? 'Are you sure you want to resend the passkey setup link to ' . e($u['EMAIL']) . '?' 
                             : 'Send passkey setup link to ' . e($u['EMAIL']) . '?');
                 @endphp
+                @if ($isNoEmail)
+                    <button type="button" class="maintain-users-temp-send-btn" disabled title="No valid email address" aria-label="No valid email" style="opacity:0.3;cursor:not-allowed;">
+                        <i class="bi bi-envelope-slash" aria-hidden="true"></i>
+                    </button>
+                @else
                 <form method="POST" action="{{ route('admin.maintain-users.send-passkey-setup-link', $u['USERID']) }}" 
                       class="maintain-users-inline-form"
                       onsubmit="return confirm('{{ $confirmMsg }}')">
@@ -87,6 +93,7 @@
                         <i class="bi {{ $isResend ? 'bi-arrow-clockwise' : 'bi-envelope' }}" aria-hidden="true"></i>
                     </button>
                 </form>
+                @endif
             </div>
         </td>
     </tr>
