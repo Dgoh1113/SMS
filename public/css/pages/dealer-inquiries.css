@@ -217,7 +217,7 @@ html.theme-dark .inquiry-row--notif-highlight td span:not(.inquiries-badge):not(
 
 .dealer-inquiries-panel .inquiries-table .inquiries-placeholder-cell {
   height: 57px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: none;
   background: #ffffff;
 }
 

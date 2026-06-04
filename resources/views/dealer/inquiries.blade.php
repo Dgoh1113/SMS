@@ -64,6 +64,8 @@
         .dealer-inquiries-panel .inquiries-empty-row .inquiries-empty-cell {
             padding: 0 !important;
             vertical-align: middle;
+            border-bottom: none;
+            background: #ffffff;
         }
         .dealer-inquiries-panel .inquiries-empty-row .dealer-table-empty {
             display: flex;
@@ -93,7 +95,7 @@
         5 => 'SQL eCommerce', 6 => 'SQL EBI Wellness POS', 7 => 'SQL x SuDu.Ai', 8 => 'SQL X-Store',
         9 => 'SQL Vision', 10 => 'SQL HRMS', 11 => 'SQL CTOS', 12 => 'SQL API', 13 => 'Others',
     ];
-    $statusFilterOptions = ['Followup', 'Demo', 'Confirmed', 'Completed', 'Rewarded', 'Cancelled', 'Failed'];
+    $statusFilterOptions = ['Pending', 'Followup', 'Demo', 'Confirmed', 'Completed', 'Rewarded', 'Cancelled', 'Failed'];
 @endphp
 <div class="dashboard-content inquiries-page-wrap">
     @include('dealer.partials.console-inquiries-tabs', [
@@ -797,6 +799,10 @@ function initDealerInquiriesPage() {
                 emptyCell.style.height = '';
                 emptyCell.style.minHeight = '';
             }
+            var emptyText = emptyRow.querySelector('.dealer-table-empty');
+            if (emptyText) {
+                emptyText.style.display = '';
+            }
 
             return emptyRow;
         }
@@ -827,6 +833,10 @@ function initDealerInquiriesPage() {
                     if (emptyCell) {
                         emptyCell.style.height = placeholderRowHeight + 'px';
                         emptyCell.style.minHeight = placeholderRowHeight + 'px';
+                        var emptyText = emptyRow.querySelector('.dealer-table-empty');
+                        if (emptyText) {
+                            emptyText.style.display = 'none';
+                        }
                     }
                 }
             }

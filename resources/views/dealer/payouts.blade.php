@@ -1,13 +1,15 @@
 @extends('layouts.app')
 @section('title', 'Pending Payouts - SQL LMS Dealer Console')
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/pages/dealer-payouts.css') }}?v=20260422-01">
+    <link rel="stylesheet" href="{{ asset('css/pages/dealer-inquiries.css') }}?v=20260430-01">
     <style>
-        .dealer-payouts-panel .inquiries-empty-row .inquiries-empty-cell {
+        .dealer-inquiries-panel .inquiries-empty-row .inquiries-empty-cell {
             padding: 0 !important;
             vertical-align: middle;
+            border-bottom: none;
+            background: #ffffff;
         }
-        .dealer-payouts-panel .inquiries-empty-row .dealer-table-empty {
+        .dealer-inquiries-panel .inquiries-empty-row .dealer-table-empty {
             display: flex;
             align-items: center;
             justify-content: center;
@@ -39,7 +41,7 @@
     'dealerConsoleCounts' => $dealerConsoleCounts ?? []
 ])
 <div id="completedPanel">
-<section class="inquiries-mgmt-panel dealer-payouts-panel">
+<section class="inquiries-mgmt-panel dealer-inquiries-panel dealer-payouts-panel">
     @include('dealer.partials.console-panel-header', [
         'actions' => '
             <div class="inquiries-columns-dropdown">
@@ -325,8 +327,6 @@ function initDealerPendingPayoutsPage() {
         applyCompletedColumns(visible);
     }
 
-    refreshCompletedColumnState();
-
     var completedColBtn = document.getElementById('completedColumnsBtn');
     var completedColMenu = document.getElementById('completedColumnsMenu');
     if (completedColBtn && completedColMenu) {
@@ -507,6 +507,10 @@ function initDealerPendingPayoutsPage() {
             emptyCell.style.height = '';
             emptyCell.style.minHeight = '';
         }
+        var emptyText = emptyRow.querySelector('.dealer-table-empty');
+        if (emptyText) {
+            emptyText.style.display = '';
+        }
 
         return emptyRow;
     }
@@ -606,10 +610,62 @@ function initDealerPendingPayoutsPage() {
         clearPayoutPlaceholderRows(table);
         if (tbody) tbody.style.minHeight = '';
         if (!scrollWrap) return;
-        // Disabled placeholder rows to avoid empty space/floating pagination
-        scrollWrap.classList.toggle('inquiries-table-scroll-empty', visibleDataCount === 0);
-        scrollWrap.classList.toggle('inquiries-table-scroll-short', false);
-    }
+        
+        var allowZeroFill = true;
+        var useShortHeight = (visibleDataCount > 0 && visibleDataCount < perPage) || (visibleDataCount === 0 && allowZeroFill);
+        var targetRows = perPage;
+        
+        var defaultPlaceholderHeight = 57;
+        if (window.innerWidth >= 1200 && window.innerHeight <= 900) {
+            defaultPlaceholderHeight = 44;
+        }
+        var placeholderRowHeight = getPayoutReferenceRowHeight(table, tbody) || defaultPlaceholderHeight;
+        
+        var emptyRow = resetPayoutEmptyRowHeight(tbody);
+        var emptyCell = emptyRow ? emptyRow.querySelector('.inquiries-empty-cell, .inquiries-empty') : null;
+
+        var effectiveVisibleCount = visibleDataCount;
+        if (visibleDataCount === 0 && emptyRow && window.getComputedStyle(emptyRow).display !== 'none') {
+            effectiveVisibleCount = 1;
+            if (placeholderRowHeight > 0) {
+                emptyRow.style.height = placeholderRowHeight + 'px';
+                if (emptyCell) {
+                    emptyCell.style.height = placeholderRowHeight + 'px';
+                    emptyCell.style.minHeight = placeholderRowHeight + 'px';
+                    var emptyText = emptyRow.querySelector('.dealer-table-empty');
+                    if (emptyText) {
+                        emptyText.style.display = 'none';
+                    }
+                }
+            }
+        }
+
+        if (effectiveVisibleCount < targetRows && (effectiveVisibleCount > 0 || allowZeroFill)) {
+            var visibleHeaderCount = Array.prototype.slice.call(table.querySelectorAll('thead tr:first-child th')).filter(function(cell) {
+                return cell.style.display !== 'none' && window.getComputedStyle(cell).display !== 'none';
+            }).length || 1;
+
+            for (var i = effectiveVisibleCount; i < targetRows; i++) {
+                var row = document.createElement('tr');
+                row.className = 'inquiries-placeholder-row';
+                row.setAttribute('aria-hidden', 'true');
+
+                var cell = document.createElement('td');
+                cell.className = 'inquiries-placeholder-cell';
+                cell.colSpan = visibleHeaderCount;
+                if (placeholderRowHeight > 0) {
+                    row.style.height = placeholderRowHeight + 'px';
+                    cell.style.height = placeholderRowHeight + 'px';
+                    cell.style.minHeight = placeholderRowHeight + 'px';
+                }
+
+                row.appendChild(cell);
+                tbody.appendChild(row);
+            }
+        }
+
+        scrollWrap.classList.toggle('inquiries-table-scroll-empty', visibleDataCount === 0 && !allowZeroFill);
+        scrollWrap.classList.toggle('inquiries-table-scroll-short', useShortHeight);
     }
 
     function buildSmartPageNumbers(pageNumbersEl, current, lastPage, goToPageFn) {
@@ -877,7 +933,7 @@ function initDealerPendingPayoutsPage() {
     initSortableCompletedPayouts();
     bindTable('completedTable');
 
-    applyCompletedPagination();
+    refreshCompletedColumnState();
 
     var completedControls = document.querySelectorAll('#completedPagination .inquiries-pagination-btn');
     completedControls.forEach(function(btn) {
@@ -910,6 +966,8 @@ function initDealerPendingPayoutsPage() {
             clearCompletedPayoutSort();
         });
     }
+
+    applyCompletedPagination();
 }
 
 if (document.readyState === 'loading') {

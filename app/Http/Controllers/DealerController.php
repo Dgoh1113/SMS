@@ -1599,7 +1599,7 @@ class DealerController extends Controller
                 $status = strtoupper(trim((string) ($r->CURRENTSTATUS ?? '')));
                 $referral = trim((string) ($r->REFERRALCODE ?? ''));
                 if ($status === 'COMPLETED') {
-                    if ($referral !== '' && strtolower($referral) !== 'noreferral') {
+                    if ($referral === '' || strtolower($referral) === 'noreferral') {
                         $completed[] = $r;
                     }
                 } elseif (in_array($status, ['REWARDED', 'PAID'], true)) {
@@ -1925,8 +1925,7 @@ class DealerController extends Controller
                  JOIN "LEAD" l ON l."LEADID" = latest."LEADID"
                  WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                    AND UPPER(TRIM(latest."STATUS")) = \'COMPLETED\'
-                   AND TRIM(COALESCE(l."REFERRALCODE", \'\')) <> \'\'
-                   AND LOWER(TRIM(COALESCE(l."REFERRALCODE", \'\'))) <> \'noreferral\'',
+                    AND (TRIM(COALESCE(l."REFERRALCODE", \'\')) = \'\' OR LOWER(TRIM(COALESCE(l."REFERRALCODE", \'\'))) = \'noreferral\')',
                 [$dealerId]
             );
             $counts['pending_payouts'] = (int) ($pendingRow->CNT ?? $pendingRow->cnt ?? current((array) $pendingRow) ?? 0);

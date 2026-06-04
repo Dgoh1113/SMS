@@ -20,11 +20,11 @@
         ['id' => 'demo', 'label' => 'Demo', 'count' => $demoCount, 'tooltip' => 'Leads in Demo status.'],
         ['id' => 'confirmed', 'label' => 'Confirmed', 'count' => $confirmedCount, 'tooltip' => 'Leads in Confirmed status.'],
         ['id' => 'completed', 'label' => 'Completed', 'count' => $completedCount, 'tooltip' => 'Leads in Completed status.'],
-        ['id' => 'rewarded', 'label' => 'Rewarded', 'count' => $rewardedCount, 'tooltip' => 'Leads in Rewarded status.'],
         ['id' => 'pending-payouts', 'label' => 'Pending Payouts', 'count' => $payoutsCount, 'tooltip' => 'Total completed leads awaiting referral fee payouts.', 'route' => 'dealer.payouts'],
+        ['id' => 'rewarded', 'label' => 'Rewarded', 'count' => $rewardedCount, 'tooltip' => 'Leads in Rewarded status.'],
         ['id' => 'cancelled', 'label' => 'Cancelled', 'count' => $cancelledCount, 'tooltip' => 'Leads in Cancelled status.'],
         ['id' => 'failed', 'label' => 'Failed', 'count' => $failedCount, 'tooltip' => 'Leads in Failed status.'],
-        ['id' => 'inquiries', 'label' => 'My Inquiries', 'count' => $totalCount, 'tooltip' => 'Total active leads assigned to you.'],
+        ['id' => 'inquiries', 'label' => 'All Inquiries', 'count' => $totalCount, 'tooltip' => 'Total active leads assigned to you.'],
     ];
 @endphp
 
@@ -33,7 +33,7 @@
         @foreach($tabs as $tabItem)
             @php
                 $isActive = ($dealerConsoleTab === $tabItem['id']);
-                $showBadge = ($tabItem['count'] > 0);
+                $showBadge = ($tabItem['count'] > 0) && !in_array($tabItem['id'], ['completed', 'rewarded', 'cancelled', 'failed', 'inquiries']);
             @endphp
             <a href="{{ isset($tabItem['route']) ? route($tabItem['route']) : route('dealer.inquiries', ['tab' => $tabItem['id']]) }}"
                class="dealer-console-tab {{ $isActive ? 'dealer-console-tab-active' : '' }}"
