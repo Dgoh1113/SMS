@@ -36,7 +36,7 @@
             max-width: 280px;
         }
         #historyTable td {
-            vertical-align: top;
+            vertical-align: middle;
         }
         .history-range-grid {
             display: grid;
@@ -56,6 +56,66 @@
             .history-range-apply-col {
                 grid-column: span 2;
                 justify-content: flex-end;
+            }
+        }
+
+        @media (min-width: 1025px) and (max-height: 900px) {
+            .dashboard-root:has(#historyTable) .dashboard-main-body {
+                padding-top: 18px !important;
+                padding-bottom: 6px !important;
+                gap: 6px !important;
+                overflow-y: hidden !important;
+            }
+            .dashboard-root:has(#historyTable) .dashboard-content {
+                padding: 6px 10px 8px !important;
+                gap: 6px !important;
+            }
+            .history-toolbar {
+                margin-bottom: 6px !important;
+                gap: 8px !important;
+            }
+            .history-toolbar .history-date-range-select,
+            .history-toolbar .history-date-input-field input[type="date"],
+            .history-toolbar .history-checkbox-filter,
+            .history-toolbar .inquiries-btn {
+                min-height: 37px !important;
+                height: 37px !important;
+                padding-top: 7px !important;
+                padding-bottom: 7px !important;
+                font-size: 13px !important;
+                border-radius: 9px !important;
+            }
+            #historyTable th,
+            #historyTable td {
+                padding-left: 10px !important;
+                padding-right: 10px !important;
+            }
+            #historyTable thead th {
+                padding-top: 7px !important;
+                padding-bottom: 7px !important;
+                font-size: 11px !important;
+                line-height: 1.45 !important;
+            }
+            #historyTable tbody td {
+                padding-top: 8px !important;
+                padding-bottom: 8px !important;
+                font-size: 12px !important;
+                line-height: 1.45 !important;
+            }
+            #historyTable .inquiries-grid-filter {
+                height: 28px !important;
+                font-size: 11px !important;
+            }
+            .table-responsive {
+                max-height: calc(100vh - 290px) !important;
+                overflow-y: auto !important;
+                border: 1px solid #e2e8f0 !important;
+                border-radius: 8px !important;
+            }
+            .history-pagination-container {
+                margin-top: 4px !important;
+                padding-top: 4px !important;
+                padding-bottom: 4px !important;
             }
         }
     </style>
@@ -398,6 +458,41 @@ document.addEventListener('DOMContentLoaded', function() {
             var span = document.createElement('span');
             span.className = 'inquiries-pagination-num inquiries-pagination-dots';
             span.textContent = '...';
+            span.style.cursor = 'pointer';
+            span.style.position = 'relative';
+            span.style.zIndex = '5';
+            span.title = 'Click to jump to page';
+            
+            span.addEventListener('click', function(e) {
+                e.stopPropagation();
+                
+                var input = document.createElement('input');
+                input.type = 'number';
+                input.className = 'inquiries-pagination-num inquiries-pagination-jump-input';
+                input.min = '1';
+                input.max = lastPage;
+                input.placeholder = '#';
+                
+                var doJump = function() {
+                    var val = parseInt(input.value, 10);
+                    if (!isNaN(val) && val >= 1 && val <= lastPage) {
+                        goToHistoryPage(val);
+                    } else {
+                        input.parentElement.replaceChild(span, input);
+                    }
+                };
+                
+                input.addEventListener('blur', doJump);
+                input.addEventListener('keypress', function(ev) {
+                    if (ev.key === 'Enter') {
+                        ev.preventDefault();
+                        doJump();
+                    }
+                });
+                
+                span.parentElement.replaceChild(input, span);
+                input.focus();
+            });
             pageNumbersEl.appendChild(span);
         }
 

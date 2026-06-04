@@ -42,7 +42,7 @@
 <div class="inquiries-panel-header">
     <div class="inquiries-panel-title-wrap">
         <i class="bi {{ $icon }} inquiries-panel-icon"></i>
-        <h2 class="inquiries-panel-title">{{ $label }} <span class="inquiries-title-count">({{ number_format($count) }})</span></h2>
+        <h2 class="inquiries-panel-title">{{ $label }}</h2>
     </div>
     <div class="inquiries-panel-actions">
         {!! $actions ?? '' !!}

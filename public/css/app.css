@@ -5632,14 +5632,15 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
   border-collapse: collapse;
   font-size: 13px;
 }
-.inquiries-table.inquiries-table--fit {
-  width: 100%;
-  table-layout: fixed;
+.inquiries-table {
+  width: max-content !important;
+  min-width: 100% !important;
+  table-layout: auto !important;
 }
-.inquiries-table.inquiries-table--fit th,
-.inquiries-table.inquiries-table--fit td {
-  overflow: hidden;
-  text-overflow: ellipsis;
+.inquiries-table th,
+.inquiries-table td {
+  white-space: nowrap !important;
+  max-width: none !important;
 }
 
 /* Fit-mode widths (default visible columns; keep table from forcing x-scroll) */
@@ -6184,6 +6185,9 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
   padding: 12px 14px;
   background: #f9fafb;
   border-bottom: 1px solid #e5e7eb;
+  cursor: move;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .inquiries-msg-modal-title {
   font-size: 13px;
@@ -6234,6 +6238,9 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
   padding: 12px 14px;
   background: #f9fafb;
   border-bottom: 1px solid #e5e7eb;
+  cursor: move;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .inquiries-assign-title { font-size: 13px; font-weight: 700; color: #111827; }
 .inquiries-assign-close {
@@ -10293,3 +10300,100 @@ html.theme-dark .inquiries-role-select {
   border-color: #2a3447;
   color: #f8fafc;
 }
+
+/* ================================================================
+   AUTO-EXPAND COLUMNS OVERRIDE
+   Force all inquiries-table columns to show full content (no ellipsis
+   or clipping). The table uses table-layout:auto + width:max-content
+   so columns naturally expand to the widest cell value, and the
+   scroll wrapper provides a horizontal scrollbar when needed.
+   Exception: the MESSAGE column keeps its truncation because it is
+   clickable to reveal full text.
+   ================================================================ */
+.inquiries-table th:not([data-col="message"]),
+.inquiries-table td:not([data-col="message"]) {
+  max-width: none !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: nowrap !important;
+}
+
+/* MESSAGE column: keep truncation – it is clickable to show full text */
+.inquiries-table th[data-col="message"],
+.inquiries-table td[data-col="message"] {
+  min-width: 200px;
+  max-width: 420px !important;
+  white-space: normal !important;
+  word-break: break-word !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* ================================================================
+   DASHBOARD TOPBAR GLOBAL UNIFORM SIZING FOR LAPTOPS/DESKTOPS
+   Ensure all pages (Dashboard, Reports, History/Lead Activities, 
+   Inquiries, Dealer and Maintain Users pages) have the same 
+   white header bar (topbar) height and padding configurations.
+   ================================================================ */
+@media (min-width: 1025px) and (max-height: 1020px) {
+  .dashboard-topbar {
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+  }
+  .dashboard-topbar-actions-cluster {
+    padding-top: 5px !important;
+    padding-bottom: 5px !important;
+  }
+}
+
+@media (min-width: 1200px) and (max-height: 900px) {
+  .dashboard-topbar {
+    padding-top: 2px !important;
+    padding-bottom: 2px !important;
+  }
+  .dashboard-topbar-actions-cluster {
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  .login-main-layout,
+  .login-root-passkey-setup .login-main-layout {
+    width: min(520px, 100%) !important;
+  }
+  .login-card,
+  .login-main-layout .login-card,
+  .login-root-passkey-setup .login-card {
+    max-width: 520px !important;
+    height: 520px !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding: 48px 48px 40px !important;
+  }
+  .login-splash-panel {
+    height: 520px !important;
+  }
+  .login-logo-img {
+    max-width: 228px !important;
+  }
+  .login-logo-lms {
+    font-size: 20px !important;
+  }
+  .login-subtitle {
+    font-size: 14px !important;
+  }
+  .login-primary-btn, .login-passkey-btn {
+    font-size: 14px !important;
+    padding: 12px 24px !important;
+    width: 100% !important;
+  }
+  .login-passkey-note {
+    font-size: 14px !important;
+  }
+}
+
+

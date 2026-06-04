@@ -11,8 +11,6 @@ Route::get('/', fn () => redirect()->route('login'));
 
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
-Route::get('/customer/search', [CustomerController::class, 'search'])->name('customer.search');
-Route::match(['GET', 'POST'], '/login/testing/{role}', [AuthController::class, 'testingLogin'])->name('login.testing');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::post('/switch-role', [AuthController::class, 'switchRole'])->name('switch-role');
 
@@ -38,6 +36,8 @@ Route::middleware(['auth.sms', 'admin'])->prefix('admin')->name('admin.')->group
     Route::get('/inquiries/{leadId}/edit', [AdminController::class, 'editInquiry'])->name('inquiries.edit');
     Route::post('/inquiries', [AdminController::class, 'storeInquiry'])->name('inquiries.store');
     Route::put('/inquiries/{leadId}', [AdminController::class, 'updateInquiry'])->name('inquiries.update');
+    Route::post('/inquiries/batch-delete', [AdminController::class, 'batchDeleteInquiries'])->name('inquiries.batch-delete');
+    Route::post('/inquiries/update-field', [AdminController::class, 'updateInquiryField'])->name('inquiries.update-field');
     Route::post('/inquiries/{leadId}/delete', [AdminController::class, 'deleteInquiry'])->name('inquiries.delete');
     Route::post('/inquiries/delete/undo', [AdminController::class, 'undoDeleteInquiry'])->name('inquiries.delete-undo');
     Route::post('/inquiries/assign', [AdminController::class, 'assignInquiry'])->name('inquiries.assign');

@@ -696,16 +696,16 @@ html.theme-dark .inquiry-row--notif-highlight td span:not(.inquiries-badge):not(
   }
 
   .dealer-inquiries-panel .inquiries-panel-header {
-    padding: 3px 8px;
-    gap: 2px;
+    padding: 8px 12px;
+    gap: 6px;
   }
 
   .dealer-inquiries-panel .inquiries-panel-title {
-    font-size: 12px;
+    font-size: 15px;
   }
 
   .dealer-inquiries-panel .inquiries-panel-icon {
-    font-size: 14px;
+    font-size: 18px;
   }
 
   .dealer-inquiries-panel .inquiries-btn,
@@ -716,7 +716,7 @@ html.theme-dark .inquiry-row--notif-highlight td span:not(.inquiries-badge):not(
   }
 
   .dealer-inquiries-panel .inquiries-table .inquiries-placeholder-cell {
-    height: 33px;
+    height: 44px;
   }
 
   .dealer-inquiries-panel .inquiries-table thead .inquiries-header-row th {
@@ -995,4 +995,22 @@ html.theme-dark .inquiries-title-count {
 .status-multi-filter-toggle {
   padding: 6px 8px;
   min-height: 32px;
+}
+
+/* AUTO-EXPAND: override all per-column max-width / ellipsis in dealer tables */
+.dealer-inquiries-panel .inquiries-table th:not([data-col="message"]),
+.dealer-inquiries-panel .inquiries-table td:not([data-col="message"]) {
+  max-width: none !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: nowrap !important;
+}
+.dealer-inquiries-panel .inquiries-table th[data-col="message"],
+.dealer-inquiries-panel .inquiries-table td[data-col="message"] {
+  min-width: 200px;
+  max-width: 420px !important;
+  white-space: normal !important;
+  word-break: break-word !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }

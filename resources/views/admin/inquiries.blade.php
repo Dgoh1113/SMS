@@ -13,6 +13,54 @@
         position: relative;
         z-index: 10;
     }
+
+    @media (max-width: 1600px) or (max-height: 900px) {
+        #statusModal .inquiries-assign-window {
+            max-height: 82vh;
+            display: flex;
+            flex-direction: column;
+            margin-top: 2vh;
+            width: min(840px, calc(100vw - 32px));
+        }
+        #statusModal .inquiries-assign-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 14px;
+        }
+        #statusModal .inquiries-status-table-wrap {
+            max-height: 52vh;
+        }
+        #statusModal .inquiries-status-timeline-wrap .inquiries-status-item {
+            padding-bottom: 12px;
+        }
+        #statusModal .inquiries-status-timeline-wrap .inquiries-status-body {
+            margin-top: 4px;
+            padding: 8px 10px;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        #statusModal .inquiries-status-timeline-wrap .inquiries-status-meta {
+            margin-top: 4px;
+            gap: 6px;
+        }
+        #statusModal .inquiries-status-timeline-wrap .inquiries-status-badge {
+            padding: 2px 8px;
+            font-size: 11px;
+        }
+        #statusModal .inquiries-status-timeline-wrap .inquiry-activity-time,
+        #statusModal .inquiries-status-timeline-wrap .inquiries-status-date {
+            font-size: 11px;
+        }
+        #statusModal .inquiry-activity-attachments {
+            gap: 6px;
+            margin-top: 4px;
+        }
+        #statusModal .inquiry-activity-attachment-img {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+        }
+    }
 </style>
 @endpush
 @section('content')
@@ -61,10 +109,10 @@
 
 <div class="inquiries-tabs">
     <button type="button" class="inquiries-tab active" data-tab="incoming" aria-selected="true">
-        <span class="inquiries-tab-label">Incoming <span class="inquiries-tab-count" id="incomingTabCount" data-tooltip="{{ $incomingTabTooltip }}" title="{{ $incomingTabTooltip }}" aria-label="Incoming count: {{ number_format($incomingTabCountValue) }}. {{ $incomingTabTooltip }}" @if($incomingTabCountValue === 0) hidden aria-hidden="true" @endif>{{ number_format($incomingTabCountValue) }}</span></span>
+        <span class="inquiries-tab-label">Incoming <span class="inquiries-tab-count" id="incomingTabCount" title="{{ $incomingTabTooltip }}" aria-label="Incoming count: {{ number_format($incomingTabCountValue) }}. {{ $incomingTabTooltip }}" @if($incomingTabCountValue === 0) hidden aria-hidden="true" @endif>{{ number_format($incomingTabCountValue) }}</span></span>
     </button>
     <button type="button" class="inquiries-tab" data-tab="assigned" aria-selected="false">
-        <span class="inquiries-tab-label">Assigned <span class="inquiries-tab-count" id="assignedTabCount" data-tooltip="{{ $assignedTabTooltip }}" title="{{ $assignedTabTooltip }}" aria-label="Assigned count: {{ number_format($assignedTabCountValue) }}. {{ $assignedTabTooltip }}" @if($assignedTabCountValue === 0) hidden aria-hidden="true" @endif>{{ number_format($assignedTabCountValue) }}</span></span>
+        <span class="inquiries-tab-label">Assigned <span class="inquiries-tab-count" id="assignedTabCount" title="{{ $assignedTabTooltip }}" aria-label="Assigned count: {{ number_format($assignedTabCountValue) }}. {{ $assignedTabTooltip }}" @if($assignedTabCountValue === 0) hidden aria-hidden="true" @endif>{{ number_format($assignedTabCountValue) }}</span></span>
     </button>
     <button type="button" class="inquiries-tab" data-tab="all" aria-selected="false">
         <span class="inquiries-tab-label">All</span>
@@ -109,6 +157,12 @@
                     <button type="button" class="inquiries-columns-reset" id="inquiryColumnsReset">Reset to default</button>
                 </div>
             </div>
+            @if(!empty($duplicateGroups))
+                <button type="button" class="inquiries-btn inquiries-btn-warning" id="resolveDuplicatesBtn" style="background: #f59e0b; border-color: #f59e0b; color: #fff; margin-right: 8px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span>Resolve Duplicates ({{ count($duplicateGroups) }})</span>
+                </button>
+            @endif
             <a href="{{ route('admin.inquiries.create') }}" class="inquiries-btn inquiries-btn-primary inquiries-add-btn">
                 <i class="bi bi-plus-lg"></i>
                 <span>Add new inquiry</span>
@@ -625,6 +679,164 @@
 </div>
 </div>
 
+<div class="inquiries-assign-modal" id="inquiryDuplicatesModal" hidden>
+    <div class="inquiries-assign-backdrop" id="duplicatesCloseBackdrop"></div>
+    <div class="inquiries-assign-window" role="dialog" aria-modal="true" aria-labelledby="duplicatesModalTitle" style="width: min(850px, calc(100vw - 32px)); max-height: 85vh; display: flex; flex-direction: column;">
+        <div class="inquiries-assign-header">
+            <div class="inquiries-assign-title" id="duplicatesModalTitle" style="display: flex; align-items: center; gap: 8px;">
+                <i class="bi bi-exclamation-triangle-fill" style="color: #f59e0b;"></i>
+                <span>Resolve Duplicate Inquiries</span>
+            </div>
+            <button type="button" class="inquiries-assign-close" id="duplicatesCloseBtn" aria-label="Close">&times;</button>
+        </div>
+        <div class="inquiries-assign-body" style="overflow-y: auto; flex: 1; padding: 20px;">
+            <p style="margin-top: 0; font-size: 13px; color: #4b5563; margin-bottom: 20px;">
+                The following incoming inquiries share the same **Company Name**, **Phone Number**, and **Email**. 
+                The system recommends keeping the latest inquiry and deleting the older ones. Review and choose which ones to remove.
+            </p>
+            
+            <div class="duplicates-groups-container">
+                @if(!empty($duplicateGroups))
+                    @foreach($duplicateGroups as $groupIdx => $group)
+                        <div class="duplicates-group-card" style="border: 1px solid #e5e7eb; border-radius: 12px; margin-bottom: 20px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                            <div class="duplicates-group-header" style="background: #f9fafb; padding: 12px 16px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                                <div>
+                                    <span style="font-weight: 700; color: #1f2937; font-size: 13.5px;">{{ $group['company'] }}</span>
+                                    <span style="color: #6b7280; font-size: 12px; margin-left: 12px;">Phone: {{ $group['phone'] }} • Email: {{ $group['email'] }}</span>
+                                </div>
+                                <span class="badge" style="background: rgba(245, 158, 11, 0.1); color: #d97706; padding: 4px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600;">{{ count($group['leads']) }} Inquiries</span>
+                            </div>
+                            <div class="duplicates-group-list" style="padding: 12px 16px; background: #fff; overflow-x: auto; max-width: 100%;">
+                                @php
+                                    $hasAssignedLead = false;
+                                    foreach ($group['leads'] as $l) {
+                                        if (!empty(trim((string)($l->ASSIGNEDTO ?? '')))) {
+                                            $hasAssignedLead = true;
+                                            break;
+                                        }
+                                    }
+                                    
+                                    $hasDiff = function($field) use ($group) {
+                                        $vals = [];
+                                        foreach ($group['leads'] as $l) {
+                                            $vals[] = strtolower(trim((string) ($l->{$field} ?? '')));
+                                        }
+                                        return count(array_unique($vals)) > 1;
+                                    };
+                                    
+                                    $locationDiff = $hasDiff('POSTCODE') || $hasDiff('CITY') || $hasDiff('STATE') || $hasDiff('COUNTRY');
+                                    
+                                    $getCellStyle = function($field) use ($hasDiff) {
+                                        if ($hasDiff($field)) {
+                                            return 'background: #fffbeb; color: #b45309; font-weight: 600; border-bottom: 1px solid #e5e7eb; padding: 10px 12px;';
+                                        }
+                                        return 'background: #fff; color: #4b5563; border-bottom: 1px solid #e5e7eb; padding: 10px 12px;';
+                                    };
+                                    
+                                    $locationStyle = $locationDiff 
+                                        ? 'background: #fffbeb; color: #b45309; font-weight: 600; border-bottom: 1px solid #e5e7eb; padding: 10px 12px;'
+                                        : 'background: #fff; color: #4b5563; border-bottom: 1px solid #e5e7eb; padding: 10px 12px;';
+                                @endphp
+                                <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; min-width: 1750px; border: 1px solid #e5e7eb;">
+                                    <thead>
+                                        <tr style="background: #f9fafb; border-bottom: 1px solid #e5e7eb;">
+                                            <th style="padding: 10px 12px; font-weight: 700; color: #374151; width: 180px;">Action</th>
+                                            <th style="padding: 10px 12px; font-weight: 700; color: #374151; width: 100px;">Inquiry ID</th>
+                                            <th style="padding: 10px 12px; font-weight: 700; color: #374151; width: 130px;">Date</th>
+                                            <th style="padding: 10px 12px; font-weight: 700; color: #374151; width: 150px;">Contact Name</th>
+                                            <th style="padding: 10px 12px; font-weight: 700; color: #374151; width: 340px;">Location</th>
+                                            <th style="padding: 10px 12px; font-weight: 700; color: #374151; width: 280px;">Business Nature</th>
+                                            <th style="padding: 10px 12px; font-weight: 700; color: #374151; width: 150px;">Existing SW</th>
+                                            <th style="padding: 10px 12px; font-weight: 700; color: #374151; width: 120px;">Demo Mode</th>
+                                            <th style="padding: 10px 12px; font-weight: 700; color: #374151; width: 90px;">Product ID</th>
+                                            <th style="padding: 10px 12px; font-weight: 700; color: #374151; width: 90px;">User Count</th>
+                                            <th style="padding: 10px 12px; font-weight: 700; color: #374151; width: 110px;">Referral Code</th>
+                                            <th style="padding: 10px 12px; font-weight: 700; color: #374151; min-width: 300px;">Message</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($group['leads'] as $leadIdx => $lead)
+                                            @php
+                                                $isAssigned = !empty(trim((string)($lead->ASSIGNEDTO ?? '')));
+                                                if ($hasAssignedLead) {
+                                                    $shouldKeep = $isAssigned;
+                                                    $shouldDeleteByDefault = !$isAssigned;
+                                                } else {
+                                                    $shouldKeep = ($leadIdx === 0);
+                                                    $shouldDeleteByDefault = ($leadIdx > 0);
+                                                }
+                                            @endphp
+                                            <tr style="background: {{ $isAssigned ? '#f0f9ff' : '#ffffff' }};">
+                                                <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; white-space: nowrap;">
+                                                    <div style="display: inline-flex; align-items: center; gap: 8px;">
+                                                        @if($isAssigned)
+                                                            <input type="checkbox" disabled style="width: 15px; height: 15px; cursor: not-allowed; opacity: 0.5;" title="Already assigned to a dealer">
+                                                            <span style="background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase;">Keep (Assigned: {{ $lead->ASSIGNEDTO }})</span>
+                                                        @else
+                                                            <input type="checkbox" class="duplicate-checkbox" data-lead-id="{{ $lead->LEADID }}" {{ $shouldDeleteByDefault ? 'checked' : '' }} style="width: 15px; height: 15px; accent-color: #6d28d9; cursor: pointer;">
+                                                            @if($shouldKeep)
+                                                                <span style="background: #e9d5ff; color: #6d28d9; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase;">Keep (Newest)</span>
+                                                            @else
+                                                                <span style="background: #fee2e2; color: #ef4444; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase;">Duplicate</span>
+                                                            @endif
+                                                        @endif
+                                                    </div>
+                                                </td>
+                                                <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; font-weight: 800; color: #4c1d95; white-space: nowrap;">#SQL-{{ $lead->LEADID }}</td>
+                                                <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; white-space: nowrap;">{{ date('d/m/Y H:i', strtotime($lead->CREATEDAT)) }}</td>
+                                                <td style="{{ $getCellStyle('CONTACTNAME') }}">
+                                                    <input type="text" class="inquiry-editable-field" data-lead-id="{{ $lead->LEADID }}" data-field="CONTACTNAME" value="{{ $lead->CONTACTNAME }}" size="{{ max(strlen((string)$lead->CONTACTNAME), 12) }}" style="border: 1px solid transparent; background: transparent; padding: 2px 4px; font-size: 12px; font-family: inherit; color: inherit; border-radius: 4px; min-width: 100%; box-sizing: border-box;" onfocus="this.style.border='1px solid #d1d5db'; this.style.background='#fff';" onblur="this.style.border='1px solid transparent'; this.style.background='transparent';">
+                                                </td>
+                                                <td style="{{ $locationStyle }}">
+                                                    <div style="display: flex; gap: 4px; align-items: center;">
+                                                        <input type="text" class="inquiry-editable-field" data-lead-id="{{ $lead->LEADID }}" data-field="POSTCODE" value="{{ $lead->POSTCODE }}" placeholder="Postcode" title="Postcode" size="{{ max(strlen((string)$lead->POSTCODE), 5) }}" style="border: 1px solid transparent; background: transparent; padding: 2px 4px; font-size: 12px; font-family: inherit; color: inherit; border-radius: 4px;" onfocus="this.style.border='1px solid #d1d5db'; this.style.background='#fff';" onblur="this.style.border='1px solid transparent'; this.style.background='transparent';">
+                                                        <span style="color: #9ca3af;">,</span>
+                                                        <input type="text" class="inquiry-editable-field" data-lead-id="{{ $lead->LEADID }}" data-field="CITY" value="{{ $lead->CITY }}" placeholder="City" title="City" size="{{ max(strlen((string)$lead->CITY), 10) }}" style="border: 1px solid transparent; background: transparent; padding: 2px 4px; font-size: 12px; font-family: inherit; color: inherit; border-radius: 4px;" onfocus="this.style.border='1px solid #d1d5db'; this.style.background='#fff';" onblur="this.style.border='1px solid transparent'; this.style.background='transparent';">
+                                                        <span style="color: #9ca3af;">,</span>
+                                                        <input type="text" class="inquiry-editable-field" data-lead-id="{{ $lead->LEADID }}" data-field="STATE" value="{{ $lead->STATE }}" placeholder="State" title="State" size="{{ max(strlen((string)$lead->STATE), 10) }}" style="border: 1px solid transparent; background: transparent; padding: 2px 4px; font-size: 12px; font-family: inherit; color: inherit; border-radius: 4px;" onfocus="this.style.border='1px solid #d1d5db'; this.style.background='#fff';" onblur="this.style.border='1px solid transparent'; this.style.background='transparent';">
+                                                    </div>
+                                                </td>
+                                                <td style="{{ $getCellStyle('BUSINESSNATURE') }}">
+                                                    <input type="text" class="inquiry-editable-field" data-lead-id="{{ $lead->LEADID }}" data-field="BUSINESSNATURE" value="{{ $lead->BUSINESSNATURE }}" size="{{ max(strlen((string)$lead->BUSINESSNATURE), 15) }}" style="border: 1px solid transparent; background: transparent; padding: 2px 4px; font-size: 12px; font-family: inherit; color: inherit; border-radius: 4px; min-width: 100%; box-sizing: border-box;" onfocus="this.style.border='1px solid #d1d5db'; this.style.background='#fff';" onblur="this.style.border='1px solid transparent'; this.style.background='transparent';">
+                                                </td>
+                                                <td style="{{ $getCellStyle('EXISTINGSOFTWARE') }}">
+                                                    <input type="text" class="inquiry-editable-field" data-lead-id="{{ $lead->LEADID }}" data-field="EXISTINGSOFTWARE" value="{{ $lead->EXISTINGSOFTWARE }}" size="{{ max(strlen((string)$lead->EXISTINGSOFTWARE), 15) }}" style="border: 1px solid transparent; background: transparent; padding: 2px 4px; font-size: 12px; font-family: inherit; color: inherit; border-radius: 4px; min-width: 100%; box-sizing: border-box;" onfocus="this.style.border='1px solid #d1d5db'; this.style.background='#fff';" onblur="this.style.border='1px solid transparent'; this.style.background='transparent';">
+                                                </td>
+                                                <td style="{{ $getCellStyle('DEMOMODE') }}">
+                                                    <input type="text" class="inquiry-editable-field" data-lead-id="{{ $lead->LEADID }}" data-field="DEMOMODE" value="{{ $lead->DEMOMODE }}" size="{{ max(strlen((string)$lead->DEMOMODE), 10) }}" style="border: 1px solid transparent; background: transparent; padding: 2px 4px; font-size: 12px; font-family: inherit; color: inherit; border-radius: 4px; min-width: 100%; box-sizing: border-box;" onfocus="this.style.border='1px solid #d1d5db'; this.style.background='#fff';" onblur="this.style.border='1px solid transparent'; this.style.background='transparent';">
+                                                </td>
+                                                <td style="{{ $getCellStyle('PRODUCTID') }}">
+                                                    <input type="text" class="inquiry-editable-field" data-lead-id="{{ $lead->LEADID }}" data-field="PRODUCTID" value="{{ $lead->PRODUCTID }}" size="{{ max(strlen((string)$lead->PRODUCTID), 5) }}" style="border: 1px solid transparent; background: transparent; padding: 2px 4px; font-size: 12px; font-family: inherit; color: inherit; border-radius: 4px; min-width: 100%; box-sizing: border-box;" onfocus="this.style.border='1px solid #d1d5db'; this.style.background='#fff';" onblur="this.style.border='1px solid transparent'; this.style.background='transparent';">
+                                                </td>
+                                                <td style="{{ $getCellStyle('USERCOUNT') }}">
+                                                    <input type="number" class="inquiry-editable-field" data-lead-id="{{ $lead->LEADID }}" data-field="USERCOUNT" value="{{ $lead->USERCOUNT }}" size="{{ max(strlen((string)$lead->USERCOUNT), 5) }}" style="border: 1px solid transparent; background: transparent; padding: 2px 4px; font-size: 12px; font-family: inherit; color: inherit; border-radius: 4px; min-width: 100%; box-sizing: border-box;" onfocus="this.style.border='1px solid #d1d5db'; this.style.background='#fff';" onblur="this.style.border='1px solid transparent'; this.style.background='transparent';">
+                                                </td>
+                                                <td style="{{ $getCellStyle('REFERRALCODE') }}">
+                                                    <input type="text" class="inquiry-editable-field" data-lead-id="{{ $lead->LEADID }}" data-field="REFERRALCODE" value="{{ $lead->REFERRALCODE }}" size="{{ max(strlen((string)$lead->REFERRALCODE), 10) }}" style="border: 1px solid transparent; background: transparent; padding: 2px 4px; font-size: 12px; font-family: inherit; color: inherit; border-radius: 4px; min-width: 100%; box-sizing: border-box;" onfocus="this.style.border='1px solid #d1d5db'; this.style.background='#fff';" onblur="this.style.border='1px solid transparent'; this.style.background='transparent';">
+                                                </td>
+                                                <td style="{{ $getCellStyle('DESCRIPTION') }}; max-width: 500px;">
+                                                    <textarea class="inquiry-editable-field" data-lead-id="{{ $lead->LEADID }}" data-field="DESCRIPTION" rows="1" style="width: 100%; min-width: 250px; border: 1px solid transparent; background: transparent; padding: 2px 4px; font-size: 12px; font-family: inherit; color: inherit; border-radius: 4px; resize: vertical; display: block; box-sizing: border-box;" onfocus="this.style.border='1px solid #d1d5db'; this.style.background='#fff';" onblur="this.style.border='1px solid transparent'; this.style.background='transparent';">{{ $lead->DESCRIPTION }}</textarea>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    @endforeach
+                @endif
+            </div>
+        </div>
+        <div class="inquiries-assign-footer" style="padding: 14px 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px; background: #f9fafb;">
+            <button type="button" class="inquiries-btn inquiries-btn-secondary" id="duplicatesCancelBtn" style="min-width: 90px;">Cancel</button>
+            <button type="button" class="inquiries-btn inquiries-btn-primary" id="duplicatesSubmitBtn" style="background: #ef4444; border-color: #ef4444; min-width: 150px; font-weight: 600;">
+                <i class="bi bi-trash3-fill" style="margin-right: 4px;"></i>
+                <span>Delete Selected</span>
+            </button>
+        </div>
+    </div>
+</div>
+
 <div class="inquiries-assign-modal" id="assignModal" hidden>
     <div class="inquiries-assign-backdrop" data-assign-close="1"></div>
     <div class="inquiries-assign-window" role="dialog" aria-modal="true" aria-labelledby="assignModalTitle">
@@ -1075,12 +1287,85 @@ document.addEventListener('DOMContentLoaded', function() {
             + '</div>';
         document.body.appendChild(modal);
 
-        function close() { modal.hidden = true; }
+        var modalWin = modal.querySelector('.inquiries-msg-modal-window');
+        var modalHeader = modal.querySelector('.inquiries-msg-modal-header');
+        var dragOffsetX = 0, dragOffsetY = 0;
+
+        function close() {
+            modal.hidden = true;
+            if (modalWin) {
+                modalWin.style.transform = '';
+                dragOffsetX = 0;
+                dragOffsetY = 0;
+            }
+        }
         function open(text) {
+            if (modalWin) {
+                modalWin.style.transform = '';
+                dragOffsetX = 0;
+                dragOffsetY = 0;
+            }
             var el = document.getElementById('inquiriesMsgModalText');
             if (el) el.textContent = text || '';
             modal.hidden = false;
         }
+
+        // --- Drag logic (uses CSS transform to avoid position jump) ---
+        (function initDrag() {
+            if (!modalWin || !modalHeader) return;
+            var isDragging = false;
+            var startX = 0, startY = 0;
+            var baseX = 0, baseY = 0;
+
+            function beginDrag(clientX, clientY) {
+                isDragging = true;
+                startX = clientX;
+                startY = clientY;
+                baseX = dragOffsetX;
+                baseY = dragOffsetY;
+                document.body.style.userSelect = 'none';
+                document.body.style.webkitUserSelect = 'none';
+            }
+
+            function moveDrag(clientX, clientY) {
+                if (!isDragging) return;
+                dragOffsetX = baseX + (clientX - startX);
+                dragOffsetY = baseY + (clientY - startY);
+                modalWin.style.transform = 'translate(' + dragOffsetX + 'px,' + dragOffsetY + 'px)';
+            }
+
+            function endDrag() {
+                if (!isDragging) return;
+                isDragging = false;
+                document.body.style.userSelect = '';
+                document.body.style.webkitUserSelect = '';
+            }
+
+            modalHeader.addEventListener('mousedown', function(e) {
+                if (e.target.closest('.inquiries-msg-modal-close')) return;
+                e.preventDefault();
+                beginDrag(e.clientX, e.clientY);
+            });
+
+            document.addEventListener('mousemove', function(e) {
+                moveDrag(e.clientX, e.clientY);
+            });
+
+            document.addEventListener('mouseup', endDrag);
+
+            // Touch support
+            modalHeader.addEventListener('touchstart', function(e) {
+                if (e.target.closest('.inquiries-msg-modal-close')) return;
+                beginDrag(e.touches[0].clientX, e.touches[0].clientY);
+            }, { passive: true });
+
+            document.addEventListener('touchmove', function(e) {
+                if (!isDragging) return;
+                moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+            }, { passive: true });
+
+            document.addEventListener('touchend', endDrag);
+        })();
 
         document.addEventListener('click', function(e) {
             var cell = e.target && e.target.closest ? e.target.closest('.inquiries-msg-clickable[data-full-message]') : null;
@@ -2699,6 +2984,229 @@ document.addEventListener('DOMContentLoaded', function() {
     var initialInquiriesTab = getRequestedInquiriesTab() || ((document.querySelector('.inquiries-tab.active') || {}).getAttribute ? document.querySelector('.inquiries-tab.active').getAttribute('data-tab') : 'incoming');
     setInquiriesTab(initialInquiriesTab || 'incoming', true);
 
+    // Resolve duplicates modal
+    (function initDuplicatesModal() {
+        var modal = document.getElementById('inquiryDuplicatesModal');
+        var btn = document.getElementById('resolveDuplicatesBtn');
+        if (!modal || !btn) return;
+
+        var modalWin = modal.querySelector('.inquiries-assign-window');
+        var modalHeader = modal.querySelector('.inquiries-assign-header');
+        var dragOffsetX = 0, dragOffsetY = 0;
+
+        function open() {
+            if (modalWin) {
+                modalWin.style.transform = '';
+                dragOffsetX = 0;
+                dragOffsetY = 0;
+            }
+            modal.hidden = false;
+        }
+
+        function close() {
+            modal.hidden = true;
+            if (modalWin) {
+                modalWin.style.transform = '';
+                dragOffsetX = 0;
+                dragOffsetY = 0;
+            }
+        }
+
+        btn.addEventListener('click', open);
+
+        var closeBtn = document.getElementById('duplicatesCloseBtn');
+        var cancelBtn = document.getElementById('duplicatesCancelBtn');
+        var backdrop = document.getElementById('duplicatesCloseBackdrop');
+        if (closeBtn) closeBtn.addEventListener('click', close);
+        if (cancelBtn) cancelBtn.addEventListener('click', close);
+        if (backdrop) backdrop.addEventListener('click', close);
+
+        // Escape to close
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && !modal.hidden) close();
+        });
+
+        // Submit logic
+        var submitBtn = document.getElementById('duplicatesSubmitBtn');
+        if (submitBtn) {
+            submitBtn.addEventListener('click', function() {
+                var checkedBoxes = modal.querySelectorAll('.duplicate-checkbox:checked');
+                var leadIds = [];
+                checkedBoxes.forEach(function(cb) {
+                    var lid = parseInt(cb.getAttribute('data-lead-id'), 10);
+                    if (!isNaN(lid)) {
+                        leadIds.push(lid);
+                    }
+                });
+
+                if (leadIds.length === 0) {
+                    alert('Please select at least one duplicate inquiry to delete.');
+                    return;
+                }
+
+                if (!confirm('Are you sure you want to delete these ' + leadIds.length + ' duplicate inquiries? They will be moved to the recycle bin.')) {
+                    return;
+                }
+
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Deleting...';
+
+                var csrfToken = (document.querySelector('meta[name="csrf-token"]') || {}).content;
+                fetch('{{ route('admin.inquiries.batch-delete') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({ lead_ids: leadIds })
+                })
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    if (data.success) {
+                        window.location.reload();
+                    } else {
+                        alert(data.message || 'An error occurred during batch deletion.');
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="bi bi-trash3-fill" style="margin-right: 4px;"></i><span>Delete Selected</span>';
+                    }
+                })
+                .catch(function(err) {
+                    alert('An error occurred during batch deletion.');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="bi bi-trash3-fill" style="margin-right: 4px;"></i><span>Delete Selected</span>';
+                });
+            });
+        }
+
+        // --- Inline Edit / Save Logic ---
+        function saveFieldChange(el) {
+            var leadId = el.getAttribute('data-lead-id');
+            var fieldName = el.getAttribute('data-field');
+            var fieldValue = el.value;
+
+            // Visual indicator: saving status
+            el.style.border = '1px dashed #6d28d9';
+
+            var csrfToken = (document.querySelector('meta[name="csrf-token"]') || {}).content;
+            fetch('{{ route('admin.inquiries.update-field') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify({
+                    lead_id: leadId,
+                    field: fieldName,
+                    value: fieldValue
+                })
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    el.style.border = '1px solid #10b981'; // Green on success
+                    setTimeout(function() {
+                        el.style.border = '1px solid transparent';
+                    }, 1500);
+                } else {
+                    el.style.border = '1px solid #ef4444'; // Red on error
+                    console.error('Update failed:', data.message);
+                }
+            })
+            .catch(function(err) {
+                el.style.border = '1px solid #ef4444';
+                console.error('Update error:', err);
+            });
+        }
+
+        modal.querySelectorAll('.inquiry-editable-field').forEach(function(fieldInput) {
+            // Track the original value so we don't save if nothing changed
+            fieldInput.setAttribute('data-original-val', fieldInput.value);
+
+            fieldInput.addEventListener('change', function() {
+                if (this.value !== this.getAttribute('data-original-val')) {
+                    this.setAttribute('data-original-val', this.value);
+                    saveFieldChange(this);
+                }
+            });
+
+            fieldInput.addEventListener('blur', function() {
+                if (this.value !== this.getAttribute('data-original-val')) {
+                    this.setAttribute('data-original-val', this.value);
+                    saveFieldChange(this);
+                }
+            });
+
+            // Handle Enter key to save immediately (blur the input)
+            if (fieldInput.tagName !== 'TEXTAREA') {
+                fieldInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.blur();
+                    }
+                });
+            }
+        });
+
+        // --- Drag logic (uses CSS transform to avoid position jump) ---
+        (function initDrag() {
+            if (!modalWin || !modalHeader) return;
+            var isDragging = false;
+            var startX = 0, startY = 0;
+            var baseX = 0, baseY = 0;
+
+            function beginDrag(clientX, clientY) {
+                isDragging = true;
+                startX = clientX;
+                startY = clientY;
+                baseX = dragOffsetX;
+                baseY = dragOffsetY;
+                document.body.style.userSelect = 'none';
+                document.body.style.webkitUserSelect = 'none';
+            }
+
+            function moveDrag(clientX, clientY) {
+                if (!isDragging) return;
+                dragOffsetX = baseX + (clientX - startX);
+                dragOffsetY = baseY + (clientY - startY);
+                modalWin.style.transform = 'translate(' + dragOffsetX + 'px,' + dragOffsetY + 'px)';
+            }
+
+            function endDrag() {
+                if (!isDragging) return;
+                isDragging = false;
+                document.body.style.userSelect = '';
+                document.body.style.webkitUserSelect = '';
+            }
+
+            modalHeader.addEventListener('mousedown', function(e) {
+                if (e.target.closest('button')) return;
+                e.preventDefault();
+                beginDrag(e.clientX, e.clientY);
+            });
+
+            document.addEventListener('mousemove', function(e) {
+                moveDrag(e.clientX, e.clientY);
+            });
+
+            document.addEventListener('mouseup', endDrag);
+
+            // Touch support
+            modalHeader.addEventListener('touchstart', function(e) {
+                if (e.target.closest('button')) return;
+                beginDrag(e.touches[0].clientX, e.touches[0].clientY);
+            }, { passive: true });
+
+            document.addEventListener('touchmove', function(e) {
+                if (!isDragging) return;
+                moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+            }, { passive: true });
+
+            document.addEventListener('touchend', endDrag);
+        })();
+    })();
+
     // Assign modal
     (function initAssignModal() {
         var modal = document.getElementById('assignModal');
@@ -2709,7 +3217,83 @@ document.addEventListener('DOMContentLoaded', function() {
         var hiddenTo = document.getElementById('assignToHidden');
         var assignBtn = document.getElementById('assignSubmitBtn');
 
-        function close() { modal.hidden = true; }
+        var modalWin = modal.querySelector('.inquiries-assign-window');
+        var modalHeader = modal.querySelector('.inquiries-assign-header');
+        var dragOffsetX = 0, dragOffsetY = 0; // accumulated translate
+
+        function close() {
+            modal.hidden = true;
+            // Reset drag offset so it recenters next time
+            if (modalWin) {
+                modalWin.style.transform = '';
+                dragOffsetX = 0;
+                dragOffsetY = 0;
+            }
+        }
+
+        // --- Drag logic (uses CSS transform to avoid position jump) ---
+        (function initDrag() {
+            if (!modalWin || !modalHeader) return;
+            var isDragging = false;
+            var startX = 0, startY = 0;
+            var baseX = 0, baseY = 0;
+
+            function beginDrag(clientX, clientY) {
+                isDragging = true;
+                startX = clientX;
+                startY = clientY;
+                baseX = dragOffsetX;
+                baseY = dragOffsetY;
+                document.body.style.userSelect = 'none';
+                document.body.style.webkitUserSelect = 'none';
+            }
+
+            function moveDrag(clientX, clientY) {
+                if (!isDragging) return;
+                dragOffsetX = baseX + (clientX - startX);
+                dragOffsetY = baseY + (clientY - startY);
+                modalWin.style.transform = 'translate(' + dragOffsetX + 'px,' + dragOffsetY + 'px)';
+            }
+
+            function endDrag() {
+                if (!isDragging) return;
+                isDragging = false;
+                document.body.style.userSelect = '';
+                document.body.style.webkitUserSelect = '';
+            }
+
+            modalHeader.addEventListener('mousedown', function(e) {
+                // Don't drag when clicking close button or inputs
+                if (e.target.closest('.inquiries-assign-close') ||
+                    e.target.closest('input') ||
+                    e.target.closest('select') ||
+                    e.target.closest('button:not(.inquiries-assign-header)')) return;
+                e.preventDefault();
+                beginDrag(e.clientX, e.clientY);
+            });
+
+            document.addEventListener('mousemove', function(e) {
+                moveDrag(e.clientX, e.clientY);
+            });
+
+            document.addEventListener('mouseup', endDrag);
+
+            // Touch support
+            modalHeader.addEventListener('touchstart', function(e) {
+                if (e.target.closest('.inquiries-assign-close') ||
+                    e.target.closest('input') ||
+                    e.target.closest('select')) return;
+                beginDrag(e.touches[0].clientX, e.touches[0].clientY);
+            }, { passive: true });
+
+            document.addEventListener('touchmove', function(e) {
+                if (!isDragging) return;
+                moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+            }, { passive: true });
+
+            document.addEventListener('touchend', endDrag);
+        })();
+
         function syncDealerTableStickyHeader() {
             if (!dealerTable) return;
             var headerRow = dealerTable.querySelector('thead tr:first-child');

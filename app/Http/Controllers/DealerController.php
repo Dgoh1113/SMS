@@ -57,7 +57,7 @@ class DealerController extends Controller
             }
 
             $leadsRaw = DB::select(
-                'SELECT FIRST 200
+                'SELECT
                     l."LEADID", l."PRODUCTID", l."COMPANYNAME", l."CONTACTNAME", l."CONTACTNO", l."EMAIL",
                     l."CITY", l."POSTCODE", l."BUSINESSNATURE", l."USERCOUNT", l."EXISTINGSOFTWARE", l."DEMOMODE",
                     l."CREATEDAT", l."CREATEDBY",
@@ -85,7 +85,7 @@ class DealerController extends Controller
                 return $s !== 'FAILED' && $s !== 'CANCELLED';
             }));
             $leads = DB::select(
-                'SELECT FIRST 200
+                'SELECT
                     l."LEADID", l."PRODUCTID", l."COMPANYNAME", l."CONTACTNAME", l."CONTACTNO", l."EMAIL",
                     l."CITY", l."POSTCODE", l."BUSINESSNATURE", l."USERCOUNT", l."EXISTINGSOFTWARE", l."DEMOMODE",
                     l."CREATEDAT", l."CREATEDBY",
@@ -723,14 +723,16 @@ class DealerController extends Controller
                 1 => 'SQL Account',
                 2 => 'SQL Payroll',
                 3 => 'SQL Production',
-                4 => 'Mobile Sales',
-                5 => 'SQL Ecommerce',
+                4 => 'SQL X-Mobile (SQL Mobile App)',
+                5 => 'SQL eCommerce',
                 6 => 'SQL EBI Wellness POS',
-                7 => 'SQL X Suduai',
+                7 => 'SQL x SuDu.Ai',
                 8 => 'SQL X-Store',
                 9 => 'SQL Vision',
                 10 => 'SQL HRMS',
-                11 => 'Others',
+                11 => 'SQL CTOS',
+                12 => 'SQL API',
+                13 => 'Others',
             ];
         }
 
@@ -753,14 +755,16 @@ class DealerController extends Controller
                 1 => 'SQL Account',
                 2 => 'SQL Payroll',
                 3 => 'SQL Production',
-                4 => 'Mobile Sales',
-                5 => 'SQL Ecommerce',
+                4 => 'SQL X-Mobile (SQL Mobile App)',
+                5 => 'SQL eCommerce',
                 6 => 'SQL EBI Wellness POS',
-                7 => 'SQL X Suduai',
+                7 => 'SQL x SuDu.Ai',
                 8 => 'SQL X-Store',
                 9 => 'SQL Vision',
                 10 => 'SQL HRMS',
-                11 => 'Others',
+                11 => 'SQL CTOS',
+                12 => 'SQL API',
+                13 => 'Others',
             ];
         }
 
@@ -913,7 +917,7 @@ class DealerController extends Controller
                         continue;
                     }
                     $pid = (int) $tok;
-                    if ($pid >= 1 && $pid <= 11) {
+                    if ($pid >= 1 && $pid <= 13) {
                         $productIds[] = $pid;
                     }
                 }
@@ -1291,7 +1295,8 @@ class DealerController extends Controller
 
         $fromUpper = $normalizeTransitionStatus($fromStatus);
         $toUpper = $normalizeTransitionStatus($statusDb);
-        $hasReferralCode = trim((string) ($lead->REFERRALCODE ?? '')) !== '';
+        $refVal = trim((string) ($lead->REFERRALCODE ?? ''));
+        $hasReferralCode = $refVal !== '' && strtolower($refVal) !== 'noreferral';
 
         // If dealer is "editing" the current status (same status again), allow it.
         $isSameStatusEdit = $toUpper === $fromUpper;
@@ -1388,7 +1393,7 @@ class DealerController extends Controller
             $productIds = [];
             foreach ($products as $p) {
                 $pid = (int) ($p['id'] ?? 0);
-                if ($pid >= 1 && $pid <= 11) {
+                if ($pid >= 1 && $pid <= 13) {
                     $productIds[] = $pid;
                 }
             }
@@ -1446,7 +1451,7 @@ class DealerController extends Controller
         if ($dealerId) {
             // Base LEAD data (dealer-only)
             $rows = DB::select(
-                'SELECT FIRST 200
+                'SELECT
                     "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL",
                     "ADDRESS1","ADDRESS2","CITY","STATE","COUNTRY","POSTCODE","BUSINESSNATURE","USERCOUNT",
                     "EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION","REFERRALCODE",
@@ -1594,7 +1599,7 @@ class DealerController extends Controller
                 $status = strtoupper(trim((string) ($r->CURRENTSTATUS ?? '')));
                 $referral = trim((string) ($r->REFERRALCODE ?? ''));
                 if ($status === 'COMPLETED') {
-                    if ($referral !== '') {
+                    if ($referral !== '' && strtolower($referral) !== 'noreferral') {
                         $completed[] = $r;
                     }
                 } elseif (in_array($status, ['REWARDED', 'PAID'], true)) {
@@ -1819,14 +1824,16 @@ class DealerController extends Controller
             1 => 'Account',
             2 => 'Payroll',
             3 => 'Production',
-            4 => 'Mobile Sales',
-            5 => 'Ecommerce',
+            4 => 'X-Mobile',
+            5 => 'eCommerce',
             6 => 'EBI POS',
-            7 => 'Sudu AI',
+            7 => 'x SuDu.Ai',
             8 => 'X-Store',
             9 => 'Vision',
             10 => 'HRMS',
-            11 => 'Others',
+            11 => 'CTOS',
+            12 => 'API',
+            13 => 'Others',
         ];
 
         return view('dealer.payouts', [
@@ -1918,7 +1925,8 @@ class DealerController extends Controller
                  JOIN "LEAD" l ON l."LEADID" = latest."LEADID"
                  WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                    AND UPPER(TRIM(latest."STATUS")) = \'COMPLETED\'
-                   AND TRIM(COALESCE(l."REFERRALCODE", \'\')) <> \'\'',
+                   AND TRIM(COALESCE(l."REFERRALCODE", \'\')) <> \'\'
+                   AND LOWER(TRIM(COALESCE(l."REFERRALCODE", \'\'))) <> \'noreferral\'',
                 [$dealerId]
             );
             $counts['pending_payouts'] = (int) ($pendingRow->CNT ?? $pendingRow->cnt ?? current((array) $pendingRow) ?? 0);
@@ -2068,7 +2076,7 @@ class DealerController extends Controller
     ];
     $totalInquiry = 0;
     $inquiryTrendData = array_fill(0, count($trendLabels), 0);
-    $productCounts = array_fill(0, 11, 0);
+    $productCounts = array_fill(0, 13, 0);
 
     if ($dealerId && $dateFrom && $dateTo) {
         $df = $dateFrom->format('Y-m-d H:i:s');
@@ -2138,7 +2146,7 @@ class DealerController extends Controller
         $productRows = DB::select(
             'SELECT la."DEALTPRODUCT" FROM "LEAD_ACT" la
             JOIN "LEAD" l ON l."LEADID" = la."LEADID"
-            WHERE la."USERID" = ? AND la."CREATIONDATE" >= ? AND la."CREATIONDATE" <= ?
+            WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND la."USERID" = ? AND la."CREATIONDATE" >= ? AND la."CREATIONDATE" <= ?
             AND la."DEALTPRODUCT" IS NOT NULL AND la."DEALTPRODUCT" <> \'\'
             AND UPPER(TRIM(COALESCE((SELECT FIRST 1 la2."STATUS" FROM "LEAD_ACT" la2 WHERE la2."LEADID" = l."LEADID" ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC), \'\'))) <> \'CANCELLED\'',
             [$dealerId, $df, $dt]
@@ -2147,10 +2155,10 @@ class DealerController extends Controller
             $val = trim($pr->DEALTPRODUCT ?? '');
             $ids = array_map('intval', array_filter(preg_split('/[\s,\(\)]+/', $val)));
             foreach ($ids as $pid) {
-                if ($pid >= 1 && $pid <= 10) {
+                if ($pid >= 1 && $pid <= 12) {
                     $productCounts[$pid - 1]++;
-                } elseif ($pid >= 11) {
-                    $productCounts[10]++;
+                } elseif ($pid >= 13) {
+                    $productCounts[12]++;
                 }
             }
         }

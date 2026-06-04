@@ -18,7 +18,9 @@ class ProductConstants
     public const X_STORE = 8;
     public const VISION = 9;
     public const HRMS = 10;
-    public const OTHERS = 11;
+    public const CTOS = 11;
+    public const API = 12;
+    public const OTHERS = 13;
 
     /**
      * Get all product labels indexed by ID
@@ -29,13 +31,15 @@ class ProductConstants
             self::ACCOUNT => 'Account',
             self::PAYROLL => 'Payroll',
             self::PRODUCTION => 'Production',
-            self::MOBILE_SALES => 'Mobile Sales',
-            self::ECOMMERCE => 'Ecommerce',
+            self::MOBILE_SALES => 'X-Mobile',
+            self::ECOMMERCE => 'eCommerce',
             self::EBI_POS => 'EBI POS',
-            self::SUDU_AI => 'Sudu AI',
+            self::SUDU_AI => 'x SuDu.Ai',
             self::X_STORE => 'X-Store',
             self::VISION => 'Vision',
             self::HRMS => 'HRMS',
+            self::CTOS => 'CTOS',
+            self::API => 'API',
             self::OTHERS => 'Others',
         ];
     }
@@ -49,13 +53,15 @@ class ProductConstants
             self::ACCOUNT => 'SQL Account',
             self::PAYROLL => 'SQL Payroll',
             self::PRODUCTION => 'SQL Production',
-            self::MOBILE_SALES => 'Mobile Sales',
-            self::ECOMMERCE => 'SQL Ecommerce',
+            self::MOBILE_SALES => 'SQL X-Mobile (SQL Mobile App)',
+            self::ECOMMERCE => 'SQL eCommerce',
             self::EBI_POS => 'SQL EBI Wellness POS',
-            self::SUDU_AI => 'SQL X Suduai',
+            self::SUDU_AI => 'SQL x SuDu.Ai',
             self::X_STORE => 'SQL X-Store',
             self::VISION => 'SQL Vision',
             self::HRMS => 'SQL HRMS',
+            self::CTOS => 'SQL CTOS',
+            self::API => 'SQL API',
             self::OTHERS => 'Others',
         ];
     }

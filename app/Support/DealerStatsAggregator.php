@@ -136,7 +136,7 @@ class DealerStatsAggregator
                     l."ASSIGNEDTO" AS "assignedTo"
                  FROM "LEAD_ACT" a
                  LEFT JOIN "LEAD" l ON l."LEADID" = a."LEADID"
-                 WHERE a."STATUS" IS NOT NULL
+                 WHERE a."STATUS" IS NOT NULL AND COALESCE(l."ISDELETED", FALSE) = FALSE
                  ORDER BY a."LEADID", a."CREATIONDATE"'
             );
 

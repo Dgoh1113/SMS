@@ -531,6 +531,25 @@
             }
         }
 
+        @media (max-width: 1600px) {
+            .reports-page .reports-metric-card--admin,
+            .reports-page .report-metric-link--admin {
+                min-height: 136px;
+                padding: 12px 10px;
+                gap: 6px;
+            }
+            .reports-page .reports-metric-card--admin .reports-metric-value {
+                font-size: 22px;
+            }
+            .reports-page .reports-metric-card--admin .reports-metric-label {
+                font-size: 10.5px;
+                letter-spacing: 0.04em;
+            }
+            .reports-page .reports-admin-metric-trend {
+                font-size: 10.5px;
+            }
+        }
+
         @media (max-width: 1440px) {
             .reports-page .reports-metrics--admin {
                 grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -543,8 +562,19 @@
 
             .reports-page .reports-metric-card--admin,
             .reports-page .report-metric-link--admin {
-                min-height: 168px;
-                padding: 17px;
+                min-height: 130px;
+                padding: 12px 10px;
+                gap: 6px;
+            }
+            .reports-page .reports-metric-card--admin .reports-metric-value {
+                font-size: 20px;
+            }
+            .reports-page .reports-metric-card--admin .reports-metric-label {
+                font-size: 10px;
+                letter-spacing: 0.04em;
+            }
+            .reports-page .reports-admin-metric-trend {
+                font-size: 10px;
             }
         }
 

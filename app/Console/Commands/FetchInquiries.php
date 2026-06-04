@@ -71,8 +71,8 @@ class FetchInquiries extends Command
                 try {
                     DB::beginTransaction();
 
-                    // 1. Map Product ID
-                    $productId = $this->mapProducts($data['Type'] ?? '');
+                    // 1. Map Product ID (combining ProductInterest and Type)
+                    $productId = $this->mapProducts(($data['ProductInterest'] ?? '') . ' ' . ($data['Type'] ?? ''));
 
                     // 2. Map Demo Mode (MUST BE 'Zoom' or 'On-site')
                     $rawDemo = strtolower($data['DemoMode'] ?? '');
@@ -81,7 +81,47 @@ class FetchInquiries extends Command
                         $demoMode = 'On-site';
                     }
 
-                    // 3. Exact Truncation based on Schema
+                    // 3. Map and format Existing Software
+                    $acc = trim($data['ExistingSoftwareAcc'] ?? '');
+                    $pay = trim($data['ExistingSoftwarePay'] ?? '');
+                    $extParts = [];
+                    if (!empty($acc)) {
+                        if (in_array(strtolower($acc), ['na', 'n/a', 'none', '-'])) {
+                            $extParts[] = $acc;
+                        } else {
+                            $extParts[] = "{$acc}(ACC)";
+                        }
+                    }
+                    if (!empty($pay)) {
+                        if (in_array(strtolower($pay), ['na', 'n/a', 'none', '-'])) {
+                            $extParts[] = $pay;
+                        } else {
+                            $extParts[] = "{$pay}(PAY)";
+                        }
+                    }
+                    if (!empty($extParts)) {
+                        $existingSoftware = implode(', ', $extParts);
+                    } else {
+                        $existingSoftware = $data['ExistingSoftware'] ?? '';
+                    }
+
+                    // 4. Map and format Description / Message
+                    $empNo = trim($data['EmployeeNo'] ?? '');
+                    $reason = trim($data['Reason'] ?? '');
+                    $msg = trim($data['Message'] ?? '');
+                    $descParts = [];
+                    if (!empty($empNo)) {
+                        $descParts[] = "Employee No: " . $empNo;
+                    }
+                    if (!empty($reason)) {
+                        $descParts[] = "Reason: " . $reason;
+                    }
+                    if (!empty($msg)) {
+                        $descParts[] = "Message: " . $msg;
+                    }
+                    $description = implode(', ', $descParts);
+
+                    // 5. Exact Truncation based on Schema
                     $companyName      = Str::limit($data['CompanyName'] ?? '', 50, '');
                     $contactName      = Str::limit($data['ContactName'] ?? '', 100, '');
                     $contactNo        = Str::limit($data['ContactNo'] ?? '', 15, '');
@@ -89,10 +129,9 @@ class FetchInquiries extends Command
                     $city             = Str::limit($data['City'] ?? '', 20, '');
                     $postcode         = Str::limit($data['Postcode'] ?? '', 5, '');
                     $businessNature   = Str::limit($data['BusinessNature'] ?? '', 30, '');
-                    $existingSoftware = Str::limit($data['ExistingSoftware'] ?? '', 40, '');
-                    $referral         = Str::limit($data['Referral'] ?? '', 20, '');
-                    $description      = Str::limit($data['Message'] ?? '', 160, '');
-                    $country          = Str::limit($data['Country'] ?? 'MY', 100, ''); // Schema says 100
+                    $existingSoftware = Str::limit($existingSoftware, 40, '');
+                    $description      = Str::limit($description, 160, '');
+                    $country          = Str::limit($data['Country'] ?? 'MY', 100, '');
                     $state            = Str::limit($data['State'] ?? '', 100, '');
 
                     $userCount = isset($data['UserCount']) ? (int)$data['UserCount'] : null;
@@ -118,26 +157,20 @@ class FetchInquiries extends Command
                             $existingSoftware,
                             $demoMode,
                             $description,
-                            $referral,
+                            $data['Referral'] ?? '',
                             $state,
-                            999
+                            'U001'
                         ]
                     );
 
-                    // Get the generated Lead ID (Firebird often returns results in uppercase)
                     $res = DB::selectOne('SELECT GEN_ID(GEN_LEADID, 0) as id FROM RDB$DATABASE');
                     $leadId = $res->id ?? $res->ID ?? null;
 
-                    // Note: No need to insert into LEAD_ACT manually if your triggers already do it!
-                    // Your schema showed: CREATE TRIGGER TRD_LEAD_AFTER_INSERT ... 
-                    // This trigger automatically creates the "Lead Created" record in LEAD_ACT.
-                    
                     DB::commit();
                     
                     $this->info("Successfully imported Lead #{$leadId}: {$companyName}");
 
-                    // 4. Delete email from server
-                    $message->delete();
+                    $message->move('Trash');
                     
                 } catch (\Exception $e) {
                     DB::rollBack();
@@ -156,41 +189,60 @@ class FetchInquiries extends Command
     }
 
     /**
-     * Improved Parser
+     * Order-independent, robust email body parser.
      */
     private function parseEmailBody($body)
     {
         $fields = [
             'CompanyName', 'ContactName', 'ContactNo', 'Email', 'City', 'Postcode', 
-            'Country', 'BusinessNature', 'UserCount', 'Platform', 'Type', 
-            'ExistingSoftware', 'DemoMode', 'Message', 'HowKnowUs', 'Referral', 'Campaign'
+            'Country', 'State', 'BusinessNature', 'ProductInterest', 'Type', 
+            'ExistingSoftwareAcc', 'ExistingSoftwarePay', 'ExistingSoftware',
+            'EmployeeNo', 'UserCount', 'Reason', 'DemoMode', 'Message', 
+            'HowKnowUs', 'Referral', 'Campaign'
         ];
 
         $data = [];
         
+        $body = html_entity_decode($body, ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $body = strip_tags($body);
-        $body = str_replace(["\r", "\n"], " ", $body); 
-        $body = preg_replace('/\s+/', ' ', $body);
-
-        foreach ($fields as $index => $field) {
-            $nextField = $fields[$index + 1] ?? null;
-            
-            if ($nextField) {
-                $pattern = '/' . preg_quote($field) . ':(.*?)(?=' . preg_quote($nextField) . ':|$)/i';
-            } else {
-                $pattern = '/' . preg_quote($field) . ':(.*)$/i';
-            }
-
-            if (preg_match($pattern, $body, $matches)) {
-                $val = trim($matches[1]);
-                // If it looks like a placeholder, clear it
-                if (str_starts_with($val, '[') && str_ends_with($val, ']')) {
-                    $val = '';
-                }
-                $data[$field] = $val;
+        $body = str_replace(["\r", "\n"], " \n ", $body); 
+        
+        $matches = [];
+        foreach ($fields as $field) {
+            $pos = stripos($body, $field . ':');
+            if ($pos !== false) {
+                $matches[] = [
+                    'field' => $field,
+                    'pos' => $pos
+                ];
             }
         }
-
+        
+        usort($matches, function($a, $b) {
+            return $a['pos'] <=> $b['pos'];
+        });
+        
+        for ($i = 0; $i < count($matches); $i++) {
+            $current = $matches[$i];
+            $start = $current['pos'] + strlen($current['field']) + 1; 
+            
+            if ($i + 1 < count($matches)) {
+                $end = $matches[$i + 1]['pos'];
+                $val = substr($body, $start, $end - $start);
+            } else {
+                $val = substr($body, $start);
+            }
+            
+            $val = trim($val);
+            $val = html_entity_decode($val, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $val = preg_replace('/\s+/', ' ', $val); 
+            
+            if (str_starts_with($val, '[') && str_ends_with($val, ']')) {
+                $val = '';
+            }
+            $data[$current['field']] = $val;
+        }
+        
         return $data;
     }
 
@@ -201,8 +253,23 @@ class FetchInquiries extends Command
     {
         $mapping = [
             'SQL Account' => '1',
+            'SQL Accounting' => '1',
             'SQL Payroll' => '2',
             'SQL Production' => '3',
+            'SQL X-Mobile' => '4',
+            'SQL Mobile App' => '4',
+            'SQL eCommerce' => '5',
+            'SQL Ecommerce' => '5',
+            'SQL EBI Wellness POS' => '6',
+            'SQL EBI POS' => '6',
+            'SQL x SuDu.Ai' => '7',
+            'SQL X Suduai' => '7',
+            'SQL X-Store' => '8',
+            'SQL Vision' => '9',
+            'SQL HRMS' => '10',
+            'SQL CTOS' => '11',
+            'SQL API' => '12',
+            'Others' => '13',
         ];
 
         $foundIds = [];
@@ -212,6 +279,6 @@ class FetchInquiries extends Command
             }
         }
 
-        return !empty($foundIds) ? implode(',', $foundIds) : '1';
+        return !empty($foundIds) ? implode(',', array_unique($foundIds)) : '1';
     }
 }

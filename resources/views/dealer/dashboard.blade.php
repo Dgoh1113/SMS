@@ -418,6 +418,7 @@
     }
 
     function getClosedCaseTickConfig(range, theme) {
+        var isLaptop = window.matchMedia('(min-width: 1024px) and (max-width: 1600px) and (max-height: 920px)').matches;
         return {
             color: theme.tick,
             autoSkip: true,
@@ -426,13 +427,14 @@
             minRotation: 0,
             padding: 10,
             crossAlign: 'far',
-            font: { size: 11, weight: '600' }
+            font: { size: isLaptop ? 13 : 13, weight: '600' }
         };
     }
 
     function buildClosedCaseChartOptions(range) {
         var theme = getClosedCaseTheme();
         var scaleRange = range || activeClosedCaseRange || '30';
+        var isLaptop = window.matchMedia('(min-width: 1024px) and (max-width: 1600px) and (max-height: 920px)').matches;
 
         return {
             responsive: true,
@@ -469,7 +471,7 @@
                     beginAtZero: true,
                     grid: { color: theme.grid, drawBorder: false, drawTicks: false },
                     border: { display: false },
-                    ticks: { color: theme.tick, font: { size: 11, weight: '500' }, precision: 0 }
+                    ticks: { color: theme.tick, font: { size: isLaptop ? 13 : 13, weight: '500' }, precision: 0 }
                 }
             }
         };

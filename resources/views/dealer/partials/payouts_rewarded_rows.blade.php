@@ -1,8 +1,8 @@
 @php
     $productNames = $productNames ?? [
-        1 => 'SQL Account', 2 => 'SQL Payroll', 3 => 'SQL Production', 4 => 'Mobile Sales',
-        5 => 'SQL Ecommerce', 6 => 'SQL EBI Wellness POS', 7 => 'SQL X Suduai', 8 => 'SQL X-Store',
-        9 => 'SQL Vision', 10 => 'SQL HRMS', 11 => 'Others',
+        1 => 'SQL Account', 2 => 'SQL Payroll', 3 => 'SQL Production', 4 => 'SQL X-Mobile (SQL Mobile App)',
+        5 => 'SQL eCommerce', 6 => 'SQL EBI Wellness POS', 7 => 'SQL x SuDu.Ai', 8 => 'SQL X-Store',
+        9 => 'SQL Vision', 10 => 'SQL HRMS', 11 => 'SQL CTOS', 12 => 'SQL API', 13 => 'Others',
     ];
 @endphp
 
@@ -33,7 +33,7 @@
             $payoutDate = date('d/m/Y', strtotime((string) $r->CREATEDAT));
         }
         $searchHaystack = strtolower(($r->COMPANYNAME ?? '') . ' ' . ($r->CONTACTNAME ?? '') . ' ' . ($r->LEADID ?? ''));
-        $pillOrder = [1 => 10, 3 => 11, 4 => 12, 2 => 20, 10 => 21, 8 => 30, 5 => 31, 6 => 40, 9 => 50, 7 => 60, 11 => 70];
+        $pillOrder = [1 => 10, 3 => 11, 4 => 12, 2 => 20, 10 => 21, 8 => 30, 5 => 31, 6 => 40, 9 => 50, 7 => 60, 11 => 70, 12 => 80, 13 => 90];
         $dealtRaw = $r->DEALTPRODUCT ?? null;
         $dealtProductIds = [];
         $attachmentUrls = is_array($r->REWARD_ATTACHMENT_URLS ?? null) ? array_values(array_filter($r->REWARD_ATTACHMENT_URLS, function ($url) {
@@ -45,7 +45,7 @@
             foreach ($tokens as $tok) {
                 if ($tok === '') continue;
                 $pid = (int) $tok;
-                if ($pid >= 1 && $pid <= 11) {
+                if ($pid >= 1 && $pid <= 13) {
                     $dealtProductIds[] = $pid;
                 }
             }

@@ -157,7 +157,7 @@
         /* --- Product Grid --- */
         .inquiry-form-checkboxes {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: 1fr;
             gap: 8px;
             width: 100%;
         }
@@ -857,6 +857,14 @@
             border-color: #d1e4ff !important;
         }
 
+        #clearFormBtn:disabled {
+            color: #9ca3af !important;
+            background-color: #f3f4f6 !important;
+            border-color: #e5e7eb !important;
+            cursor: not-allowed !important;
+            box-shadow: none !important;
+        }
+
     </style>
 @endpush
 @section('content')
@@ -905,12 +913,9 @@
                         </div>
                     </div>
                     <div class="inquiry-form-grid">
-                        <div class="inquiry-form-label inquiry-company-field" style="grid-column: span 12;">
+                        <div class="inquiry-form-label inquiry-company-field" style="grid-column: span 9;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
                                 <label for="companyInput" class="inquiry-form-label-title" style="margin-bottom: 0;">Company name <span class="required">*</span></label>
-                                <button type="button" id="sqlSearchBtn" class="inquiry-inline-toggle" style="font-size: 11px; display: flex; align-items: center; gap: 4px;">
-                                    <i class="bi bi-database-check"></i> Search SQL Account
-                                </button>
                             </div>
                             <div class="inquiry-form-input-wrapper">
                                 <i class="bi bi-building inquiry-input-icon"></i>
@@ -919,16 +924,15 @@
                                     <i class="bi bi-search" style="font-size: 11px; font-weight: 800;"></i>
                                 </button>
                             </div>
-                            <div id="sqlSearchResults" style="display: none; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; margin-top: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-height: 250px; overflow-y: auto; z-index: 1000; position: absolute; width: 100%;"></div>
                         </div>
-                        <label class="inquiry-form-label" style="grid-column: span 5;">
+                        <label class="inquiry-form-label" style="grid-column: span 4;">
                             <span class="inquiry-form-label-title">Business nature <span class="required">*</span></span>
                             <div class="inquiry-form-input-wrapper">
                                 <i class="bi bi-briefcase inquiry-input-icon"></i>
                                 <input type="text" name="BUSINESSNATURE" value="{{ old('BUSINESSNATURE', $inquiry->BUSINESSNATURE ?? '') }}" required maxlength="255" class="inquiry-form-input has-icon" placeholder="Enter business nature">
                             </div>
                         </label>
-
+ 
                         <label class="inquiry-form-label" style="grid-column: span 4;">
                             <span class="inquiry-form-label-title">Existing software <span class="required">*</span></span>
                             <div class="inquiry-form-input-wrapper">
@@ -936,8 +940,8 @@
                                 <input type="text" name="EXISTINGSOFTWARE" value="{{ old('EXISTINGSOFTWARE', $inquiry->EXISTINGSOFTWARE ?? '') }}" required maxlength="255" class="inquiry-form-input has-icon" placeholder="Enter existing software">
                             </div>
                         </label>
-
-                        <label class="inquiry-form-label" style="grid-column: span 3;">
+ 
+                        <label class="inquiry-form-label" style="grid-column: span 2;">
                             <span class="inquiry-form-label-title">User count <span class="required">*</span></span>
                             <div class="inquiry-form-input-wrapper">
                                 <i class="bi bi-people inquiry-input-icon"></i>
@@ -1073,8 +1077,8 @@
                         </div>
                     </div>
                     <div class="inquiry-form-grid">
-                        <!-- Left Side: Products (9 columns) -->
-                        <div class="inquiry-form-label" style="grid-column: span 9;">
+                        <!-- Left Side: Products (6 columns) -->
+                        <div class="inquiry-form-label" style="grid-column: span 6;">
                             <span class="inquiry-form-label-title">Product interested <span class="required">*</span></span>
                             <div class="inquiry-form-checkboxes @error('product_interested') inquiry-input-error @enderror">
                                 @php
@@ -1083,7 +1087,7 @@
                                         $defaultProducts = array_map('intval', array_filter(explode(',', (string) $inquiry->PRODUCTID)));
                                     }
                                     $selectedProducts = old('product_interested', $defaultProducts);
-                                @endphp
+                                 @endphp
                                 @foreach($productInterestedList ?? [] as $num => $label)
                                     <label class="inquiry-form-checkbox-label">
                                         <input type="checkbox" name="product_interested[]" value="{{ $num }}" {{ in_array($num, $selectedProducts) ? 'checked' : '' }} class="inquiry-form-checkbox" style="position:absolute;opacity:0;width:0;height:0;pointer-events:none;">
@@ -1093,8 +1097,8 @@
                             </div>
                         </div>
 
-                        <!-- Right Side: Demo & Referral (3 columns) -->
-                        <div style="grid-column: span 3; display: flex; flex-direction: column; gap: 16px;">
+                        <!-- Right Side: Demo & Referral (5 columns) -->
+                        <div style="grid-column: 8 / span 5; display: flex; flex-direction: column; gap: 16px;">
                             <div class="inquiry-form-label">
                                 <span class="inquiry-form-label-title">Demo mode <span class="required">*</span></span>
                                 @php
@@ -1137,7 +1141,10 @@
                     <a href="{{ route('admin.inquiries') }}" class="inquiry-form-cancel" style="padding: 10px 24px; border-radius: 12px; font-weight: 700; color: #666; text-decoration: none; transition: all 0.2s; min-width: 150px; text-align: center; border: 1px solid #e0e0e0; display: flex; align-items: center; justify-content: center; gap: 8px;">
                         <i class="bi bi-x-lg" style="font-size: 14px;"></i> Cancel
                     </a>
-                    <button type="submit" class="login-primary-btn" style="padding: 10px 24px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; border: none; transition: all 0.2s; min-width: 150px; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);">
+                    <button type="button" id="clearFormBtn" class="inquiry-form-cancel" {{ $isEdit ? 'disabled' : '' }} style="padding: 10px 24px; border-radius: 12px; font-weight: 700; color: #dc2626; text-decoration: none; transition: all 0.2s; min-width: 150px; text-align: center; border: 1px solid #fca5a5; background: #fff5f5; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <i class="bi bi-trash" style="font-size: 14px;"></i> Clear form
+                    </button>
+                    <button type="submit" class="login-primary-btn" style="padding: 10px 24px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; border: none; transition: all 0.2s; min-width: 150px; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2); margin-top: 0;">
                         <i class="bi bi-send"></i> {{ $isEdit ? 'Update inquiry' : 'Save inquiry' }}
                     </button>
                 </div>
@@ -1251,6 +1258,11 @@ document.addEventListener('DOMContentLoaded', function () {
     if (cityInput) {
         cityInput.addEventListener('input', updateGoogleMapsLink);
         cityInput.addEventListener('change', updateGoogleMapsLink);
+    }
+
+    if (postcodeInput) {
+        postcodeInput.addEventListener('input', syncLocationFromPostcode);
+        postcodeInput.addEventListener('change', syncLocationFromPostcode);
     }
 
     // Demo mode toggle (Zoom / On-site)
@@ -1484,109 +1496,38 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // SQL Account API Lookup Logic
-    var sqlSearchBtn = document.getElementById('sqlSearchBtn');
-    var sqlSearchResults = document.getElementById('sqlSearchResults');
-    var sqlSearchUrl = "{{ route('customer.search') }}";
-
-    if (sqlSearchBtn && companyInput && sqlSearchResults) {
-        sqlSearchBtn.addEventListener('click', function() {
-            var val = (companyInput.value || '').trim();
-            if (val.length < 3) {
-                alert('Please enter at least 3 characters in the Company Name field.');
-                return;
-            }
-
-            sqlSearchBtn.disabled = true;
-            sqlSearchBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Searching...';
-            sqlSearchResults.style.display = 'none';
-            sqlSearchResults.innerHTML = '';
-
-            fetch(sqlSearchUrl + '?q=' + encodeURIComponent(val))
-                .then(response => response.json())
-                .then(data => {
-                    sqlSearchBtn.disabled = false;
-                    sqlSearchBtn.innerHTML = '<i class="bi bi-database-check"></i> Search SQL Account';
-
-                    if (data.error) {
-                        alert(data.error);
-                        return;
-                    }
-
-                    var customers = data.customers || [];
-                    if (customers.length === 0) {
-                        sqlSearchResults.innerHTML = '<div style="padding: 12px; color: #64748b; text-align: center;">No matching customers found in SQL Account.</div>';
-                        sqlSearchResults.style.display = 'block';
-                        return;
-                    }
-
-                    customers.forEach(customer => {
-                        var item = document.createElement('div');
-                        item.style.padding = '10px 12px';
-                        item.style.cursor = 'pointer';
-                        item.style.borderBottom = '1px solid #f1f5f9';
-                        item.style.transition = 'background 0.2s';
-                        item.className = 'sql-result-item';
-                        item.innerHTML = `
-                            <div style="font-weight: 600; color: #1e293b; font-size: 13px;">${customer.companyname}</div>
-                            <div style="font-size: 11px; color: #64748b;">Code: ${customer.code} | Agent: ${customer.agent || 'N/A'}</div>
-                        `;
-
-                        item.addEventListener('mouseover', () => item.style.background = '#f8fafc');
-                        item.addEventListener('mouseout', () => item.style.background = 'transparent');
-
-                        item.addEventListener('click', function() {
-                            // Populate the form
-                            if (document.getElementById('companyInput')) document.getElementById('companyInput').value = customer.companyname || '';
-                            if (document.querySelector('[name="BUSINESSNATURE"]')) document.querySelector('[name="BUSINESSNATURE"]').value = customer.businessnature || '';
-                            if (document.getElementById('address1Input')) document.getElementById('address1Input').value = customer.address1 || '';
-                            
-                            if (customer.address2 && customer.address2.trim() !== '') {
-                                if (document.getElementById('address2Input')) document.getElementById('address2Input').value = customer.address2;
-                                setAddress2Expanded(true);
-                            }
-
-                            if (document.getElementById('postcodeInput')) {
-                                document.getElementById('postcodeInput').value = (customer.postcode || '').substring(0, 5);
-                                // Trigger postcode sync
-                                syncLocationFromPostcode();
-                            }
-
-                            // If city/state/country weren't filled by postcode sync, fill them manually
-                            setTimeout(() => {
-                                if (customer.city && (!document.getElementById('cityInput').value)) document.getElementById('cityInput').value = customer.city;
-                                if (customer.state && (!document.getElementById('stateInput').value)) document.getElementById('stateInput').value = customer.state;
-                                if (customer.email && (!document.querySelector('[name="EMAIL"]').value)) document.querySelector('[name="EMAIL"]').value = customer.email;
-                                if (customer.contactname && (!document.querySelector('[name="CONTACTNAME"]').value)) document.querySelector('[name="CONTACTNAME"]').value = customer.contactname;
-                                if (customer.contactno && (!document.querySelector('[name="CONTACTNO"]').value)) document.querySelector('[name="CONTACTNO"]').value = customer.contactno;
-                            }, 100);
-
-                            sqlSearchResults.style.display = 'none';
-                        });
-
-                        sqlSearchResults.appendChild(item);
+    var clearFormBtn = document.getElementById('clearFormBtn');
+    if (clearFormBtn) {
+        clearFormBtn.addEventListener('click', function() {
+            var form = document.getElementById('inquiryForm');
+            if (form) {
+                form.reset();
+                // 1. Reset demo mode toggle
+                var demoInput = document.getElementById('demoModeInput');
+                var demoToggle = document.querySelector('.inquiry-toggle[data-toggle="demomode"]');
+                if (demoInput && demoToggle) {
+                    demoInput.value = 'Zoom';
+                    demoToggle.querySelectorAll('.inquiry-toggle-option').forEach(function (b) {
+                        b.classList.toggle('is-active', b.getAttribute('data-value') === 'Zoom');
                     });
-
-                    sqlSearchResults.style.display = 'block';
-                })
-                .catch(err => {
-                    sqlSearchBtn.disabled = false;
-                    sqlSearchBtn.innerHTML = '<i class="bi bi-database-check"></i> Search SQL Account';
-                    console.error('SQL Search error:', err);
-                    alert('An error occurred while searching SQL Account.');
-                });
-        });
-
-        // Close results when clicking outside
-        document.addEventListener('click', function(e) {
-            if (!sqlSearchBtn.contains(e.target) && !sqlSearchResults.contains(e.target)) {
-                sqlSearchResults.style.display = 'none';
+                }
+                // 2. Collapse Address 2
+                if (typeof setAddress2Expanded === 'function') {
+                    setAddress2Expanded(false);
+                }
+                // 3. Clear lookup visible state
+                var lookupBtn = document.getElementById('lookupCompanyBtn');
+                if (lookupBtn) {
+                    lookupBtn.classList.remove('is-visible');
+                }
+                // 4. Hide Google Maps link
+                var googleMapsWrap = document.getElementById('googleMapsWrap');
+                if (googleMapsWrap) {
+                    googleMapsWrap.style.display = 'none';
+                }
             }
         });
     }
-
-
-
 
 });
 </script>

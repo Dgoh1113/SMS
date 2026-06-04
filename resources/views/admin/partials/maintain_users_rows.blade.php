@@ -74,11 +74,14 @@
                     $isNoEmail = str_ends_with(strtolower($u['EMAIL'] ?? ''), '@noemail.local');
                     $isProtected = ($u['HAS_LOGGED_IN'] ?? false);
                     $isResend = ($u['PASSKEY_SETUP_LINK_SENT'] ?? false) || $isProtected;
-                    $confirmMsg = $isProtected
-                        ? 'This user is already Protected. Sending a new setup link will allow them to reset/add a new passkey. Proceed for ' . e($u['EMAIL']) . '?'
-                        : ($isResend 
-                            ? 'Are you sure you want to resend the passkey setup link to ' . e($u['EMAIL']) . '?' 
-                            : 'Send passkey setup link to ' . e($u['EMAIL']) . '?');
+                    $isActive = (bool) ($u['ISACTIVE'] ?? true);
+                    $confirmMsg = !$isActive
+                        ? 'The user is set as inactive, are you sure to send?'
+                        : ($isProtected
+                            ? 'This user is already Protected. Sending a new setup link will allow them to reset/add a new passkey. Proceed for ' . e($u['EMAIL']) . '?'
+                            : ($isResend 
+                                ? 'Are you sure you want to resend the passkey setup link to ' . e($u['EMAIL']) . '?' 
+                                : 'Send passkey setup link to ' . e($u['EMAIL']) . '?'));
                 @endphp
                 @if ($isNoEmail)
                     <button type="button" class="maintain-users-temp-send-btn" disabled title="No valid email address" aria-label="No valid email" style="opacity:0.3;cursor:not-allowed;">

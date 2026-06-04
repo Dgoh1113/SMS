@@ -24,7 +24,7 @@ class ApiController extends Controller
     public function leadsIndex(): JsonResponse
     {
         $rows = DB::select(
-            'SELECT FIRST 200
+            'SELECT
                 l."LEADID",l."PRODUCTID",l."COMPANYNAME",l."CONTACTNAME",l."CONTACTNO",l."EMAIL",l."ADDRESS1",l."ADDRESS2",
                 l."CITY",l."STATE",l."COUNTRY",l."POSTCODE",l."BUSINESSNATURE",l."USERCOUNT",l."EXISTINGSOFTWARE",l."DEMOMODE",l."DESCRIPTION",
                 l."REFERRALCODE",
@@ -79,7 +79,7 @@ class ApiController extends Controller
     public function leadActivitiesIndex(int $leadId): JsonResponse
     {
         $rows = DB::select(
-            'SELECT FIRST 200
+            'SELECT
                 "LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS"
             FROM "LEAD_ACT"
             WHERE "LEADID" = ?
@@ -123,7 +123,7 @@ class ApiController extends Controller
     public function payoutsIndex(): JsonResponse
     {
         $rows = DB::select(
-            'SELECT FIRST 200
+            'SELECT
                 "REFERRERPAYOUTID","DEALSUBMISSIONID","USERID","STATUS","REFERRERID","DATEGENERATED","DATEPAID"
             FROM "REFERRER_PAYOUT"
             ORDER BY "REFERRERPAYOUTID" DESC'

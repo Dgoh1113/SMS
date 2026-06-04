@@ -53,8 +53,12 @@
                     <th data-col="role" class="inquiries-header-cell">
                         <span class="inquiries-header-label">ROLE</span>
                         <span class="inquiries-filter-wrap">
-                            <input type="text" class="inquiries-grid-filter" data-col="role" placeholder="">
-                            <i class="bi bi-search inquiries-filter-icon"></i>
+                            <select class="inquiries-grid-filter inquiries-grid-filter-select" data-col="role">
+                                <option value="">All</option>
+                                <option value="Admin">Admin</option>
+                                <option value="Manager">Manager</option>
+                                <option value="Dealer">Dealer</option>
+                            </select>
                         </span>
                     </th>
                     <th data-col="alias" class="inquiries-header-cell">
@@ -74,15 +78,21 @@
                     <th data-col="passkey" class="inquiries-header-cell">
                         <span class="inquiries-header-label">PASSKEY SETUP</span>
                         <span class="inquiries-filter-wrap">
-                            <input type="text" class="inquiries-grid-filter" data-col="passkey" placeholder="">
-                            <i class="bi bi-search inquiries-filter-icon"></i>
+                            <select class="inquiries-grid-filter inquiries-grid-filter-select" data-col="passkey">
+                                <option value="">All</option>
+                                <option value="Protected">Protected</option>
+                                <option value="Ready to send">Ready to send</option>
+                            </select>
                         </span>
                     </th>
                     <th data-col="active" class="inquiries-header-cell">
                         <span class="inquiries-header-label">ACTIVE</span>
                         <span class="inquiries-filter-wrap">
-                            <input type="text" class="inquiries-grid-filter" data-col="active" placeholder="">
-                            <i class="bi bi-search inquiries-filter-icon"></i>
+                            <select class="inquiries-grid-filter inquiries-grid-filter-select" data-col="active">
+                                <option value="">All</option>
+                                <option value="Yes">Yes</option>
+                                <option value="No">No</option>
+                            </select>
                         </span>
                     </th>
                     <th data-col="lastlogin" class="inquiries-header-cell">
@@ -244,9 +254,18 @@
 
 <div class="maintain-users-modal-backdrop" id="maintainUsersBatchModal">
     <div class="maintain-users-modal">
-        <h3 class="maintain-users-modal-title">Send Passkey Setup Links</h3>
+        <h3 class="maintain-users-modal-title">
+            <span>Send Passkey Setup Links</span>
+            <span class="maintain-users-info-trigger" title="Eligible conditions:&#10;1. User has never logged in&#10;2. Active status is 'Yes'&#10;3. Has a non-empty email address&#10;4. Email is not a placeholder (@noemail.local)" style="cursor: help; margin-left: 6px; font-size: 14px; color: #6b7280; vertical-align: middle;">
+                <i class="bi bi-info-circle" aria-hidden="true"></i>
+            </span>
+        </h3>
         <form method="POST" action="{{ route('admin.maintain-users.send-passkey-setup-links') }}" id="maintainUsersBatchForm">
             @csrf
+            <div class="maintain-users-batch-search-wrap">
+                <i class="bi bi-search" style="color: #9ca3af; margin-right: 8px; font-size: 13px;"></i>
+                <input type="text" id="maintainUsersBatchSearch" placeholder="Search email or company name..." style="border: none; outline: none; flex: 1; font-size: 13px; background: transparent; color: inherit;">
+            </div>
             <div class="maintain-users-batch-summary">
                 <span id="maintainUsersBatchCount">{{ count($batchEligibleUsers) }} eligible user(s)</span>
                 <button type="button" class="maintain-users-batch-toggle" id="maintainUsersBatchToggleAll" {{ count($batchEligibleUsers) > 0 ? '' : 'hidden' }}>Uncheck all</button>
@@ -356,7 +375,76 @@
                 });
             });
 
+            // --- Drag logic (uses CSS transform to avoid position jump) ---
+            function initModalDragging(modalEl) {
+                if (!modalEl) return;
+                var modalWin = modalEl.querySelector('.maintain-users-modal');
+                var modalHeader = modalEl.querySelector('.maintain-users-modal-title');
+                if (!modalWin || !modalHeader) return;
+
+                var dragOffsetX = 0, dragOffsetY = 0;
+                var isDragging = false;
+                var startX = 0, startY = 0;
+                var baseX = 0, baseY = 0;
+
+                modalEl.resetDragOffset = function() {
+                    modalWin.style.transform = '';
+                    dragOffsetX = 0;
+                    dragOffsetY = 0;
+                };
+
+                function beginDrag(clientX, clientY) {
+                    isDragging = true;
+                    startX = clientX;
+                    startY = clientY;
+                    baseX = dragOffsetX;
+                    baseY = dragOffsetY;
+                    document.body.style.userSelect = 'none';
+                    document.body.style.webkitUserSelect = 'none';
+                }
+
+                function moveDrag(clientX, clientY) {
+                    if (!isDragging) return;
+                    dragOffsetX = baseX + (clientX - startX);
+                    dragOffsetY = baseY + (clientY - startY);
+                    modalWin.style.transform = 'translate(' + dragOffsetX + 'px,' + dragOffsetY + 'px)';
+                }
+
+                function endDrag() {
+                    if (!isDragging) return;
+                    isDragging = false;
+                    document.body.style.userSelect = '';
+                    document.body.style.webkitUserSelect = '';
+                }
+
+                modalHeader.addEventListener('mousedown', function(e) {
+                    if (e.target.closest('input') || e.target.closest('select') || e.target.closest('button') || e.target.closest('a')) return;
+                    e.preventDefault();
+                    beginDrag(e.clientX, e.clientY);
+                });
+
+                document.addEventListener('mousemove', function(e) {
+                    moveDrag(e.clientX, e.clientY);
+                });
+
+                document.addEventListener('mouseup', endDrag);
+
+                // Touch support
+                modalHeader.addEventListener('touchstart', function(e) {
+                    if (e.target.closest('input') || e.target.closest('select') || e.target.closest('button') || e.target.closest('a')) return;
+                    beginDrag(e.touches[0].clientX, e.touches[0].clientY);
+                }, { passive: true });
+
+                document.addEventListener('touchmove', function(e) {
+                    if (!isDragging) return;
+                    moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+                }, { passive: true });
+
+                document.addEventListener('touchend', endDrag);
+            }
+
             function openModal() {
+                if (modal && typeof modal.resetDragOffset === 'function') modal.resetDragOffset();
                 if (addForm) {
                     addForm.reset();
                 }
@@ -372,7 +460,10 @@
                 if (modal) modal.classList.add('is-open');
             }
             function closeModal() {
-                if (modal) modal.classList.remove('is-open');
+                if (modal) {
+                    modal.classList.remove('is-open');
+                    if (typeof modal.resetDragOffset === 'function') modal.resetDragOffset();
+                }
             }
 
             if (addBtn) addBtn.addEventListener('click', function (e) {
@@ -394,6 +485,20 @@
                 });
             }
 
+            if (addForm) {
+                addForm.addEventListener('submit', function (e) {
+                    const submitter = e.submitter || document.activeElement;
+                    if (submitter && (submitter.value === 'create_email' || submitter.getAttribute('value') === 'create_email')) {
+                        const activeSelect = document.getElementById('ISACTIVE');
+                        if (activeSelect && activeSelect.value === '0') {
+                            if (!confirm('The user is set as inactive, are you sure to send?')) {
+                                e.preventDefault();
+                            }
+                        }
+                    }
+                });
+            }
+
             // Edit user modal
             const editModal = document.getElementById('maintainUsersEditModal');
             const editForm = document.getElementById('maintainUsersEditForm');
@@ -407,6 +512,7 @@
             const batchSubmitBtn = document.getElementById('maintainUsersBatchSubmitBtn');
             const batchCount = document.getElementById('maintainUsersBatchCount');
             const batchList = document.getElementById('maintainUsersBatchList');
+            const batchSearchInput = document.getElementById('maintainUsersBatchSearch');
             const editRoleLabel = document.getElementById('edit_SYSTEMROLE_LABEL');
             const editAliasInput = document.getElementById('edit_ALIAS');
             const editCompanyInput = document.getElementById('edit_COMPANY');
@@ -416,6 +522,10 @@
             const table = document.getElementById('maintainUsersTable');
             const tableBody = document.getElementById('maintainUsersTableBody');
             const pagination = document.getElementById('maintainUsersPagination');
+
+            initModalDragging(modal);
+            initModalDragging(editModal);
+            initModalDragging(batchModal);
 
             function formatRoleLabel(role) {
                 if (!role) return '';
@@ -439,18 +549,59 @@
 
             function openBatchModal() {
                 if (!batchModal) return;
+                if (typeof batchModal.resetDragOffset === 'function') batchModal.resetDragOffset();
+                if (batchSearchInput) {
+                    batchSearchInput.value = '';
+                    batchSearchInput.dispatchEvent(new Event('input'));
+                }
                 updateBatchSelectionState();
                 batchModal.classList.add('is-open');
+            }
+
+            if (batchSearchInput) {
+                batchSearchInput.addEventListener('input', function () {
+                    const query = (this.value || '').toLowerCase().trim();
+                    let visibleBatchCount = 0;
+                    
+                    if (batchForm) {
+                        batchForm.querySelectorAll('.maintain-users-batch-item').forEach(function (item) {
+                            const company = item.getAttribute('data-company') || '';
+                            const email = item.getAttribute('data-email') || '';
+                            const checkbox = item.querySelector('input[type="checkbox"]');
+                            
+                            if (query === '' || company.indexOf(query) !== -1 || email.indexOf(query) !== -1) {
+                                item.style.display = '';
+                                if (checkbox) {
+                                    checkbox.disabled = false;
+                                }
+                                visibleBatchCount++;
+                            } else {
+                                item.style.display = 'none';
+                                if (checkbox) {
+                                    checkbox.disabled = true;
+                                }
+                            }
+                        });
+                        
+                        if (batchCount) {
+                            batchCount.textContent = visibleBatchCount + ' eligible user(s)';
+                        }
+                        
+                        updateBatchSelectionState();
+                    }
+                });
             }
 
             function closeBatchModal() {
                 if (batchModal) {
                     batchModal.classList.remove('is-open');
+                    if (typeof batchModal.resetDragOffset === 'function') batchModal.resetDragOffset();
                 }
             }
 
             function openEditModal(row) {
                 if (!editModal || !editForm || !row) return;
+                if (typeof editModal.resetDragOffset === 'function') editModal.resetDragOffset();
                 var userid = row.getAttribute('data-userid');
                 var email = row.getAttribute('data-email') || '';
                 var alias = row.getAttribute('data-alias') || '';
@@ -484,7 +635,10 @@
                 editModal.classList.add('is-open');
             }
             function closeEditModal() {
-                if (editModal) editModal.classList.remove('is-open');
+                if (editModal) {
+                    editModal.classList.remove('is-open');
+                    if (typeof editModal.resetDragOffset === 'function') editModal.resetDragOffset();
+                }
             }
             if (table) {
                 table.addEventListener('click', function (e) {
@@ -502,6 +656,18 @@
             if (editModal) {
                 editModal.addEventListener('click', function (e) {
                     if (e.target === editModal) closeEditModal();
+                });
+            }
+
+            if (editForm) {
+                editForm.addEventListener('submit', function (e) {
+                    const activeSelect = document.getElementById('edit_ISACTIVE');
+                    const sendCheckbox = document.getElementById('edit_SEND_PASSKEY_SETUP_LINK');
+                    if (activeSelect && activeSelect.value === '0' && sendCheckbox && sendCheckbox.checked) {
+                        if (!confirm('The user is set as inactive, are you sure to send?')) {
+                            e.preventDefault();
+                        }
+                    }
                 });
             }
             if (batchOpenBtn) {
@@ -852,7 +1018,66 @@
                     inp.addEventListener('input', function () {
                         applyTableFilter(true);
                     });
+                    if (inp.tagName === 'SELECT') {
+                        inp.addEventListener('change', function () {
+                            applyTableFilter(true);
+                        });
+                    }
                 });
+            }
+            // Client-side sorting for USER ID and EMAIL columns using system arrow classes
+            const sortState = { col: null, dir: 1 }; // dir: 1 for asc, -1 for desc
+
+            const sortableHeaders = table ? table.querySelectorAll('thead th[data-col="userid"], thead th[data-col="email"]') : [];
+            sortableHeaders.forEach(function (th) {
+                th.classList.add('inquiries-sortable');
+                th.style.cursor = 'pointer';
+
+                th.addEventListener('click', function (e) {
+                    if (e.target.closest('.inquiries-filter-wrap')) {
+                        return;
+                    }
+
+                    const col = th.getAttribute('data-col');
+                    if (sortState.col === col) {
+                        sortState.dir = -sortState.dir;
+                    } else {
+                        sortState.col = col;
+                        sortState.dir = 1;
+                    }
+
+                    sortableHeaders.forEach(function (h) {
+                        h.classList.remove('inquiries-sort-asc', 'inquiries-sort-desc');
+                        if (h.getAttribute('data-col') === sortState.col) {
+                            h.classList.add(sortState.dir === 1 ? 'inquiries-sort-asc' : 'inquiries-sort-desc');
+                        }
+                    });
+
+                    sortRows(col, sortState.dir);
+                });
+            });
+
+            function sortRows(col, dir) {
+                const tbody = document.getElementById('maintainUsersTableBody');
+                if (!tbody) return;
+
+                const rows = Array.from(tbody.querySelectorAll('tr.maintain-users-row'));
+                rows.sort(function (a, b) {
+                    const cellA = a.querySelector('td[data-col="' + col + '"]');
+                    const cellB = b.querySelector('td[data-col="' + col + '"]');
+                    const valA = (cellA ? cellA.textContent : '').trim().toLowerCase();
+                    const valB = (cellB ? cellB.textContent : '').trim().toLowerCase();
+
+                    return valA.localeCompare(valB, undefined, { numeric: true, sensitivity: 'base' }) * dir;
+                });
+
+                rows.forEach(function (row) {
+                    tbody.appendChild(row);
+                });
+
+                if (window.maintainUsersGoToPage) {
+                    window.maintainUsersGoToPage(window.maintainUsersPaginationState.currentPage || 1);
+                }
             }
 
             const clearFiltersBtn = document.getElementById('maintainUsersClearFilters');

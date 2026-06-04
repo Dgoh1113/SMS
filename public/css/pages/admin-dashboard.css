@@ -450,27 +450,28 @@ html.theme-dark .admin-dashboard-page .dashboard-badge {
   }
 
   .admin-dashboard-page .dashboard-metric-card {
-    padding: 10px 12px;
+    padding: 14px 16px;
   }
 
   .admin-dashboard-page .dashboard-metric-icon {
-    width: 29px;
-    height: 29px;
-    font-size: 16px;
-    margin-bottom: 4px;
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+    margin-bottom: 8px;
   }
 
   .admin-dashboard-page .dashboard-metric-label {
-    font-size: 10.75px;
+    font-size: 13px;
+    margin-bottom: 6px;
   }
 
   .admin-dashboard-page .dashboard-metric-value {
-    font-size: 17.5px;
+    font-size: 24px;
   }
 
   .admin-dashboard-page .dashboard-metric-pill {
-    font-size: 10.25px;
-    padding: 3px 7px;
+    font-size: 11.5px;
+    padding: 4px 8px;
   }
 
   .admin-dashboard-page .dashboard-charts-container {
@@ -486,6 +487,11 @@ html.theme-dark .admin-dashboard-page .dashboard-badge {
     padding: 10px 12px 9px;
   }
 
+  .admin-dashboard-page .dashboard-panel-title,
+  .admin-dashboard-page .dashboard-chart-title-text {
+    font-size: 14.5px;
+  }
+
   .admin-dashboard-page .dashboard-panel-body {
     margin-top: 6px;
   }
@@ -498,11 +504,11 @@ html.theme-dark .admin-dashboard-page .dashboard-badge {
 
   .admin-dashboard-page .dashboard-chart-tab {
     padding: 4px 10px;
-    font-size: 11.25px;
+    font-size: 12px;
   }
 
   .admin-dashboard-page .dashboard-table {
-    font-size: 11.625px;
+    font-size: 12.5px;
   }
 
   .admin-dashboard-page .dashboard-table th,
@@ -512,7 +518,7 @@ html.theme-dark .admin-dashboard-page .dashboard-badge {
 
   .admin-dashboard-page .dashboard-badge {
     padding: 4px 7px;
-    font-size: 10.25px;
+    font-size: 11px;
   }
 }
 
@@ -562,31 +568,31 @@ html.theme-dark .admin-dashboard-page .dashboard-badge {
   }
 
   .admin-dashboard-page .dashboard-metric-card {
-    padding: 10px 12px;
-    border-radius: 9px;
+    padding: 12px 14px;
+    border-radius: 12px;
   }
 
   .admin-dashboard-page .dashboard-metric-icon {
-    width: 26px;
-    height: 26px;
-    font-size: 14px;
-    margin-bottom: 3px;
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
+    margin-bottom: 6px;
   }
 
   .admin-dashboard-page .dashboard-metric-label {
-    font-size: 10.25px;
+    font-size: 12.5px;
     line-height: 1.15;
-    margin-bottom: 3px;
+    margin-bottom: 5px;
   }
 
   .admin-dashboard-page .dashboard-metric-value {
-    font-size: 16.5px;
+    font-size: 22px;
     line-height: 1;
   }
 
   .admin-dashboard-page .dashboard-metric-pill {
-    padding: 2px 6px;
-    font-size: 9.75px;
+    padding: 3px 7px;
+    font-size: 10.5px;
     line-height: 1.15;
   }
 
@@ -615,7 +621,7 @@ html.theme-dark .admin-dashboard-page .dashboard-badge {
 
   .admin-dashboard-page .dashboard-panel-title,
   .admin-dashboard-page .dashboard-chart-title-text {
-    font-size: 12.5px;
+    font-size: 14px;
     line-height: 1.2;
   }
 
@@ -635,7 +641,7 @@ html.theme-dark .admin-dashboard-page .dashboard-badge {
 
   .admin-dashboard-page .dashboard-chart-tab {
     padding: 3px 9px;
-    font-size: 10.75px;
+    font-size: 12px;
   }
 
   .admin-dashboard-page > .dashboard-table-panel {
@@ -647,7 +653,7 @@ html.theme-dark .admin-dashboard-page .dashboard-badge {
   }
 
   .admin-dashboard-page .dashboard-table {
-    font-size: 11.25px;
+    font-size: 12px;
   }
 
   .admin-dashboard-page .dashboard-table th,
@@ -659,7 +665,7 @@ html.theme-dark .admin-dashboard-page .dashboard-badge {
   .admin-dashboard-page .dashboard-badge {
     gap: 4px;
     padding: 3px 6px;
-    font-size: 9.75px;
+    font-size: 11px;
   }
 
   .admin-dashboard-page .dashboard-rank-emoji {
@@ -676,77 +682,32 @@ html.theme-dark .admin-dashboard-page .dashboard-badge {
   }
 
   html.theme-dark .admin-dashboard-page .dashboard-metric-card {
-    padding: 10px 12px;
-    border-radius: 9px;
+    padding: 12px 14px;
+    border-radius: 12px;
   }
 
   html.theme-dark .admin-dashboard-page .dashboard-metric-icon {
-    width: 26px;
-    height: 26px;
-    font-size: 14px;
-    margin-bottom: 3px;
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
+    margin-bottom: 6px;
   }
 
   html.theme-dark .admin-dashboard-page .dashboard-metric-label {
-    font-size: 10.25px;
+    font-size: 12.5px;
     line-height: 1.15;
-    margin-bottom: 3px;
+    margin-bottom: 5px;
   }
 
   html.theme-dark .admin-dashboard-page .dashboard-metric-value {
-    font-size: 16.5px;
+    font-size: 22px;
     line-height: 1;
   }
 
   html.theme-dark .admin-dashboard-page .dashboard-metric-pill {
-    padding: 2px 6px;
-    font-size: 9.75px;
+    padding: 3px 7px;
+    font-size: 10.5px;
     line-height: 1.15;
-  }
-
-  html.theme-dark .admin-dashboard-page .dashboard-charts-container {
-    padding: 8px 10px;
-  }
-
-  html.theme-dark .admin-dashboard-page .dashboard-charts-container-header {
-    gap: 8px;
-    margin-bottom: 5px;
-    padding-bottom: 5px;
-  }
-
-  html.theme-dark .admin-dashboard-page .dashboard-row {
-    gap: 9px;
-  }
-
-  html.theme-dark .admin-dashboard-page .dashboard-panel,
-  html.theme-dark .admin-dashboard-page > .dashboard-table-panel {
-    padding: 8px 10px 7px;
-  }
-
-  html.theme-dark .admin-dashboard-page .dashboard-panel-header {
-    gap: 6px;
-  }
-
-  html.theme-dark .admin-dashboard-page .dashboard-panel-body,
-  html.theme-dark .admin-dashboard-page > .dashboard-table-panel .dashboard-panel-body {
-    margin-top: 5px;
-  }
-
-  html.theme-dark .admin-dashboard-page .dashboard-chart-tab {
-    padding: 3px 9px;
-    font-size: 10.75px;
-  }
-
-  html.theme-dark .admin-dashboard-page .dashboard-table th,
-  html.theme-dark .admin-dashboard-page .dashboard-table td {
-    padding: 5px 8px;
-    line-height: 1.15;
-  }
-
-  html.theme-dark .admin-dashboard-page .dashboard-badge {
-    gap: 4px;
-    padding: 3px 6px;
-    font-size: 9.75px;
   }
 }
 

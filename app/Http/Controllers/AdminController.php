@@ -920,7 +920,7 @@ class AdminController extends Controller
         $focusLeadId = (int) $request->query('lead', 0);
 
         $rows = DB::select(
-            'SELECT FIRST 200
+            'SELECT
                 "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL","ADDRESS1","ADDRESS2","CITY","STATE","COUNTRY","POSTCODE",
                 "BUSINESSNATURE","USERCOUNT","EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION","REFERRALCODE",
                 "CREATEDAT","CREATEDBY","ASSIGNEDTO" AS "assignedTo","LASTMODIFIED"
@@ -1138,6 +1138,59 @@ class AdminController extends Controller
             // leave empty
         }
 
+        $duplicateGroups = [];
+        try {
+            $dupKeys = DB::select(
+                'SELECT LOWER(TRIM("COMPANYNAME")) AS "comp", LOWER(TRIM("CONTACTNO")) AS "phone", LOWER(TRIM("EMAIL")) AS "email_addr", COUNT(*) AS "cnt"
+                 FROM "LEAD"
+                 WHERE COALESCE("ISDELETED", FALSE) = FALSE
+                 GROUP BY LOWER(TRIM("COMPANYNAME")), LOWER(TRIM("CONTACTNO")), LOWER(TRIM("EMAIL"))
+                 HAVING COUNT(*) > 1'
+            );
+
+            if (!empty($dupKeys)) {
+                foreach ($dupKeys as $k) {
+                    $comp = $k->comp ?? '';
+                    $phone = $k->phone ?? '';
+                    $email_addr = $k->email_addr ?? '';
+                    
+                    $leads = DB::select(
+                        'SELECT "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL",
+                                "ADDRESS1","ADDRESS2","CITY","STATE","COUNTRY","POSTCODE",
+                                "BUSINESSNATURE","USERCOUNT","EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION",
+                                "REFERRALCODE","CREATEDAT","ASSIGNEDTO"
+                         FROM "LEAD"
+                         WHERE COALESCE("ISDELETED", FALSE) = FALSE
+                           AND LOWER(TRIM("COMPANYNAME")) = ?
+                           AND LOWER(TRIM("CONTACTNO")) = ?
+                           AND LOWER(TRIM("EMAIL")) = ?
+                         ORDER BY "LEADID" DESC',
+                        [$comp, $phone, $email_addr]
+                    );
+
+                    // Check if there is at least one unassigned lead in the duplicate group
+                    $hasUnassigned = false;
+                    foreach ($leads as $l) {
+                        if (empty(trim((string)($l->ASSIGNEDTO ?? '')))) {
+                            $hasUnassigned = true;
+                            break;
+                        }
+                    }
+
+                    if ($hasUnassigned && count($leads) > 1) {
+                        $duplicateGroups[] = [
+                            'company' => $leads[0]->COMPANYNAME,
+                            'phone' => $leads[0]->CONTACTNO,
+                            'email' => $leads[0]->EMAIL,
+                            'leads' => $leads
+                        ];
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            // ignore
+        }
+
         $assignedPerPage = 10;
         $assignedTotal = count($assigned);
         $assignedForView = $assigned;
@@ -1161,7 +1214,8 @@ class AdminController extends Controller
             'productLabels' => $productLabels,
             'dealers' => $dealers,
             'currentPage' => 'inquiries',
-            'focusLeadId' => $focusLeadId
+            'focusLeadId' => $focusLeadId,
+            'duplicateGroups' => $duplicateGroups
         ]);
     }
 
@@ -1171,7 +1225,7 @@ class AdminController extends Controller
         $perPage = 10;
 
         $rows = DB::select(
-            'SELECT FIRST 200
+            'SELECT
                 "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL","ADDRESS1","ADDRESS2","CITY","STATE","COUNTRY","POSTCODE",
                 "BUSINESSNATURE","USERCOUNT","EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION","REFERRALCODE",
                 "CREATEDAT","CREATEDBY","ASSIGNEDTO" AS "assignedTo","LASTMODIFIED"
@@ -2099,6 +2153,74 @@ class AdminController extends Controller
         return response()->json(['success' => true]);
     }
 
+    public function batchDeleteInquiries(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $validated = $request->validate([
+            'lead_ids' => 'required|array',
+            'lead_ids.*' => 'required|integer|min:1'
+        ]);
+
+        $leadIds = array_map('intval', $validated['lead_ids']);
+        if (empty($leadIds)) {
+            return response()->json(['success' => false, 'message' => 'No inquiry IDs provided.'], 400);
+        }
+
+        try {
+            DB::beginTransaction();
+            foreach ($leadIds as $id) {
+                DB::update('UPDATE "LEAD" SET "ISDELETED" = TRUE, "LASTMODIFIED" = CURRENT_TIMESTAMP WHERE "LEADID" = ?', [$id]);
+            }
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Could not delete inquiries: ' . $e->getMessage()], 500);
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    public function updateInquiryField(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $validated = $request->validate([
+            'lead_id' => 'required|integer|min:1',
+            'field' => 'required|string',
+            'value' => 'nullable|string'
+        ]);
+
+        $leadId = (int)$validated['lead_id'];
+        $field = strtoupper(trim($validated['field']));
+        $value = $validated['value'];
+
+        $allowedFields = [
+            'CONTACTNAME', 'POSTCODE', 'CITY', 'STATE', 
+            'BUSINESSNATURE', 'EXISTINGSOFTWARE', 
+            'DEMOMODE', 'PRODUCTID', 'USERCOUNT', 'REFERRALCODE', 'DESCRIPTION'
+        ];
+
+        if (!in_array($field, $allowedFields)) {
+            return response()->json(['success' => false, 'message' => 'Invalid column name.'], 400);
+        }
+
+        if ($field === 'USERCOUNT') {
+            $value = ($value !== null && $value !== '') ? (int)$value : null;
+        }
+
+        try {
+            DB::beginTransaction();
+            $affected = DB::update(
+                'UPDATE "LEAD" SET "' . $field . '" = ?, "LASTMODIFIED" = CURRENT_TIMESTAMP WHERE "LEADID" = ?',
+                [$value, $leadId]
+            );
+            DB::commit();
+            \Log::info("updateInquiryField: leadId={$leadId}, field={$field}, value={$value}, affected_rows={$affected}");
+            return response()->json(['success' => true, 'affected' => $affected]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            \Log::error("updateInquiryField failed: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Database error: ' . $e->getMessage()], 500);
+        }
+    }
+
     public function undoDeleteInquiry(Request $request): RedirectResponse
     {
         $validated = $request->validate(['LEADID' => 'required|integer|min:1']);
@@ -2236,7 +2358,7 @@ class AdminController extends Controller
         }
 
         $referralCode = trim((string) ($lead->REFERRALCODE ?? ''));
-        if ($referralCode === '') {
+        if ($referralCode === '' || strtolower($referralCode) === 'noreferral') {
             return response()->json(['success' => false, 'message' => 'Referral code is required before sending this email.'], 400);
         }
 
@@ -2624,7 +2746,7 @@ class AdminController extends Controller
         $unassignedCount = 0;
         if ($selectedReportScope === 'all' && !$selectedArea) {
             $unassignedRow = DB::selectOne(
-                'SELECT COUNT(*) as c FROM "LEAD" WHERE ("ASSIGNEDTO" IS NULL OR TRIM(CAST("ASSIGNEDTO" AS VARCHAR(50))) = \'\') AND "CREATEDAT" >= ? AND "CREATEDAT" <= ?',
+                'SELECT COUNT(*) as c FROM "LEAD" WHERE COALESCE("ISDELETED", FALSE) = FALSE AND ("ASSIGNEDTO" IS NULL OR TRIM(CAST("ASSIGNEDTO" AS VARCHAR(50))) = \'\') AND "CREATEDAT" >= ? AND "CREATEDAT" <= ?',
                 [$startStr, $endStr]
             );
             $unassignedCount = (int) ($unassignedRow->C ?? $unassignedRow->c ?? 0);
@@ -2801,7 +2923,7 @@ class AdminController extends Controller
              ) m ON m."LEADID" = a."LEADID" AND m.max_created = a."CREATIONDATE"
              JOIN "LEAD" l ON l."LEADID" = a."LEADID"
              LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
-             WHERE 1=1
+             WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
              ' . $leadScopeSql . '
              GROUP BY a."STATUS"',
             array_merge([$startStr, $endStr], $leadScopeBindings)
@@ -2836,7 +2958,7 @@ class AdminController extends Controller
              ) m ON m."LEADID" = a."LEADID" AND m.max_created = a."CREATIONDATE"
              JOIN "LEAD" l ON l."LEADID" = a."LEADID"
              LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
-             WHERE 1=1
+             WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
              ' . $leadScopeSql . '
              GROUP BY a."STATUS"',
             array_merge([$prevStartStr, $prevEndStr], $leadScopeBindings)
@@ -2972,19 +3094,21 @@ class AdminController extends Controller
         ];
 
         // Product Conversion Rate (from LEAD_ACT.DEALTPRODUCT) for current month
-        $productIds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+        $productIds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
         $productNames = [
             1 => 'SQL Account',
             2 => 'SQL Payroll',
             3 => 'SQL Production',
-            4 => 'Mobile Sales',
-            5 => 'SQL Ecommerce',
+            4 => 'SQL X-Mobile (SQL Mobile App)',
+            5 => 'SQL eCommerce',
             6 => 'SQL EBI Wellness POS',
-            7 => 'SQL X Suduai',
+            7 => 'SQL x SuDu.Ai',
             8 => 'SQL X-Store',
             9 => 'SQL Vision',
             10 => 'SQL HRMS',
-            11 => 'Others',
+            11 => 'SQL CTOS',
+            12 => 'SQL API',
+            13 => 'Others',
         ];
         $productCounts = array_fill_keys($productIds, 0);
         $dealRows = DB::select(
@@ -2992,7 +3116,8 @@ class AdminController extends Controller
              FROM "LEAD_ACT" a
              JOIN "LEAD" l ON l."LEADID" = a."LEADID"
              LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
-             WHERE a."DEALTPRODUCT" IS NOT NULL
+             WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
+               AND a."DEALTPRODUCT" IS NOT NULL
                AND TRIM(a."DEALTPRODUCT") <> \'\'
                AND a."CREATIONDATE" >= ?
                AND a."CREATIONDATE" <= ?
@@ -3371,7 +3496,7 @@ class AdminController extends Controller
                     MAX(a."CREATIONDATE") AS last_at
              FROM "LEAD_ACT" a
              JOIN "LEAD" l ON l."LEADID" = a."LEADID"
-             WHERE l."ASSIGNEDTO" IS NOT NULL
+             WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL
                ' . $dealerScopeSql . '
              GROUP BY l."ASSIGNEDTO"'
             ,
@@ -3567,7 +3692,7 @@ class AdminController extends Controller
         $rows = DB::select(
             'SELECT a."LEAD_ACTID", a."LEADID", a."USERID", a."CREATIONDATE", a."SUBJECT", a."DESCRIPTION", a."STATUS"
              FROM "LEAD_ACT" a
-             INNER JOIN "LEAD" l ON l."LEADID" = a."LEADID" AND l."ASSIGNEDTO" = ?
+             INNER JOIN "LEAD" l ON l."LEADID" = a."LEADID" AND l."ASSIGNEDTO" = ? AND COALESCE(l."ISDELETED", FALSE) = FALSE
              ORDER BY a."CREATIONDATE" DESC, a."LEAD_ACTID" DESC',
             [$userid]
         );
@@ -3658,6 +3783,7 @@ class AdminController extends Controller
                     (SELECT COUNT(DISTINCT a."LEADID")
                      FROM "LEAD_ACT" a
                      INNER JOIN "LEAD" l2 ON l2."LEADID" = a."LEADID" AND l2."ASSIGNEDTO" = u."USERID"
+                       AND COALESCE(l2."ISDELETED", FALSE) = FALSE
                        AND l2."CREATEDAT" >= ? AND l2."CREATEDAT" <= ?
                      WHERE UPPER(TRIM(COALESCE(a."STATUS", \'\'))) IN (\'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\')) AS rewarded_leads
              FROM "LEAD" l
@@ -3721,7 +3847,7 @@ class AdminController extends Controller
              FROM "LEAD_ACT" a
              JOIN "LEAD" l ON l."LEADID" = a."LEADID"
              LEFT JOIN "USERS" u ON u."USERID" = a."USERID"
-             WHERE a."USERID" IS NOT NULL
+             WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND a."USERID" IS NOT NULL
                AND UPPER(TRIM(COALESCE(a."USERID", \'\'))) = UPPER(TRIM(COALESCE(l."ASSIGNEDTO", \'\')))
                AND a."DEALTPRODUCT" IS NOT NULL
                AND TRIM(a."DEALTPRODUCT") <> \'\'
@@ -4418,8 +4544,7 @@ class AdminController extends Controller
     {
         $userId = trim((string) ($user->USERID ?? ''));
         $email = trim((string) ($user->EMAIL ?? ''));
-        $isActive = (bool) ($user->ISACTIVE ?? false);
-        if ($userId === '' || $email === '' || !$isActive || str_ends_with(strtolower($email), '@noemail.local')) {
+        if ($userId === '' || $email === '' || str_ends_with(strtolower($email), '@noemail.local')) {
             return false;
         }
 

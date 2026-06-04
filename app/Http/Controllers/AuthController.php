@@ -37,9 +37,7 @@ class AuthController extends Controller
             return redirect($this->dashboardPathForRole($request, StringHelper::normalize($role)));
         }
 
-        return view('auth.login', [
-            'show_test_login_shortcuts' => $this->testLoginShortcutsEnabled(),
-        ]);
+        return view('auth.login');
     }
 
     public function login(Request $request): RedirectResponse
@@ -129,49 +127,6 @@ class AuthController extends Controller
             ->with('success', 'Switched to ' . strtoupper($sessionRole) . ' dashboard.');
     }
 
-    public function testingLogin(Request $request, string $role): RedirectResponse
-    {
-        if (!$this->testLoginShortcutsEnabled()) {
-            return redirect()->route('login')->with('error', 'Test login shortcuts are disabled.');
-        }
-
-        $role = strtolower(trim($role));
-        if (!in_array($role, ['admin', 'dealer'], true)) {
-            return redirect()->route('login')->with('error', 'Unsupported test login target.');
-        }
-
-        $row = $this->findTestingLoginUser($role);
-        if (!$row) {
-            return redirect()->route('login')->with('error', 'No active ' . $role . ' user is available for test login.');
-        }
-
-        $sessionRole = $this->systemRoleToSessionRole((string) ($row->SYSTEMROLE ?? ''));
-
-        $request->session()->forget([
-            'user_id',
-            'user_email',
-            'user_alias',
-            'user_role',
-            'passkey_manage_passkey_id',
-            'url.intended',
-            'show_register_passkey',
-            'last_activity_ts',
-            'passkey_setup_required',
-            'passkey_setup_token_user_id',
-        ]);
-        $request->session()->regenerate();
-        $request->session()->regenerateToken();
-
-        $request->session()->put('user_id', (string) $row->USERID);
-        $request->session()->put('user_email', (string) ($row->EMAIL ?? ''));
-        $request->session()->put('user_alias', (string) ($row->ALIAS ?? ''));
-        $request->session()->put('user_role', $sessionRole);
-        $request->session()->put('last_activity_ts', time());
-
-        return redirect($this->dashboardPathForRole($request, $sessionRole))
-            ->with('success', 'Test login as ' . strtoupper($role) . ' is active.');
-    }
-
     private function invalidPasskeySetupLinkView(string $message): View
     {
         return view('auth.passkey-message', [
@@ -187,30 +142,6 @@ class AuthController extends Controller
         return redirect()->route('login')->with(
             'error',
             'This project uses passkey sign-in only. Use Login with passkey or request a new passkey setup link.'
-        );
-    }
-
-    private function testLoginShortcutsEnabled(): bool
-    {
-        return (bool) config('app.test_login_shortcuts', false);
-    }
-
-    private function findTestingLoginUser(string $role): ?object
-    {
-        $userId = trim((string) ($role === 'admin'
-            ? config('app.test_login_admin_user', 'U001')
-            : config('app.test_login_dealer_user', 'U032')));
-
-        if ($userId === '') {
-            return null;
-        }
-
-        return DB::selectOne(
-            'SELECT FIRST 1 "USERID", "EMAIL", "ALIAS", "SYSTEMROLE"
-             FROM "USERS"
-             WHERE "ISACTIVE" = TRUE
-               AND CAST("USERID" AS VARCHAR(50)) = ?',
-            [$userId]
         );
     }
 

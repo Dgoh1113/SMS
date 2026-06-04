@@ -23,9 +23,9 @@
 @section('content')
 @php
     $productNames = [
-        1 => 'SQL Account', 2 => 'SQL Payroll', 3 => 'SQL Production', 4 => 'Mobile Sales',
-        5 => 'SQL Ecommerce', 6 => 'SQL EBI Wellness POS', 7 => 'SQL X Suduai', 8 => 'SQL X-Store',
-        9 => 'SQL Vision', 10 => 'SQL HRMS', 11 => 'Others',
+        1 => 'SQL Account', 2 => 'SQL Payroll', 3 => 'SQL Production', 4 => 'SQL X-Mobile (SQL Mobile App)',
+        5 => 'SQL eCommerce', 6 => 'SQL EBI Wellness POS', 7 => 'SQL x SuDu.Ai', 8 => 'SQL X-Store',
+        9 => 'SQL Vision', 10 => 'SQL HRMS', 11 => 'SQL CTOS', 12 => 'SQL API', 13 => 'Others',
     ];
     $statusFilterOptions = ['Followup', 'Demo', 'Confirmed', 'Completed', 'Rewarded', 'Failed'];
     $completedPerPage = 10;
@@ -966,7 +966,7 @@ if (document.readyState === 'loading') {
 
     function hasReferralCode(value) {
         var normalized = String(value || '').trim();
-        return normalized !== '' && normalized !== '-' && normalized !== '—';
+        return normalized !== '' && normalized !== '-' && normalized !== '—' && normalized.toLowerCase() !== 'noreferral';
     }
 
     function formatStatusLabel(status) {
