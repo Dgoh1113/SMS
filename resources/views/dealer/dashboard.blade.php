@@ -369,9 +369,7 @@
         var displayRanges = {};
         Object.keys(sourceRanges || {}).forEach(function(rangeKey) {
             var rawRange = sourceRanges[rangeKey];
-            displayRanges[rangeKey] = (rangeKey === '60' || rangeKey === '90')
-                ? buildWeeklyRange(rawRange)
-                : rawRange;
+            displayRanges[rangeKey] = buildWeeklyRange(rawRange);
         });
         return displayRanges;
     }

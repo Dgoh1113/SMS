@@ -61,6 +61,217 @@
             border-radius: 8px;
         }
     }
+
+    /* ===== Resolve Duplicate Inquiries Modal Dark Mode ===== */
+    html.theme-dark #inquiryDuplicatesModal .inquiries-assign-window {
+        background: #0f172a !important;
+        border-color: #2a3447 !important;
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45) !important;
+        color: #f8fafc !important;
+    }
+
+    html.theme-dark #inquiryDuplicatesModal .inquiries-assign-header {
+        background: #1e293b !important;
+        border-bottom: 1px solid #2a3447 !important;
+    }
+
+    html.theme-dark #inquiryDuplicatesModal .inquiries-assign-title {
+        color: #f8fafc !important;
+    }
+
+    html.theme-dark #inquiryDuplicatesModal .inquiries-assign-close {
+        color: #94a3b8 !important;
+    }
+
+    html.theme-dark #inquiryDuplicatesModal .inquiries-assign-close:hover {
+        color: #f8fafc !important;
+    }
+
+    html.theme-dark #inquiryDuplicatesModal .inquiries-assign-body {
+        background: #0f172a !important;
+    }
+
+    html.theme-dark #inquiryDuplicatesModal .inquiries-assign-body p {
+        color: #94a3b8 !important;
+    }
+
+    html.theme-dark #inquiryDuplicatesModal .duplicates-group-card {
+        border-color: #2a3447 !important;
+        background: #111b2f !important;
+    }
+
+    html.theme-dark #inquiryDuplicatesModal .duplicates-group-header {
+        background: #1e293b !important;
+        border-bottom: 1px solid #2a3447 !important;
+    }
+
+    html.theme-dark #inquiryDuplicatesModal .duplicates-group-header span {
+        color: #f8fafc !important;
+    }
+
+    html.theme-dark #inquiryDuplicatesModal .duplicates-group-header span[style*="color: #6b7280"] {
+        color: #94a3b8 !important;
+    }
+
+    html.theme-dark #inquiryDuplicatesModal .duplicates-group-list {
+        background: #111b2f !important;
+    }
+
+    html.theme-dark #inquiryDuplicatesModal table {
+        border-color: #2a3447 !important;
+    }
+
+    html.theme-dark #inquiryDuplicatesModal thead tr {
+        background: #1e293b !important;
+        border-bottom: 1px solid #2a3447 !important;
+    }
+
+    html.theme-dark #inquiryDuplicatesModal th {
+        color: #cbd5e1 !important;
+    }
+
+    html.theme-dark #inquiryDuplicatesModal tr[style*="background: #f0f9ff"] {
+        background: #0b2545 !important;
+    }
+
+    html.theme-dark #inquiryDuplicatesModal tr[style*="background: #ffffff"],
+    html.theme-dark #inquiryDuplicatesModal tr[style*="background: #fff"] {
+        background: #111b2f !important;
+    }
+
+    html.theme-dark #inquiryDuplicatesModal td {
+        border-bottom: 1px solid #2a3447 !important;
+        color: #cbd5e1 !important;
+    }
+
+    html.theme-dark #inquiryDuplicatesModal td[style*="background: #ffffff"],
+    html.theme-dark #inquiryDuplicatesModal td[style*="background: #fff"] {
+        background: #111b2f !important;
+    }
+
+    html.theme-dark #inquiryDuplicatesModal td[style*="background: #fffbeb"] {
+        background: #3b2e10 !important;
+        color: #fcd34d !important;
+    }
+
+    html.theme-dark #inquiryDuplicatesModal td[style*="color: #4c1d95"] {
+        color: #c084fc !important;
+    }
+
+    html.theme-dark #inquiryDuplicatesModal .inquiry-editable-field {
+        color: #cbd5e1 !important;
+    }
+
+    html.theme-dark #inquiryDuplicatesModal .inquiry-editable-field:focus {
+        border-color: #4f46e5 !important;
+        background: #1e293b !important;
+    }
+
+    html.theme-dark #inquiryDuplicatesModal .inquiries-assign-footer {
+        background: #1e293b !important;
+        border-top: 1px solid #2a3447 !important;
+    }
+
+    html.theme-dark #inquiryDuplicatesModal .inquiries-columns-menu {
+        background: #1e293b !important;
+        border: 1px solid #2a3447 !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+    }
+
+    html.theme-dark #inquiryDuplicatesModal .duplicates-select-option {
+        color: #cbd5e1 !important;
+    }
+
+    html.theme-dark #inquiryDuplicatesModal .duplicates-select-option:hover {
+        background: #334155 !important;
+    }
+
+    html.theme-dark #inquiryDuplicatesModal .inquiries-btn-secondary {
+        background: #334155 !important;
+        border-color: #475569 !important;
+        color: #f8fafc !important;
+    }
+
+    html.theme-dark #inquiryDuplicatesModal .inquiries-btn-secondary:hover {
+        background: #475569 !important;
+    }
+
+    html.theme-dark #inquiryDuplicatesModal span[style*="background: #e0f2fe"] {
+        background: #0369a1 !important;
+        color: #e0f2fe !important;
+    }
+    html.theme-dark #inquiryDuplicatesModal span[style*="background: #e9d5ff"] {
+        background: #581c87 !important;
+        color: #e9d5ff !important;
+    }
+    html.theme-dark #inquiryDuplicatesModal span[style*="background: #fee2e2"] {
+        background: #7f1d1d !important;
+        color: #fecaca !important;
+    }
+
+    html.theme-dark #inquiryDuplicatesModal .duplicate-single-delete-btn {
+        border-color: #7f1d1d !important;
+        color: #f87171 !important;
+    }
+    html.theme-dark #inquiryDuplicatesModal .duplicate-single-delete-btn:hover {
+        background: #7f1d1d !important;
+        border-color: #f87171 !important;
+    }
+
+    /* ===== Cancel Lead Modal Dark Mode ===== */
+    html.theme-dark #markFailedModal .inquiries-assign-window {
+        background: #0f172a !important;
+        border-color: #2a3447 !important;
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45) !important;
+        color: #f8fafc !important;
+    }
+
+    html.theme-dark #markFailedModal .inquiries-assign-header {
+        background: #1e293b !important;
+        border-bottom: 1px solid #2a3447 !important;
+    }
+
+    html.theme-dark #markFailedModal .inquiries-assign-title {
+        color: #f8fafc !important;
+    }
+
+    html.theme-dark #markFailedModal .inquiries-assign-close {
+        color: #94a3b8 !important;
+    }
+
+    html.theme-dark #markFailedModal .inquiries-assign-close:hover {
+        color: #f8fafc !important;
+    }
+
+    html.theme-dark #markFailedModal .inquiries-assign-body {
+        background: #0f172a !important;
+    }
+
+    html.theme-dark #markFailedModal .inquiry-form-label {
+        color: #cbd5e1 !important;
+    }
+
+    html.theme-dark #markFailedModal .inquiry-form-input {
+        background: #111b2f !important;
+        border-color: #2a3447 !important;
+        color: #f8fafc !important;
+    }
+
+    html.theme-dark #markFailedModal .inquiry-form-input:focus {
+        border-color: #8b5cf6 !important;
+        background: #1e293b !important;
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15) !important;
+    }
+
+    html.theme-dark #markFailedModal .inquiries-btn-secondary {
+        background: #334155 !important;
+        border-color: #475569 !important;
+        color: #f8fafc !important;
+    }
+
+    html.theme-dark #markFailedModal .inquiries-btn-secondary:hover {
+        background: #475569 !important;
+    }
 </style>
 @endpush
 @section('content')
@@ -773,12 +984,13 @@
                                                             <input type="checkbox" disabled style="width: 15px; height: 15px; cursor: not-allowed; opacity: 0.5;" title="Already assigned to a dealer">
                                                             <span style="background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase;">Keep (Assigned: {{ $lead->ASSIGNEDTO }})</span>
                                                         @else
-                                                            <input type="checkbox" class="duplicate-checkbox" data-lead-id="{{ $lead->LEADID }}" {{ $shouldDeleteByDefault ? 'checked' : '' }} style="width: 15px; height: 15px; accent-color: #6d28d9; cursor: pointer;">
+                                                            <input type="checkbox" class="duplicate-checkbox" data-lead-id="{{ $lead->LEADID }}" data-is-duplicate="{{ $shouldDeleteByDefault ? '1' : '0' }}" {{ $shouldDeleteByDefault ? 'checked' : '' }} style="width: 15px; height: 15px; accent-color: #6d28d9; cursor: pointer;">
                                                             @if($shouldKeep)
                                                                 <span style="background: #e9d5ff; color: #6d28d9; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase;">Keep (Newest)</span>
                                                             @else
                                                                 <span style="background: #fee2e2; color: #ef4444; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase;">Duplicate</span>
                                                             @endif
+                                                            <button type="button" class="duplicate-single-delete-btn" data-lead-id="{{ $lead->LEADID }}" title="Delete this inquiry" style="background: none; border: 1px solid #fca5a5; border-radius: 4px; padding: 2px 5px; cursor: pointer; color: #ef4444; font-size: 13px; line-height: 1; display: inline-flex; align-items: center; transition: background 0.15s, border-color 0.15s;" onmouseenter="this.style.background='#fef2f2'; this.style.borderColor='#ef4444';" onmouseleave="this.style.background='none'; this.style.borderColor='#fca5a5';"><i class="bi bi-trash3"></i></button>
                                                         @endif
                                                     </div>
                                                 </td>
@@ -827,12 +1039,55 @@
                 @endif
             </div>
         </div>
-        <div class="inquiries-assign-footer" style="padding: 14px 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 12px; background: #f9fafb;">
-            <button type="button" class="inquiries-btn inquiries-btn-secondary" id="duplicatesCancelBtn" style="min-width: 90px;">Cancel</button>
-            <button type="button" class="inquiries-btn inquiries-btn-primary" id="duplicatesSubmitBtn" style="background: #ef4444; border-color: #ef4444; min-width: 150px; font-weight: 600;">
-                <i class="bi bi-trash3-fill" style="margin-right: 4px;"></i>
-                <span>Delete Selected</span>
-            </button>
+        <div class="inquiries-assign-footer" style="padding: 14px 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; background: #f9fafb;">
+            <div class="inquiries-columns-dropdown" id="duplicatesSelectDropdown" style="position: relative;">
+                <button type="button" class="inquiries-btn inquiries-btn-secondary" id="duplicatesSelectDropdownBtn" aria-haspopup="true" aria-expanded="false" style="min-width: 140px; display: inline-flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <span>Uncheck All</span>
+                    <i class="bi bi-chevron-down" style="font-size: 10px;"></i>
+                </button>
+                <div class="inquiries-columns-menu" id="duplicatesSelectMenu" style="position: absolute; bottom: calc(100% + 8px) !important; top: auto !important; left: 0 !important; right: auto !important; min-width: 160px; padding: 4px 0 !important; margin: 0 !important; z-index: 10100;" hidden>
+                    <button type="button" class="duplicates-select-option" data-action="uncheck-all" style="display: flex; align-items: center; width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 12.5px; color: #374151; cursor: pointer; transition: background 0.15s; font-family: inherit;" onmouseenter="this.style.background='#f3f4f6';" onmouseleave="this.style.background='none';">
+                        <i class="bi bi-square" style="margin-right: 8px;"></i>
+                        <span>Uncheck All</span>
+                    </button>
+                    <button type="button" class="duplicates-select-option" data-action="check-all" style="display: flex; align-items: center; width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 12.5px; color: #374151; cursor: pointer; transition: background 0.15s; font-family: inherit;" onmouseenter="this.style.background='#f3f4f6';" onmouseleave="this.style.background='none';">
+                        <i class="bi bi-check2-square" style="margin-right: 8px;"></i>
+                        <span>Check All</span>
+                    </button>
+                    <button type="button" class="duplicates-select-option" data-action="check-duplicates" style="display: flex; align-items: center; width: 100%; text-align: left; background: none; border: none; padding: 8px 12px; font-size: 12.5px; color: #374151; cursor: pointer; transition: background 0.15s; font-family: inherit;" onmouseenter="this.style.background='#f3f4f6';" onmouseleave="this.style.background='none';">
+                        <i class="bi bi-exclamation-triangle" style="margin-right: 8px; color: #f59e0b;"></i>
+                        <span>Check Duplicate</span>
+                    </button>
+                </div>
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <button type="button" class="inquiries-btn inquiries-btn-secondary" id="duplicatesCancelBtn" style="min-width: 90px;">Cancel</button>
+                <button type="button" class="inquiries-btn inquiries-btn-primary" id="duplicatesSubmitBtn" style="background: #ef4444; border-color: #ef4444; min-width: 150px; font-weight: 600;">
+                    <i class="bi bi-trash3-fill" style="margin-right: 4px;"></i>
+                    <span>Delete Selected</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Duplicate Delete Confirmation Modal -->
+<div class="inquiries-assign-modal" id="duplicateConfirmModal" style="z-index: 10050;" hidden>
+    <div class="inquiries-assign-backdrop" id="duplicateConfirmBackdrop"></div>
+    <div class="inquiries-assign-window" role="dialog" aria-modal="true" aria-labelledby="duplicateConfirmTitle" style="width: min(440px, calc(100vw - 32px)); margin: 25vh auto 0;">
+        <div class="inquiries-assign-header" style="border-bottom: 1px solid #fee2e2;">
+            <div class="inquiries-assign-title" id="duplicateConfirmTitle" style="display: flex; align-items: center; gap: 8px; color: #ef4444; font-weight: 700; font-size: 14px;">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <span>Confirm Deletion</span>
+            </div>
+            <button type="button" class="inquiries-assign-close" id="duplicateConfirmCloseBtn" aria-label="Close" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #9ca3af; line-height: 1;">&times;</button>
+        </div>
+        <div class="inquiries-assign-body" style="padding: 20px; font-size: 13px; color: #374151; line-height: 1.5; background: #fff;">
+            <p id="duplicateConfirmMessage" style="margin: 0;"></p>
+        </div>
+        <div class="inquiries-assign-footer" style="padding: 12px 20px; border-top: 1px solid #f3f4f6; display: flex; justify-content: flex-end; gap: 12px; background: #f9fafb;">
+            <button type="button" class="inquiries-btn inquiries-btn-secondary" id="duplicateConfirmCancelBtn" style="min-width: 80px;">Cancel</button>
+            <button type="button" class="inquiries-btn inquiries-btn-primary" id="duplicateConfirmSubmitBtn" style="background: #ef4444; border-color: #ef4444; min-width: 100px; font-weight: 600;">Delete</button>
         </div>
     </div>
 </div>
@@ -1026,21 +1281,21 @@
 
 <div class="inquiries-assign-modal" id="markFailedModal" hidden>
     <div class="inquiries-assign-backdrop" data-markfailed-close="1"></div>
-    <div class="inquiries-assign-window" role="dialog" aria-modal="true" aria-labelledby="markFailedModalTitle">
+    <div class="inquiries-assign-window" role="dialog" aria-modal="true" aria-labelledby="markFailedModalTitle" style="width: min(500px, calc(100vw - 32px));">
         <div class="inquiries-assign-header">
-            <h3 class="inquiries-assign-title">Cancel Lead</h3>
+            <h3 class="inquiries-assign-title" id="markFailedModalTitle">Cancel Lead</h3>
             <button type="button" class="inquiries-assign-close" aria-label="Close" data-markfailed-close="1">&times;</button>
         </div>
-        <form id="markFailedForm" method="POST" action="{{ route('admin.inquiries.mark-failed') }}" class="inquiries-assign-body">
+        <form id="markFailedForm" method="POST" action="{{ route('admin.inquiries.mark-failed') }}" class="inquiries-assign-body" style="padding: 20px; gap: 16px;">
             @csrf
             <input type="hidden" name="lead_id" id="markFailedLeadId" value="">
-            <div class="inquiry-form-group">
-                <label for="markFailedReason" class="inquiry-form-label">Reason for Cancellation <span class="inquiry-form-required">*</span></label>
-                <textarea id="markFailedReason" name="FAIL_REASON" class="inquiry-form-input" rows="4" maxlength="4000" placeholder="Type why this inquiry was cancelled." required></textarea>
+            <div class="inquiry-form-group" style="display: flex; flex-direction: column; gap: 8px;">
+                <label for="markFailedReason" class="inquiry-form-label" style="font-size: 13px; font-weight: 700; color: #374151; display: inline-flex; flex-direction: row; align-items: center; gap: 4px;">Reason for Cancellation <span class="inquiry-form-required" style="color: #ef4444;">*</span></label>
+                <textarea id="markFailedReason" name="FAIL_REASON" class="inquiry-form-input" rows="4" maxlength="4000" placeholder="Type why this inquiry was cancelled." required style="width: 100%; min-width: 100%; max-width: 100%; box-sizing: border-box; border-radius: 8px; border: 1px solid #d1d5db; padding: 10px; font-size: 13px; line-height: 1.5; outline: none; transition: border-color 0.15s, box-shadow 0.15s;"></textarea>
             </div>
-            <div class="inquiries-assign-footer">
-                <button type="button" class="inquiries-btn inquiries-btn-secondary" data-markfailed-close="1">Close</button>
-                <button type="submit" class="inquiries-btn inquiries-btn-primary inquiries-btn-assign-danger">Mark Cancelled</button>
+            <div class="inquiries-assign-actions" style="margin-top: 10px;">
+                <button type="button" class="inquiries-btn inquiries-btn-secondary" data-markfailed-close="1" style="min-width: 90px;">Close</button>
+                <button type="submit" class="inquiries-btn inquiries-btn-primary inquiries-btn-assign-danger" style="background: #dc2626; border-color: #dc2626; min-width: 140px; font-weight: 600;">Mark Cancelled</button>
             </div>
         </form>
     </div>
@@ -1226,9 +1481,19 @@ document.addEventListener('DOMContentLoaded', function() {
         var input = document.getElementById('markFailedLeadId');
         var reasonField = document.getElementById('markFailedReason');
         if (!modal || !form || !input) return;
+
+        var modalWin = modal.querySelector('.inquiries-assign-window');
+        var modalHeader = modal.querySelector('.inquiries-assign-header');
+        var dragOffsetX = 0, dragOffsetY = 0;
+
         function close() {
             modal.hidden = true;
             if (reasonField) reasonField.value = '';
+            if (modalWin) {
+                modalWin.style.transform = '';
+                dragOffsetX = 0;
+                dragOffsetY = 0;
+            }
         }
         document.addEventListener('click', function(e) {
             var btn = e.target && e.target.closest ? e.target.closest('.inquiries-mark-failed-btn') : null;
@@ -1242,6 +1507,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (leadId) {
                     input.value = leadId;
                     if (reasonField) reasonField.value = '';
+                    if (modalWin) {
+                        modalWin.style.transform = '';
+                        dragOffsetX = 0;
+                        dragOffsetY = 0;
+                    }
                     modal.hidden = false;
                     if (reasonField) reasonField.focus();
                 }
@@ -1249,6 +1519,57 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             if (e.target && (e.target.getAttribute('data-markfailed-close') === '1')) close();
         });
+
+        // --- Drag logic (uses CSS transform to avoid position jump) ---
+        (function initDrag() {
+            if (!modalWin || !modalHeader) return;
+            var isDragging = false;
+            var startX = 0, startY = 0;
+            var baseX = 0, baseY = 0;
+
+            function beginDrag(clientX, clientY) {
+                isDragging = true;
+                startX = clientX;
+                startY = clientY;
+                baseX = dragOffsetX;
+                baseY = dragOffsetY;
+            }
+
+            function moveDrag(clientX, clientY) {
+                if (!isDragging) return;
+                dragOffsetX = baseX + (clientX - startX);
+                dragOffsetY = baseY + (clientY - startY);
+                modalWin.style.transform = 'translate(' + dragOffsetX + 'px,' + dragOffsetY + 'px)';
+            }
+
+            function endDrag() {
+                if (!isDragging) return;
+                isDragging = false;
+            }
+
+            modalHeader.addEventListener('mousedown', function(e) {
+                if (e.target.closest('.inquiries-assign-close')) return;
+                beginDrag(e.clientX, e.clientY);
+            });
+
+            document.addEventListener('mousemove', function(e) {
+                moveDrag(e.clientX, e.clientY);
+            });
+
+            document.addEventListener('mouseup', endDrag);
+
+            modalHeader.addEventListener('touchstart', function(e) {
+                if (e.target.closest('.inquiries-assign-close')) return;
+                beginDrag(e.touches[0].clientX, e.touches[0].clientY);
+            }, { passive: true });
+
+            document.addEventListener('touchmove', function(e) {
+                if (!isDragging) return;
+                moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+            }, { passive: true });
+
+            document.addEventListener('touchend', endDrag);
+        })();
         function showBlockedToast() {
             var el = document.getElementById('inquiries-mark-failed-blocked-toast');
             if (!el) {
@@ -3001,6 +3322,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 dragOffsetY = 0;
             }
             modal.hidden = false;
+            updateSelectDropdownState();
         }
 
         function close() {
@@ -3021,10 +3343,134 @@ document.addEventListener('DOMContentLoaded', function() {
         if (cancelBtn) cancelBtn.addEventListener('click', close);
         if (backdrop) backdrop.addEventListener('click', close);
 
+        // Dropdown Selection logic
+        var selectMenuBtn = document.getElementById('duplicatesSelectDropdownBtn');
+        var selectMenu = document.getElementById('duplicatesSelectMenu');
+
+        if (selectMenuBtn && selectMenu) {
+            selectMenuBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var isHidden = selectMenu.hidden;
+                selectMenu.hidden = !isHidden;
+                selectMenuBtn.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!selectMenu.hidden && !selectMenuBtn.contains(e.target) && !selectMenu.contains(e.target)) {
+                    selectMenu.hidden = true;
+                    selectMenuBtn.setAttribute('aria-expanded', 'false');
+                }
+            });
+        }
+
+        modal.querySelectorAll('.duplicates-select-option').forEach(function(opt) {
+            opt.addEventListener('click', function() {
+                var action = this.getAttribute('data-action');
+                var checkboxes = modal.querySelectorAll('.duplicate-checkbox');
+
+                checkboxes.forEach(function(cb) {
+                    var isDuplicate = cb.getAttribute('data-is-duplicate') === '1';
+                    if (action === 'uncheck-all') {
+                        cb.checked = false;
+                    } else if (action === 'check-all') {
+                        cb.checked = true;
+                    } else if (action === 'check-duplicates') {
+                        cb.checked = isDuplicate;
+                    }
+                });
+
+                if (selectMenu) {
+                    selectMenu.hidden = true;
+                }
+                if (selectMenuBtn) {
+                    selectMenuBtn.setAttribute('aria-expanded', 'false');
+                }
+
+                updateSelectDropdownState();
+            });
+        });
+
+        function updateSelectDropdownState() {
+            var selectBtn = document.getElementById('duplicatesSelectDropdownBtn');
+            if (!selectBtn) return;
+
+            var textSpan = selectBtn.querySelector('span');
+            if (!textSpan) return;
+
+            var checkboxes = modal.querySelectorAll('.duplicate-checkbox');
+            var checkedBoxes = modal.querySelectorAll('.duplicate-checkbox:checked');
+
+            if (checkedBoxes.length === 0) {
+                textSpan.textContent = 'Uncheck All';
+            } else if (checkedBoxes.length === checkboxes.length) {
+                textSpan.textContent = 'Check All';
+            } else {
+                var onlyDuplicatesChecked = true;
+                checkboxes.forEach(function(cb) {
+                    var isDuplicate = cb.getAttribute('data-is-duplicate') === '1';
+                    var isChecked = cb.checked;
+                    if (isDuplicate !== isChecked) {
+                        onlyDuplicatesChecked = false;
+                    }
+                });
+
+                if (onlyDuplicatesChecked) {
+                    textSpan.textContent = 'Check Duplicate';
+                } else {
+                    textSpan.textContent = 'Custom';
+                }
+            }
+        }
+
+        modal.addEventListener('change', function(e) {
+            if (e.target.classList.contains('duplicate-checkbox')) {
+                updateSelectDropdownState();
+            }
+        });
+
+        // Confirmation Modal Logic
+        var confirmModal = document.getElementById('duplicateConfirmModal');
+        var confirmMessage = document.getElementById('duplicateConfirmMessage');
+        var confirmSubmitBtn = document.getElementById('duplicateConfirmSubmitBtn');
+        var confirmCancelBtn = document.getElementById('duplicateConfirmCancelBtn');
+        var confirmCloseBtn = document.getElementById('duplicateConfirmCloseBtn');
+        var confirmBackdrop = document.getElementById('duplicateConfirmBackdrop');
+        var currentConfirmCallback = null;
+
+        function showConfirm(message, onConfirm) {
+            if (confirmMessage) confirmMessage.textContent = message;
+            currentConfirmCallback = onConfirm;
+            if (confirmModal) confirmModal.hidden = false;
+        }
+
+        function closeConfirm() {
+            if (confirmModal) confirmModal.hidden = true;
+            currentConfirmCallback = null;
+        }
+
+        if (confirmCancelBtn) confirmCancelBtn.addEventListener('click', closeConfirm);
+        if (confirmCloseBtn) confirmCloseBtn.addEventListener('click', closeConfirm);
+        if (confirmBackdrop) confirmBackdrop.addEventListener('click', closeConfirm);
+
         // Escape to close
         document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && !modal.hidden) close();
+            if (e.key === 'Escape' && !modal.hidden) {
+                if (confirmModal && !confirmModal.hidden) {
+                    closeConfirm();
+                    return;
+                }
+                close();
+            }
         });
+
+        if (confirmSubmitBtn) {
+            confirmSubmitBtn.addEventListener('click', function() {
+                if (currentConfirmCallback) {
+                    currentConfirmCallback();
+                }
+                closeConfirm();
+            });
+        }
 
         // Submit logic
         var submitBtn = document.getElementById('duplicatesSubmitBtn');
@@ -3044,40 +3490,100 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
 
-                if (!confirm('Are you sure you want to delete these ' + leadIds.length + ' duplicate inquiries? They will be moved to the recycle bin.')) {
-                    return;
-                }
+                showConfirm('Are you sure you want to delete these ' + leadIds.length + ' duplicate inquiries? ', function() {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="bi bi-trash3-fill" style="margin-right: 4px;"></i><span>Deleting...</span>';
 
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'Deleting...';
+                    var csrfToken = (document.querySelector('meta[name="csrf-token"]') || {}).content;
+                    fetch('{{ route('admin.inquiries.batch-delete') }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: JSON.stringify({ lead_ids: leadIds })
+                    })
+                    .then(function(res) { return res.json(); })
+                    .then(function(data) {
+                        if (data.success) {
+                            window.location.reload();
+                        } else {
+                            alert(data.message || 'An error occurred during batch deletion.');
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = '<i class="bi bi-trash3-fill" style="margin-right: 4px;"></i><span>Delete Selected</span>';
+                        }
+                    })
+                    .catch(function(err) {
+                        alert('An error occurred during batch deletion.');
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="bi bi-trash3-fill" style="margin-right: 4px;"></i><span>Delete Selected</span>';
+                    });
+                });
+            });
+        }
+
+        // --- Single Delete Button Logic ---
+        modal.addEventListener('click', function(e) {
+            var btn = e.target.closest('.duplicate-single-delete-btn');
+            if (!btn) return;
+
+            var leadId = parseInt(btn.getAttribute('data-lead-id'), 10);
+            if (isNaN(leadId)) return;
+
+            showConfirm('Are you sure you want to delete inquiry #SQL-' + leadId  +'?', function() {
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
 
                 var csrfToken = (document.querySelector('meta[name="csrf-token"]') || {}).content;
-                fetch('{{ route('admin.inquiries.batch-delete') }}', {
+                fetch('{{ route("admin.inquiries.batch-delete") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': csrfToken
                     },
-                    body: JSON.stringify({ lead_ids: leadIds })
+                    body: JSON.stringify({ lead_ids: [leadId] })
                 })
                 .then(function(res) { return res.json(); })
                 .then(function(data) {
                     if (data.success) {
-                        window.location.reload();
+                        // Remove the row from DOM
+                        var row = btn.closest('tr');
+                        var card = btn.closest('.duplicates-group-card');
+                        if (row) row.remove();
+
+                        // Update badge count in group header
+                        if (card) {
+                            var tbody = card.querySelector('tbody');
+                            var remaining = tbody ? tbody.querySelectorAll('tr').length : 0;
+                            var badge = card.querySelector('.badge');
+                            if (badge) badge.textContent = remaining + ' Inquiries';
+
+                            // If only 1 row left, no longer a duplicate group — remove whole card
+                            if (remaining <= 1) {
+                                card.remove();
+                            }
+                        }
+
+                        // If no groups left, reload the page
+                        var allCards = modal.querySelectorAll('.duplicates-group-card');
+                        if (allCards.length === 0) {
+                            window.location.reload();
+                        }
                     } else {
-                        alert(data.message || 'An error occurred during batch deletion.');
-                        submitBtn.disabled = false;
-                        submitBtn.innerHTML = '<i class="bi bi-trash3-fill" style="margin-right: 4px;"></i><span>Delete Selected</span>';
+                        alert(data.message || 'Could not delete this inquiry.');
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
                     }
                 })
-                .catch(function(err) {
-                    alert('An error occurred during batch deletion.');
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<i class="bi bi-trash3-fill" style="margin-right: 4px;"></i><span>Delete Selected</span>';
+                .catch(function() {
+                    alert('An error occurred. Please try again.');
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
                 });
             });
-        }
+        });
 
         // --- Inline Edit / Save Logic ---
         function saveFieldChange(el) {

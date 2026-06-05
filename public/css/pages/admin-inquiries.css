@@ -91,9 +91,9 @@
 
 .inquiries-page-wrap #unassignedTable.inquiries-table--fit th[data-col="customername"],
 .inquiries-page-wrap #unassignedTable.inquiries-table--fit td[data-col="customername"] {
-  width: 350px;
-  min-width: 350px;
-  max-width: 350px;
+  min-width: max-content;
+  width: auto;
+  max-width: none !important;
 }
 
 .inquiries-page-wrap #unassignedTable.inquiries-table--fit th[data-col="email"],
@@ -229,9 +229,9 @@
 
 .inquiries-page-wrap #allTable.inquiries-table--fit th[data-col="customername"],
 .inquiries-page-wrap #allTable.inquiries-table--fit td[data-col="customername"] {
-  width: 345px;
-  min-width: 345px;
-  max-width: 345px;
+  min-width: max-content;
+  width: auto;
+  max-width: none !important;
 }
 
 .inquiries-page-wrap #allTable.inquiries-table--fit th[data-col="email"],
@@ -671,9 +671,9 @@
   .inquiries-page-wrap #unassignedTable.inquiries-table--fit td[data-col="customername"],
   .inquiries-page-wrap #allTable.inquiries-table--fit th[data-col="customername"],
   .inquiries-page-wrap #allTable.inquiries-table--fit td[data-col="customername"] {
-    width: 260px !important;
-    min-width: 260px !important;
-    max-width: 260px !important;
+    min-width: max-content !important;
+    width: auto !important;
+    max-width: none !important;
   }
 
   .inquiries-page-wrap #assignedTable th[data-col="customername"],

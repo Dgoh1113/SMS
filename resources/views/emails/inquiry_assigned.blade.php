@@ -32,7 +32,7 @@
             </p>
             <p>This link will take you to your Dealer Console where you can view and manage this inquiry.</p>
         </div>
-        <p class="footer">This is an automated message from SQL LMS.</p>
+        <p class="footer">This is an automated message from SQL SMS.</p>
     </div>
 </body>
 </html>

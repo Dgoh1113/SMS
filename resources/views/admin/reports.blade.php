@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Report - Monthly Performance Analytics')
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/shared/reports-tabs.css') }}?v=20260424-1">
+    <link rel="stylesheet" href="{{ asset('css/shared/reports-tabs.css') }}?v=20260605-01">
     <link rel="stylesheet" href="{{ asset('css/report_monthly_performance_analytics.css') }}?v=20260424-3">
     <style>
         .reports-page .dashboard-panels-two-column {
@@ -806,6 +806,17 @@
             .dashboard-panel-body {
                 padding: 0 6px 4px !important;
             }
+        }
+
+        html.theme-dark .reports-filter-container,
+        html.theme-dark .rv2-filter {
+            border-color: #34405e !important;
+            background: linear-gradient(180deg, #16203a 0%, #101829 100%) !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03) !important;
+        }
+
+        html.theme-dark .reports-range-label {
+            color: #8896b7 !important;
         }
     </style>
 @endpush
@@ -1673,10 +1684,12 @@
                     const reportPeriod = 'days';
                     const currentMonthName = @json(now()->format('F'));
                     const currentYear = @json((int) now()->year);
-                    const brandColor = '#7f5af0';
-                    const columnColor = 'rgba(127, 90, 240, 0.32)';
-                    const gridColor = 'rgba(148, 163, 184, 0.25)';
-                    const axisColor = 'rgba(148, 163, 184, 0.28)';
+                    const darkTheme = document.documentElement.classList.contains('theme-dark');
+                    const brandColor = darkTheme ? '#b296ff' : '#7f5af0';
+                    const columnColor = darkTheme ? 'rgba(178, 150, 255, 0.34)' : 'rgba(127, 90, 240, 0.32)';
+                    const gridColor = darkTheme ? 'rgba(148, 163, 184, 0.16)' : 'rgba(148, 163, 184, 0.25)';
+                    const axisColor = darkTheme ? 'rgba(148, 163, 184, 0.22)' : 'rgba(148, 163, 184, 0.28)';
+                    const tickColor = darkTheme ? '#9fb0d4' : '#8b95b5';
                     let inquiryLabels = rawInquiryLabels.map(function (label) {
                         return String(label || '').trim();
                     });
@@ -2046,7 +2059,7 @@
                                         color: axisColor
                                     },
                                     ticks: {
-                                        color: '#8b95b5',
+                                        color: tickColor,
                                         padding: 4,
                                         font: {
                                             size: 10,
@@ -2078,7 +2091,7 @@
                                         display: false
                                     },
                                     ticks: {
-                                        color: '#8b95b5',
+                                        color: tickColor,
                                         padding: 6,
                                         font: {
                                             size: 10,
@@ -2173,6 +2186,8 @@
             const initProductChart = function(canvasEl, isMobileMode) {
                 if (!canvasEl) return;
 
+                const darkTheme = document.documentElement.classList.contains('theme-dark');
+
                 const endValueLabels = {
                     id: 'endValueLabels',
                     afterDatasetsDraw(chart) {
@@ -2183,7 +2198,7 @@
                         const chartArea = chart.chartArea;
                         ctx.save();
                         ctx.font = isMobileMode ? '800 12px "Public Sans", sans-serif' : '700 11px "Public Sans", sans-serif';
-                        ctx.fillStyle = isMobileMode ? '#1e293b' : '#475569';
+                        ctx.fillStyle = darkTheme ? '#c8d2eb' : (isMobileMode ? '#1e293b' : '#475569');
                         ctx.textBaseline = 'middle';
 
                         meta.data.forEach(function (bar, index) {
@@ -2281,7 +2296,7 @@
                                 grid: { display: false, drawBorder: false, drawTicks: false },
                                 border: { display: false },
                                 ticks: {
-                                    color: '#475569',
+                                    color: darkTheme ? '#9fb0d4' : '#475569',
                                     font: { size: 12, weight: '800' },
                                     padding: 8,
                                     autoSkip: false,
@@ -2292,12 +2307,12 @@
                             y: {
                                 beginAtZero: true,
                                 max: axisMax,
-                                grid: { display: true, color: 'rgba(148, 163, 184, 0.10)' },
+                                grid: { display: true, color: darkTheme ? 'rgba(148, 163, 184, 0.14)' : 'rgba(148, 163, 184, 0.10)' },
                                 border: { display: false },
                                 ticks: {
                                     display: true,
                                     padding: 6,
-                                    color: '#64748b',
+                                    color: darkTheme ? '#9fb0d4' : '#64748b',
                                     font: { size: 9, weight: '600' },
                                     stepSize: maxValue <= 10 ? 1 : undefined,
                                 }
@@ -2306,10 +2321,10 @@
                             x: {
                                 beginAtZero: true,
                                 max: axisMax,
-                                grid: { color: 'rgba(148, 163, 184, 0.10)', display: true, drawBorder: false, drawTicks: false },
+                                grid: { color: darkTheme ? 'rgba(148, 163, 184, 0.14)' : 'rgba(148, 163, 184, 0.10)', display: true, drawBorder: false, drawTicks: false },
                                 border: { display: false },
                                 ticks: {
-                                    color: '#94a3b8',
+                                    color: darkTheme ? '#9fb0d4' : '#94a3b8',
                                     font: { size: 11, weight: '600' },
                                     padding: 8,
                                     stepSize: maxValue <= 10 ? 1 : undefined,
@@ -2326,7 +2341,7 @@
                                     autoSkip: false,
                                     maxTicksLimit: labels.length,
                                     padding: 12,
-                                    color: '#0f172a',
+                                    color: darkTheme ? '#eef2ff' : '#0f172a',
                                     font: { size: 12, weight: '600' },
                                 }
                             }

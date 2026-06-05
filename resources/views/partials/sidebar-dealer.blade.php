@@ -21,7 +21,7 @@
                 <span class="dashboard-nav-icon"><i class="bi {{ $current === 'dashboard' ? 'bi-grid-fill' : 'bi-grid' }}"></i></span>
                 <span>Dashboard</span>
             </a>
-            <a href="{{ route('dealer.inquiries') }}" class="dashboard-nav-item {{ $current === 'inquiries' ? 'dashboard-nav-item-active' : '' }}">
+            <a href="{{ route('dealer.inquiries', ['tab' => 'pending']) }}" class="dashboard-nav-item {{ $current === 'inquiries' ? 'dashboard-nav-item-active' : '' }}">
                 <span class="dashboard-nav-icon"><i class="bi {{ $current === 'inquiries' ? 'bi-envelope-open' : 'bi-envelope' }}"></i></span>
                 <span>Inquiries</span>
             </a>

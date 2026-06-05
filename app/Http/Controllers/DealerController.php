@@ -161,15 +161,36 @@ class DealerController extends Controller
                 $dealerId,
                 $countMetricRow
             ): int {
-                $sql = 'SELECT COUNT(*) AS "CNT"
-                        FROM "LEAD" l
-                        WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?';
-                $params = [$dealerId];
-
-                if ($cutoff !== null) {
-                    $sql .= '
-                          AND l."CREATEDAT" <= ?';
-                    $params[] = $cutoff;
+                if ($cutoff === null) {
+                    $sql = 'SELECT COUNT(*) AS "CNT"
+                            FROM "LEAD" l
+                            WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
+                              AND UPPER(TRIM(COALESCE(
+                                  (SELECT FIRST 1 la."STATUS"
+                                   FROM "LEAD_ACT" la
+                                   WHERE la."LEADID" = l."LEADID"
+                                   ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC),
+                                  \'PENDING\'
+                              ))) <> \'CANCELLED\'';
+                    $params = [$dealerId];
+                } else {
+                    $sql = 'SELECT COUNT(*) AS "CNT"
+                            FROM (
+                                SELECT l."LEADID",
+                                       COALESCE(
+                                           (SELECT FIRST 1 la."STATUS"
+                                            FROM "LEAD_ACT" la
+                                            WHERE la."LEADID" = l."LEADID"
+                                              AND la."CREATIONDATE" <= ?
+                                            ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC),
+                                           \'PENDING\'
+                                       ) AS "LATEST_STATUS"
+                                FROM "LEAD" l
+                                WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
+                                  AND l."CREATEDAT" <= ?
+                            ) x
+                            WHERE UPPER(TRIM(COALESCE(x."LATEST_STATUS", \'\'))) <> \'CANCELLED\'';
+                    $params = [$cutoff, $dealerId, $cutoff];
                 }
 
                 return $countMetricRow(DB::selectOne($sql, $params));
@@ -443,7 +464,7 @@ class DealerController extends Controller
                 $params = array_merge($params, $statusFilter);
             }
 
-            $dealerInquiriesSql = 'SELECT FIRST 500
+            $dealerInquiriesSql = 'SELECT
                     l."LEADID", l."PRODUCTID", l."COMPANYNAME", l."CONTACTNAME", l."CONTACTNO", l."EMAIL",
                     l."ADDRESS1", l."ADDRESS2", l."CITY", l."STATE", l."COUNTRY", l."POSTCODE", l."BUSINESSNATURE", l."USERCOUNT",
                     l."EXISTINGSOFTWARE", l."DEMOMODE", l."DESCRIPTION", l."REFERRALCODE", l."CREATEDAT", l."CREATEDBY",
@@ -1599,7 +1620,7 @@ class DealerController extends Controller
                 $status = strtoupper(trim((string) ($r->CURRENTSTATUS ?? '')));
                 $referral = trim((string) ($r->REFERRALCODE ?? ''));
                 if ($status === 'COMPLETED') {
-                    if ($referral === '' || strtolower($referral) === 'noreferral') {
+                    if ($referral !== '' && strtolower($referral) !== 'noreferral') {
                         $completed[] = $r;
                     }
                 } elseif (in_array($status, ['REWARDED', 'PAID'], true)) {
@@ -1925,7 +1946,7 @@ class DealerController extends Controller
                  JOIN "LEAD" l ON l."LEADID" = latest."LEADID"
                  WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                    AND UPPER(TRIM(latest."STATUS")) = \'COMPLETED\'
-                    AND (TRIM(COALESCE(l."REFERRALCODE", \'\')) = \'\' OR LOWER(TRIM(COALESCE(l."REFERRALCODE", \'\'))) = \'noreferral\')',
+                    AND TRIM(COALESCE(l."REFERRALCODE", \'\')) <> \'\' AND LOWER(TRIM(COALESCE(l."REFERRALCODE", \'\'))) <> \'noreferral\'',
                 [$dealerId]
             );
             $counts['pending_payouts'] = (int) ($pendingRow->CNT ?? $pendingRow->cnt ?? current((array) $pendingRow) ?? 0);

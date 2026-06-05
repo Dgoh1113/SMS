@@ -1014,3 +1014,66 @@ html.theme-dark .inquiries-title-count {
   overflow: hidden !important;
   text-overflow: ellipsis !important;
 }
+
+html.theme-dark .dealer-console-tabs {
+  background: transparent;
+  border-bottom-color: rgba(82, 98, 133, 0.22);
+}
+
+html.theme-dark .dealer-console-tab {
+  color: #93a7cb;
+}
+
+html.theme-dark .dealer-console-tab:hover,
+html.theme-dark .dealer-console-tab:focus-visible {
+  color: #edf3ff;
+}
+
+html.theme-dark .dealer-console-tab-active {
+  color: #bcaeff;
+  border-bottom-color: #8f73ff;
+}
+
+html.theme-dark .dealer-console-tab-active:hover,
+html.theme-dark .dealer-console-tab-active:focus-visible {
+  color: #bcaeff;
+}
+
+html.theme-dark .dealer-inquiries-panel .inquiries-empty-row .inquiries-empty-cell {
+  background: transparent !important;
+}
+
+html.theme-dark .status-multi-filter-action-btn {
+  color: #ccbfff;
+  background: rgba(124, 92, 255, 0.12);
+  border-color: rgba(155, 135, 255, 0.22);
+}
+
+html.theme-dark .status-multi-filter-action-btn:hover {
+  background: rgba(124, 92, 255, 0.18);
+  color: #d7cbff;
+}
+
+html.theme-dark .status-multi-filter-option {
+  color: #cbd5e1;
+}
+
+html.theme-dark .status-multi-filter-option:hover {
+  background: rgba(16, 25, 43, 0.88);
+}
+
+html.theme-dark .status-multi-filter-option input[type="checkbox"],
+html.theme-dark .status-multi-filter-option .status-multi-filter-checkbox {
+  background: transparent;
+  border-color: #475569;
+}
+
+html.theme-dark .inquiries-table tbody tr.inquiries-placeholder-row:hover td,
+html.theme-dark .inquiries-table tbody tr.inquiries-empty-row:hover td {
+  background: transparent !important;
+}
+
+html.theme-dark .inquiries-placeholder-cell,
+html.theme-dark .inquiries-empty-cell {
+  background: transparent !important;
+}

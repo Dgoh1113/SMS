@@ -823,3 +823,30 @@ html.theme-dark .rv2-filter-select {
   background-color: #0f1628;
   color: #d9e2f6;
 }
+
+html.theme-dark .reports-filter-container {
+  background: transparent;
+  border-color: #27334e;
+  box-shadow: none;
+}
+
+html.theme-dark .reports-range-input {
+  background: #0f1628;
+  border-color: #32405f;
+  color: #d9e2f6;
+}
+
+html.theme-dark .reports-range-label {
+  color: #64748b;
+}
+
+html.theme-dark .reports-range-back-btn {
+  color: #64748b;
+  background: transparent;
+  border-color: #32405f;
+}
+
+html.theme-dark .reports-range-back-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #d9e2f6;
+}

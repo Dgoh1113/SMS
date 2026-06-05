@@ -2,7 +2,7 @@
 @section('title', 'My Inquiries – SQL LMS Dealer Console')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/pages/dealer-inquiries.css') }}?v=20260430-01">
+    <link rel="stylesheet" href="{{ asset('css/pages/dealer-inquiries.css') }}?v=20260605-01">
     <style>
         .inquiry-progression-steps {
             gap: 12px 0px;
@@ -77,6 +77,17 @@
             padding: 24px;
             text-align: center;
             box-sizing: border-box;
+        }
+        html.theme-dark .dealer-inquiries-panel .inquiries-empty-row .inquiries-empty-cell {
+            background: transparent !important;
+            border-bottom: none !important;
+        }
+        html.theme-dark .dealer-inquiries-panel .inquiries-table tbody tr.inquiries-placeholder-row td,
+        html.theme-dark .dealer-inquiries-panel .inquiries-table tbody tr.inquiries-placeholder-row:hover td,
+        html.theme-dark .dealer-inquiries-panel .inquiries-table tbody tr.inquiries-empty-row td,
+        html.theme-dark .dealer-inquiries-panel .inquiries-table tbody tr.inquiries-empty-row:hover td {
+            background: transparent !important;
+            border-color: transparent !important;
         }
         }
         @media (max-width: 768px) {
@@ -1137,7 +1148,7 @@ if (document.readyState === 'loading') {
                         </div>
                     </div>
                     
-                    <label class="inquiry-field">
+                    <label class="inquiry-field" id="inquiryAttachmentField">
                         <span class="inquiry-field-label" id="inquiryAttachmentLabel">ATTACHMENT (images)</span>
                         <div class="inquiry-field-input-wrap">
                             <i class="bi bi-image"></i>
@@ -1177,6 +1188,7 @@ if (document.readyState === 'loading') {
             <button type="button" class="inquiry-btn inquiry-btn-cancel" id="inquiryModalCancel">Cancel</button>
             <button type="button" class="inquiry-btn inquiry-btn-calendar" id="inquiryModalAddCalendar" style="display:none;"><i class="bi bi-calendar-plus"></i> Add Calendar</button>
             <button type="button" class="inquiry-btn inquiry-btn-update" id="inquiryModalUpdate"><i class="bi bi-check-lg"></i> Update Status</button>
+            <button type="button" class="inquiry-btn inquiry-btn-ok" id="inquiryModalOk" style="display:none;"><i class="bi bi-check-lg"></i> OK</button>
         </div>
     </div>
 </div>
@@ -1190,6 +1202,7 @@ if (document.readyState === 'loading') {
     var closeBtn = document.getElementById('inquiryModalClose');
     var cancelBtn = document.getElementById('inquiryModalCancel');
     var updateBtn = document.getElementById('inquiryModalUpdate');
+    var okBtn = document.getElementById('inquiryModalOk');
 
     var activityLink = document.getElementById('inquiryActivityLink');
     var progressionSteps = document.getElementById('inquiryProgressionSteps');
@@ -1219,7 +1232,8 @@ if (document.readyState === 'loading') {
         'DEMO': 'DEMO', 'CONFIRMED': 'CONFIRMED', 'CASE CONFIRMED': 'CONFIRMED',
         'COMPLETED': 'COMPLETED', 'CASE COMPLETED': 'COMPLETED',
         'REWARD': 'REWARDED', 'REWARDED': 'REWARDED', 'REWARD DISTRIBUTED': 'REWARDED',
-        'FAILED': 'FAILED'
+        'FAILED': 'FAILED',
+        'CANCELLED': 'CANCELLED'
     };
 
     var currentLeadId = '';
@@ -1399,28 +1413,61 @@ if (document.readyState === 'loading') {
         return parts.join(' • ') || 'No failed activity details recorded.';
     }
 
+    function findLatestCancelledActivity() {
+        for (var i = 0; i < cachedActivities.length; i++) {
+            if (cachedActivities[i] && cachedActivities[i].type === 'activity' && normalizeStatus(cachedActivities[i].status) === 'CANCELLED') {
+                return cachedActivities[i];
+            }
+        }
+        return null;
+    }
+
     function renderLatestFailedNotice(activity) {
         var noticeEl = document.getElementById('inquiryLatestFailedNotice');
         var reasonEl = document.getElementById('inquiryLatestFailedReason');
         var metaEl = document.getElementById('inquiryLatestFailedMeta');
+        var titleEl = noticeEl ? noticeEl.querySelector('.inquiry-latest-failed-title span') : null;
+        var iconEl = noticeEl ? noticeEl.querySelector('.inquiry-latest-failed-title i') : null;
         if (!noticeEl || !reasonEl || !metaEl) return;
 
         var isFailed = normalizeStatus(latestStatusRaw) === 'FAILED';
-        var shouldShow = isFailed;
-        noticeEl.hidden = !shouldShow;
-        if (!shouldShow) {
-            reasonEl.textContent = '—';
-            metaEl.textContent = '—';
-            return;
-        }
+        var isCancelled = normalizeStatus(latestStatusRaw) === 'CANCELLED';
 
-        if (activity) {
-            var parsed = parseFailedDescription(activity.description || '');
-            reasonEl.textContent = prettifyFailedReason(parsed.reason || 'No failure reason recorded.');
-            metaEl.textContent = buildFailedMeta(activity);
+        if (isFailed || isCancelled) {
+            var targetActivity = activity;
+            if (isCancelled && (!activity || normalizeStatus(activity.status) !== 'CANCELLED')) {
+                targetActivity = findLatestCancelledActivity();
+            }
+
+            if (targetActivity) {
+                var desc = targetActivity.description || '';
+                
+                if (isCancelled) {
+                    reasonEl.textContent = desc || 'No cancellation reason recorded.';
+                    var byWho = targetActivity.user || 'System';
+                    var timeStr = new Date(targetActivity.created_at).toLocaleString();
+                    metaEl.textContent = 'By ' + byWho + ' on ' + timeStr;
+                    
+                    if (titleEl) titleEl.textContent = 'Lead Cancelled';
+                    if (iconEl) iconEl.className = 'bi bi-slash-circle';
+                } else {
+                    var parsed = parseFailedDescription(desc);
+                    reasonEl.textContent = prettifyFailedReason(parsed.reason || 'No failure reason recorded.');
+                    metaEl.textContent = buildFailedMeta(targetActivity);
+                    
+                    if (titleEl) titleEl.textContent = 'Lead Marked as Failed';
+                    if (iconEl) iconEl.className = 'bi bi-x-circle-fill';
+                }
+
+                noticeEl.hidden = false;
+                noticeEl.style.display = 'block';
+            } else {
+                noticeEl.hidden = true;
+                noticeEl.style.display = 'none';
+            }
         } else {
-            reasonEl.textContent = 'Loading reason...';
-            metaEl.textContent = '...';
+            noticeEl.hidden = true;
+            noticeEl.style.display = 'none';
         }
     }
 
@@ -1507,6 +1554,7 @@ if (document.readyState === 'loading') {
         var currentStatus = statusOrder[currentStatusIdx] || 'PENDING';
         var highlightNewStatus = !viewMode && !isFailedSelected() && selectedStatusIdx > currentStatusIdx;
         var failedLatest = isFailedLatestStatus();
+        var cancelledLatest = normalizeStatus(latestStatusRaw) === 'CANCELLED';
         
         // If we are recovering (selecting a new status), treat it as a normal active lead visually
         var effectivelyFailed = failedLatest && !highlightNewStatus;
@@ -1515,6 +1563,7 @@ if (document.readyState === 'loading') {
         var hasEverFailed = hasFailedInHistory || failedLatest;
 
         progressionSteps.classList.toggle('inquiry-progression-steps--failed', effectivelyFailed);
+        progressionSteps.classList.toggle('inquiry-progression-steps--cancelled', cancelledLatest);
 
         statusOrder.forEach(function(stepName, i) {
             var step = getProgressionStep(stepName);
@@ -1676,20 +1725,24 @@ if (document.readyState === 'loading') {
             historyWrap.style.display = 'none';
         }
 
+        var attachmentField = document.getElementById('inquiryAttachmentField');
         if (!viewMode) {
             remarkField.closest('.inquiry-field').style.display = 'block';
             if (isSameStatusUpdate && (act || isLoadingActivities)) {
                 dateWrap.style.display = 'block';
                 dateBadge.textContent = new Date().toLocaleDateString('en-GB'); // d/m/Y
                 remarkField.placeholder = "Add your NEW notes for " + selectedName + " here...";
+                if (attachmentField) attachmentField.style.display = 'none';
             } else {
                 dateWrap.style.display = 'none';
                 remarkField.placeholder = "Type your update here...";
+                if (attachmentField) attachmentField.style.display = 'block';
             }
         } else {
             // In View Mode, hide the "New Remark" field entirely
             remarkField.closest('.inquiry-field').style.display = 'none';
             dateWrap.style.display = 'none';
+            if (attachmentField) attachmentField.style.display = 'block';
         }
     }
 
@@ -1870,12 +1923,28 @@ if (document.readyState === 'loading') {
     function toggleFailedSummaryMode() {
         var followupSection = document.getElementById('inquiryFollowupSection');
         var highlightNewStatus = !viewMode && !isFailedSelected() && selectedStatusIdx > currentStatusIdx;
-        var shouldCompact = isFailedLatestStatus() && !highlightNewStatus;
+        var isCancelled = normalizeStatus(latestStatusRaw) === 'CANCELLED';
+        var shouldCompact = (isFailedLatestStatus() || isCancelled) && !highlightNewStatus;
         if (followupSection) {
             followupSection.hidden = shouldCompact;
         }
         if (updateBtn) {
             updateBtn.hidden = shouldCompact;
+        }
+        // For cancelled leads: hide Update Status, style Cancel button purple
+        if (isCancelled) {
+            if (updateBtn) { updateBtn.style.display = 'none'; updateBtn.hidden = true; }
+            if (okBtn) okBtn.style.display = 'none';
+            if (cancelBtn) {
+                cancelBtn.style.display = '';
+                cancelBtn.classList.add('inquiry-btn-cancel--purple');
+            }
+        } else {
+            if (okBtn) okBtn.style.display = 'none';
+            if (cancelBtn) {
+                cancelBtn.style.display = '';
+                cancelBtn.classList.remove('inquiry-btn-cancel--purple');
+            }
         }
     }
 
@@ -1937,7 +2006,7 @@ if (document.readyState === 'loading') {
         
         var selectedName = getSelectedStatusName();
         var fromStatus = statusOrder[currentStatusIdx] || 'PENDING';
-        var isSameStatusUpdate = (selectedName === 'FOLLOW UP' || selectedName === 'DEMO') && fromStatus === selectedName;
+        var isSameStatusUpdate = !viewMode && (selectedName === 'FOLLOW UP' || selectedName === 'DEMO') && fromStatus === selectedName;
 
         if (!activity || !activity.created_at) {
             if (dateEl) dateEl.value = '';
@@ -1948,9 +2017,15 @@ if (document.readyState === 'loading') {
             }
             return;
         }
-        var d = new Date(activity.created_at);
-        if (dateEl) dateEl.value = isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
-        if (timeEl) timeEl.value = isNaN(d.getTime()) ? '' : String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+        
+        if (isSameStatusUpdate) {
+            if (dateEl) dateEl.value = getDefaultDate();
+            if (timeEl) timeEl.value = getDefaultTime();
+        } else {
+            var d = new Date(activity.created_at);
+            if (dateEl) dateEl.value = isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
+            if (timeEl) timeEl.value = isNaN(d.getTime()) ? '' : String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+        }
         
         // History is now handled by refreshRemarkHistoryDisplay
         if (remarkEl) remarkEl.value = '';
@@ -2038,8 +2113,9 @@ if (document.readyState === 'loading') {
             return;
         }
         activities.forEach(function(a) {
-            // Skip FAILED status entries in the timeline to avoid redundancy with the notice box
-            if (normalizeStatus(a.status) === 'FAILED') return;
+            // Skip FAILED and CANCELLED status entries in the timeline to avoid redundancy with the notice box
+            var normStat = normalizeStatus(a.status);
+            if (normStat === 'FAILED' || normStat === 'CANCELLED') return;
 
             var item = document.createElement('div');
             item.className = 'inquiry-activity-item';
@@ -2052,6 +2128,12 @@ if (document.readyState === 'loading') {
                 var subj = escapeInquiryHtml(a.subject || '');
                 var desc = escapeInquiryHtml(a.description || '').replace(/\r?\n/g, '<br>');
                 var status = escapeInquiryHtml(a.status || '');
+                
+                // Fix duplicate "changed status to" text
+                if (subj.toLowerCase().indexOf('changed status') !== -1 && status) {
+                    subj = '';
+                }
+
                 html += '<strong>' + user + '</strong> ' + (subj ? subj + ' ' : '');
                 if (status) html += 'changed status to <strong class="inquiry-activity-status">' + status + '</strong> ';
                 if (desc) html += '<span class="inquiry-activity-desc">' + desc + '</span> ';
@@ -2099,7 +2181,8 @@ if (document.readyState === 'loading') {
                 latestNonFailedStatusRaw = normalizeStatus(data && data.latest_non_failed_status);
                 renderActivity(cachedActivities);
                 refreshStepLabels();
-                renderLatestFailedNotice(findLatestFailedActivity());
+                renderLatestFailedNotice(normalizeStatus(latestStatusRaw) === 'CANCELLED' ? findLatestCancelledActivity() : findLatestFailedActivity());
+                toggleFailedSummaryMode();
                 if (typeof refreshRemarkHistoryDisplay === 'function') refreshRemarkHistoryDisplay();
 
                 // Re-compute the latest status from DB activities (by created_at) to keep UI in sync
@@ -2724,7 +2807,7 @@ if (document.readyState === 'loading') {
             );
         }
     });
-    [closeBtn, cancelBtn].forEach(function(btn) {
+    [closeBtn, cancelBtn, okBtn].forEach(function(btn) {
         if (btn) btn.addEventListener('click', closeModal);
     });
 

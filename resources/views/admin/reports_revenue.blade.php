@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Report - Dealer Revenue Production')
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/shared/reports-tabs.css') }}?v=20260424-1">
+    <link rel="stylesheet" href="{{ asset('css/shared/reports-tabs.css') }}?v=20260605-01">
     <link rel="stylesheet" href="{{ asset('css/report_dealer_revenue_production.css') }}?v=20260423-3">
     <style>
         .reports-range-input {
@@ -123,6 +123,17 @@
                 align-items: center;
                 justify-content: center;
             }
+        }
+
+        html.theme-dark .reports-filter-container,
+        html.theme-dark .rv2-filter {
+            border-color: #34405e !important;
+            background: linear-gradient(180deg, #16203a 0%, #101829 100%) !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03) !important;
+        }
+
+        html.theme-dark .reports-range-label {
+            color: #8896b7 !important;
         }
     </style>
 @endpush

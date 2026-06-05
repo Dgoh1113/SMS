@@ -43,6 +43,7 @@
             case 'REWARD DISTRIBUTED':  $statusClass = 'inquiries-status-rewarded'; break;
             case 'CASE COMPLETED':      $statusClass = 'inquiries-status-completed'; break;
             case 'FAILED':              $statusClass = 'inquiries-status-failed'; break;
+            case 'CANCELLED':           $statusClass = 'inquiries-status-cancelled'; break;
             default:                    $statusClass = 'inquiries-status-new'; break;
         }
         $statusDisplay = $rawStatus === '' ? '-' : (in_array($rawStatus, ['FOLLOWUP', 'FOLLOW UP'], true) ? 'Follow Up' : $rawStatus);

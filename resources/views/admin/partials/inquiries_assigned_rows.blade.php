@@ -125,6 +125,7 @@
             case 'REWARD DISTRIBUTED':
             case 'PAID': $astatusClass = 'inquiries-status-rewarded'; break;
             case 'FAILED': $astatusClass = 'inquiries-status-failed'; break;
+            case 'CANCELLED': $astatusClass = 'inquiries-status-cancelled'; break;
             default: $astatusClass = 'inquiries-status-new'; break;
         }
     @endphp

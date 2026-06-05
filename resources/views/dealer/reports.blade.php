@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Reports – SQL LMS Dealer Console')
 @push('styles')
-<link rel="stylesheet" href="{{ asset('css/shared/reports-tabs.css') }}?v=20260423-4">
+<link rel="stylesheet" href="{{ asset('css/shared/reports-tabs.css') }}?v=20260605-01">
 <style>
     .dealer-reports-page .dashboard-panels-two-column { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(0,1fr); gap:20px; min-width:0; }
     .dealer-reports-page .dashboard-panels-two-column > *, .dealer-reports-page .reports-product-section { min-width:0; }

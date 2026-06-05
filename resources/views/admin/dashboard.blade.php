@@ -241,9 +241,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         Object.keys(sourceRanges || {}).forEach(function(rangeKey) {
             const rawRange = sourceRanges[rangeKey];
-            displayRanges[rangeKey] = (rangeKey === '60' || rangeKey === '90')
-                ? buildWeeklyRange(rawRange)
-                : rawRange;
+            displayRanges[rangeKey] = buildWeeklyRange(rawRange);
         });
 
         return displayRanges;

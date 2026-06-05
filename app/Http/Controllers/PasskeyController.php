@@ -618,7 +618,12 @@ class PasskeyController extends Controller
 
         $request->session()->put('passkey_challenge', $webAuthn->getChallenge());
 
-        return response()->json($getArgs);
+        $response = (array) $getArgs;
+        // Include a fresh CSRF token so the login page can use it even if the
+        // original session (and its token) expired due to inactivity.
+        $response['_csrf'] = csrf_token();
+
+        return response()->json($response);
     }
 
     /**

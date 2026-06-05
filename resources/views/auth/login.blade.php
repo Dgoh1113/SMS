@@ -556,19 +556,27 @@
     window.addEventListener('pagehide', resetPasskeyScreenState);
 
     if (loginPasskeyBtn) {
+    var freshCsrfToken = '';
     loginPasskeyBtn.addEventListener('click', function () {
         var btn = this;
         btn.disabled = true;
         fetch('{{ route("passkey.auth.options") }}', { method: 'GET', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
             .then(function (r) { return r.json(); })
             .then(function (options) {
+                // Grab the fresh CSRF token from the server (in case the page session expired)
+                if (options._csrf) {
+                    freshCsrfToken = options._csrf;
+                    var tokenInput = document.querySelector('input[name="_token"]');
+                    if (tokenInput) tokenInput.value = freshCsrfToken;
+                }
                 return navigator.credentials.get({ publicKey: passkeyUtils.transformGetOptions(options).publicKey });
             })
             .then(function (cred) {
                 if (!cred) return Promise.reject(new Error('No credential returned'));
+                var csrfToken = freshCsrfToken || document.querySelector('input[name="_token"]').value;
                 return fetch('{{ route("passkey.auth.verify") }}', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value },
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': csrfToken },
                     credentials: 'same-origin',
                     body: JSON.stringify({
                         id: passkeyUtils.bufferToBase64url(cred.rawId),

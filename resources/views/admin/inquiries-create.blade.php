@@ -865,6 +865,210 @@
             box-shadow: none !important;
         }
 
+        /* ===== DARK MODE ===== */
+        html.theme-dark .inquiry-create-panel {
+            background: #0f172a;
+            border-color: #2a3447;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+        }
+
+        html.theme-dark .vertical-title {
+            background: linear-gradient(180deg, #1e1545, #2a1d5e);
+            color: #bdaeff;
+            box-shadow: 0 4px 14px rgba(124, 92, 255, 0.22);
+        }
+
+        html.theme-dark .inquiry-form-section {
+            background: #111b2f !important;
+            border-color: #2a3447 !important;
+        }
+
+        html.theme-dark .inquiry-form-section-title {
+            color: #e5ecff !important;
+        }
+
+        html.theme-dark .inquiry-form-section-subtitle {
+            color: #8190ab !important;
+        }
+
+        html.theme-dark .inquiry-form-section-icon {
+            background: rgba(99, 102, 241, 0.14);
+            color: #bdaeff;
+        }
+
+        html.theme-dark .inquiry-form-label,
+        html.theme-dark .inquiry-form-label-title {
+            color: #c8d3e8 !important;
+        }
+
+        html.theme-dark .inquiry-form-input {
+            background: #0c1322 !important;
+            color: #e5ecff !important;
+            border-color: #2a3447 !important;
+        }
+
+        html.theme-dark .inquiry-form-input:focus {
+            background: #0f172a !important;
+            border-color: rgba(155, 135, 255, 0.85) !important;
+            box-shadow: 0 0 0 3px rgba(155, 135, 255, 0.16) !important;
+        }
+
+        html.theme-dark .inquiry-form-input:not(:placeholder-shown):not(:focus) {
+            background-color: #111b2f !important;
+            border-color: #364460 !important;
+        }
+
+        html.theme-dark .inquiry-form-input::placeholder {
+            color: #5a6b84 !important;
+        }
+
+        html.theme-dark .inquiry-input-icon {
+            color: #6b7fa0 !important;
+        }
+
+        html.theme-dark .inquiry-form-checkbox-label {
+            background: #0c1322;
+            border-color: #2a3447;
+            color: #c8d3e8;
+            box-shadow: none;
+        }
+
+        html.theme-dark .inquiry-form-checkbox-label::before {
+            background: #0c1322;
+            border-color: #3d4f6a;
+        }
+
+        html.theme-dark .inquiry-form-checkbox-label:hover {
+            border-color: rgba(155, 135, 255, 0.5);
+            background: #141f36;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.10);
+        }
+
+        html.theme-dark .inquiry-form-checkbox-label:has(input:checked) {
+            background: rgba(99, 102, 241, 0.12);
+            border-color: rgba(155, 135, 255, 0.45);
+            color: #d9cbff;
+        }
+
+        html.theme-dark .inquiry-form-checkbox-label:has(input:checked)::before {
+            background: #7c5cff;
+            border-color: #7c5cff;
+        }
+
+        html.theme-dark .inquiry-toggle {
+            background: #0c1322;
+            border-radius: 8px;
+        }
+
+        html.theme-dark .inquiry-toggle-option {
+            color: #8190ab;
+        }
+
+        html.theme-dark .inquiry-toggle-option:hover {
+            color: #bdaeff;
+        }
+
+        html.theme-dark .inquiry-toggle-option.is-active {
+            background: #7c5cff;
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(124, 92, 255, 0.28);
+        }
+
+        html.theme-dark .inquiry-form-actions .inquiry-form-cancel {
+            background: #121c30 !important;
+            color: #d7dff2 !important;
+            border-color: #314056 !important;
+        }
+
+        html.theme-dark .inquiry-form-actions .inquiry-form-cancel:hover {
+            background: #182640 !important;
+            border-color: #3d5275 !important;
+        }
+
+        html.theme-dark #clearFormBtn {
+            background: rgba(220, 38, 38, 0.08) !important;
+            color: #f87171 !important;
+            border-color: rgba(220, 38, 38, 0.25) !important;
+        }
+
+        html.theme-dark #clearFormBtn:hover {
+            background: rgba(220, 38, 38, 0.14) !important;
+            border-color: rgba(220, 38, 38, 0.4) !important;
+        }
+
+        html.theme-dark #clearFormBtn:disabled {
+            color: #4b5563 !important;
+            background-color: #111b2f !important;
+            border-color: #2a3447 !important;
+        }
+
+        html.theme-dark .inquiry-lookup-btn {
+            background: rgba(99, 102, 241, 0.12);
+            border-color: rgba(155, 135, 255, 0.25);
+            color: #bdaeff;
+        }
+
+        html.theme-dark .inquiry-lookup-btn:hover {
+            background: #7c5cff;
+            color: #fff;
+            border-color: #7c5cff;
+        }
+
+        html.theme-dark .inquiry-inline-toggle {
+            color: #bdaeff !important;
+        }
+
+        html.theme-dark .inquiry-inline-toggle:hover {
+            color: #d9cbff !important;
+        }
+
+        html.theme-dark .google-maps-btn:hover {
+            background: rgba(255, 255, 255, 0.06) !important;
+        }
+
+        /* Duplicate company modal - dark mode */
+        html.theme-dark .inquiry-dup-backdrop {
+            background: rgba(0, 0, 0, 0.6);
+        }
+
+        html.theme-dark .inquiry-dup-window {
+            background: #0f172a;
+            box-shadow: 0 22px 60px rgba(0, 0, 0, 0.55);
+        }
+
+        html.theme-dark .inquiry-dup-header {
+            background: #1e1545;
+            border-bottom-color: #2a3447;
+        }
+
+        html.theme-dark .inquiry-dup-title {
+            color: #d9cbff;
+        }
+
+        html.theme-dark .inquiry-dup-close {
+            color: #8190ab;
+        }
+
+        html.theme-dark .inquiry-dup-close:hover {
+            color: #e5ecff;
+        }
+
+        html.theme-dark .inquiry-dup-text {
+            color: #e5ecff;
+        }
+
+        html.theme-dark .inquiry-dup-subtext {
+            color: #8190ab;
+        }
+
+        html.theme-dark .required {
+            color: #f87171;
+        }
+
+        html.theme-dark .inquiry-field-error {
+            color: #f87171;
+        }
+
     </style>
 @endpush
 @section('content')
@@ -1021,20 +1225,29 @@
                             </div>
                         </div>
 
+                        @php
+                            $currentCountry = old('COUNTRY', $inquiry->COUNTRY ?? '');
+                            if (($currentCountry === '' || $currentCountry === 'Malaysia') && !$isEdit) {
+                                $currentCountry = 'MY';
+                            }
+                            $isOtherCountry = $currentCountry !== '' && $currentCountry !== 'MY' && $currentCountry !== 'Malaysia' && $currentCountry !== 'SG' && $currentCountry !== 'Singapore';
+                            $isMYCountry = ($currentCountry === 'MY' || $currentCountry === 'Malaysia' || ($currentCountry === '' && !$isEdit));
+                        @endphp
+
                         <label class="inquiry-form-label quarter" for="postcodeInput">
-                            <span class="inquiry-form-label-title">Post code <span class="required">*</span></span>
+                            <span class="inquiry-form-label-title">Post code <span class="required" id="postcodeRequiredStar" style="display: {{ $isMYCountry ? 'inline' : 'none' }};">*</span></span>
                             <div class="inquiry-form-input-wrapper">
                                 <i class="bi bi-mailbox inquiry-input-icon"></i>
-                                <input type="text" id="postcodeInput" name="POSTCODE" value="{{ old('POSTCODE', $inquiry->POSTCODE ?? '') }}" required maxlength="5" inputmode="numeric" class="inquiry-form-input has-icon" placeholder="e.g. 53300">
+                                <input type="text" id="postcodeInput" name="POSTCODE" value="{{ old('POSTCODE', $inquiry->POSTCODE ?? '') }}" {{ $isMYCountry ? 'required' : '' }} maxlength="5" inputmode="numeric" class="inquiry-form-input has-icon" placeholder="e.g. 53300">
                             </div>
                         </label>
 
                         <div class="inquiry-form-label quarter">
-                            <span class="inquiry-form-label-title">City <span class="required">*</span></span>
+                            <span class="inquiry-form-label-title">City <span class="required" id="cityRequiredStar" style="display: {{ $isMYCountry ? 'inline' : 'none' }};">*</span></span>
                             <div class="inquiry-city-input-wrap">
                                 <div class="inquiry-form-input-wrapper">
                                     <i class="bi bi-geo inquiry-input-icon"></i>
-                                    <input type="text" id="cityInput" name="CITY" value="{{ old('CITY', $inquiry->CITY ?? '') }}" required maxlength="100" class="inquiry-form-input has-icon" placeholder="Enter city">
+                                    <input type="text" id="cityInput" name="CITY" value="{{ old('CITY', $inquiry->CITY ?? '') }}" {{ $isMYCountry ? 'required' : '' }} maxlength="100" class="inquiry-form-input has-icon" placeholder="Enter city">
                                 </div>
                                 <div id="googleMapsWrap" style="display: none;">
                                     <a href="#" id="googleMapsBtn" target="_blank" title="View on Google Maps" class="google-maps-btn">
@@ -1057,13 +1270,13 @@
                             <div class="inquiry-form-input-wrapper">
                                 <i class="bi bi-globe inquiry-input-icon"></i>
                                 <select id="countryInput" name="COUNTRY" class="inquiry-form-input has-icon">
-                                    @php
-                                        $currentCountry = old('COUNTRY', $inquiry->COUNTRY ?? '');
-                                        if ($currentCountry === '' && !$isEdit) $currentCountry = 'Malaysia';
-                                    @endphp
-                                    <option value="Malaysia" {{ $currentCountry === 'Malaysia' ? 'selected' : '' }}>Malaysia</option>
-                                    <option value="Singapore" {{ $currentCountry === 'Singapore' ? 'selected' : '' }}>Singapore</option>
+                                    <option value="MY" {{ ($currentCountry === 'MY' || $currentCountry === 'Malaysia') ? 'selected' : '' }}>MY</option>
+                                    <option value="SG" {{ ($currentCountry === 'SG' || $currentCountry === 'Singapore') ? 'selected' : '' }}>SG</option>
+                                    <option value="Other" {{ $isOtherCountry ? 'selected' : '' }}>Other</option>
                                 </select>
+                            </div>
+                            <div class="inquiry-form-input-wrapper" id="otherCountryWrap" style="margin-top: 8px; display: {{ $isOtherCountry ? 'block' : 'none' }};">
+                                <input type="text" id="otherCountryInput" value="{{ $isOtherCountry ? $currentCountry : '' }}" class="inquiry-form-input" placeholder="Enter country name" maxlength="100">
                             </div>
                         </label>
                     </div>
@@ -1225,7 +1438,7 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 var matchedCity = matched.city || '';
                 var matchedState = matched.state || '';
-                var matchedCountry = 'Malaysia';
+                var matchedCountry = 'MY';
 
                 // City
                 if (cityInput.value.trim() === '' || cityInput.value === lastAutoFilledCity) {
@@ -1249,6 +1462,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (countryInput) {
                     countryInput.value = matchedCountry;
                     lastAutoFilledCountry = matchedCountry;
+                    countryInput.dispatchEvent(new Event('change'));
                 }
             }
         }
@@ -1391,6 +1605,30 @@ document.addEventListener('DOMContentLoaded', function () {
 
             for (var key in fields) {
                 var input = document.querySelector('[name="' + key + '"]');
+                if (key === 'COUNTRY') {
+                    var targetCountry = lastCompanyData['country'] || '';
+                    if (targetCountry !== '') {
+                        var normalized = targetCountry.trim();
+                        if (normalized === 'Malaysia' || normalized === 'MY') {
+                            if (countryInput) {
+                                countryInput.value = 'MY';
+                                if (typeof syncCountryFields === 'function') syncCountryFields();
+                            }
+                        } else if (normalized === 'Singapore' || normalized === 'SG') {
+                            if (countryInput) {
+                                countryInput.value = 'SG';
+                                if (typeof syncCountryFields === 'function') syncCountryFields();
+                            }
+                        } else {
+                            if (countryInput && otherCountryInput) {
+                                countryInput.value = 'Other';
+                                otherCountryInput.value = targetCountry;
+                                if (typeof syncCountryFields === 'function') syncCountryFields();
+                            }
+                        }
+                    }
+                    continue;
+                }
                 if (input && lastCompanyData[fields[key]]) {
                     // Fill only if empty
                     if (!input.value || input.value.trim() === '') {
@@ -1520,12 +1758,71 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (lookupBtn) {
                     lookupBtn.classList.remove('is-visible');
                 }
-                // 4. Hide Google Maps link
+                // Hide Google Maps link
                 var googleMapsWrap = document.getElementById('googleMapsWrap');
                 if (googleMapsWrap) {
                     googleMapsWrap.style.display = 'none';
                 }
+                // Reset custom country fields
+                if (typeof syncCountryFields === 'function') {
+                    syncCountryFields();
+                }
             }
+        });
+    }
+
+    // Custom Country field toggle (Other -> show text input)
+    var otherCountryWrap = document.getElementById('otherCountryWrap');
+    var otherCountryInput = document.getElementById('otherCountryInput');
+
+    function syncCountryFields() {
+        if (!countryInput || !otherCountryWrap || !otherCountryInput) return;
+        var val = countryInput.value;
+        if (val === 'Other') {
+            otherCountryWrap.style.display = 'block';
+            otherCountryInput.required = true;
+            countryInput.removeAttribute('name');
+            otherCountryInput.setAttribute('name', 'COUNTRY');
+        } else {
+            otherCountryWrap.style.display = 'none';
+            otherCountryInput.required = false;
+            otherCountryInput.removeAttribute('name');
+            countryInput.setAttribute('name', 'COUNTRY');
+        }
+
+        // Toggle Postcode & City requirements: required ONLY if Country is MY
+        var isMY = (val === 'MY');
+        if (val === 'Other') {
+            var otherVal = otherCountryInput.value.trim().toUpperCase();
+            isMY = (otherVal === 'MY' || otherVal === 'MALAYSIA');
+        }
+
+        var postcodeStar = document.getElementById('postcodeRequiredStar');
+        var cityStar = document.getElementById('cityRequiredStar');
+
+        if (isMY) {
+            if (postcodeInput) postcodeInput.required = true;
+            if (cityInput) cityInput.required = true;
+            if (postcodeStar) postcodeStar.style.display = 'inline';
+            if (cityStar) cityStar.style.display = 'inline';
+        } else {
+            if (postcodeInput) postcodeInput.required = false;
+            if (cityInput) cityInput.required = false;
+            if (postcodeStar) postcodeStar.style.display = 'none';
+            if (cityStar) cityStar.style.display = 'none';
+        }
+    }
+
+    if (countryInput) {
+        countryInput.addEventListener('change', syncCountryFields);
+        countryInput.addEventListener('input', syncCountryFields);
+        syncCountryFields();
+    }
+    if (otherCountryInput) {
+        otherCountryInput.addEventListener('input', function() {
+            syncCountryFields();
+            // Re-dispatch change event to propagate any changes if needed
+            otherCountryInput.dispatchEvent(new Event('change'));
         });
     }
 

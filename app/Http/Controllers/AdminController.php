@@ -1618,7 +1618,7 @@ class AdminController extends Controller
             return back()->with('error', 'Could not mark the inquiry as cancelled. Please try again.');
         }
 
-        return redirect()->route('admin.inquiries')->with('success', 'Lead marked as Cancelled.');
+        return redirect()->route('admin.inquiries', ['tab' => 'assigned'])->with('success', 'Lead marked as Cancelled.');
     }
 
     public function leadStatus(int $leadId): \Illuminate\Http\JsonResponse
@@ -1795,6 +1795,9 @@ class AdminController extends Controller
 
     public function storeInquiry(Request $request): RedirectResponse
     {
+        $country = trim((string)$request->input('COUNTRY', ''));
+        $isMY = ($country === 'MY' || $country === 'Malaysia' || $country === '');
+
         $validated = $request->validate(
             [
                 'COMPANYNAME' => 'required|string|max:50',
@@ -1803,10 +1806,10 @@ class AdminController extends Controller
                 'EMAIL' => 'required|email|max:255',
                 'ADDRESS1' => 'nullable|string|max:255',
                 'ADDRESS2' => 'nullable|string|max:255',
-                'CITY' => 'required|string|max:100',
+                'CITY' => $isMY ? 'required|string|max:100' : 'nullable|string|max:100',
                 'STATE' => 'nullable|string|max:100',
                 'COUNTRY' => 'nullable|string|max:100',
-                'POSTCODE' => 'required|string|digits:5',
+                'POSTCODE' => $isMY ? 'required|string|digits:5' : 'nullable|string|max:20',
                 'BUSINESSNATURE' => 'required|string|max:30',
                 'USERCOUNT' => 'nullable|integer',
                 'EXISTINGSOFTWARE' => 'required|string|max:40',
@@ -1919,10 +1922,10 @@ class AdminController extends Controller
                     $validated['EMAIL'],
                     $validated['ADDRESS1'] ?? null,
                     $validated['ADDRESS2'] ?? null,
-                    $validated['CITY'],
+                    $validated['CITY'] ?? null,
                     $validated['STATE'] ?? null,
                     $validated['COUNTRY'] ?? null,
-                    $validated['POSTCODE'],
+                    $validated['POSTCODE'] ?? null,
                     $validated['BUSINESSNATURE'],
                     $validated['USERCOUNT'] ?? null,
                     $validated['EXISTINGSOFTWARE'],
@@ -1956,6 +1959,9 @@ class AdminController extends Controller
 
     public function updateInquiry(Request $request, int $leadId): RedirectResponse
     {
+        $country = trim((string)$request->input('COUNTRY', ''));
+        $isMY = ($country === 'MY' || $country === 'Malaysia' || $country === '');
+
         $validated = $request->validate(
             [
                 'COMPANYNAME' => 'required|string|max:50',
@@ -1964,10 +1970,10 @@ class AdminController extends Controller
                 'EMAIL' => 'required|email|max:255',
                 'ADDRESS1' => 'nullable|string|max:255',
                 'ADDRESS2' => 'nullable|string|max:255',
-                'CITY' => 'required|string|max:100',
+                'CITY' => $isMY ? 'required|string|max:100' : 'nullable|string|max:100',
                 'STATE' => 'nullable|string|max:100',
                 'COUNTRY' => 'nullable|string|max:100',
-                'POSTCODE' => 'required|string|digits:5',
+                'POSTCODE' => $isMY ? 'required|string|digits:5' : 'nullable|string|max:20',
                 'BUSINESSNATURE' => 'required|string|max:30',
                 'USERCOUNT' => 'nullable|integer',
                 'EXISTINGSOFTWARE' => 'required|string|max:40',
@@ -2097,10 +2103,10 @@ class AdminController extends Controller
                     $validated['EMAIL'],
                     $validated['ADDRESS1'] ?? null,
                     $validated['ADDRESS2'] ?? null,
-                    $validated['CITY'],
+                    $validated['CITY'] ?? null,
                     $validated['STATE'] ?? null,
                     $validated['COUNTRY'] ?? null,
-                    $validated['POSTCODE'],
+                    $validated['POSTCODE'] ?? null,
                     $validated['BUSINESSNATURE'],
                     $validated['USERCOUNT'] ?? null,
                     $validated['EXISTINGSOFTWARE'],

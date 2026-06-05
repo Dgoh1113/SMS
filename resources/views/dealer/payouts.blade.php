@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Pending Payouts - SQL LMS Dealer Console')
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/pages/dealer-inquiries.css') }}?v=20260430-01">
+    <link rel="stylesheet" href="{{ asset('css/pages/dealer-inquiries.css') }}?v=20260605-01">
     <style>
         .dealer-inquiries-panel .inquiries-empty-row .inquiries-empty-cell {
             padding: 0 !important;
