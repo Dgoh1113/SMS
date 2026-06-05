@@ -109,12 +109,18 @@ class FetchInquiries extends Command
                     $empNo = trim($data['EmployeeNo'] ?? '');
                     $reason = trim($data['Reason'] ?? '');
                     $msg = trim($data['Message'] ?? '');
+                    
+                    // Decode common HTML entities that might have survived the parser
+                    $empNo = html_entity_decode(str_replace('&lt;', '<', $empNo), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                    $reason = html_entity_decode(str_replace('&lt;', '<', $reason), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                    $msg = html_entity_decode(str_replace('&lt;', '<', $msg), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
                     $descParts = [];
                     if (!empty($empNo)) {
                         $descParts[] = "Employee No: " . $empNo;
                     }
                     if (!empty($reason)) {
-                        $descParts[] = "Reason: " . $reason;
+                        $descParts[] = "Message: " . $reason;
                     }
                     if (!empty($msg)) {
                         $descParts[] = "Message: " . $msg;
