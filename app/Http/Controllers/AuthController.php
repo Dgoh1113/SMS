@@ -54,12 +54,36 @@ class AuthController extends Controller
         }
 
         $row = DB::selectOne(
-            'SELECT "USERID", "EMAIL", "LASTLOGIN", "ISACTIVE", "ALIAS", "SYSTEMROLE" FROM "USERS" WHERE "USERID" = ?',
+            'SELECT "USERID", "EMAIL", "LASTLOGIN", "ISACTIVE", "ALIAS", "SYSTEMROLE", "COMPANY" FROM "USERS" WHERE "USERID" = ?',
             [$userId]
         );
-        if (!$row || !$row->ISACTIVE) {
+        
+        if (!$row) {
             $this->setupLinkStore()->forgetSetupToken($userId);
             return $this->invalidPasskeySetupLinkView('This passkey setup link is no longer valid.');
+        }
+
+        if (!$row->ISACTIVE) {
+            $this->setupLinkStore()->forgetSetupToken($userId);
+            return $this->invalidPasskeySetupLinkView('Your account is currently inactive. Please contact support.');
+        }
+
+        // Check if someone has already registered a passkey for this account
+        $existingPasskey = DB::selectOne(
+            'SELECT "USER_PASSKEYID" FROM "USER_PASSKEY" WHERE "USERID" = ?',
+            [$userId]
+        );
+        if ($existingPasskey) {
+            // Someone already registered — show "already registered" message
+            $registeredEmail = trim((string) ($row->EMAIL ?? ''));
+            $companyName = trim((string) ($row->COMPANY ?? ''));
+            $displayName = $companyName !== '' ? $companyName : ($row->ALIAS ?? $registeredEmail);
+            return view('auth.passkey-message', [
+                'message' => $registeredEmail . ' has already registered for ' . $displayName . '.',
+                'pageTitle' => 'Already Registered - SQL Sales Management System',
+                'subtitle' => 'Account Already Set Up',
+                'helperText' => 'If you need access, please contact your company administrator.',
+            ]);
         }
 
         $role = $this->systemRoleToSessionRole((string) ($row->SYSTEMROLE ?? ''));
@@ -77,8 +101,17 @@ class AuthController extends Controller
         $request->session()->regenerate();
         $request->session()->regenerateToken();
 
+        // Extract the specific email that clicked the link (if provided in URL)
+        $clickedEmail = trim((string) $request->query('e', ''));
+        if ($clickedEmail === '' || !filter_var($clickedEmail, FILTER_VALIDATE_EMAIL)) {
+            // Fallback to the first email in the DB list if not provided in URL
+            $storedEmail = trim((string) ($row->EMAIL ?? ''));
+            $allEmails = array_filter(array_map('trim', explode(',', $storedEmail)), fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL));
+            $clickedEmail = !empty($allEmails) ? reset($allEmails) : $storedEmail;
+        }
+
         $request->session()->put('user_id', (string) $row->USERID);
-        $request->session()->put('user_email', (string) ($row->EMAIL ?? ''));
+        $request->session()->put('user_email', $clickedEmail);
         $request->session()->put('user_alias', (string) ($row->ALIAS ?? ''));
         $request->session()->put('user_role', $role);
         $request->session()->put('passkey_setup_required', true);

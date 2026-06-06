@@ -40,10 +40,11 @@ class SyncDealers extends Command
         $offset = 0;
         $dealersToSync = [];
 
-        $this->info("Fetching customers from SQL Account API...");
+        $this->line('<fg=green>Fetching customers from SQL Account API...</>');
         try {
             while (true) {
-                $response = Http::withBasicAuth($username, $password)
+                $response = Http::timeout(15)
+                    ->withBasicAuth($username, $password)
                     ->withoutVerifying()
                     ->get($baseUrl . '/customer', [
                         'limit' => $limit,
@@ -56,7 +57,7 @@ class SyncDealers extends Command
                     if ($response->status() === 400 && (str_contains($body, 'No record') || str_contains($body, 'No more record'))) {
                         break;
                     }
-                    $this->error("API Request failed at offset $offset: " . $response->status());
+                    $this->line("<fg=red>API Request failed at offset $offset: " . $response->status() . "</>");
                     break;
                 }
 
@@ -73,7 +74,7 @@ class SyncDealers extends Command
                 $offset += count($list);
             }
 
-            $this->info("Found " . count($dealersToSync) . " customers to sync.");
+            $this->line("<fg=green>Found " . count($dealersToSync) . " customers to sync.</>");
             
             $inserted = 0;
             $updated = 0;
@@ -91,7 +92,8 @@ class SyncDealers extends Command
                     continue;
                 }
 
-                $detailResponse = Http::withBasicAuth($username, $password)
+                $detailResponse = Http::timeout(15)
+                    ->withBasicAuth($username, $password)
                     ->withoutVerifying()
                     ->get($baseUrl . '/customer/' . rawurlencode($code));
 
@@ -128,46 +130,62 @@ class SyncDealers extends Command
                     $city = $branches[0]['city'] ?? '';
                 }
 
-                // Clean and validate email
-                $email = '';
+                // Clean and validate email – collect ALL valid emails as comma-separated
+                $validEmails = [];
                 if (!empty($emailRaw)) {
                     // Split by comma or semicolon
                     $parts = preg_split('/[,;]/', $emailRaw);
                     foreach ($parts as $part) {
                         $cleaned = trim(filter_var(trim($part), FILTER_SANITIZE_EMAIL));
                         if (filter_var($cleaned, FILTER_VALIDATE_EMAIL)) {
-                            $email = $cleaned;
-                            break;
+                            $validEmails[] = $cleaned;
                         }
                     }
                 }
+                $email = implode(',', $validEmails);
 
                 // Apply strict Firebird schema column limits to prevent truncation exceptions
                 $code = Str::limit($code, 50, '');
                 $companyName = Str::limit($companyName, 40, '');
-                $email = !empty($email) ? Str::limit($email, 50, '') : strtolower($code) . '@noemail.local';
+                $email = !empty($email) ? Str::limit($email, 120, '') : strtolower($code) . '@noemail.local';
                 $postcode = Str::limit(preg_replace('/\D/', '', $postcode), 5, '');
                 $city = Str::limit($city, 100, '');
 
                 // Check if dealer code already exists in ALIAS
                 $existingByCode = DB::selectOne(
-                    'SELECT "USERID", "EMAIL" FROM "USERS" WHERE UPPER(TRIM("ALIAS")) = UPPER(TRIM(?))',
+                    'SELECT "USERID", "EMAIL", "LASTLOGIN" FROM "USERS" WHERE UPPER(TRIM("ALIAS")) = UPPER(TRIM(?))',
                     [$code]
                 );
 
                 if ($existingByCode) {
-                    $this->info("Updating existing dealer (by code): $code | Email: " . ($email !== '' ? $email : 'N/A'));
-                    DB::update(
-                        'UPDATE "USERS" SET "EMAIL" = ?, "COMPANY" = ?, "POSTCODE" = ?, "CITY" = ?, "ISACTIVE" = ? WHERE "USERID" = ?',
-                        [
-                            $email,
-                            $companyName !== '' ? $companyName : null,
-                            $postcode !== '' ? $postcode : '',
-                            $city !== '' ? $city : '',
-                            $isActive,
-                            $existingByCode->USERID
-                        ]
-                    );
+                    // Skip EMAIL overwrite if the user has already registered (has logged in)
+                    $hasRegistered = !empty($existingByCode->LASTLOGIN);
+                    if ($hasRegistered) {
+                        $this->line("<fg=green>Updating existing dealer (by code, keeping registered email): $code</>");
+                        DB::update(
+                            'UPDATE "USERS" SET "COMPANY" = ?, "POSTCODE" = ?, "CITY" = ?, "ISACTIVE" = ? WHERE "USERID" = ?',
+                            [
+                                $companyName !== '' ? $companyName : null,
+                                $postcode !== '' ? $postcode : '',
+                                $city !== '' ? $city : '',
+                                $isActive,
+                                $existingByCode->USERID
+                            ]
+                        );
+                    } else {
+                        $this->line("<fg=green>Updating existing dealer (by code): $code | Email: " . ($email !== '' ? $email : 'N/A') . "</>");
+                        DB::update(
+                            'UPDATE "USERS" SET "EMAIL" = ?, "COMPANY" = ?, "POSTCODE" = ?, "CITY" = ?, "ISACTIVE" = ? WHERE "USERID" = ?',
+                            [
+                                $email,
+                                $companyName !== '' ? $companyName : null,
+                                $postcode !== '' ? $postcode : '',
+                                $city !== '' ? $city : '',
+                                $isActive,
+                                $existingByCode->USERID
+                            ]
+                        );
+                    }
                     $updated++;
                 } else {
                     // Check if user with same email exists (only if email is not a placeholder)
@@ -180,7 +198,7 @@ class SyncDealers extends Command
                     }
 
                     if ($existingByEmail) {
-                        $this->info("Updating existing dealer (by email): $email | Code: $code");
+                        $this->line("<fg=green>Updating existing dealer (by email): $email | Code: $code</>");
                         DB::update(
                             'UPDATE "USERS" SET "ALIAS" = ?, "COMPANY" = ?, "POSTCODE" = ?, "CITY" = ?, "ISACTIVE" = ? WHERE "USERID" = ?',
                             [
@@ -194,10 +212,23 @@ class SyncDealers extends Command
                         );
                         $updated++;
                     } else {
-                        $this->info("Inserting new dealer: Code: $code | Company: $companyName | Email: " . ($email !== '' ? $email : 'N/A'));
+                        $this->line("<fg=green>Inserting new dealer: Code: $code | Company: $companyName | Email: " . ($email !== '' ? $email : 'N/A') . "</>");
+                        
+                        $users = DB::select('SELECT "USERID" FROM "USERS" WHERE "USERID" STARTING WITH ?', ['U']);
+                        $maxNum = 0;
+                        foreach ($users as $u) {
+                            $uid = trim($u->USERID ?? $u->userid ?? '');
+                            $num = (int) substr($uid, 1);
+                            if ($num > $maxNum) {
+                                $maxNum = $num;
+                            }
+                        }
+                        $newUserId = 'U' . str_pad((string)($maxNum + 1), 3, '0', STR_PAD_LEFT);
+
                         DB::insert(
-                            'INSERT INTO "USERS" ("EMAIL","PASSWORDHASH","SYSTEMROLE","ISACTIVE","ALIAS","COMPANY","POSTCODE","CITY") VALUES (?,?,?,?,?,?,?,?)',
+                            'INSERT INTO "USERS" ("USERID","EMAIL","PASSWORDHASH","SYSTEMROLE","ISACTIVE","ALIAS","COMPANY","POSTCODE","CITY") VALUES (?,?,?,?,?,?,?,?,?)',
                             [
+                                $newUserId,
                                 $email,
                                 Hash::make(Str::random(64)),
                                 'Dealer',
@@ -212,12 +243,12 @@ class SyncDealers extends Command
                     }
                 }
               } catch (\Throwable $e) {
-                  $this->error("Error syncing $code: " . $e->getMessage());
+                  $this->line("<fg=red>Error syncing $code: " . $e->getMessage() . "</>");
                   $skipped++;
               }
             }
 
-            $this->info("Sync complete. Inserted: $inserted, Updated: $updated, Skipped: $skipped");
+            $this->line("<fg=green>Sync complete. Inserted: $inserted, Updated: $updated, Skipped: $skipped</>");
             return 0;
 
         } catch (\Throwable $e) {

@@ -293,8 +293,11 @@ class PasskeyController extends Controller
         $userIdBinary = ctype_digit($userIdRaw)
             ? pack('N', (int) $userIdRaw)
             : hash('sha256', $userIdRaw, true);
-        $userName = $row->EMAIL;
-        $userDisplayName = $row->EMAIL;
+        $companyName = trim((string) ($row->COMPANY ?? ''));
+        $sessionEmail = trim((string) $request->session()->get('user_email', ''));
+        
+        $userName = $sessionEmail !== '' ? $sessionEmail : $row->EMAIL;
+        $userDisplayName = $companyName !== '' ? $companyName : $userName;
 
         $excludeCredentialIds = [];
         $driver = DB::connection()->getDriverName();
@@ -467,8 +470,26 @@ class PasskeyController extends Controller
         $setupTokenUserId = trim((string) $request->session()->get('passkey_setup_token_user_id', ''));
         $setupRequired = (bool) $request->session()->get('passkey_setup_required', false);
         if ($setupRequired && $setupTokenUserId !== '' && hash_equals($setupTokenUserId, (string) $userId)) {
+            // Lock the account to the specific email address they clicked from
+            $sessionEmail = trim((string) $request->session()->get('user_email', ''));
+            
+            $currentUser = DB::selectOne('SELECT "EMAIL" FROM "USERS" WHERE "USERID" = ?', [$userId]);
+            $storedEmail = trim((string) ($currentUser->EMAIL ?? ''));
+            
+            if (str_contains($storedEmail, ',')) {
+                // If they have a valid session email, use it. Otherwise fallback to the first stored email.
+                if ($sessionEmail !== '' && filter_var($sessionEmail, FILTER_VALIDATE_EMAIL)) {
+                    $finalEmail = $sessionEmail;
+                } else {
+                    $allEmails = array_filter(array_map('trim', explode(',', $storedEmail)), fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL));
+                    $finalEmail = !empty($allEmails) ? reset($allEmails) : $storedEmail;
+                }
+                
+                DB::update('UPDATE "USERS" SET "EMAIL" = ? WHERE "USERID" = ?', [$finalEmail, $userId]);
+                $request->session()->put('user_email', $finalEmail);
+            }
+
             DB::update('UPDATE "USERS" SET "LASTLOGIN" = CURRENT_TIMESTAMP WHERE "USERID" = ?', [$userId]);
-            $this->setupLinkStore()->forgetSetupToken($setupTokenUserId);
             $redirect = $this->dashboardPathForRole($request, (string) $request->session()->get('user_role', 'dealer'));
         }
 
@@ -496,8 +517,20 @@ class PasskeyController extends Controller
 
         $management = $this->resolvePasskeyManagementContext($request, $user);
         if (!$management['can_manage']) {
+            $ownerNickname = '';
+            $driver = $management['driver'];
+            $allPasskeys = DB::select($this->userPasskeySelectSql($driver), [$user->USERID]);
+            foreach ($allPasskeys as $row) {
+                $passkeyId = trim((string) $this->readRowValue($row, ['pk', 'PK', 'user_passkeyid', 'USER_PASSKEYID'], ''));
+                if ($passkeyId === (string) $management['owner_passkey_id']) {
+                    $ownerNickname = trim((string) $this->readRowValue($row, ['Nickname', 'NICKNAME'], ''));
+                    break;
+                }
+            }
+            $nicknameDisplay = $ownerNickname !== '' ? " ($ownerNickname)" : "";
+            
             return response()->json([
-                'error' => 'Access denied. Sign in using the first registered passkey to manage additional passkeys.',
+                'error' => "Access denied. Sign in using the first registered passkey{$nicknameDisplay} to manage additional passkeys.",
             ], 403);
         }
 

@@ -1100,14 +1100,20 @@ class AdminController extends Controller
                     'SELECT
                         TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) AS UID,
                         COUNT(*) AS TOTAL_LEAD,
-                        SUM(CASE WHEN (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
-                                       FROM "LEAD_ACT" la
-                                       WHERE la."LEADID" = l."LEADID"
-                                       ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
-                                      ) IN (\'COMPLETED\', \'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\') THEN 1 ELSE 0 END) AS TOTAL_CLOSED
+                        SUM(CASE WHEN ls."LATEST_STATUS" IN (\'COMPLETED\', \'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\') THEN 1 ELSE 0 END) AS TOTAL_CLOSED
                      FROM "LEAD" l
+                     LEFT JOIN (
+                         SELECT a."LEADID", UPPER(TRIM(a."STATUS")) AS "LATEST_STATUS"
+                         FROM "LEAD_ACT" a
+                         JOIN (
+                             SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
+                             FROM "LEAD_ACT"
+                             GROUP BY "LEADID"
+                         ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
+                     ) ls ON ls."LEADID" = l."LEADID"
                      WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
                        AND l."ASSIGNEDTO" IS NOT NULL AND TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) <> \'\'
+                       AND COALESCE(ls."LATEST_STATUS", \'\') <> \'CANCELLED\'
                      GROUP BY TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50)))'
                 );
                 foreach ($statsRows as $sr) {
@@ -2503,18 +2509,14 @@ class AdminController extends Controller
 
             try {
                 $dealerRows = DB::select(
-                    'SELECT DISTINCT u."USERID", u."COMPANY", u."ALIAS", u."EMAIL"
+                    'SELECT u."USERID", u."COMPANY", u."ALIAS", u."EMAIL"
                      FROM "USERS" u
-                     WHERE EXISTS (
-                         SELECT 1
-                         FROM "LEAD" l
-                         WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
-                           AND TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) = TRIM(CAST(u."USERID" AS VARCHAR(50)))
-                     )
-                     ORDER BY UPPER(TRIM(COALESCE("COMPANY", \'\'))),
-                              UPPER(TRIM(COALESCE("ALIAS", \'\'))),
-                              UPPER(TRIM(COALESCE("EMAIL", \'\'))),
-                              "USERID"'
+                     WHERE TRIM(u."SYSTEMROLE") = ?
+                     ORDER BY UPPER(TRIM(COALESCE(u."COMPANY", \'\'))),
+                              UPPER(TRIM(COALESCE(u."ALIAS", \'\'))),
+                              UPPER(TRIM(COALESCE(u."EMAIL", \'\'))),
+                              u."USERID"',
+                    [\App\Support\AppConstants::ROLE_DEALER]
                 );
             } catch (\Throwable $e) {
                 return $options;
@@ -3965,26 +3967,15 @@ class AdminController extends Controller
     {
         $historyDateFilter = $this->resolveHistoryDateFilter($request);
         
-        $perPage = (int) $request->query('per_page', 10);
-        $page = (int) $request->query('page', 1);
-        if ($perPage < 1) $perPage = 10;
-        if ($page < 1) $page = 1;
-        $skip = ($page - 1) * $perPage;
-
         $where = 'WHERE a."CREATIONDATE" >= ? AND a."CREATIONDATE" <= ?';
         $bindings = [
             $historyDateFilter['rangeStart']->format('Y-m-d H:i:s'),
             $historyDateFilter['rangeEnd']->format('Y-m-d H:i:s'),
         ];
 
-        // Total Count
-        $totalRow = DB::selectOne("SELECT COUNT(*) AS c FROM \"LEAD_ACT\" a $where", $bindings);
-        $total = (int) ($totalRow->C ?? $totalRow->c ?? 0);
-        $lastPage = (int) ceil($total / $perPage);
-
-        // Paginated Rows
+        // Load all matching rows for client-side pagination/filtering
         $rows = DB::select(
-            "SELECT FIRST $perPage SKIP $skip
+            "SELECT
                 a.\"LEAD_ACTID\", a.\"LEADID\", a.\"USERID\", a.\"CREATIONDATE\", a.\"SUBJECT\", a.\"DESCRIPTION\", a.\"ATTACHMENT\", a.\"STATUS\",
                 u.\"ALIAS\",
                 l.\"POSTCODE\", l.\"CITY\", l.\"COMPANYNAME\", l.\"CONTACTNAME\"
@@ -3996,11 +3987,16 @@ class AdminController extends Controller
             $bindings
         );
 
+        $total = count($rows);
+        $perPage = 10;
+        $currentPageNum = 1;
+        $lastPage = max(1, (int) ceil($total / $perPage));
+
         return view('admin.history', array_merge($historyDateFilter, [
             'items' => $rows,
             'total' => $total,
             'perPage' => $perPage,
-            'currentPageNum' => $page,
+            'currentPageNum' => $currentPageNum,
             'lastPage' => $lastPage,
             'currentPage' => 'history',
         ]));
@@ -4297,9 +4293,21 @@ class AdminController extends Controller
                 ->with('error', "User with this email already has the '{$systemRole}' role.");
         }
 
+        $users = DB::select('SELECT "USERID" FROM "USERS" WHERE "USERID" STARTING WITH ?', ['U']);
+        $maxNum = 0;
+        foreach ($users as $u) {
+            $uid = trim($u->USERID ?? $u->userid ?? '');
+            $num = (int) substr($uid, 1);
+            if ($num > $maxNum) {
+                $maxNum = $num;
+            }
+        }
+        $newUserId = 'U' . str_pad((string)($maxNum + 1), 3, '0', STR_PAD_LEFT);
+
         DB::insert(
-            'INSERT INTO "USERS" ("EMAIL","PASSWORDHASH","SYSTEMROLE","ISACTIVE","ALIAS","COMPANY","POSTCODE","CITY") VALUES (?,?,?,?,?,?,?,?)',
+            'INSERT INTO "USERS" ("USERID","EMAIL","PASSWORDHASH","SYSTEMROLE","ISACTIVE","ALIAS","COMPANY","POSTCODE","CITY") VALUES (?,?,?,?,?,?,?,?,?)',
             [
+                $newUserId,
                 $email,
                 Hash::make(Str::random(64)),
                 $systemRole,
@@ -4549,8 +4557,8 @@ class AdminController extends Controller
     private function sendMaintainUserPasskeySetupLink(object $user, ?string $introLine = null): bool
     {
         $userId = trim((string) ($user->USERID ?? ''));
-        $email = trim((string) ($user->EMAIL ?? ''));
-        if ($userId === '' || $email === '' || str_ends_with(strtolower($email), '@noemail.local')) {
+        $emailRaw = trim((string) ($user->EMAIL ?? ''));
+        if ($userId === '' || $emailRaw === '' || str_ends_with(strtolower($emailRaw), '@noemail.local')) {
             return false;
         }
 
@@ -4566,20 +4574,42 @@ class AdminController extends Controller
             $systemName = 'SQL SMS';
         }
 
-        Mail::to($email)->send(new UserPasskeySetupLink(
-            toEmail: $email,
-            recipientName: $recipientName,
-            setupUrl: route('passkey.setup.form', ['token' => $token]),
-            systemName: $systemName,
-            subjectLine: 'Set up your SQL SMS passkey',
-            introLine: $introLine ?? 'Your SQL SMS account is ready.',
-            instructionLine: 'Click the link below to start setting up your passkey:',
-            buttonLabel: 'Set up passkey',
-            expiryLine: 'This link will expire in 24 hours.',
-            ignoreLine: ''
-        ));
+        // Support comma-separated emails: send the same setup link to all addresses
+        $emails = array_filter(array_map('trim', explode(',', $emailRaw)), fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL));
+
+        if (empty($emails)) {
+            return false;
+        }
+
+        foreach ($emails as $singleEmail) {
+            Mail::to($singleEmail)->send(new UserPasskeySetupLink(
+                toEmail: $singleEmail,
+                recipientName: $recipientName,
+                setupUrl: route('passkey.setup.form', ['token' => $token, 'e' => $singleEmail]),
+                systemName: $systemName,
+                subjectLine: 'Set up your SQL SMS passkey',
+                introLine: $introLine ?? 'Your SQL SMS account is ready.',
+                instructionLine: 'Click the link below to start setting up your passkey:',
+                buttonLabel: 'Set up passkey',
+                expiryLine: 'This link will expire in 24 hours.',
+                ignoreLine: ''
+            ));
+        }
 
         $this->setupLinkStore()->markSetupTokenEmailed($userId);
+
+        // Reset the user's passkey status by wiping existing passkeys
+        $driver = DB::connection()->getDriverName();
+        if ($driver === 'pgsql') {
+            DB::delete('DELETE FROM "User_Passkey" WHERE "UserID" = ?', [$userId]);
+        } elseif ($driver === 'sqlsrv') {
+            DB::delete('DELETE FROM [User_Passkey] WHERE [UserID] = ?', [$userId]);
+        } elseif ($driver === 'firebird') {
+            DB::delete('DELETE FROM "USER_PASSKEY" WHERE "USERID" = ?', [$userId]);
+        } else {
+            DB::table('User_Passkey')->where('UserID', $userId)->delete();
+        }
+        DB::update('UPDATE "USERS" SET "LASTLOGIN" = NULL WHERE "USERID" = ?', [$userId]);
 
         return true;
     }

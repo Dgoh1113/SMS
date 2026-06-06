@@ -84,7 +84,7 @@
         $aisLongMsg = $afullMsgTrim !== '' && mb_strlen($afullMsgTrim) > 30;
     @endphp
     <td data-col="message" class="inquiries-msg-cell {{ $aisLongMsg ? 'inquiries-msg-clickable' : '' }}"
-        @if($aisLongMsg) data-full-message="{{ e($afullMsgTrim) }}" @endif>
+        @if($aisLongMsg) data-full-message="{{ $afullMsgTrim }}" @endif>
         {{ $amsgPreview }}
     </td>
     <td data-col="referralcode">{{ $r->REFERRALCODE ?? '-' }}</td>

@@ -111,9 +111,9 @@ class FetchInquiries extends Command
                     $msg = trim($data['Message'] ?? '');
                     
                     // Decode common HTML entities that might have survived the parser
-                    $empNo = html_entity_decode(str_replace('&lt;', '<', $empNo), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-                    $reason = html_entity_decode(str_replace('&lt;', '<', $reason), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-                    $msg = html_entity_decode(str_replace('&lt;', '<', $msg), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                    $empNo = $this->sanitizeEncoding(html_entity_decode(str_replace('&lt;', '<', $empNo), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+                    $reason = $this->sanitizeEncoding(html_entity_decode(str_replace('&lt;', '<', $reason), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+                    $msg = $this->sanitizeEncoding(html_entity_decode(str_replace('&lt;', '<', $msg), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
 
                     $descParts = [];
                     if (!empty($empNo)) {
@@ -136,7 +136,7 @@ class FetchInquiries extends Command
                     $postcode         = Str::limit($data['Postcode'] ?? '', 5, '');
                     $businessNature   = Str::limit($data['BusinessNature'] ?? '', 30, '');
                     $existingSoftware = Str::limit($existingSoftware, 40, '');
-                    $description      = Str::limit($description, 160, '');
+                    $description      = Str::limit($description, 500, '');
                     $country          = Str::limit($data['Country'] ?? 'MY', 100, '');
                     $state            = Str::limit($data['State'] ?? '', 100, '');
 
@@ -241,6 +241,7 @@ class FetchInquiries extends Command
             
             $val = trim($val);
             $val = html_entity_decode($val, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $val = $this->sanitizeEncoding($val);
             $val = preg_replace('/\s+/', ' ', $val); 
             
             if (str_starts_with($val, '[') && str_ends_with($val, ']')) {
@@ -284,7 +285,24 @@ class FetchInquiries extends Command
                 $foundIds[] = $id;
             }
         }
-
         return !empty($foundIds) ? implode(',', array_unique($foundIds)) : '1';
+    }
+
+    /**
+     * Clean encoding issues by replacing special characters with standard ASCII equivalents.
+     */
+    private function sanitizeEncoding($str)
+    {
+        $replacements = [
+            '—' => '-', // em-dash (U+2014)
+            '–' => '-', // en-dash (U+2013)
+            '“' => '"',
+            '”' => '"',
+            '‘' => "'",
+            '’' => "'",
+            '…' => '...',
+            "\xc2\xa0" => ' ', // non-breaking space
+        ];
+        return strtr($str, $replacements);
     }
 }

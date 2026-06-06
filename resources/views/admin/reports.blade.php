@@ -39,7 +39,6 @@
         .reports-page .reports-product-section {
             min-width: 0;
         }
-
         .reports-page .reports-metrics--admin {
             display: grid;
             grid-template-columns: repeat(9, minmax(0, 1fr));
@@ -50,7 +49,6 @@
         .reports-page .reports-metrics--admin > * {
             min-width: 0;
         }
-
         .reports-page .reports-metric-card--admin,
         .reports-page .report-metric-link--admin {
             position: relative;
@@ -279,13 +277,7 @@
         }
 
         .admin-inquiry-trend-legend-button.is-hidden {
-            opacity: 0.45;
-        }
-
-        .admin-inquiry-trend-legend-button:focus-visible {
-            outline: 2px solid rgba(127, 90, 240, 0.22);
-            outline-offset: 4px;
-            border-radius: 999px;
+            opacity: 0.35;
         }
 
         .admin-inquiry-trend-legend-dot {
@@ -294,28 +286,14 @@
             border-radius: 999px;
             flex-shrink: 0;
         }
-
-        .admin-inquiry-trend-legend-dot--inquiries {
-            background: rgba(127, 90, 240, 0.32);
-        }
-
         .admin-inquiry-trend-legend-dot--trend {
             background: #7f5af0;
         }
-
-        .reports-page .reports-inquiry-section .dashboard-panel-body,
-        .reports-page .reports-status-section .dashboard-panel-body,
-        .reports-page .reports-product-section .dashboard-panel-body {
-            padding: 0 18px 16px;
+        .admin-inquiry-trend-legend-dot--ma {
+            background: #f59e0b;
         }
-
-        .dealer-reports-card,
-        .dealer-reports-status-card,
-        .reports-product-card {
-            border: 1px solid #eef2f8;
-            border-radius: 16px;
-            background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
-            padding: 10px 12px 8px;
+        html.theme-dark .admin-inquiry-trend-legend-dot--ma {
+            background: #ffd384;
         }
 
         .reports-page .reports-inquiry-section .dealer-reports-card {
@@ -593,6 +571,11 @@
                 grid-template-columns: repeat(1, minmax(0, 1fr));
                 gap: 12px;
             }
+
+            .reports-page .reports-metrics--admin > * {
+                grid-column: span 1;
+            }
+
             .reports-page .reports-tabs-nav {
                 align-items: stretch;
                 text-align: center;
@@ -693,117 +676,135 @@
                 min-width: 0;
             }
         }
+
         @media print {
             @page {
                 size: A4 landscape;
                 margin: 3mm;
             }
-            body {
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) {
                 background: white !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
                 font-size: 9px !important;
             }
-            .sidebar-nav, .top-nav, .reports-page-tabs-shell, .reports-filter-bar, .reports-page-filters-shell form, .admin-inquiry-trend-legend {
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .sidebar-nav,
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .top-nav,
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .reports-page-tabs-shell,
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .reports-filter-bar,
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .reports-page-filters-shell form,
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .admin-inquiry-trend-legend {
                 display: none !important;
             }
-            .dashboard-content {
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .dashboard-content {
                 margin: 0 !important;
                 padding: 0 !important;
                 width: 100% !important;
                 zoom: 0.42 !important;
             }
-            .reports-page {
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .reports-page {
                 padding: 0 !important;
                 margin: 0 !important;
             }
-            .reports-page-layout {
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .reports-page-layout {
                 gap: 4px !important;
             }
-            .reports-metrics--admin {
-                grid-template-columns: repeat(9, 1fr) !important;
+
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .reports-metrics--admin {
+                display: flex !important;
+                flex-wrap: wrap !important;
+                justify-content: center !important;
                 gap: 4px !important;
                 margin-bottom: 4px !important;
             }
-            .reports-metric-card--admin, .report-metric-link--admin {
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .reports-metrics--admin > * {
+                flex: 0 0 calc(20% - 4px) !important;
+                width: calc(20% - 4px) !important;
+            }
+
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .reports-metric-card--admin,
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .report-metric-link--admin {
                 min-height: 106px !important;
                 padding: 12px !important;
                 border-radius: 10px !important;
             }
-            .reports-metric-icon {
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .reports-metric-icon {
                 width: 32px !important;
                 height: 32px !important;
                 min-width: 32px !important;
                 font-size: 15px !important;
             }
-            .reports-metric-card--admin .reports-metric-value {
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .reports-metric-card--admin .reports-metric-value {
                 font-size: 29px !important;
                 margin-top: 3px !important;
             }
-            .reports-metric-card--admin .reports-metric-label {
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .reports-metric-card--admin .reports-metric-label {
                 font-size: 11px !important;
             }
-            .reports-admin-metric-trend, .reports-admin-metric-link-indicator {
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .reports-admin-metric-trend,
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .reports-admin-metric-link-indicator {
                 display: none !important;
             }
-            .dashboard-panels-two-column {
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .dashboard-panels-two-column {
                 grid-template-columns: 1.25fr 0.75fr !important;
                 gap: 4px !important;
                 margin-bottom: 4px !important;
             }
-            .dealer-reports-chart-wrapper {
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .dealer-reports-chart-wrapper {
                 height: auto !important;
                 min-height: 120px !important;
                 max-height: none !important;
                 overflow: visible !important;
             }
-            .reports-product-chart-wrapper {
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .reports-product-chart-wrapper {
                 height: auto !important;
                 min-height: 120px !important;
                 max-height: none !important;
                 overflow: visible !important;
             }
-            .report-donut {
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .report-donut {
                 width: 150px !important;
                 height: 150px !important;
             }
-            .report-donut-total {
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .report-donut-total {
                 font-size: 25px !important;
             }
-            .report-status-body {
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .report-status-body {
                 display: grid !important;
                 grid-template-columns: minmax(0, 1fr) !important;
                 grid-template-rows: auto auto !important;
                 justify-items: center !important;
                 gap: 3px !important;
             }
-            .report-legend {
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .report-legend {
                 grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
                 width: 100% !important;
                 max-width: 320px !important;
                 margin: 10px auto 0 !important;
                 gap: 5px 16px !important;
             }
-            .report-legend li {
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .report-legend li {
                 font-size: 11px !important;
             }
-            .report-legend-color {
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .report-legend-color {
                 width: 10px !important;
                 height: 10px !important;
             }
-            .dashboard-panel-title {
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .dashboard-panel-title {
                 font-size: 10px !important;
             }
-            .reports-inquiry-subtitle, .reports-status-subtitle, .reports-product-subtitle {
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .reports-inquiry-subtitle,
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .reports-status-subtitle,
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .reports-product-subtitle {
                 font-size: 8px !important;
             }
-            .reports-product-section {
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .reports-product-section {
                 margin-top: 4px !important;
             }
-            .dashboard-panel-header {
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .dashboard-panel-header {
                 padding: 4px 6px 2px !important;
             }
-            .dashboard-panel-body {
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .dashboard-panel-body {
                 padding: 0 6px 4px !important;
             }
         }
@@ -969,7 +970,7 @@
             </div>
         </div>
 
-        <div class="reports-filter-container rv2-filter" style="width: 189px; min-height: 90px; display: flex; flex-direction: column;">
+        <div class="reports-filter-container rv2-filter" style="width: 189px; min-width: 189px; max-width: 189px; min-height: 90px; display: flex; flex-direction: column;">
             <div class="reports-range-label" style="display: flex; align-items: center; font-size: 9px; font-weight: 800; height: 1.6em;">DEALER SCOPE</div>
             <div style="flex: 1; display: flex; align-items: flex-end;">
                 <div style="width: 100%; max-width: 100%; --report-scope-picker-width: 100%;">
@@ -1070,22 +1071,18 @@
                             <canvas id="adminInquiryTrendChart"></canvas>
                         </div>
                     </div>
-                    <div class="admin-inquiry-trend-legend" id="adminInquiryTrendLegend">
-                        <button type="button"
-                                class="admin-inquiry-trend-legend-button"
-                                data-dataset-index="0"
-                                aria-pressed="true">
-                            <span class="admin-inquiry-trend-legend-dot admin-inquiry-trend-legend-dot--inquiries"></span>
-                            <span>Inquiries</span>
-                        </button>
-                        <button type="button"
-                                class="admin-inquiry-trend-legend-button"
-                                data-dataset-index="1"
-                                aria-pressed="true">
+
+                    <div class="admin-inquiry-trend-legend" id="adminInquiryTrendLegend" style="justify-content: center; gap: 20px; margin-top: 8px;">
+                        <button class="admin-inquiry-trend-legend-button" data-dataset-index="0" type="button">
                             <span class="admin-inquiry-trend-legend-dot admin-inquiry-trend-legend-dot--trend"></span>
                             <span>Trend</span>
                         </button>
+                        <button class="admin-inquiry-trend-legend-button" data-dataset-index="1" type="button">
+                            <span class="admin-inquiry-trend-legend-dot admin-inquiry-trend-legend-dot--ma"></span>
+                            <span>Moving Average</span>
+                        </button>
                     </div>
+
                 @endif
             </div>
         </div>
@@ -1762,6 +1759,24 @@
                         tooltipLabels = monthBuckets.tooltips;
                     }
 
+                    function calculateMovingAverage(values, period) {
+                        const ma = [];
+                        for (let i = 0; i < values.length; i++) {
+                            let sum = 0;
+                            let count = 0;
+                            const start = Math.max(0, i - period + 1);
+                            for (let j = start; j <= i; j++) {
+                                sum += Number(values[j] || 0);
+                                count++;
+                            }
+                            ma.push(count > 0 ? sum / count : 0);
+                        }
+                        return ma;
+                    }
+
+                    const maPeriod = inquiryValues.length <= 10 ? 3 : 7;
+                    const movingAverageValues = calculateMovingAverage(inquiryValues, maPeriod);
+
                     const showAllWeekTicks = reportPeriod === 'month';
                     const totalDays = inquiryLabels.length;
                     let tickStep = 15;
@@ -1824,20 +1839,7 @@
                     }
 
                     function getNearestDateIndex(chart, x) {
-                        const labels = chart.data.labels || [];
-                        if (!labels.length) {
-                            return null;
-                        }
-
-                        const lineMeta = chart.getDatasetMeta(1);
-                        const barMeta = chart.getDatasetMeta(0);
-                        const points = lineMeta && Array.isArray(lineMeta.data) && lineMeta.data.length === labels.length
-                            ? lineMeta.data
-                            : (barMeta && Array.isArray(barMeta.data) ? barMeta.data : []);
-
-                        if (!points.length) {
-                            return null;
-                        }
+                        const points = chart.getDatasetMeta(0).data;
 
                         let nearestIndex = 0;
                         let smallestDistance = Infinity;
@@ -1952,35 +1954,54 @@
                             labels: inquiryLabels,
                             datasets: [
                                 {
-                                    type: 'bar',
-                                    label: 'Inquiries',
-                                    data: inquiryValues,
-                                    backgroundColor: columnColor,
-                                    borderColor: 'rgba(127, 90, 240, 0.18)',
-                                    borderWidth: 0,
-                                    borderRadius: 4,
-                                    borderSkipped: false,
-                                    barPercentage: 0.34,
-                                    categoryPercentage: 0.78,
-                                    maxBarThickness: 14,
-                                    pointStyle: 'circle'
-                                },
-                                {
                                     type: 'line',
                                     label: 'Trend',
                                     data: inquiryValues,
                                     borderColor: brandColor,
-                                    backgroundColor: brandColor,
-                                    borderWidth: 2.25,
-                                    pointBackgroundColor: brandColor,
+                                    borderWidth: 3,
+                                    pointBackgroundColor: darkTheme ? '#0e1424' : '#ffffff',
                                     pointBorderColor: brandColor,
-                                    pointBorderWidth: 0,
-                                    pointRadius: 0,
-                                    pointHoverRadius: 4,
-                                    pointHitRadius: 0,
+                                    pointBorderWidth: 2.5,
+                                    pointRadius: 2,
+                                    pointHoverRadius: 6,
+                                    pointHoverBackgroundColor: brandColor,
+                                    pointHoverBorderColor: '#ffffff',
+                                    pointHoverBorderWidth: 2,
+                                    pointHitRadius: 10,
                                     pointStyle: 'circle',
                                     cubicInterpolationMode: 'monotone',
-                                    tension: 0.42,
+                                    tension: 0.35,
+                                    fill: 'origin',
+                                    backgroundColor: function(context) {
+                                        const chart = context.chart;
+                                        const {ctx, chartArea} = chart;
+                                        if (!chartArea) {
+                                            return null;
+                                        }
+                                        const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                                        gradient.addColorStop(0, darkTheme ? 'rgba(178, 150, 255, 0.36)' : 'rgba(127, 90, 240, 0.28)');
+                                        gradient.addColorStop(1, darkTheme ? 'rgba(178, 150, 255, 0.01)' : 'rgba(127, 90, 240, 0.01)');
+                                        return gradient;
+                                    }
+                                },
+                                {
+                                    type: 'line',
+                                    label: 'Moving Average',
+                                    data: movingAverageValues,
+                                    borderColor: darkTheme ? '#ffd384' : '#f59e0b',
+                                    borderWidth: 2.5,
+                                    pointBackgroundColor: darkTheme ? '#0e1424' : '#ffffff',
+                                    pointBorderColor: darkTheme ? '#ffd384' : '#f59e0b',
+                                    pointBorderWidth: 2,
+                                    pointRadius: 0,
+                                    pointHoverRadius: 5,
+                                    pointHoverBackgroundColor: darkTheme ? '#ffd384' : '#f59e0b',
+                                    pointHoverBorderColor: '#ffffff',
+                                    pointHoverBorderWidth: 2,
+                                    pointHitRadius: 10,
+                                    pointStyle: 'circle',
+                                    cubicInterpolationMode: 'monotone',
+                                    tension: 0.35,
                                     fill: false
                                 }
                             ]

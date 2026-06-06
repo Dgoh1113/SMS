@@ -2177,53 +2177,60 @@
     function replaceExportCanvases(sourceRoot, cloneRoot) {
         var sourceCanvases = sourceRoot.querySelectorAll('canvas');
         var cloneCanvases = cloneRoot.querySelectorAll('canvas');
-        var exportScale = 3;
 
         function captureCanvasDataUrl(sourceCanvas) {
-            var sourceChart = window.Chart && typeof window.Chart.getChart === 'function'
-                ? window.Chart.getChart(sourceCanvas)
-                : null;
-
-            if (sourceChart && sourceCanvas.getBoundingClientRect) {
-                var rect = sourceCanvas.getBoundingClientRect();
-                var originalDevicePixelRatio = sourceChart.options.devicePixelRatio;
-                var originalResponsive = sourceChart.options.responsive;
-                var originalAnimation = sourceChart.options.animation;
-
-                try {
-                    sourceChart.options.devicePixelRatio = exportScale;
-                    sourceChart.options.responsive = false;
-                    sourceChart.options.animation = false;
-                    sourceChart.resize(Math.max(1, Math.round(rect.width)), Math.max(1, Math.round(rect.height)));
-                    sourceChart.update('none');
-                    return sourceCanvas.toDataURL('image/png');
-                } finally {
-                    sourceChart.options.devicePixelRatio = originalDevicePixelRatio;
-                    sourceChart.options.responsive = originalResponsive;
-                    sourceChart.options.animation = originalAnimation;
-                    sourceChart.resize();
-                    sourceChart.update('none');
+            try {
+                // If canvas is very tall, scale it down to prevent massive base64 strings
+                if (sourceCanvas.height > 1200) {
+                    var scale = 1000 / sourceCanvas.height;
+                    var smallCanvas = document.createElement('canvas');
+                    smallCanvas.width = Math.max(1, sourceCanvas.width * scale);
+                    smallCanvas.height = 1000;
+                    var smallCtx = smallCanvas.getContext('2d');
+                    if (smallCtx) {
+                        smallCtx.fillStyle = '#ffffff';
+                        smallCtx.fillRect(0, 0, smallCanvas.width, smallCanvas.height);
+                        smallCtx.drawImage(sourceCanvas, 0, 0, smallCanvas.width, smallCanvas.height);
+                        return smallCanvas.toDataURL('image/jpeg', 0.85);
+                    }
                 }
-            }
-
-            var highResCanvas = document.createElement('canvas');
-            highResCanvas.width = Math.max(1, Math.round(sourceCanvas.width * exportScale));
-            highResCanvas.height = Math.max(1, Math.round(sourceCanvas.height * exportScale));
-            var highResContext = highResCanvas.getContext('2d');
-
-            if (!highResContext) {
+                
+                // For normal canvases, just use JPEG to reduce string size
+                var bgCanvas = document.createElement('canvas');
+                bgCanvas.width = sourceCanvas.width;
+                bgCanvas.height = sourceCanvas.height;
+                var bgCtx = bgCanvas.getContext('2d');
+                if (bgCtx) {
+                    bgCtx.fillStyle = '#ffffff';
+                    bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+                    bgCtx.drawImage(sourceCanvas, 0, 0);
+                    return bgCanvas.toDataURL('image/jpeg', 0.9);
+                }
+                
                 return sourceCanvas.toDataURL('image/png');
+            } catch (e) {
+                return '';
             }
-
-            highResContext.imageSmoothingEnabled = true;
-            highResContext.imageSmoothingQuality = 'high';
-            highResContext.drawImage(sourceCanvas, 0, 0, highResCanvas.width, highResCanvas.height);
-            return highResCanvas.toDataURL('image/png');
         }
 
         Array.prototype.forEach.call(sourceCanvases, function (sourceCanvas, index) {
-            var cloneCanvas = cloneCanvases[index];
+            var id = sourceCanvas.id;
+            var cloneCanvas = id ? cloneRoot.querySelector('#' + id) : cloneCanvases[index];
             if (!cloneCanvas) return;
+
+            var rect = sourceCanvas.getBoundingClientRect();
+
+            if (sourceCanvas.width === 0 || sourceCanvas.height === 0) {
+                var errorMsg = document.createElement('div');
+                errorMsg.style.color = '#ef4444';
+                errorMsg.style.fontWeight = 'bold';
+                errorMsg.textContent = 'Canvas width/height is 0!';
+                cloneCanvas.parentNode.appendChild(errorMsg);
+                if (cloneCanvas.parentNode) {
+                    cloneCanvas.parentNode.removeChild(cloneCanvas);
+                }
+                return;
+            }
 
             var image = document.createElement('img');
             image.className = 'report-export-canvas-image';
@@ -2235,14 +2242,8 @@
                 return;
             }
 
-            var rect = sourceCanvas.getBoundingClientRect();
-            if (rect.width > 0) {
-                image.style.width = rect.width + 'px';
-                image.style.maxWidth = '100%';
-            } else {
-                image.style.width = '100%';
-            }
-            image.style.height = 'auto';
+            image.style.width = '100%';
+            image.style.height = '100%';
 
             cloneCanvas.replaceWith(image);
         });
@@ -2257,11 +2258,23 @@
             '.rv2-filtered-layer-head',
             '.rrp-filter-row',
             '.report-filter-actions',
+            '.reports-fullscreen-btn',
+            '.reports-product-chart-mobile-wrapper',
             '[data-export-report-pdf]'
         ].forEach(function (selector) {
             root.querySelectorAll(selector).forEach(function (node) {
                 node.remove();
             });
+        });
+
+        // Strip inline heights from chart wrappers so CSS can control them properly
+        root.querySelectorAll('.reports-product-chart-desktop-wrapper').forEach(function (el) {
+            el.style.removeProperty('height');
+            el.style.height = 'auto';
+        });
+        // Hide fallback text
+        root.querySelectorAll('.reports-product-chart-fallback').forEach(function (el) {
+            el.style.display = 'none';
         });
     }
 
@@ -2304,7 +2317,8 @@
             '.report-export-monthly-performance .report-export-content{position:relative;overflow:hidden;}',
             '.report-export-monthly-performance .report-export-content .reports-page:not(.dealer-reports-page){display:block !important;max-width:none !important;transform-origin:top left !important;zoom:1 !important;}',
             '.report-export-monthly-performance .report-export-content .reports-page:not(.dealer-reports-page) .reports-page-layout{gap:12px !important;}',
-            '.report-export-monthly-performance .report-export-content .reports-page:not(.dealer-reports-page) .reports-metrics--admin{display:grid !important;grid-template-columns:repeat(8,minmax(0,1fr)) !important;gap:8px !important;margin:0 0 12px !important;}',
+            '.report-export-monthly-performance .report-export-content .reports-page:not(.dealer-reports-page) .reports-metrics--admin{display:flex !important;flex-wrap:wrap !important;justify-content:center !important;gap:8px !important;margin:0 0 12px !important;}',
+            '.report-export-monthly-performance .report-export-content .reports-page:not(.dealer-reports-page) .reports-metrics--admin > *{flex:0 0 calc(20% - 7px) !important;width:calc(20% - 7px) !important;}',
             '.report-export-monthly-performance .report-export-content .reports-page:not(.dealer-reports-page) .reports-metric-card--admin,.report-export-monthly-performance .report-export-content .reports-page:not(.dealer-reports-page) .report-metric-link--admin{min-height:76px !important;padding:8px 10px !important;border-radius:8px !important;box-shadow:none !important;}',
             '.report-export-monthly-performance .report-export-content .reports-admin-metric-top{margin-bottom:6px !important;}',
             '.report-export-monthly-performance .report-export-content .reports-admin-metric-link-indicator{display:none !important;}',
@@ -2330,20 +2344,20 @@
             '.report-export-monthly-performance .report-export-content .report-donut-center{inset:50% auto auto 50% !important;width:85px !important;height:85px !important;transform:translate(-50%,-50%) !important;display:flex !important;flex-direction:column !important;align-items:center !important;justify-content:center !important;gap:2px !important;text-align:center !important;box-shadow:0 3px 8px rgba(15,23,42,.06) !important;}',
             '.report-export-monthly-performance .report-export-content .report-donut-total{display:block !important;font-size:26px !important;line-height:.95 !important;margin:0 !important;}',
             '.report-export-monthly-performance .report-export-content .report-donut-label{display:block !important;font-size:10px !important;line-height:1 !important;margin:0 !important;}',
-            '.report-export-monthly-performance .report-export-content .report-legend{display:grid !important;grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:6px 16px !important;margin:16px 0 0 0 !important;font-size:11px !important;line-height:1.2 !important;}',
+            '.report-export-monthly-performance .report-export-content .report-legend{display:grid !important;grid-template-columns:1fr !important;gap:6px 16px !important;margin:16px 0 0 0 !important;font-size:14px !important;line-height:1.2 !important;font-weight:600 !important;}',
             '.report-export-monthly-performance .report-export-content .report-legend li{min-width:0 !important;gap:6px !important;}',
-            '.report-export-monthly-performance .report-export-content .report-legend-color{width:10px !important;height:10px !important;}',
-            '.report-export-monthly-performance .report-export-content .reports-product-section{margin-top:12px !important;break-inside:auto !important;page-break-inside:auto !important;}',
+            '.report-export-monthly-performance .report-export-content .report-legend-color{width:14px !important;height:14px !important;}',
+            '.report-export-monthly-performance .report-export-content .reports-product-section{margin-top:12px !important;break-inside:avoid !important;page-break-inside:avoid !important;}',
             '.report-export-monthly-performance .report-export-content .reports-product-scale{gap:8px !important;}',
-            '.report-export-monthly-performance .report-export-content .reports-product-scale-chip{font-size:10px !important;padding:4px 8px !important;}',
-            '.report-export-monthly-performance .report-export-content .reports-product-chart-wrapper{height:240px !important;min-height:240px !important;max-height:240px !important;padding:0 !important;overflow:hidden !important;}',
+            '.report-export-monthly-performance .report-export-content .reports-product-scale-chip{font-size:13px !important;padding:6px 10px !important;font-weight:600 !important;}',
+            '.report-export-monthly-performance .report-export-content .reports-product-chart-wrapper,.report-export-monthly-performance .report-export-content .reports-product-chart-desktop-wrapper{height:240px !important;min-height:240px !important;max-height:240px !important;padding:0 !important;overflow:hidden !important;}',
             '.report-export-monthly-performance .report-export-content .reports-product-section .report-export-canvas-image{width:100% !important;height:240px !important;object-fit:contain !important;}',
             '.report-export-monthly-performance .report-export-content .dealer-reports-empty,.report-export-monthly-performance .report-export-content .reports-product-empty{font-size:12px !important;padding:20px 8px !important;}',
             '.report-export-dealer-performance .report-export-shell{box-sizing:border-box;padding:5mm 6mm !important;}',
             '.report-export-dealer-performance .report-export-heading{gap:10px;margin-bottom:8px;padding-bottom:6px;}',
             '.report-export-dealer-performance .report-export-title{font-size:18px;line-height:1.1;}',
             '.report-export-dealer-performance .report-export-meta{font-size:9px;}',
-            '.report-export-dealer-performance .report-export-content .dealer-reports-page{padding:0 !important;margin:0 !important;gap:7px !important;zoom:.86 !important;overflow:visible !important;background:#fff !important;}',
+            '.report-export-dealer-performance .report-export-content .dealer-reports-page{padding:0 !important;margin:0 !important;gap:5px !important;overflow:visible !important;background:#fff !important;}',
             '.report-export-dealer-performance .report-export-content .dealer-reports-page .reports-header{display:none !important;}',
             '.report-export-dealer-performance .report-export-content .dealer-reports-page .reports-metrics{display:grid !important;grid-template-columns:repeat(7,minmax(0,1fr)) !important;gap:7px !important;margin:0 0 7px !important;}',
             '.report-export-dealer-performance .report-export-content .dealer-reports-page .reports-metric-card{min-height:80px !important;padding:10px 12px !important;border-radius:10px !important;box-shadow:none !important;}',
@@ -2359,23 +2373,24 @@
             '.report-export-dealer-performance .report-export-content .dealer-reports-page .reports-inquiry-subtitle,.report-export-dealer-performance .report-export-content .dealer-reports-page .dealer-reports-status-subtitle,.report-export-dealer-performance .report-export-content .dealer-reports-page .reports-product-subtitle{font-size:9px !important;line-height:1.15 !important;}',
             '.report-export-dealer-performance .report-export-content .dealer-reports-page .reports-inquiry-chip{padding:5px 10px !important;font-size:9px !important;}',
             '.report-export-dealer-performance .report-export-content .dealer-reports-page .dealer-reports-card,.report-export-dealer-performance .report-export-content .dealer-reports-page .dealer-reports-status-card,.report-export-dealer-performance .report-export-content .dealer-reports-page .reports-product-card{padding:7px !important;border-radius:9px !important;}',
-            '.report-export-dealer-performance .report-export-content .dealer-reports-page .reports-inquiry-section .dealer-reports-chart-wrapper{height:260px !important;min-height:260px !important;padding:0 !important;}',
-            '.report-export-dealer-performance .report-export-content .dealer-reports-page .reports-inquiry-section .report-export-canvas-image{width:100% !important;height:260px !important;object-fit:contain !important;}',
+            '.report-export-dealer-performance .report-export-content .dealer-reports-page .dealer-reports-chart-scroll-wrapper{overflow:visible !important;width:auto !important;min-width:0 !important;padding:0 !important;margin:0 !important;display:block !important;}',
+            '.report-export-dealer-performance .report-export-content .dealer-reports-page .reports-inquiry-section .dealer-reports-chart-wrapper{height:220px !important;min-height:220px !important;padding:0 !important;overflow:hidden !important;}',
+            '.report-export-dealer-performance .report-export-content .dealer-reports-page .reports-inquiry-section .report-export-canvas-image{width:100% !important;height:220px !important;object-fit:fill !important;}',
             '.report-export-dealer-performance .report-export-content .dealer-reports-page .report-status-body{display:grid !important;grid-template-columns:minmax(0,.78fr) minmax(0,1fr) !important;align-items:center !important;gap:8px !important;}',
-            '.report-export-dealer-performance .report-export-content .dealer-reports-page .dealer-reports-status-card{min-height:210px !important;display:flex !important;align-items:center !important;justify-content:center !important;border:0 !important;background:transparent !important;box-shadow:none !important;}',
-            '.report-export-dealer-performance .report-export-content .dealer-reports-page .report-donut-wrapper{height:200px !important;min-height:200px !important;display:flex !important;align-items:center !important;justify-content:center !important;}',
-            '.report-export-dealer-performance .report-export-content .dealer-reports-page .report-donut{width:170px !important;height:170px !important;filter:saturate(1.18) contrast(1.05);box-shadow:inset 0 0 0 1px rgba(15,23,42,.08),0 8px 18px rgba(15,23,42,.08) !important;}',
-            '.report-export-dealer-performance .report-export-content .dealer-reports-page .report-donut-center{inset:50% auto auto 50% !important;width:96px !important;height:96px !important;transform:translate(-50%,-50%) !important;display:flex !important;flex-direction:column !important;align-items:center !important;justify-content:center !important;gap:2px !important;text-align:center !important;box-shadow:0 3px 10px rgba(15,23,42,.06) !important;}',
-            '.report-export-dealer-performance .report-export-content .dealer-reports-page .report-donut-total{display:block !important;font-size:22px !important;line-height:.95 !important;margin:0 !important;}',
+            '.report-export-dealer-performance .report-export-content .dealer-reports-page .dealer-reports-status-card{min-height:170px !important;display:flex !important;align-items:center !important;justify-content:center !important;border:0 !important;background:transparent !important;box-shadow:none !important;}',
+            '.report-export-dealer-performance .report-export-content .dealer-reports-page .report-donut-wrapper{height:150px !important;min-height:150px !important;display:flex !important;align-items:center !important;justify-content:center !important;}',
+            '.report-export-dealer-performance .report-export-content .dealer-reports-page .report-donut{width:130px !important;height:130px !important;filter:saturate(1.18) contrast(1.05);box-shadow:inset 0 0 0 1px rgba(15,23,42,.08),0 8px 18px rgba(15,23,42,.08) !important;}',
+            '.report-export-dealer-performance .report-export-content .dealer-reports-page .report-donut-center{inset:50% auto auto 50% !important;width:76px !important;height:76px !important;transform:translate(-50%,-50%) !important;display:flex !important;flex-direction:column !important;align-items:center !important;justify-content:center !important;gap:2px !important;text-align:center !important;box-shadow:0 3px 10px rgba(15,23,42,.06) !important;}',
+            '.report-export-dealer-performance .report-export-content .dealer-reports-page .report-donut-total{display:block !important;font-size:18px !important;line-height:.95 !important;margin:0 !important;}',
             '.report-export-dealer-performance .report-export-content .dealer-reports-page .report-donut-label{display:block !important;font-size:8px !important;line-height:1 !important;margin:0 !important;}',
-            '.report-export-dealer-performance .report-export-content .dealer-reports-page .report-legend{display:grid !important;grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:4px 12px !important;margin:0 !important;padding:0 !important;font-size:9px !important;line-height:1.15 !important;}',
+            '.report-export-dealer-performance .report-export-content .dealer-reports-page .report-legend{display:grid !important;grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:4px 12px !important;margin:0 !important;padding:0 !important;font-size:12px !important;line-height:1.15 !important;font-weight:600 !important;}',
             '.report-export-dealer-performance .report-export-content .dealer-reports-page .report-legend li{min-width:0 !important;gap:5px !important;}',
-            '.report-export-dealer-performance .report-export-content .dealer-reports-page .report-legend-color{width:8px !important;height:8px !important;}',
-            '.report-export-dealer-performance .report-export-content .dealer-reports-page .reports-product-section{margin-top:7px !important;break-inside:auto !important;page-break-inside:auto !important;}',
+            '.report-export-dealer-performance .report-export-content .dealer-reports-page .report-legend-color{width:12px !important;height:12px !important;}',
+            '.report-export-dealer-performance .report-export-content .dealer-reports-page .reports-product-section{margin-top:7px !important;break-inside:avoid !important;page-break-inside:avoid !important;}',
             '.report-export-dealer-performance .report-export-content .dealer-reports-page .reports-product-scale{gap:6px !important;}',
-            '.report-export-dealer-performance .report-export-content .dealer-reports-page .reports-product-scale-chip{font-size:8px !important;padding:3px 7px !important;}',
-            '.report-export-dealer-performance .report-export-content .dealer-reports-page .reports-product-chart-wrapper{height:375px !important;min-height:375px !important;padding:0 !important;}',
-            '.report-export-dealer-performance .report-export-content .dealer-reports-page .reports-product-section .report-export-canvas-image{width:100% !important;height:375px !important;object-fit:contain !important;}',
+            '.report-export-dealer-performance .report-export-content .dealer-reports-page .reports-product-scale-chip{font-size:11px !important;padding:4px 8px !important;font-weight:600 !important;}',
+            '.report-export-dealer-performance .report-export-content .dealer-reports-page .reports-product-chart-wrapper,.report-export-dealer-performance .report-export-content .dealer-reports-page .reports-product-chart-desktop-wrapper{height:200px !important;min-height:200px !important;max-height:200px !important;padding:0 !important;overflow:hidden !important;}',
+            '.report-export-dealer-performance .report-export-content .dealer-reports-page .reports-product-section .report-export-canvas-image,.report-export-dealer-performance .report-export-content .dealer-reports-page .reports-product-chart-desktop-wrapper .report-export-canvas-image{display:block !important;width:100% !important;height:200px !important;max-height:200px !important;object-fit:contain !important;}',
             '.report-export-dealer-performance .report-export-content .dealer-reports-page .dealer-reports-empty,.report-export-dealer-performance .report-export-content .dealer-reports-page .reports-product-empty{font-size:10px !important;padding:28px 10px !important;}',
             '.report-export-dealer-sales-overtime .report-export-shell{box-sizing:border-box;padding:5mm 6mm !important;}',
             '.report-export-dealer-sales-overtime .report-export-heading{gap:10px;margin-bottom:8px;padding-bottom:6px;}',
@@ -2385,8 +2400,12 @@
             '.report-export-dealer-revenue-production .report-export-heading{gap:10px;margin-bottom:8px;padding-bottom:6px;}',
             '.report-export-dealer-revenue-production .report-export-title{font-size:18px;line-height:1.1;}',
             '.report-export-dealer-revenue-production .report-export-meta{font-size:9px;}',
+            '.report-export-dealer-revenue-production .report-export-content .rrp-metric-card{padding:16px 14px !important;min-height:100px !important;display:flex !important;flex-direction:column !important;justify-content:center !important;}',
+            '.report-export-dealer-revenue-production .report-export-content .rrp-metric-value{font-size:24px !important;margin-top:8px !important;}',
+            '.report-export-dealer-revenue-production .report-export-content .rrp-metric-label{font-size:11px !important;}',
+            '.report-export-dealer-revenue-production .report-export-content .rrp-metric-sub{font-size:11px !important;margin-top:6px !important;}',
             '.report-export-dealer-revenue-production .report-export-content .rrp-page{zoom:.86 !important;}',
-            '@media print{.report-export-shell{padding:0;}.report-export-monthly-performance .report-export-shell,.report-export-dealer-performance .report-export-shell,.report-export-dealer-sales-overtime .report-export-shell,.report-export-dealer-revenue-production .report-export-shell{padding:2mm 3mm !important;}.report-export-monthly-performance .report-export-heading,.report-export-dealer-performance .report-export-heading,.report-export-dealer-sales-overtime .report-export-heading,.report-export-dealer-revenue-production .report-export-heading{margin-bottom:2px;}.report-export-dealer-performance .report-export-content .dealer-reports-page,.report-export-dealer-revenue-production .report-export-content .rrp-page{zoom:.62 !important;}}'
+            '@media print{.report-export-shell{padding:0;}.report-export-content .dashboard-content{zoom:1 !important;margin:0 !important;padding:0 !important;width:auto !important;}.report-export-content .reports-page{padding:0 !important;margin:0 !important;zoom:1 !important;}.report-export-content .reports-metrics--admin{display:flex !important;flex-wrap:wrap !important;justify-content:center !important;gap:16px !important;}.report-export-content .reports-metrics--admin > *{flex:0 0 calc(20% - 13px) !important;width:calc(20% - 13px) !important;}.report-export-content .reports-product-section{page-break-before:always !important;break-before:page !important;}.report-export-content .dashboard-panels-two-column{grid-template-columns:minmax(0,1.3fr) minmax(0,.85fr) !important;}.report-export-content .sidebar-nav,.report-export-content .top-nav,.report-export-content .reports-page-tabs-shell,.report-export-content .reports-filter-bar,.report-export-content .reports-page-filters-shell form,.report-export-content .admin-inquiry-trend-legend,.report-export-content .dashboard-topbar,.report-export-content .dashboard-sidebar,.report-export-content .dashboard-bottombar{display:none !important;}.report-export-monthly-performance .report-export-shell,.report-export-dealer-performance .report-export-shell,.report-export-dealer-sales-overtime .report-export-shell,.report-export-dealer-revenue-production .report-export-shell{padding:2mm 3mm !important;}.report-export-monthly-performance .report-export-heading,.report-export-dealer-performance .report-export-heading,.report-export-dealer-sales-overtime .report-export-heading,.report-export-dealer-revenue-production .report-export-heading{margin-bottom:2px;}.report-export-dealer-revenue-production .report-export-content .rrp-page{zoom:.85 !important;}.report-export-monthly-performance .report-export-content .reports-page:not(.dealer-reports-page){zoom:1 !important;}}'
         ].join(' ');
 
         printWindow.document.open();
@@ -2445,6 +2464,7 @@
 
         var title = trigger.getAttribute('data-export-title') || document.title || 'Report';
         var isMonthlyPerformance = isMonthlyPerformanceReportTitle(title);
+        var isDealerPerformance = typeof title === 'string' && title.indexOf('Dealer Performance Report') === 0;
         var generatedLabel = new Date().toLocaleString();
 
         buildExportWindow(printWindow, title, generatedLabel);
@@ -2455,7 +2475,7 @@
         }
 
         // Fit monthly performance report to the A4 landscape page, growing when there is spare room.
-        if (isMonthlyPerformance && mount) {
+        if (false && isMonthlyPerformance && mount) {
             (function () {
                 var reportPage = mount.querySelector('.reports-page:not(.dealer-reports-page)');
                 if (!reportPage) return;
@@ -2499,6 +2519,59 @@
                         }
                     } catch (e) {}
                 }, 50);
+            })();
+        }
+
+        // Fit dealer performance report to one A4 landscape page
+        if (isDealerPerformance && mount) {
+            (function () {
+                var reportPage = mount.querySelector('.dealer-reports-page');
+                if (!reportPage) return;
+
+                // Strip inline heights from chart wrappers in the mounted clone
+                mount.querySelectorAll('.reports-product-chart-desktop-wrapper').forEach(function (el) {
+                    el.style.removeProperty('height');
+                    el.style.height = 'auto';
+                });
+
+                var pageHeightPx = 202 * 3.7795; // A4 landscape usable height in px
+                var headingEl = printWindow.document.querySelector('.report-export-heading');
+                var shellEl = printWindow.document.querySelector('.report-export-shell');
+
+                window.setTimeout(function () {
+                    try {
+                        var headingH = headingEl ? headingEl.offsetHeight : 30;
+                        var shellPad = shellEl ? (parseFloat(printWindow.getComputedStyle(shellEl).paddingTop) || 0) + (parseFloat(printWindow.getComputedStyle(shellEl).paddingBottom) || 0) : 24;
+
+                        reportPage.style.setProperty('transform', 'none');
+                        reportPage.style.setProperty('width', '100%', 'important');
+                        mount.style.removeProperty('height');
+                        mount.style.removeProperty('overflow');
+
+                        var availableH = pageHeightPx - headingH - shellPad;
+                        var contentH = reportPage.scrollHeight || reportPage.offsetHeight;
+
+                        if (contentH > 0 && availableH > 0) {
+                            var scaleFactor = Math.floor(((availableH / contentH) * 0.97) * 100) / 100;
+                            // Don't go below 0.55 to keep it readable
+                            scaleFactor = Math.max(0.55, Math.min(scaleFactor, 1.0));
+                            reportPage.style.setProperty('width', (100 / scaleFactor) + '%', 'important');
+                            var adjustedContentH = reportPage.scrollHeight || contentH;
+
+                            if (adjustedContentH * scaleFactor > availableH) {
+                                scaleFactor = Math.floor(((availableH / adjustedContentH) * 0.97) * 100) / 100;
+                                scaleFactor = Math.max(0.55, Math.min(scaleFactor, 1.0));
+                                reportPage.style.setProperty('width', (100 / scaleFactor) + '%', 'important');
+                                adjustedContentH = reportPage.scrollHeight || adjustedContentH;
+                            }
+
+                            reportPage.style.transform = 'scale(' + scaleFactor + ')';
+                            reportPage.style.transformOrigin = 'top left';
+                            mount.style.height = (adjustedContentH * scaleFactor) + 'px';
+                            mount.style.overflow = 'hidden';
+                        }
+                    } catch (e) {}
+                }, 80);
             })();
         }
 

@@ -78,7 +78,7 @@
                     $confirmMsg = !$isActive
                         ? 'The user is set as inactive, are you sure to send?'
                         : ($isProtected
-                            ? 'This user is already Protected. Sending a new setup link will allow them to reset/add a new passkey. Proceed for ' . e($u['EMAIL']) . '?'
+                            ? 'This user has registered their passkey. Sending a new Setup link will allow them to reset their Master passkey and clear all their passkeys. Proceed?'
                             : ($isResend 
                                 ? 'Are you sure you want to resend the passkey setup link to ' . e($u['EMAIL']) . '?' 
                                 : 'Send passkey setup link to ' . e($u['EMAIL']) . '?'));
@@ -90,7 +90,7 @@
                 @else
                 <form method="POST" action="{{ route('admin.maintain-users.send-passkey-setup-link', $u['USERID']) }}" 
                       class="maintain-users-inline-form"
-                      onsubmit="return confirm('{{ $confirmMsg }}')">
+                      onsubmit="event.preventDefault(); showMaintainUsersConfirmModal('{{ addslashes($confirmMsg) }}', this)">
                     @csrf
                     <button type="submit" class="maintain-users-temp-send-btn" title="{{ $isResend ? 'Resend/Reset passkey' : 'Send passkey setup link' }}" aria-label="Send passkey setup link">
                         <i class="bi {{ $isResend ? 'bi-arrow-clockwise' : 'bi-envelope' }}" aria-hidden="true"></i>

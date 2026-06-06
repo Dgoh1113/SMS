@@ -121,7 +121,7 @@ Artisan::command('leads:auto-fail', function () {
                 'INSERT INTO "LEAD_ACT"
                     ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS")
                  VALUES (NEXT VALUE FOR GEN_LEAD_ACTID,?,?,CURRENT_TIMESTAMP,?,?,?,?)',
-                [$leadId, $activityUserId, 'Status changed to Cancelled (auto after 8 months)', $message, null, 'Cancelled']
+                [$leadId, $activityUserId, 'Status changed to Failed (auto after 8 months)', $message, null, 'Failed']
             );
 
             DB::commit();
@@ -141,5 +141,5 @@ Schedule::command('leads:auto-fail')->everyTwoMinutes()->withoutOverlapping();
 // Run inquiry email fetch every minute
 Schedule::command('inquiries:fetch')->everyMinute()->withoutOverlapping();
 
-// Run dealer sync every 30 seconds in the background
-Schedule::command('dealers:sync')->everyThirtySeconds()->withoutOverlapping();
+// Run dealer sync every 10 minutes in the background
+Schedule::command('dealers:sync')->everyTenMinutes()->withoutOverlapping();

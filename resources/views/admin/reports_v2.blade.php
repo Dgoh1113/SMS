@@ -230,7 +230,7 @@
                     </div>
                 </div>
 
-                <div class="reports-filter-container rv2-filter" style="flex: 1 1 189px; max-width: 189px; min-width: 140px; min-height: 90px; display: flex; flex-direction: column;">
+                <div class="reports-filter-container rv2-filter" style="width: 189px; min-width: 189px; max-width: 189px; min-height: 90px; display: flex; flex-direction: column;">
                     <div class="reports-range-label" style="height: 1.6em; display: flex; align-items: center; white-space: nowrap;">DEALER SCOPE</div>
                     <div style="flex: 1; display: flex; align-items: flex-end;">
                         <div style="width: 100%; max-width: 100%; --report-scope-picker-width: 100%;">
@@ -728,6 +728,28 @@
                 window.Chart.register(window.ChartDataLabels);
             }
 
+            const hasFailed = top10Failed.length > 0 && top10Failed.some(it => (it.percentage ?? 0) > 0);
+            const hasClosed = top10Closed.length > 0 && top10Closed.some(it => (it.percentage ?? 0) > 0);
+
+            let xMin = -100;
+            let xMax = 100;
+            let showY = true;
+            let showYRight = true;
+            let yRightPosition = 'right';
+            let yPosition = 'left';
+
+            if (hasFailed && !hasClosed) {
+                xMin = -100;
+                xMax = 0;
+                showYRight = false;
+                yPosition = 'right';
+            } else if (!hasFailed && hasClosed) {
+                xMin = 0;
+                xMax = 100;
+                showY = false;
+                yRightPosition = 'left';
+            }
+
             const rowCount = Math.max(top10Failed.length, top10Closed.length, 0);
             const failedName = Array.from({ length: rowCount }, (_, i) => (top10Failed[i]?.name ?? '—'));
             const closedName = Array.from({ length: rowCount }, (_, i) => (top10Closed[i]?.name ?? '—'));
@@ -740,19 +762,21 @@
                 datasets: [
                     {
                         label: 'Failed',
-                        data: Array.from({ length: rowCount }, (_, i) => -Math.min(100, Math.abs(failedPct[i] ?? 0))),
+                        data: hasFailed ? Array.from({ length: rowCount }, (_, i) => -Math.min(100, Math.abs(failedPct[i] ?? 0))) : [],
                         backgroundColor: BAR_RED,
                         borderRadius: 10,
                         barThickness: chartBarThickness,
-                        yAxisID: 'y'
+                        yAxisID: 'y',
+                        hidden: !hasFailed
                     },
                     {
                         label: 'Closed',
-                        data: Array.from({ length: rowCount }, (_, i) => Math.min(100, Math.abs(closedPct[i] ?? 0))),
+                        data: hasClosed ? Array.from({ length: rowCount }, (_, i) => Math.min(100, Math.abs(closedPct[i] ?? 0))) : [],
                         backgroundColor: BAR_CLOSED,
                         borderRadius: 10,
                         barThickness: chartBarThickness,
-                        yAxisID: 'yRight'
+                        yAxisID: 'yRight',
+                        hidden: !hasClosed
                     }
                 ]
             };
@@ -779,20 +803,25 @@
                         datalabels: {
                             color: '#fff',
                             font: { size: chartLabelFontSize, weight: '800' },
-                            formatter: function(_v, ctx) {
+                            formatter: function(value, ctx) {
                                 const i = ctx.dataIndex;
-                                return ctx.dataset.label === 'Failed' ? `${failedPct[i]}%` : `${closedPct[i]}%`;
+                                if (ctx.dataset.label === 'Failed') {
+                                    return failedPct[i] > 0 ? `${failedPct[i]}%` : '';
+                                } else {
+                                    return closedPct[i] > 0 ? `${closedPct[i]}%` : '';
+                                }
                             }
                         }
                     },
                     scales: {
                         x: {
-                            min: -100,
-                            max: 100,
+                            min: xMin,
+                            max: xMax,
                             ticks: { callback: function(v) { return Math.abs(v); } }
                         },
                         y: {
-                            position: 'left',
+                            display: showY,
+                            position: yPosition,
                             ticks: {
                                 callback: function(value, index) {
                                     return failedName[index] ?? '—';
@@ -800,7 +829,8 @@
                             }
                         },
                         yRight: {
-                            position: 'right',
+                            display: showYRight,
+                            position: yRightPosition,
                             grid: { display: false },
                             ticks: {
                                 callback: function(value, index) {

@@ -205,7 +205,7 @@
                 </div>
             </div>
 
-            <div class="reports-filter-container rv2-filter" style="width: 189px; min-height: 90px; display: flex; flex-direction: column;">
+            <div class="reports-filter-container rv2-filter" style="width: 189px; min-width: 189px; max-width: 189px; min-height: 90px; display: flex; flex-direction: column;">
                 <div class="reports-range-label" style="display: flex; align-items: center; font-size: 9px; font-weight: 800; height: 1.6em;">DEALER SCOPE</div>
                 <div style="flex: 1; display: flex; align-items: flex-end;">
                     <div style="width: 100%; max-width: 100%; --report-scope-picker-width: 100%;">
@@ -621,13 +621,7 @@
                     interaction: { mode: 'index', intersect: false },
                     plugins: {
                         legend: {
-                            position: 'top',
-                            labels: {
-                                color: legendColor,
-                                usePointStyle: true,
-                                boxWidth: 8,
-                                font: { size: chartFontSize }
-                            }
+                            display: false
                         },
                         title: {
                             display: false,

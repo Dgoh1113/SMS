@@ -282,9 +282,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function applyTableFilter() {
-        var searchInput = document.getElementById('historySearchInput');
-        var q = (searchInput && searchInput.value) ? searchInput.value.toLowerCase().trim() : '';
+    function getPerPage() { return 10; }
+
+    function getAllRows() {
+        return Array.from(table.querySelectorAll('tbody tr.history-row'));
+    }
+
+    function getMatchingRows() {
         var failOnly = !!(systemMarkedFailOnly && systemMarkedFailOnly.checked);
         var cancelledOnly = !!(markedCancelledOnly && markedCancelledOnly.checked);
         var filters = {};
@@ -293,9 +297,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var val = (inp.value || '').toLowerCase().trim();
             if (col && val) filters[col] = val;
         });
-        table.querySelectorAll('tbody tr.history-row').forEach(function(row) {
-            var hay = (row.getAttribute('data-search') || '').toLowerCase();
-            var searchMatch = !q || hay.indexOf(q) !== -1;
+        return getAllRows().filter(function(row) {
             var colMatch = true;
             for (var col in filters) {
                 var cell = row.querySelector('td[data-col="' + col + '"]');
@@ -314,146 +316,68 @@ document.addEventListener('DOMContentLoaded', function() {
                 checkboxMatch = cancelledMatch;
             }
 
-            row.style.display = (searchMatch && colMatch && checkboxMatch) ? '' : 'none';
-        });
-    }
-    var searchInput = document.getElementById('historySearchInput');
-    if (searchInput) searchInput.addEventListener('input', applyTableFilter);
-    table.querySelectorAll('thead .inquiries-grid-filter').forEach(function(inp) {
-        inp.addEventListener('input', applyTableFilter);
-    });
-    if (dateRangeSelect) {
-        dateRangeSelect.addEventListener('change', function() {
-            syncDateRangeUi();
-            if (dateRangeSelect.value !== 'custom' && dateFilterForm) {
-                if (startDateField) startDateField.value = '';
-                if (endDateField) endDateField.value = '';
-                dateFilterForm.submit();
-            }
-        });
-        syncDateRangeUi();
-    }
-    
-    // Removed auto-submit on individual date changes to allow picking range then clicking Apply
-    if (systemMarkedFailOnly) {
-        systemMarkedFailOnly.addEventListener('change', applyTableFilter);
-    }
-    if (markedCancelledOnly) {
-        markedCancelledOnly.addEventListener('change', applyTableFilter);
-    }
-
-    var clearFiltersBtn = document.getElementById('historyClearFilters');
-    if (clearFiltersBtn) {
-        clearFiltersBtn.addEventListener('click', function() {
-            if (searchInput) searchInput.value = '';
-            table.querySelectorAll('thead .inquiries-grid-filter').forEach(function(inp) {
-                inp.value = '';
-            });
-            if (systemMarkedFailOnly) systemMarkedFailOnly.checked = false;
-            if (markedCancelledOnly) markedCancelledOnly.checked = false;
-            var shouldReload = false;
-            if (dateRangeSelect && dateRangeSelect.value !== 'today') shouldReload = true;
-            if (startDateField && startDateField.value) shouldReload = true;
-            if (endDateField && endDateField.value) shouldReload = true;
-            if (shouldReload) {
-                window.location = '{{ route('admin.history') }}';
-                return;
-            }
-            applyTableFilter();
+            return colMatch && checkboxMatch;
         });
     }
 
-    // Row Click to Expand
-    table.addEventListener('click', function(e) {
-        var row = e.target.closest('tr.history-row');
-        if (!row) return;
-        var descCells = row.querySelectorAll('.expandable-desc');
-        var isExpanded = false;
-        descCells.forEach(function(cell) {
-            cell.classList.toggle('expanded');
-            if (cell.classList.contains('expanded')) isExpanded = true;
-        });
-        if (isExpanded) {
-            row.classList.add('is-expanded');
-        } else {
-            row.classList.remove('is-expanded');
-        }
-    });
-
-    // Context Menu for "Full Expand"
-    var contextMenu = document.createElement('div');
-    contextMenu.className = 'history-context-menu hidden';
-    contextMenu.innerHTML = ''
-        + '<div class="context-menu-item" id="menuExpandAll"><i class="bi bi-arrows-expand"></i> Full Expand All</div>'
-        + '<div class="context-menu-item" id="menuCollapseAll"><i class="bi bi-arrows-collapse"></i> Collapse All</div>';
-    document.body.appendChild(contextMenu);
-
-    table.addEventListener('contextmenu', function(e) {
-        var row = e.target.closest('tr.history-row');
-        if (!row) return;
-
-        e.preventDefault();
+    function applyPage(current) {
+        var per = getPerPage();
+        var matchingRows = getMatchingRows();
+        var total = matchingRows.length;
+        var lastPage = total === 0 ? 1 : Math.ceil(total / per);
+        if (current < 1) current = 1;
+        if (current > lastPage) current = lastPage;
+        var from = (current - 1) * per;
+        var to = current * per;
+        var pageRows = matchingRows.slice(from, to);
         
-        var rect = contextMenu.getBoundingClientRect();
-        var x = e.clientX;
-        var y = e.clientY;
-        
-        contextMenu.style.left = x + 'px';
-        contextMenu.style.top = y + 'px';
-        contextMenu.classList.remove('hidden');
-    });
-
-    document.addEventListener('click', function(e) {
-        if (!contextMenu.contains(e.target)) {
-            contextMenu.classList.add('hidden');
-        }
-    });
-
-    document.getElementById('menuExpandAll').addEventListener('click', function() {
-        table.querySelectorAll('.expandable-desc').forEach(function(cell) {
-            cell.classList.add('expanded');
+        getAllRows().forEach(function(row) {
+            row.style.display = pageRows.indexOf(row) !== -1 ? '' : 'none';
         });
-        table.querySelectorAll('tr.history-row').forEach(function(row) {
-            if (row.querySelector('.expandable-desc')) {
-                row.classList.add('is-expanded');
-            }
-        });
-        contextMenu.classList.add('hidden');
-    });
 
-    document.getElementById('menuCollapseAll').addEventListener('click', function() {
-        table.querySelectorAll('.expandable-desc').forEach(function(cell) {
-            cell.classList.remove('expanded');
-        });
-        table.querySelectorAll('tr.history-row').forEach(function(row) {
-            row.classList.remove('is-expanded');
-        });
-        contextMenu.classList.add('hidden');
-    });
-
-    // Pagination Logic
-    function buildHistorySmartPageNumbers() {
         var paginationEl = document.getElementById('historyPagination');
-        if (!paginationEl) return;
+        if (paginationEl) {
+            paginationEl.setAttribute('data-current-page', String(current));
+            paginationEl.setAttribute('data-last-page', String(lastPage));
+            paginationEl.setAttribute('data-total', String(total));
+
+            var infoEl = document.getElementById('historyPaginationInfo');
+            if (infoEl) {
+                var showFrom = total === 0 ? 0 : from + 1;
+                var showTo = Math.min(to, total);
+                infoEl.textContent = 'Showing ' + showFrom + ' to ' + showTo + ' of ' + total + ' entries (Page ' + current + ')';
+            }
+
+            var firstBtn = document.getElementById('historyPaginationFirst');
+            var prevBtn = document.getElementById('historyPaginationPrev');
+            var nextBtn = document.getElementById('historyPaginationNext');
+            var lastBtn = document.getElementById('historyPaginationLast');
+
+            if (firstBtn) firstBtn.disabled = current <= 1;
+            if (prevBtn) prevBtn.disabled = current <= 1;
+            if (nextBtn) nextBtn.disabled = current >= lastPage;
+            if (lastBtn) lastBtn.disabled = current >= lastPage;
+        }
+
+        buildHistorySmartPageNumbers(current, lastPage);
+    }
+
+    function buildHistorySmartPageNumbers(current, lastPage) {
         var pageNumbersEl = document.getElementById('historyPaginationPageNumbers');
         if (!pageNumbersEl) return;
-        
-        var current = parseInt(paginationEl.dataset.currentPage);
-        var lastPage = parseInt(paginationEl.dataset.lastPage);
-        
         pageNumbersEl.innerHTML = '';
-        
+
         function addBtn(p, isActive) {
             var btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'inquiries-pagination-num' + (isActive ? ' inquiries-pagination-num-active' : '');
             btn.textContent = p;
             btn.addEventListener('click', function() {
-                if (!isActive) goToHistoryPage(p);
+                if (!isActive) applyPage(p);
             });
             pageNumbersEl.appendChild(btn);
         }
-        
+
         function addDots() {
             var span = document.createElement('span');
             span.className = 'inquiries-pagination-num inquiries-pagination-dots';
@@ -462,26 +386,22 @@ document.addEventListener('DOMContentLoaded', function() {
             span.style.position = 'relative';
             span.style.zIndex = '5';
             span.title = 'Click to jump to page';
-            
             span.addEventListener('click', function(e) {
                 e.stopPropagation();
-                
                 var input = document.createElement('input');
                 input.type = 'number';
                 input.className = 'inquiries-pagination-num inquiries-pagination-jump-input';
                 input.min = '1';
                 input.max = lastPage;
                 input.placeholder = '#';
-                
                 var doJump = function() {
                     var val = parseInt(input.value, 10);
                     if (!isNaN(val) && val >= 1 && val <= lastPage) {
-                        goToHistoryPage(val);
+                        applyPage(val);
                     } else {
                         input.parentElement.replaceChild(span, input);
                     }
                 };
-                
                 input.addEventListener('blur', doJump);
                 input.addEventListener('keypress', function(ev) {
                     if (ev.key === 'Enter') {
@@ -489,7 +409,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         doJump();
                     }
                 });
-                
                 span.parentElement.replaceChild(input, span);
                 input.focus();
             });
@@ -522,20 +441,54 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function goToHistoryPage(p) {
-        var url = new URL(window.location.href);
-        url.searchParams.set('page', p);
-        window.location.href = url.toString();
+    table.querySelectorAll('thead .inquiries-grid-filter').forEach(function(inp) {
+        inp.addEventListener('input', function() {
+            applyPage(1);
+        });
+    });
+
+    if (systemMarkedFailOnly) {
+        systemMarkedFailOnly.addEventListener('change', function() {
+            applyPage(1);
+        });
+    }
+    if (markedCancelledOnly) {
+        markedCancelledOnly.addEventListener('change', function() {
+            applyPage(1);
+        });
+    }
+
+    var clearFiltersBtn = document.getElementById('historyClearFilters');
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', function() {
+            table.querySelectorAll('thead .inquiries-grid-filter').forEach(function(inp) {
+                inp.value = '';
+            });
+            if (systemMarkedFailOnly) systemMarkedFailOnly.checked = false;
+            if (markedCancelledOnly) markedCancelledOnly.checked = false;
+            applyPage(1);
+        });
+    }
+
+    if (dateRangeSelect) {
+        dateRangeSelect.addEventListener('change', function() {
+            syncDateRangeUi();
+            if (dateRangeSelect.value !== 'custom' && dateFilterForm) {
+                if (startDateField) startDateField.value = '';
+                if (endDateField) endDateField.value = '';
+                dateFilterForm.submit();
+            }
+        });
+        syncDateRangeUi();
     }
 
     document.querySelectorAll('.inquiries-pagination-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
             var paginationEl = document.getElementById('historyPagination');
             if (!paginationEl) return;
-            
             var action = this.dataset.page;
-            var current = parseInt(paginationEl.dataset.currentPage);
-            var lastPage = parseInt(paginationEl.dataset.lastPage);
+            var current = parseInt(paginationEl.getAttribute('data-current-page') || '1', 10);
+            var lastPage = parseInt(paginationEl.getAttribute('data-last-page') || '1', 10);
             var target = current;
 
             if (action === 'first') target = 1;
@@ -543,11 +496,71 @@ document.addEventListener('DOMContentLoaded', function() {
             else if (action === 'next') target = Math.min(lastPage, current + 1);
             else if (action === 'last') target = lastPage;
 
-            if (target !== current) goToHistoryPage(target);
+            if (target !== current) applyPage(target);
         });
     });
 
-    buildHistorySmartPageNumbers();
+    table.addEventListener('click', function(e) {
+        var row = e.target.closest('tr.history-row');
+        if (!row) return;
+        var descCells = row.querySelectorAll('.expandable-desc');
+        var isExpanded = false;
+        descCells.forEach(function(cell) {
+            cell.classList.toggle('expanded');
+            if (cell.classList.contains('expanded')) isExpanded = true;
+        });
+        if (isExpanded) {
+            row.classList.add('is-expanded');
+        } else {
+            row.classList.remove('is-expanded');
+        }
+    });
+
+    var contextMenu = document.createElement('div');
+    contextMenu.className = 'history-context-menu hidden';
+    contextMenu.innerHTML = ''
+        + '<div class="context-menu-item" id="menuExpandAll"><i class="bi bi-arrows-expand"></i> Full Expand All</div>'
+        + '<div class="context-menu-item" id="menuCollapseAll"><i class="bi bi-arrows-collapse"></i> Collapse All</div>';
+    document.body.appendChild(contextMenu);
+
+    table.addEventListener('contextmenu', function(e) {
+        var row = e.target.closest('tr.history-row');
+        if (!row) return;
+        e.preventDefault();
+        contextMenu.style.left = e.clientX + 'px';
+        contextMenu.style.top = e.clientY + 'px';
+        contextMenu.classList.remove('hidden');
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!contextMenu.contains(e.target)) {
+            contextMenu.classList.add('hidden');
+        }
+    });
+
+    document.getElementById('menuExpandAll').addEventListener('click', function() {
+        table.querySelectorAll('.expandable-desc').forEach(function(cell) {
+            cell.classList.add('expanded');
+        });
+        table.querySelectorAll('tr.history-row').forEach(function(row) {
+            if (row.querySelector('.expandable-desc')) {
+                row.classList.add('is-expanded');
+            }
+        });
+        contextMenu.classList.add('hidden');
+    });
+
+    document.getElementById('menuCollapseAll').addEventListener('click', function() {
+        table.querySelectorAll('.expandable-desc').forEach(function(cell) {
+            cell.classList.remove('expanded');
+        });
+        table.querySelectorAll('tr.history-row').forEach(function(row) {
+            row.classList.remove('is-expanded');
+        });
+        contextMenu.classList.add('hidden');
+    });
+
+    applyPage(1);
 });
 </script>
 @endpush

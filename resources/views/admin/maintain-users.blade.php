@@ -193,6 +193,17 @@
     </div>
 </div>
 
+<div class="maintain-users-modal-backdrop" id="maintainUsersConfirmModal">
+    <div class="maintain-users-modal" style="max-width: 450px;">
+        <h3 class="maintain-users-modal-title" style="color: #ef4444;">Confirm Action</h3>
+        <div class="maintain-users-modal-sub" id="maintainUsersConfirmMessage" style="font-size: 14px; color: #4b5563; margin-top: 12px; margin-bottom: 24px;"></div>
+        <div class="maintain-users-modal-actions" style="border-top: none; padding-top: 0;">
+            <button type="button" class="maintain-users-btn-secondary" id="maintainUsersConfirmCancelBtn">Cancel</button>
+            <button type="button" class="maintain-users-btn-primary" id="maintainUsersConfirmOkBtn" style="background: #ef4444; border-color: #ef4444;">Proceed</button>
+        </div>
+    </div>
+</div>
+
 <div class="maintain-users-modal-backdrop" id="maintainUsersEditModal">
     <div class="maintain-users-modal">
         <h3 class="maintain-users-modal-title">Edit User</h3>
@@ -513,6 +524,46 @@
             const batchCount = document.getElementById('maintainUsersBatchCount');
             const batchList = document.getElementById('maintainUsersBatchList');
             const batchSearchInput = document.getElementById('maintainUsersBatchSearch');
+            
+            // Custom Confirm Modal
+            const confirmModal = document.getElementById('maintainUsersConfirmModal');
+            const confirmMessage = document.getElementById('maintainUsersConfirmMessage');
+            const confirmCancelBtn = document.getElementById('maintainUsersConfirmCancelBtn');
+            const confirmOkBtn = document.getElementById('maintainUsersConfirmOkBtn');
+            let confirmPendingForm = null;
+
+            window.showMaintainUsersConfirmModal = function(msg, form) {
+                if (confirmMessage) confirmMessage.textContent = msg;
+                confirmPendingForm = form;
+                if (confirmModal) {
+                    if (typeof confirmModal.resetDragOffset === 'function') confirmModal.resetDragOffset();
+                    confirmModal.classList.add('is-open');
+                }
+            };
+
+            function hideConfirmModal() {
+                if (confirmModal) {
+                    confirmModal.classList.remove('is-open');
+                    if (typeof confirmModal.resetDragOffset === 'function') confirmModal.resetDragOffset();
+                }
+                confirmPendingForm = null;
+            }
+
+            if (confirmCancelBtn) confirmCancelBtn.addEventListener('click', hideConfirmModal);
+            if (confirmOkBtn) {
+                confirmOkBtn.addEventListener('click', function() {
+                    if (confirmPendingForm) {
+                        confirmPendingForm.submit();
+                    }
+                    hideConfirmModal();
+                });
+            }
+            if (confirmModal) {
+                confirmModal.addEventListener('click', function(e) {
+                    if (e.target === confirmModal) hideConfirmModal();
+                });
+            }
+
             const editRoleLabel = document.getElementById('edit_SYSTEMROLE_LABEL');
             const editAliasInput = document.getElementById('edit_ALIAS');
             const editCompanyInput = document.getElementById('edit_COMPANY');
@@ -526,6 +577,7 @@
             initModalDragging(modal);
             initModalDragging(editModal);
             initModalDragging(batchModal);
+            initModalDragging(confirmModal);
 
             function formatRoleLabel(role) {
                 if (!role) return '';

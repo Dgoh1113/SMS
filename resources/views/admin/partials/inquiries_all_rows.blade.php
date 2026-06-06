@@ -104,7 +104,7 @@
         @endif
     </td>
     <td data-col="message" class="inquiries-msg-cell {{ $isLongMsg ? 'inquiries-msg-clickable' : '' }}"
-        @if($isLongMsg) data-full-message="{{ e($fullMsg) }}" @endif>
+        @if($isLongMsg) data-full-message="{{ $fullMsg }}" @endif>
         {{ $msgPreview }}
     </td>
     <td data-col="referralcode">{{ $r->REFERRALCODE ?? '-' }}</td>
