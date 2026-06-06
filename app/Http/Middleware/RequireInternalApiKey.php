@@ -18,7 +18,7 @@ class RequireInternalApiKey
 
         $providedKey = trim((string) $request->header('X-Internal-Api-Key', ''));
 
-        if ($providedKey === '' || !hash_equals($configuredKey, $providedKey)) {
+        if ($providedKey === '' || ! hash_equals($configuredKey, $providedKey)) {
             return response()->json(['error' => 'Unauthorized.'], 401);
         }
 

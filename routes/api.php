@@ -1,7 +1,7 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApiController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/status', [ApiController::class, 'status']);
 Route::post('/login', [ApiController::class, 'login']);

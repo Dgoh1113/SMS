@@ -1,10 +1,10 @@
 <?php
 
+use Carbon\Carbon;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schedule;
-use Carbon\Carbon;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -14,7 +14,7 @@ Artisan::command('leads:auto-fail', function () {
     $now = Carbon::now();
     $cutoff = $now->copy()->subMonthsNoOverflow(8);
 
-    $this->info('Checking for leads older than ' . $cutoff->toDateString() . ' to auto-fail...');
+    $this->info('Checking for leads older than '.$cutoff->toDateString().' to auto-fail...');
 
     $rows = DB::select(
         'SELECT
@@ -47,12 +47,12 @@ Artisan::command('leads:auto-fail', function () {
     }
 
     $assignmentUserMap = [];
-    if (!empty($leadIds)) {
+    if (! empty($leadIds)) {
         $placeholders = implode(',', array_fill(0, count($leadIds), '?'));
         $assignmentRows = DB::select(
             'SELECT "LEADID", "LEAD_ACTID", "USERID", "DESCRIPTION"
              FROM "LEAD_ACT"
-             WHERE "LEADID" IN (' . $placeholders . ')
+             WHERE "LEADID" IN ('.$placeholders.')
                AND (
                    UPPER(TRIM(COALESCE("SUBJECT", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
                    OR UPPER(TRIM(COALESCE("DESCRIPTION", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
@@ -87,22 +87,23 @@ Artisan::command('leads:auto-fail', function () {
         $latestStatus = strtoupper(trim((string) ($r->LATEST_STATUS ?? 'PENDING')));
         $successWithin8Months = (int) ($r->SUCCESS_WITHIN_8_MONTHS ?? 0);
         $activityUserId = trim((string) ($assignmentUserMap[$leadId] ?? ($r->assignedTo ?? '')));
-        
+
         if ($leadId <= 0) {
             continue;
         }
-        
+
         if (in_array($latestStatus, ['FAILED', 'CANCELLED', 'COMPLETED', 'CASE COMPLETED', 'REWARDED', 'REWARD', 'REWARD DISTRIBUTED'], true)) {
             continue;
         }
-        
+
         if ($successWithin8Months > 0) {
             // It got completed or rewarded within 8 months, so we don't mark it failed.
             continue;
         }
 
         if ($activityUserId === '') {
-            $this->error('Failed to auto-fail lead ' . $leadId . ': no assigner or assigned user available for LEAD_ACT log.');
+            $this->error('Failed to auto-fail lead '.$leadId.': no assigner or assigned user available for LEAD_ACT log.');
+
             continue;
         }
 
@@ -128,11 +129,11 @@ Artisan::command('leads:auto-fail', function () {
             $count++;
         } catch (\Throwable $e) {
             DB::rollBack();
-            $this->error('Failed to auto-fail lead ' . $leadId . ': ' . $e->getMessage());
+            $this->error('Failed to auto-fail lead '.$leadId.': '.$e->getMessage());
         }
     }
 
-    $this->info('Auto-fail complete. Updated ' . $count . ' lead(s).');
+    $this->info('Auto-fail complete. Updated '.$count.' lead(s).');
 })->purpose('Automatically fail leads older than 8 months without completion');
 
 // Run auto-fail check every 2 minutes

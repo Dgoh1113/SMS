@@ -141,4 +141,3 @@ class ApiController extends Controller
         return response()->json(array_map(fn ($r) => (array) $r, $rows));
     }
 }
-

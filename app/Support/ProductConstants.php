@@ -9,17 +9,29 @@ class ProductConstants
 {
     // Product ID mappings
     public const ACCOUNT = 1;
+
     public const PAYROLL = 2;
+
     public const PRODUCTION = 3;
+
     public const MOBILE_SALES = 4;
+
     public const ECOMMERCE = 5;
+
     public const EBI_POS = 6;
+
     public const SUDU_AI = 7;
+
     public const X_STORE = 8;
+
     public const VISION = 9;
+
     public const HRMS = 10;
+
     public const CTOS = 11;
+
     public const API = 12;
+
     public const OTHERS = 13;
 
     /**
@@ -71,7 +83,7 @@ class ProductConstants
      */
     public static function label(int $id): string
     {
-        return self::all()[$id] ?? ('Product ' . $id);
+        return self::all()[$id] ?? ('Product '.$id);
     }
 
     /**
@@ -79,7 +91,7 @@ class ProductConstants
      */
     public static function fullName(int $id): string
     {
-        return self::fullNames()[$id] ?? ('Product ' . $id);
+        return self::fullNames()[$id] ?? ('Product '.$id);
     }
 
     /**

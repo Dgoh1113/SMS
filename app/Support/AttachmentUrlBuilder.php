@@ -34,6 +34,7 @@ class AttachmentUrlBuilder
                     $urls[] = route($serveRoute, ['path' => $path]);
                 }
             }
+
             return array_values(array_unique($urls));
         }
 

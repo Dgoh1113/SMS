@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DealerController;
 use App\Http\Controllers\PasskeyController;
 use Illuminate\Support\Facades\Route;

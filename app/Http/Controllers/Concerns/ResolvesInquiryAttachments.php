@@ -11,11 +11,11 @@ trait ResolvesInquiryAttachments
         $path = ltrim($path, '/');
         $candidates = [
             Storage::disk('public')->path($path),
-            storage_path('app/public/' . $path),
-            storage_path('app/private/' . $path),
-            storage_path('app/' . $path),
+            storage_path('app/public/'.$path),
+            storage_path('app/private/'.$path),
+            storage_path('app/'.$path),
             public_path($path),
-            public_path('storage/' . $path),
+            public_path('storage/'.$path),
         ];
 
         foreach ($candidates as $candidate) {

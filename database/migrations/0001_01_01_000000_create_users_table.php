@@ -16,7 +16,7 @@ return new class extends Migration
         // file-backed Laravel sessions. Keep the migration file so older
         // migration history remains valid, but do not create Laravel scaffold
         // tables on fresh installs unless explicitly requested.
-        if (!env('ENABLE_LARAVEL_SCAFFOLD_TABLES', false)) {
+        if (! env('ENABLE_LARAVEL_SCAFFOLD_TABLES', false)) {
             return;
         }
 

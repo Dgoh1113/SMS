@@ -8,7 +8,7 @@ use Illuminate\Support\Str;
 
 class UserSetupLinkStore
 {
-    private const STORAGE_PATH = 'private/user-setup-links.json';
+    private const STORAGE_PATH = 'user-setup-links.json';
 
     public function allSetupLinks(): array
     {
@@ -17,7 +17,7 @@ class UserSetupLinkStore
         $dirty = false;
 
         foreach ($records as $userId => $record) {
-            if (!is_array($record)) {
+            if (! is_array($record)) {
                 continue;
             }
 
@@ -37,6 +37,7 @@ class UserSetupLinkStore
                     unset($records[$userId]);
                 }
                 $dirty = true;
+
                 continue;
             }
 
@@ -85,7 +86,7 @@ class UserSetupLinkStore
         }
 
         $records = $this->read();
-        if (!isset($records[$userId]) || !is_array($records[$userId])) {
+        if (! isset($records[$userId]) || ! is_array($records[$userId])) {
             return;
         }
 
@@ -105,7 +106,7 @@ class UserSetupLinkStore
         $dirty = false;
 
         foreach ($records as $userId => $record) {
-            if (!is_array($record)) {
+            if (! is_array($record)) {
                 continue;
             }
 
@@ -123,6 +124,7 @@ class UserSetupLinkStore
                     }
                     $dirty = true;
                 }
+
                 continue;
             }
 
@@ -131,6 +133,7 @@ class UserSetupLinkStore
                 if ($dirty) {
                     $this->write($records);
                 }
+
                 return (string) $userId;
             }
         }
@@ -150,7 +153,7 @@ class UserSetupLinkStore
         }
 
         $records = $this->read();
-        if (!isset($records[$userId]) || !is_array($records[$userId])) {
+        if (! isset($records[$userId]) || ! is_array($records[$userId])) {
             return;
         }
 
@@ -176,7 +179,7 @@ class UserSetupLinkStore
         }
 
         $records = $this->read();
-        if (!array_key_exists($userId, $records)) {
+        if (! array_key_exists($userId, $records)) {
             return;
         }
 
@@ -187,7 +190,7 @@ class UserSetupLinkStore
     private function read(): array
     {
         $disk = Storage::disk('local');
-        if (!$disk->exists(self::STORAGE_PATH)) {
+        if (! $disk->exists(self::STORAGE_PATH)) {
             return [];
         }
 

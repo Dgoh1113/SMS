@@ -20,6 +20,7 @@ trait DatabaseAggregates
                     return (int) $row[$key];
                 }
             }
+
             return 0;
         }
 
@@ -28,6 +29,7 @@ trait DatabaseAggregates
                 return (int) $row->{$prop};
             }
         }
+
         return 0;
     }
 
@@ -42,6 +44,7 @@ trait DatabaseAggregates
                     return $row[$key];
                 }
             }
+
             return $default;
         }
 
@@ -50,6 +53,7 @@ trait DatabaseAggregates
                 return $row->{$prop};
             }
         }
+
         return $default;
     }
 
@@ -62,11 +66,12 @@ trait DatabaseAggregates
         $bindings = [$status];
 
         foreach ($whereConditions as $condition => $values) {
-            $query .= " AND " . $condition;
+            $query .= ' AND '.$condition;
             $bindings = array_merge($bindings, (array) $values);
         }
 
         $result = DB::selectOne($query, $bindings);
+
         return $this->getCountFromResult($result);
     }
 
@@ -97,6 +102,7 @@ trait DatabaseAggregates
             return $current > 0 ? 100.0 : 0.0;
         }
         $change = (($current - $previous) / $previous) * 100;
+
         return abs($change) < 0.05 ? 0.0 : round($change, 1);
     }
 }

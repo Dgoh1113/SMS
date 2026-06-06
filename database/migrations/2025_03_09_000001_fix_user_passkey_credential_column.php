@@ -12,7 +12,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasTable('User_Passkey')) {
+        if (! Schema::hasTable('User_Passkey')) {
             return;
         }
 

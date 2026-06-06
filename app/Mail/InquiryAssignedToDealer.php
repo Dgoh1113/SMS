@@ -25,7 +25,7 @@ class InquiryAssignedToDealer extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'New inquiry assigned to you: #' . $this->inquiryId,
+            subject: 'New inquiry assigned to you: #'.$this->inquiryId,
             to: [$this->dealerEmail],
         );
     }

@@ -25,7 +25,7 @@ class PayoutCompletedNotification extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Inquiry #' . $this->inquiryId . ' completed – Payout notification',
+            subject: 'Inquiry #'.$this->inquiryId.' completed – Payout notification',
             to: [$this->toEmail],
         );
     }

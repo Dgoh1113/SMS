@@ -18,6 +18,7 @@ class RequireDealer
 
         if ($role !== 'dealer') {
             $request->session()->put('url.intended', $request->fullUrl());
+
             return redirect()->route('login');
         }
 

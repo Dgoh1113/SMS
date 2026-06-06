@@ -34,6 +34,7 @@ class AuthController extends Controller
 
         if ($request->session()->has(AppConstants::SESSION_USER_ROLE)) {
             $role = $request->session()->get(AppConstants::SESSION_USER_ROLE);
+
             return redirect($this->dashboardPathForRole($request, StringHelper::normalize($role)));
         }
 
@@ -57,14 +58,16 @@ class AuthController extends Controller
             'SELECT "USERID", "EMAIL", "LASTLOGIN", "ISACTIVE", "ALIAS", "SYSTEMROLE", "COMPANY" FROM "USERS" WHERE "USERID" = ?',
             [$userId]
         );
-        
-        if (!$row) {
+
+        if (! $row) {
             $this->setupLinkStore()->forgetSetupToken($userId);
+
             return $this->invalidPasskeySetupLinkView('This passkey setup link is no longer valid.');
         }
 
-        if (!$row->ISACTIVE) {
+        if (! $row->ISACTIVE) {
             $this->setupLinkStore()->forgetSetupToken($userId);
+
             return $this->invalidPasskeySetupLinkView('Your account is currently inactive. Please contact support.');
         }
 
@@ -78,8 +81,9 @@ class AuthController extends Controller
             $registeredEmail = trim((string) ($row->EMAIL ?? ''));
             $companyName = trim((string) ($row->COMPANY ?? ''));
             $displayName = $companyName !== '' ? $companyName : ($row->ALIAS ?? $registeredEmail);
+
             return view('auth.passkey-message', [
-                'message' => $registeredEmail . ' has already registered for ' . $displayName . '.',
+                'message' => $registeredEmail.' has already registered for '.$displayName.'.',
                 'pageTitle' => 'Already Registered - SQL Sales Management System',
                 'subtitle' => 'Account Already Set Up',
                 'helperText' => 'If you need access, please contact your company administrator.',
@@ -103,11 +107,11 @@ class AuthController extends Controller
 
         // Extract the specific email that clicked the link (if provided in URL)
         $clickedEmail = trim((string) $request->query('e', ''));
-        if ($clickedEmail === '' || !filter_var($clickedEmail, FILTER_VALIDATE_EMAIL)) {
+        if ($clickedEmail === '' || ! filter_var($clickedEmail, FILTER_VALIDATE_EMAIL)) {
             // Fallback to the first email in the DB list if not provided in URL
             $storedEmail = trim((string) ($row->EMAIL ?? ''));
             $allEmails = array_filter(array_map('trim', explode(',', $storedEmail)), fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL));
-            $clickedEmail = !empty($allEmails) ? reset($allEmails) : $storedEmail;
+            $clickedEmail = ! empty($allEmails) ? reset($allEmails) : $storedEmail;
         }
 
         $request->session()->put('user_id', (string) $row->USERID);
@@ -124,6 +128,7 @@ class AuthController extends Controller
     {
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
         return redirect('/login');
     }
 
@@ -132,7 +137,7 @@ class AuthController extends Controller
         $email = $request->session()->get('user_email');
         $currentId = $request->session()->get('user_id');
 
-        if (!$email || !$currentId) {
+        if (! $email || ! $currentId) {
             return redirect()->route('login');
         }
 
@@ -144,20 +149,61 @@ class AuthController extends Controller
             [$email, (string) $currentId]
         );
 
-        if (!$otherAccount) {
+        if (! $otherAccount) {
             return redirect()->back()->with('error', 'No other role available for this account.');
         }
 
         $sessionRole = $this->systemRoleToSessionRole((string) ($otherAccount->SYSTEMROLE ?? ''));
 
+        $newUserId = (string) $otherAccount->USERID;
+
+        // Find the passkey ID to allow management on the switched account
+        $driver = DB::connection()->getDriverName();
+        $selectSql = $driver === 'pgsql'
+            ? 'SELECT "AutoID" AS pk, "Credential" FROM "User_Passkey" WHERE "UserID" = ? ORDER BY "CreationDate" ASC, "AutoID" ASC'
+            : ($driver === 'sqlsrv'
+                ? 'SELECT [id] AS pk, [Credential] FROM [User_Passkey] WHERE [UserID] = ? ORDER BY [CreationDate] ASC, [id] ASC'
+                : ($driver === 'firebird'
+                    ? 'SELECT "USER_PASSKEYID" AS "pk", "CREDENTIAL" AS "Credential" FROM "USER_PASSKEY" WHERE "USERID" = ? ORDER BY "CREATIONDATE" ASC, "USER_PASSKEYID" ASC'
+                    : 'SELECT id AS pk, Credential FROM User_Passkey WHERE UserID = ? ORDER BY CreationDate ASC, id ASC'));
+
+        $passkeys = DB::select($selectSql, [$newUserId]);
+        $newPasskeyId = null;
+        if (! empty($passkeys)) {
+            $fallback = null;
+            foreach ($passkeys as $p) {
+                $pk = trim((string) ($p->pk ?? $p->PK ?? $p->user_passkeyid ?? $p->USER_PASSKEYID ?? $p->id ?? ''));
+                if ($pk === '') {
+                    continue;
+                }
+                if ($fallback === null) {
+                    $fallback = $pk;
+                }
+                $cred = json_decode((string) ($p->Credential ?? $p->CREDENTIAL ?? '{}'), true);
+                if (is_array($cred) && ! empty($cred['managementOwner'])) {
+                    $newPasskeyId = $pk;
+                    break;
+                }
+            }
+            if ($newPasskeyId === null) {
+                $newPasskeyId = $fallback;
+            }
+        }
+
         // Update session with new account details
-        $request->session()->put('user_id', (string) $otherAccount->USERID);
+        $request->session()->put('user_id', $newUserId);
         $request->session()->put('user_role', $sessionRole);
         $request->session()->put('user_alias', (string) ($otherAccount->ALIAS ?? ''));
         $request->session()->put('last_activity_ts', time());
 
+        if ($newPasskeyId !== null) {
+            $request->session()->put('passkey_manage_passkey_id', (string) $newPasskeyId);
+        } else {
+            $request->session()->forget('passkey_manage_passkey_id');
+        }
+
         return redirect($this->dashboardPathForRole($request, $sessionRole))
-            ->with('success', 'Switched to ' . strtoupper($sessionRole) . ' dashboard.');
+            ->with('success', 'Switched to '.strtoupper($sessionRole).' dashboard.');
     }
 
     private function invalidPasskeySetupLinkView(string $message): View
@@ -177,5 +223,4 @@ class AuthController extends Controller
             'This project uses passkey sign-in only. Use Login with passkey or request a new passkey setup link.'
         );
     }
-
 }

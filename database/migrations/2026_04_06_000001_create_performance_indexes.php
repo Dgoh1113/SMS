@@ -7,12 +7,12 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     * 
+     *
      * These indexes optimize the most critical query patterns:
      * - Dashboard queries
      * - Report filtering by assignedTo, status, dates
      * - Lead activity lookups
-     * 
+     *
      * Expected performance improvement: 30-50% faster queries
      */
     public function up(): void
@@ -26,73 +26,89 @@ return new class extends Migration
 
         try {
             DB::statement('CREATE INDEX idx_lead_currentstatus ON "LEAD"("CURRENTSTATUS")');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         try {
             DB::statement('CREATE INDEX idx_lead_createdat ON "LEAD"("CREATEDAT")');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         try {
             DB::statement('CREATE INDEX idx_lead_lastmodified ON "LEAD"("LASTMODIFIED")');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         try {
             // Composite index for common filter combinations
             DB::statement('CREATE INDEX idx_lead_assigned_status ON "LEAD"("assignedTo", "CURRENTSTATUS")');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         // LEAD_ACT table indexes
         try {
             DB::statement('CREATE INDEX idx_lead_act_leadid ON "LEAD_ACT"("LEADID")');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         try {
             DB::statement('CREATE INDEX idx_lead_act_userid ON "LEAD_ACT"("USERID")');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         try {
             DB::statement('CREATE INDEX idx_lead_act_status ON "LEAD_ACT"("STATUS")');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         try {
             DB::statement('CREATE INDEX idx_lead_act_creationdate ON "LEAD_ACT"("CREATIONDATE")');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         try {
             // Composite index for status + date queries (common in reports)
             DB::statement('CREATE INDEX idx_lead_act_status_date ON "LEAD_ACT"("STATUS", "CREATIONDATE")');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         // USERS table indexes
         try {
             DB::statement('CREATE INDEX idx_users_userid ON "USERS"("USERID")');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         try {
             DB::statement('CREATE INDEX idx_users_systemrole ON "USERS"("SYSTEMROLE")');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         try {
             DB::statement('CREATE INDEX idx_users_isactive ON "USERS"("ISACTIVE")');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         try {
             // Composite for dealer lookups
             DB::statement('CREATE INDEX idx_users_role_active ON "USERS"("SYSTEMROLE", "ISACTIVE")');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         // REFERRER_PAYOUT table indexes (if exists)
         try {
             DB::statement('CREATE INDEX idx_referrer_payout_userid ON "REFERRER_PAYOUT"("USERID")');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         try {
             DB::statement('CREATE INDEX idx_referrer_payout_dategenerated ON "REFERRER_PAYOUT"("DATEGENERATED")');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         try {
             DB::statement('CREATE INDEX idx_referrer_payout_status ON "REFERRER_PAYOUT"("STATUS")');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
     }
 
     /**
@@ -102,71 +118,87 @@ return new class extends Migration
     {
         try {
             DB::statement('DROP INDEX idx_lead_assignedTo');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         try {
             DB::statement('DROP INDEX idx_lead_currentstatus');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         try {
             DB::statement('DROP INDEX idx_lead_createdat');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         try {
             DB::statement('DROP INDEX idx_lead_lastmodified');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         try {
             DB::statement('DROP INDEX idx_lead_assigned_status');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         try {
             DB::statement('DROP INDEX idx_lead_act_leadid');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         try {
             DB::statement('DROP INDEX idx_lead_act_userid');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         try {
             DB::statement('DROP INDEX idx_lead_act_status');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         try {
             DB::statement('DROP INDEX idx_lead_act_creationdate');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         try {
             DB::statement('DROP INDEX idx_lead_act_status_date');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         try {
             DB::statement('DROP INDEX idx_users_userid');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         try {
             DB::statement('DROP INDEX idx_users_systemrole');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         try {
             DB::statement('DROP INDEX idx_users_isactive');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         try {
             DB::statement('DROP INDEX idx_users_role_active');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         try {
             DB::statement('DROP INDEX idx_referrer_payout_userid');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         try {
             DB::statement('DROP INDEX idx_referrer_payout_dategenerated');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         try {
             DB::statement('DROP INDEX idx_referrer_payout_status');
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
     }
 };
-

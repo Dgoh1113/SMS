@@ -47,7 +47,7 @@ class DealerStatsAggregator
         }
 
         $stats = [];
-        
+
         foreach ($dealerIds as $userId) {
             $userId = trim((string) $userId);
             if ($userId === '') {
@@ -142,18 +142,18 @@ class DealerStatsAggregator
 
             // Group by lead and extract start/end dates
             $leadTimings = [];
-            
+
             foreach ($allRows as $row) {
                 $leadId = (int) ($row->LEADID ?? 0);
                 $status = strtoupper(trim((string) ($row->STATUS ?? '')));
                 $createdAt = $row->CREATIONDATE;
                 $assignedTo = trim((string) ($row->assignedTo ?? ''));
 
-                if ($leadId <= 0 || !$createdAt || !$status) {
+                if ($leadId <= 0 || ! $createdAt || ! $status) {
                     continue;
                 }
 
-                if (!isset($leadTimings[$leadId])) {
+                if (! isset($leadTimings[$leadId])) {
                     $leadTimings[$leadId] = [
                         'dealer' => $assignedTo,
                         'pending_at' => null,
@@ -162,12 +162,12 @@ class DealerStatsAggregator
                 }
 
                 // Capture first PENDING
-                if ($status === 'PENDING' && !$leadTimings[$leadId]['pending_at']) {
+                if ($status === 'PENDING' && ! $leadTimings[$leadId]['pending_at']) {
                     $leadTimings[$leadId]['pending_at'] = $createdAt;
                 }
 
                 // Capture first COMPLETED or REWARDED
-                if (($status === 'COMPLETED' || $status === 'REWARDED') && !$leadTimings[$leadId]['completed_at']) {
+                if (($status === 'COMPLETED' || $status === 'REWARDED') && ! $leadTimings[$leadId]['completed_at']) {
                     $leadTimings[$leadId]['completed_at'] = $createdAt;
                 }
             }
@@ -180,20 +180,20 @@ class DealerStatsAggregator
                 $pendingAt = $timing['pending_at'];
                 $completedAt = $timing['completed_at'];
 
-                if (!$dealer || !$pendingAt || !$completedAt) {
+                if (! $dealer || ! $pendingAt || ! $completedAt) {
                     continue;
                 }
 
                 $pendingTs = strtotime((string) $pendingAt);
                 $completedTs = strtotime((string) $completedAt);
 
-                if (!$pendingTs || !$completedTs || $completedTs < $pendingTs) {
+                if (! $pendingTs || ! $completedTs || $completedTs < $pendingTs) {
                     continue;
                 }
 
                 $duration = $completedTs - $pendingTs;
 
-                if (!isset($dealerDurations[$dealer])) {
+                if (! isset($dealerDurations[$dealer])) {
                     $dealerDurations[$dealer] = [];
                 }
 
@@ -202,14 +202,14 @@ class DealerStatsAggregator
 
             // Calculate averages per dealer
             foreach ($dealerDurations as $dealer => $durations) {
-                if (!empty($durations)) {
+                if (! empty($durations)) {
                     $avgSeconds = (int) round(array_sum($durations) / count($durations));
                     $times[$dealer] = $avgSeconds;
                 }
             }
         } catch (\Throwable $e) {
             // Return empty if query fails
-            \Log::error('Closing time calculation failed: ' . $e->getMessage());
+            \Log::error('Closing time calculation failed: '.$e->getMessage());
         }
 
         return $times;
@@ -225,27 +225,29 @@ class DealerStatsAggregator
         }
 
         $mins = (int) floor($seconds / 60);
-        
+
         if ($mins < 60) {
-            return $mins . ' min';
+            return $mins.' min';
         }
-        
+
         if ($mins < 60 * 24) {
             $h = (int) floor($mins / 60);
             $m = $mins % 60;
-            return $h . 'h ' . $m . 'm';
+
+            return $h.'h '.$m.'m';
         }
-        
+
         $d2 = (int) floor($mins / (60 * 24));
         $remM = $mins % (60 * 24);
         $h2 = (int) floor($remM / 60);
-        return $d2 . 'd ' . $h2 . 'h';
+
+        return $d2.'d '.$h2.'h';
     }
 
     private static function toSqlStringList(array $values): string
     {
         return implode(', ', array_map(function ($value) {
-            return '\'' . str_replace('\'', '\'\'', strtoupper(trim((string) $value))) . '\'';
+            return '\''.str_replace('\'', '\'\'', strtoupper(trim((string) $value))).'\'';
         }, $values));
     }
 }

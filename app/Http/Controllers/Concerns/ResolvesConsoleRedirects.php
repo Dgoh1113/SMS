@@ -24,6 +24,7 @@ trait ResolvesConsoleRedirects
         $intended = $request->session()->get('url.intended');
         if ($intended && str_starts_with(parse_url($intended, PHP_URL_PATH) ?: '', '/dealer/')) {
             $request->session()->forget('url.intended');
+
             return $intended;
         }
 

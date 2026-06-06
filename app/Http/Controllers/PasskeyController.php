@@ -6,9 +6,9 @@ use App\Http\Controllers\Concerns\ResolvesConsoleRedirects;
 use App\Http\Controllers\Concerns\UsesSetupLinkStore;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Routing\Controller;
 use lbuchs\WebAuthn\Binary\ByteBuffer;
 use lbuchs\WebAuthn\WebAuthn;
 
@@ -29,12 +29,14 @@ class PasskeyController extends Controller
         if ($configured !== '') {
             return $configured;
         }
+
         return $host;
     }
 
     private function getWebAuthn(Request $request): WebAuthn
     {
         $rpId = $this->getRpId($request);
+
         return new WebAuthn((string) config('passkeys.rp_name', config('app.name', 'SMS')), $rpId, null, true);
     }
 
@@ -98,12 +100,12 @@ class PasskeyController extends Controller
         $order = strtoupper($direction) === 'ASC' ? 'ASC' : 'DESC';
 
         return $driver === 'pgsql'
-            ? 'SELECT "AutoID" AS pk, "UserID", "Nickname", "Credential", "CreationDate" AS creation_date FROM "User_Passkey" WHERE "UserID" = ? ORDER BY "CreationDate" ' . $order . ', "AutoID" ' . $order
+            ? 'SELECT "AutoID" AS pk, "UserID", "Nickname", "Credential", "CreationDate" AS creation_date FROM "User_Passkey" WHERE "UserID" = ? ORDER BY "CreationDate" '.$order.', "AutoID" '.$order
             : ($driver === 'sqlsrv'
-                ? 'SELECT [id] AS pk, [UserID], [Nickname], [Credential], [CreationDate] AS [creation_date] FROM [User_Passkey] WHERE [UserID] = ? ORDER BY [CreationDate] ' . $order . ', [id] ' . $order
+                ? 'SELECT [id] AS pk, [UserID], [Nickname], [Credential], [CreationDate] AS [creation_date] FROM [User_Passkey] WHERE [UserID] = ? ORDER BY [CreationDate] '.$order.', [id] '.$order
                 : ($driver === 'firebird'
-                    ? 'SELECT "USER_PASSKEYID" AS "pk", "USERID" AS "UserID", "NICKNAME" AS "Nickname", "CREDENTIAL" AS "Credential", "CREATIONDATE" AS "creation_date" FROM "USER_PASSKEY" WHERE "USERID" = ? ORDER BY "CREATIONDATE" ' . $order . ', "USER_PASSKEYID" ' . $order
-                    : 'SELECT id AS pk, UserID, Nickname, Credential, CreationDate AS creation_date FROM User_Passkey WHERE UserID = ? ORDER BY CreationDate ' . $order . ', id ' . $order));
+                    ? 'SELECT "USER_PASSKEYID" AS "pk", "USERID" AS "UserID", "NICKNAME" AS "Nickname", "CREDENTIAL" AS "Credential", "CREATIONDATE" AS "creation_date" FROM "USER_PASSKEY" WHERE "USERID" = ? ORDER BY "CREATIONDATE" '.$order.', "USER_PASSKEYID" '.$order
+                    : 'SELECT id AS pk, UserID, Nickname, Credential, CreationDate AS creation_date FROM User_Passkey WHERE UserID = ? ORDER BY CreationDate '.$order.', id '.$order));
     }
 
     private function readRowValue(object|array $row, array $keys, mixed $default = null): mixed
@@ -183,7 +185,7 @@ class PasskeyController extends Controller
             }
 
             $credential = json_decode((string) $this->readRowValue($row, ['Credential', 'CREDENTIAL'], '{}'), true);
-            if (is_array($credential) && !empty($credential['managementOwner'])) {
+            if (is_array($credential) && ! empty($credential['managementOwner'])) {
                 return $passkeyId;
             }
         }
@@ -194,7 +196,7 @@ class PasskeyController extends Controller
     private function resolveNewestUserPasskeyId(string $driver, string $userId): ?string
     {
         $rows = DB::select($this->userPasskeySelectSql($driver, 'DESC'), [$userId]);
-        if (!$rows) {
+        if (! $rows) {
             return null;
         }
 
@@ -222,7 +224,7 @@ class PasskeyController extends Controller
             }
 
             $credential = json_decode((string) $this->readRowValue($row, ['Credential', 'CREDENTIAL'], '{}'), true);
-            if (!is_array($credential)) {
+            if (! is_array($credential)) {
                 $credential = [];
             }
 
@@ -275,13 +277,13 @@ class PasskeyController extends Controller
     public function registerOptions(Request $request): JsonResponse
     {
         $row = $this->resolveCurrentSignedInUser($request);
-        if (!$row) {
+        if (! $row) {
             return response()->json(['error' => 'Please sign in before registering a passkey.'], 403);
         }
 
         $management = $this->resolvePasskeyManagementContext($request, $row);
         $isSetupLinkOwnerRegistration = $this->isSetupLinkOwnerRegistration($request, (string) $this->readRowValue($row, ['USERID', 'UserID'], ''));
-        if (!$management['can_manage'] && !$isSetupLinkOwnerRegistration) {
+        if (! $management['can_manage'] && ! $isSetupLinkOwnerRegistration) {
             return response()->json([
                 'error' => 'Permission denied. Sign in using the first registered passkey to manage additional passkeys.',
             ], 403);
@@ -295,7 +297,7 @@ class PasskeyController extends Controller
             : hash('sha256', $userIdRaw, true);
         $companyName = trim((string) ($row->COMPANY ?? ''));
         $sessionEmail = trim((string) $request->session()->get('user_email', ''));
-        
+
         $userName = $sessionEmail !== '' ? $sessionEmail : $row->EMAIL;
         $userDisplayName = $companyName !== '' ? $companyName : $userName;
 
@@ -313,7 +315,7 @@ class PasskeyController extends Controller
             foreach ($passkeys as $p) {
                 $cred = json_decode($p->Credential ?? '{}', true);
                 $cid = $cred['credentialId'] ?? null;
-                if (!empty($cid)) {
+                if (! empty($cid)) {
                     try {
                         $excludeCredentialIds[] = ByteBuffer::fromBase64Url($cid);
                     } catch (\Throwable $e) {
@@ -364,21 +366,23 @@ class PasskeyController extends Controller
         $challenge = $request->session()->get('passkey_challenge');
         $userId = $request->session()->get('passkey_register_user_id');
 
-        if (!$challenge || $userId === null) {
+        if (! $challenge || $userId === null) {
             return response()->json(['error' => 'Session expired. Please start registration again.'], 400);
         }
 
         $currentUser = $this->resolveCurrentSignedInUser($request);
-        if (!$currentUser || (string) $this->readRowValue($currentUser, ['USERID', 'UserID'], '') !== (string) $userId) {
+        if (! $currentUser || (string) $this->readRowValue($currentUser, ['USERID', 'UserID'], '') !== (string) $userId) {
             $request->session()->forget(['passkey_challenge', 'passkey_register_user_id', 'passkey_register_email']);
+
             return response()->json(['error' => 'Please sign in before registering a passkey.'], 403);
         }
 
         $driver = DB::connection()->getDriverName();
         $management = $this->resolvePasskeyManagementContext($request, $currentUser);
         $isSetupLinkOwnerRegistration = $this->isSetupLinkOwnerRegistration($request, (string) $userId);
-        if (!$management['can_manage'] && !$isSetupLinkOwnerRegistration) {
+        if (! $management['can_manage'] && ! $isSetupLinkOwnerRegistration) {
             $request->session()->forget(['passkey_challenge', 'passkey_register_user_id', 'passkey_register_email']);
+
             return response()->json([
                 'error' => 'Permission denied. Sign in using the first registered passkey to manage additional passkeys.',
             ], 403);
@@ -401,6 +405,7 @@ class PasskeyController extends Controller
             );
         } catch (\Throwable $e) {
             $request->session()->forget(['passkey_challenge', 'passkey_register_user_id', 'passkey_register_email']);
+
             return response()->json(['error' => 'Passkey verification failed. Please try again.'], 400);
         }
 
@@ -472,19 +477,19 @@ class PasskeyController extends Controller
         if ($setupRequired && $setupTokenUserId !== '' && hash_equals($setupTokenUserId, (string) $userId)) {
             // Lock the account to the specific email address they clicked from
             $sessionEmail = trim((string) $request->session()->get('user_email', ''));
-            
+
             $currentUser = DB::selectOne('SELECT "EMAIL" FROM "USERS" WHERE "USERID" = ?', [$userId]);
             $storedEmail = trim((string) ($currentUser->EMAIL ?? ''));
-            
+
             if (str_contains($storedEmail, ',')) {
                 // If they have a valid session email, use it. Otherwise fallback to the first stored email.
                 if ($sessionEmail !== '' && filter_var($sessionEmail, FILTER_VALIDATE_EMAIL)) {
                     $finalEmail = $sessionEmail;
                 } else {
                     $allEmails = array_filter(array_map('trim', explode(',', $storedEmail)), fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL));
-                    $finalEmail = !empty($allEmails) ? reset($allEmails) : $storedEmail;
+                    $finalEmail = ! empty($allEmails) ? reset($allEmails) : $storedEmail;
                 }
-                
+
                 DB::update('UPDATE "USERS" SET "EMAIL" = ? WHERE "USERID" = ?', [$finalEmail, $userId]);
                 $request->session()->put('user_email', $finalEmail);
             }
@@ -511,12 +516,12 @@ class PasskeyController extends Controller
     public function manageList(Request $request): JsonResponse
     {
         $user = $this->resolveCurrentSignedInUser($request);
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Please sign in before managing passkeys.'], 403);
         }
 
         $management = $this->resolvePasskeyManagementContext($request, $user);
-        if (!$management['can_manage']) {
+        if (! $management['can_manage']) {
             $ownerNickname = '';
             $driver = $management['driver'];
             $allPasskeys = DB::select($this->userPasskeySelectSql($driver), [$user->USERID]);
@@ -527,8 +532,8 @@ class PasskeyController extends Controller
                     break;
                 }
             }
-            $nicknameDisplay = $ownerNickname !== '' ? " ($ownerNickname)" : "";
-            
+            $nicknameDisplay = $ownerNickname !== '' ? " ($ownerNickname)" : '';
+
             return response()->json([
                 'error' => "Access denied. Sign in using the first registered passkey{$nicknameDisplay} to manage additional passkeys.",
             ], 403);
@@ -561,12 +566,12 @@ class PasskeyController extends Controller
     public function manageDelete(Request $request, string $passkeyId): JsonResponse
     {
         $user = $this->resolveCurrentSignedInUser($request);
-        if (!$user) {
+        if (! $user) {
             return response()->json(['error' => 'Please sign in before managing passkeys.'], 403);
         }
 
         $management = $this->resolvePasskeyManagementContext($request, $user);
-        if (!$management['can_manage']) {
+        if (! $management['can_manage']) {
             return response()->json([
                 'error' => 'Permission denied. Sign in using the first registered passkey to manage additional passkeys.',
             ], 403);
@@ -673,7 +678,7 @@ class PasskeyController extends Controller
         ]);
 
         $challenge = $request->session()->get('passkey_challenge');
-        if (!$challenge) {
+        if (! $challenge) {
             return response()->json(['error' => 'Session expired. Please try again.'], 400);
         }
 
@@ -699,7 +704,7 @@ class PasskeyController extends Controller
 
         foreach ($passkeys as $p) {
             $cred = json_decode($p->Credential ?? '{}', true);
-            if (!$cred) {
+            if (! $cred) {
                 continue;
             }
             $storedId = $cred['credentialId'] ?? null;
@@ -735,8 +740,9 @@ class PasskeyController extends Controller
             }
         }
 
-        if (!$credentialPublicKey || $userId === null) {
+        if (! $credentialPublicKey || $userId === null) {
             $request->session()->forget('passkey_challenge');
+
             return response()->json(['error' => 'Passkey not recognized.'], 400);
         }
 
@@ -754,6 +760,7 @@ class PasskeyController extends Controller
             );
         } catch (\Throwable $e) {
             $request->session()->forget('passkey_challenge');
+
             return response()->json(['error' => 'Passkey verification failed. Please try again.'], 400);
         }
 
@@ -771,8 +778,9 @@ class PasskeyController extends Controller
             [$userId]
         );
 
-        if (!$user || !$user->ISACTIVE) {
+        if (! $user || ! $user->ISACTIVE) {
             $request->session()->forget('passkey_challenge');
+
             return response()->json(['error' => 'Account not found or inactive.'], 400);
         }
 

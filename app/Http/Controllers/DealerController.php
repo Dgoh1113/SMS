@@ -51,7 +51,7 @@ class DealerController extends Controller
 
         if ($dealerId) {
             $dealerEmail = trim((string) ($request->session()->get('user_email') ?? ''));
-            if (!$dealerEmail) {
+            if (! $dealerEmail) {
                 $emailRow = DB::selectOne('SELECT "EMAIL" FROM "USERS" WHERE "USERID" = ?', [$dealerId]);
                 $dealerEmail = trim((string) ($emailRow->EMAIL ?? ''));
             }
@@ -82,6 +82,7 @@ class DealerController extends Controller
             );
             $allAssignedLeads = array_values(array_filter($leadsRaw, function ($l) {
                 $s = strtoupper(trim($l->ACT_STATUS ?? ''));
+
                 return $s !== 'FAILED' && $s !== 'CANCELLED';
             }));
             $leads = DB::select(
@@ -148,8 +149,8 @@ class DealerController extends Controller
 
                 if ($start !== null && $end !== null) {
                     $sql .= '
-                          AND ' . $dealerClosedLeadDateSql . ' >= ?
-                          AND ' . $dealerClosedLeadDateSql . ' <= ?';
+                          AND '.$dealerClosedLeadDateSql.' >= ?
+                          AND '.$dealerClosedLeadDateSql.' <= ?';
                     $params[] = $start;
                     $params[] = $end;
                 }
@@ -301,7 +302,7 @@ class DealerController extends Controller
                         $labels[] = $day->format('d M');
                         $tooltipTitles[] = $day->format('d M Y');
 
-                        $closedData[] = $countClosedLeads($dayStr . ' 00:00:00', $dayStr . ' 23:59:59');
+                        $closedData[] = $countClosedLeads($dayStr.' 00:00:00', $dayStr.' 23:59:59');
                     }
                 } catch (\Throwable $e) {
                     $labels = array_fill(0, $rangeDays, '');
@@ -340,6 +341,7 @@ class DealerController extends Controller
                     $status = $statusMap[$raw] ?? 'PENDING';
                     $idx = array_search($status, $stages);
                     $idx = $idx !== false ? $idx : 0;
+
                     return $idx < 4;
                 })
                 ->map(function ($l) use ($now) {
@@ -354,11 +356,11 @@ class DealerController extends Controller
                         $hours = (int) floor($diffSec / 3600);
                         $days = (int) floor($diffSec / 86400);
                         if ($mins < 60) {
-                            $time = max(1, $mins) . 'm';
+                            $time = max(1, $mins).'m';
                         } elseif ($hours < 24) {
-                            $time = $hours . 'h';
+                            $time = $hours.'h';
                         } else {
-                            $time = $days . 'd';
+                            $time = $days.'d';
                         }
                     } else {
                         $status = 'DUE SOON';
@@ -367,22 +369,23 @@ class DealerController extends Controller
                         $hours = max(0, (int) floor($untilSec / 3600));
                         $days = max(0, (int) floor($untilSec / 86400));
                         if ($mins < 60) {
-                            $time = max(1, $mins) . 'm';
+                            $time = max(1, $mins).'m';
                         } elseif ($hours < 24) {
-                            $time = $hours . 'h';
+                            $time = $hours.'h';
                         } elseif ($days < 2) {
                             $time = '1d';
                         } else {
-                            $time = $days . 'd';
+                            $time = $days.'d';
                         }
                     }
 
-                    $contact = $l->CONTACTNAME ? 'Ms/Mr ' . explode(' ', trim($l->CONTACTNAME))[0] : '—';
+                    $contact = $l->CONTACTNAME ? 'Ms/Mr '.explode(' ', trim($l->CONTACTNAME))[0] : '—';
+
                     return (object) [
                         'leadId' => $l->LEADID,
                         'status' => $status,
                         'time' => $time,
-                        'inquiryId' => 'SQL-' . $l->LEADID,
+                        'inquiryId' => 'SQL-'.$l->LEADID,
                         'contact' => $contact,
                         'product' => $l->COMPANYNAME ?: 'SQL Account + Stock',
                         'email' => trim((string) ($l->EMAIL ?? '')),
@@ -391,10 +394,11 @@ class DealerController extends Controller
                 })
                 ->filter(function ($item) {
                     $diffSec = $item->_sortOrder;
+
                     return $diffSec > 0 || $diffSec >= -172800;
                 })
                 ->sortBy('_sortOrder', SORT_REGULAR, true)
-                ->map(fn($item) => (object) [
+                ->map(fn ($item) => (object) [
                     'leadId' => $item->leadId,
                     'status' => $item->status,
                     'time' => $item->time,
@@ -430,20 +434,28 @@ class DealerController extends Controller
         $focusLeadId = (int) $request->query('lead', 0);
         $dealerConsoleCounts = $this->getDealerConsoleCounts($dealerId);
         $leads = [];
-        
+
         if ($dealerId) {
             $statusFilter = null;
             $activeStatuses = ['PENDING', 'FOLLOWUP', 'FOLLOW UP', 'DEMO', 'CONFIRMED'];
-            
+
             switch ($tab) {
-                case 'pending': $statusFilter = ['PENDING']; break;
-                case 'followup': $statusFilter = ['FOLLOWUP', 'FOLLOW UP']; break;
-                case 'demo': $statusFilter = ['DEMO']; break;
-                case 'confirmed': $statusFilter = ['CONFIRMED']; break;
-                case 'completed': $statusFilter = ['COMPLETED', 'CASE COMPLETED']; break;
-                case 'failed': $statusFilter = ['FAILED']; break;
-                case 'cancelled': $statusFilter = ['CANCELLED']; break;
-                case 'rewarded': $statusFilter = ['REWARDED', 'REWARD']; break;
+                case 'pending': $statusFilter = ['PENDING'];
+                    break;
+                case 'followup': $statusFilter = ['FOLLOWUP', 'FOLLOW UP'];
+                    break;
+                case 'demo': $statusFilter = ['DEMO'];
+                    break;
+                case 'confirmed': $statusFilter = ['CONFIRMED'];
+                    break;
+                case 'completed': $statusFilter = ['COMPLETED', 'CASE COMPLETED'];
+                    break;
+                case 'failed': $statusFilter = ['FAILED'];
+                    break;
+                case 'cancelled': $statusFilter = ['CANCELLED'];
+                    break;
+                case 'rewarded': $statusFilter = ['REWARDED', 'REWARD'];
+                    break;
                 case 'inquiries':
                 default:
                     $statusFilter = null;
@@ -460,7 +472,7 @@ class DealerController extends Controller
                           WHERE la2."LEADID" = l."LEADID"
                           ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC),
                         \'Pending\'
-                    ))) IN (' . $placeholders . ')';
+                    ))) IN ('.$placeholders.')';
                 $params = array_merge($params, $statusFilter);
             }
 
@@ -480,7 +492,7 @@ class DealerController extends Controller
                 FROM "LEAD" l
                 LEFT JOIN "USERS" u ON u."USERID" = l."CREATEDBY"
                 WHERE COALESCE(l."ISDELETED", FALSE) = FALSE 
-                  AND l."ASSIGNEDTO" = ?' . $statusClause . '
+                  AND l."ASSIGNEDTO" = ?'.$statusClause.'
                 ORDER BY l."LEADID" DESC';
 
             $leads = DB::select($dealerInquiriesSql, $params);
@@ -494,7 +506,7 @@ class DealerController extends Controller
                     }
                 }
 
-                if (!$hasFocusLead) {
+                if (! $hasFocusLead) {
                     $focusLeadRows = DB::select(
                         'SELECT FIRST 1
                             l."LEADID", l."PRODUCTID", l."COMPANYNAME", l."CONTACTNAME", l."CONTACTNO", l."EMAIL",
@@ -525,7 +537,7 @@ class DealerController extends Controller
                         [$dealerId, $focusLeadId]
                     );
 
-                    if (!empty($focusLeadRows)) {
+                    if (! empty($focusLeadRows)) {
                         $focusLeadRow = $focusLeadRows[0];
                         $focusLeadValue = (int) ($focusLeadRow->LEADID ?? 0);
                         $inserted = false;
@@ -533,14 +545,14 @@ class DealerController extends Controller
 
                         foreach ($leads as $leadRow) {
                             $leadValue = (int) ($leadRow->LEADID ?? 0);
-                            if (!$inserted && $focusLeadValue > $leadValue) {
+                            if (! $inserted && $focusLeadValue > $leadValue) {
                                 $sortedLeads[] = $focusLeadRow;
                                 $inserted = true;
                             }
                             $sortedLeads[] = $leadRow;
                         }
 
-                        if (!$inserted) {
+                        if (! $inserted) {
                             $sortedLeads[] = $focusLeadRow;
                         }
 
@@ -559,10 +571,10 @@ class DealerController extends Controller
                     }
                 }
                 $ids = array_keys($ids);
-                if (!empty($ids)) {
+                if (! empty($ids)) {
                     $placeholders = implode(',', array_fill(0, count($ids), '?'));
                     $users = DB::select(
-                        'SELECT "USERID","SYSTEMROLE","ALIAS","COMPANY","EMAIL" FROM "USERS" WHERE CAST("USERID" AS VARCHAR(50)) IN (' . $placeholders . ')',
+                        'SELECT "USERID","SYSTEMROLE","ALIAS","COMPANY","EMAIL" FROM "USERS" WHERE CAST("USERID" AS VARCHAR(50)) IN ('.$placeholders.')',
                         $ids
                     );
                     $createdByMap = [];
@@ -577,9 +589,9 @@ class DealerController extends Controller
                         $email = trim((string) ($u->EMAIL ?? ''));
                         $fallback = $email !== '' ? $email : $uid;
                         if ($role !== '' && $alias !== '') {
-                            $createdByMap[$uid] = $role . '- ' . $alias;
+                            $createdByMap[$uid] = $role.'- '.$alias;
                         } elseif ($role !== '') {
-                            $createdByMap[$uid] = $role . '- ' . ($company !== '' ? $company : ($email !== '' ? $email : $uid));
+                            $createdByMap[$uid] = $role.'- '.($company !== '' ? $company : ($email !== '' ? $email : $uid));
                         } elseif ($alias !== '') {
                             $createdByMap[$uid] = $alias;
                         } else {
@@ -602,7 +614,7 @@ class DealerController extends Controller
                     fn ($r) => (int) ($r->LEADID ?? 0),
                     $leads
                 ))));
-                if (!empty($leadIds)) {
+                if (! empty($leadIds)) {
                     $placeholders = implode(',', array_fill(0, count($leadIds), '?'));
                     $completedRows = DB::select(
                         'SELECT a."LEADID", a."CREATIONDATE" AS "COMPLETED_AT"
@@ -611,11 +623,11 @@ class DealerController extends Controller
                              SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
                              FROM "LEAD_ACT"
                              WHERE UPPER(TRIM("STATUS")) = \'COMPLETED\'
-                               AND "LEADID" IN (' . $placeholders . ')
+                               AND "LEADID" IN ('.$placeholders.')
                              GROUP BY "LEADID"
                          ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
                          WHERE UPPER(TRIM(a."STATUS")) = \'COMPLETED\'
-                           AND a."LEADID" IN (' . $placeholders . ')',
+                           AND a."LEADID" IN ('.$placeholders.')',
                         array_merge($leadIds, $leadIds)
                     );
                     $rewardedRows = DB::select(
@@ -625,11 +637,11 @@ class DealerController extends Controller
                              SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
                              FROM "LEAD_ACT"
                              WHERE UPPER(TRIM("STATUS")) IN (\'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\')
-                               AND "LEADID" IN (' . $placeholders . ')
+                               AND "LEADID" IN ('.$placeholders.')
                              GROUP BY "LEADID"
                          ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
                         WHERE UPPER(TRIM(a."STATUS")) IN (\'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\')
-                           AND a."LEADID" IN (' . $placeholders . ')',
+                           AND a."LEADID" IN ('.$placeholders.')',
                         array_merge($leadIds, $leadIds)
                     );
                     $assignRows = DB::select(
@@ -638,14 +650,14 @@ class DealerController extends Controller
                          JOIN (
                              SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
                              FROM "LEAD_ACT"
-                             WHERE "LEADID" IN (' . $placeholders . ')
+                             WHERE "LEADID" IN ('.$placeholders.')
                                AND (
                                    UPPER(TRIM(COALESCE("SUBJECT", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
                                    OR UPPER(TRIM(COALESCE("DESCRIPTION", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
                                )
                              GROUP BY "LEADID"
                          ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
-                         WHERE a."LEADID" IN (' . $placeholders . ')
+                         WHERE a."LEADID" IN ('.$placeholders.')
                            AND (
                                UPPER(TRIM(COALESCE(a."SUBJECT", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
                                OR UPPER(TRIM(COALESCE(a."DESCRIPTION", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
@@ -679,10 +691,10 @@ class DealerController extends Controller
                          JOIN (
                              SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
                              FROM "LEAD_ACT"
-                             WHERE "LEADID" IN (' . $placeholders . ')
+                             WHERE "LEADID" IN ('.$placeholders.')
                              GROUP BY "LEADID"
                          ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
-                         WHERE a."LEADID" IN (' . $placeholders . ')',
+                         WHERE a."LEADID" IN ('.$placeholders.')',
                         array_merge($leadIds, $leadIds)
                     );
                     $attachmentMap = [];
@@ -720,6 +732,7 @@ class DealerController extends Controller
                 // ignore attachment mapping failures
             }
         }
+
         return view('dealer.inquiries', [
             'leads' => $leads,
             'focusLeadId' => $focusLeadId,
@@ -739,7 +752,7 @@ class DealerController extends Controller
 
         // Ensure product name labels are available to the partial so it can
         // render friendly product names instead of "Product 1/2/3" fallbacks.
-        if (!isset($data['productNames'])) {
+        if (! isset($data['productNames'])) {
             $data['productNames'] = [
                 1 => 'SQL Account',
                 2 => 'SQL Payroll',
@@ -771,7 +784,7 @@ class DealerController extends Controller
         $data = $view->getData();
 
         // Ensure product name labels are available to the partial (used for dealt products pills).
-        if (!isset($data['productNames'])) {
+        if (! isset($data['productNames'])) {
             $data['productNames'] = [
                 1 => 'SQL Account',
                 2 => 'SQL Payroll',
@@ -801,7 +814,7 @@ class DealerController extends Controller
     public function inquiryActivity(Request $request, int $leadId): JsonResponse
     {
         $dealerId = $request->session()->get('user_id');
-        if (!$dealerId) {
+        if (! $dealerId) {
             return response()->json(['activities' => []], 200);
         }
 
@@ -809,7 +822,7 @@ class DealerController extends Controller
             'SELECT "LEADID", "REFERRALCODE" FROM "LEAD" WHERE "LEADID" = ? AND "ASSIGNEDTO" = ?',
             [$leadId, $dealerId]
         );
-        if (!$lead) {
+        if (! $lead) {
             return response()->json(['activities' => []], 200);
         }
 
@@ -857,12 +870,12 @@ class DealerController extends Controller
                 $ids[$aid] = true;
             }
             $ids = array_keys($ids);
-            if (!empty($ids)) {
+            if (! empty($ids)) {
                 $placeholders = implode(',', array_fill(0, count($ids), '?'));
                 $users = DB::select(
                     'SELECT "USERID","SYSTEMROLE","ALIAS","COMPANY","EMAIL"
                      FROM "USERS"
-                     WHERE CAST("USERID" AS VARCHAR(50)) IN (' . $placeholders . ')',
+                     WHERE CAST("USERID" AS VARCHAR(50)) IN ('.$placeholders.')',
                     $ids
                 );
                 foreach ($users as $u) {
@@ -877,9 +890,9 @@ class DealerController extends Controller
                     $fallback = $email !== '' ? $email : $uid;
 
                     if ($role !== '' && $alias !== '') {
-                        $userNameMap[$uid] = $role . '- ' . $alias;
+                        $userNameMap[$uid] = $role.'- '.$alias;
                     } elseif ($role !== '') {
-                        $userNameMap[$uid] = $role . '- ' . ($company !== '' ? $company : ($email !== '' ? $email : $uid));
+                        $userNameMap[$uid] = $role.'- '.($company !== '' ? $company : ($email !== '' ? $email : $uid));
                     } elseif ($alias !== '') {
                         $userNameMap[$uid] = $alias;
                     } else {
@@ -899,7 +912,7 @@ class DealerController extends Controller
 
             // Normalize activity timestamp to an ISO‑8601 string in the app's timezone
             $createdAtIso = null;
-            if (!empty($r->CREATIONDATE)) {
+            if (! empty($r->CREATIONDATE)) {
                 try {
                     $createdAtIso = Carbon::parse($r->CREATIONDATE)->toIso8601String();
                 } catch (\Throwable $e) {
@@ -947,9 +960,9 @@ class DealerController extends Controller
 
             // Carry forward last non-empty product selection so Rewarded steps
             // inherit the same products as the preceding Completed step.
-            if (!empty($productIds)) {
+            if (! empty($productIds)) {
                 $lastProductIds = $productIds;
-            } elseif (empty($productIds) && !empty($lastProductIds) &&
+            } elseif (empty($productIds) && ! empty($lastProductIds) &&
                 in_array(strtoupper($status), ['COMPLETED', 'REWARDED', 'REWARD DISTRIBUTED'], true)
             ) {
                 $productIds = $lastProductIds;
@@ -992,7 +1005,7 @@ class DealerController extends Controller
         );
         $latestStatus = $latestRow ? trim((string) ($latestRow->STATUS ?? '')) : '';
         $latestCreatedAt = null;
-        if ($latestRow && !empty($latestRow->CREATIONDATE)) {
+        if ($latestRow && ! empty($latestRow->CREATIONDATE)) {
             try {
                 $latestCreatedAt = Carbon::parse($latestRow->CREATIONDATE)->toIso8601String();
             } catch (\Throwable $e) {
@@ -1047,7 +1060,7 @@ class DealerController extends Controller
     public function serveInquiryAttachment(Request $request): \Symfony\Component\HttpFoundation\Response
     {
         $dealerId = $request->session()->get('user_id');
-        if (!$dealerId) {
+        if (! $dealerId) {
             return response('', 404);
         }
         $path = $request->query('path');
@@ -1063,6 +1076,7 @@ class DealerController extends Controller
             return response('', 404);
         }
         $mime = mime_content_type($fullPath) ?: 'image/jpeg';
+
         return response()->file($fullPath, ['Content-Type' => $mime]);
     }
 
@@ -1072,19 +1086,19 @@ class DealerController extends Controller
     public function inquiryActivityAttachment(Request $request, int $leadId, int $leadActId): \Symfony\Component\HttpFoundation\Response
     {
         $dealerId = $request->session()->get('user_id');
-        if (!$dealerId) {
+        if (! $dealerId) {
             return response('', 404);
         }
         $lead = DB::selectOne(
             'SELECT "LEADID", "REFERRALCODE" FROM "LEAD" WHERE "LEADID" = ? AND "ASSIGNEDTO" = ?',
             [$leadId, $dealerId]
         );
-        if (!$lead) {
+        if (! $lead) {
             return response('', 404);
         }
         $row = DB::selectOne('SELECT "ATTACHMENT" FROM "LEAD_ACT" WHERE "LEAD_ACTID" = ? AND "LEADID" = ?', [$leadActId, $leadId]);
         $attachment = $row->ATTACHMENT ?? $row->attachment ?? null;
-        if (!$row || $attachment === null || trim((string) $attachment) === '') {
+        if (! $row || $attachment === null || trim((string) $attachment) === '') {
             return response('', 404);
         }
         $str = trim(str_replace('\\', '/', (string) $attachment));
@@ -1095,6 +1109,7 @@ class DealerController extends Controller
                 return response('', 404);
             }
             $mime = mime_content_type($fullPath) ?: 'image/jpeg';
+
             return response()->file($fullPath, ['Content-Type' => $mime]);
         }
         if (is_string($attachment) && strlen($attachment) > 0) {
@@ -1108,8 +1123,10 @@ class DealerController extends Controller
             } elseif (str_starts_with($attachment, 'RIFF') && substr($attachment, 8, 4) === 'WEBP') {
                 $mime = 'image/webp';
             }
+
             return response($attachment, 200, ['Content-Type' => $mime]);
         }
+
         return response('', 404);
     }
 
@@ -1150,7 +1167,7 @@ class DealerController extends Controller
         $requestNow = now();
 
         $formatTimestampForDb = static function (Carbon $dt): string {
-            return $dt->format('Y-m-d H:i:s') . '.' . substr($dt->format('u'), 0, 3);
+            return $dt->format('Y-m-d H:i:s').'.'.substr($dt->format('u'), 0, 3);
         };
 
         $parseFlexibleTimestamp = static function ($value): ?Carbon {
@@ -1192,9 +1209,9 @@ class DealerController extends Controller
         if ($activityDate !== '' && $activityTime !== '') {
             try {
                 $timeForSave = preg_match('/^\d{2}:\d{2}$/', $activityTime)
-                    ? ($activityTime . ':' . $requestNow->format('s'))
+                    ? ($activityTime.':'.$requestNow->format('s'))
                     : $activityTime;
-                $parsed = Carbon::createFromFormat('Y-m-d H:i:s', $activityDate . ' ' . $timeForSave);
+                $parsed = Carbon::createFromFormat('Y-m-d H:i:s', $activityDate.' '.$timeForSave);
                 if ($parsed !== false) {
                     $maxFuture = $requestNow->copy()->addDays(3)->endOfDay();
                     if ($parsed->gt($maxFuture)) {
@@ -1203,7 +1220,7 @@ class DealerController extends Controller
                             'message' => 'The activity date cannot be more than 3 days in the future.',
                         ], 422);
                     }
-                    $creationDate = $parsed->format('Y-m-d H:i:s') . '.' . substr($requestNow->format('u'), 0, 3);
+                    $creationDate = $parsed->format('Y-m-d H:i:s').'.'.substr($requestNow->format('u'), 0, 3);
                 }
             } catch (\Throwable $e) {
                 // keep default
@@ -1211,7 +1228,7 @@ class DealerController extends Controller
         }
 
         $dealerId = $request->session()->get('user_id');
-        if (!$dealerId) {
+        if (! $dealerId) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
@@ -1219,7 +1236,7 @@ class DealerController extends Controller
             'SELECT "LEADID", "REFERRALCODE" FROM "LEAD" WHERE "LEADID" = ? AND "ASSIGNEDTO" = ?',
             [$leadId, $dealerId]
         );
-        if (!$lead) {
+        if (! $lead) {
             return response()->json(['success' => false, 'message' => 'Lead not found or not assigned to you'], 404);
         }
         if (strtoupper($this->mapStatusToDb($status)) === 'COMPLETED' && empty($products)) {
@@ -1229,7 +1246,7 @@ class DealerController extends Controller
             ], 422);
         }
         $statusDb = $this->mapStatusToDb($status);
-        if (strtoupper($statusDb) === 'REWARDED' && !$request->hasFile('attachments')) {
+        if (strtoupper($statusDb) === 'REWARDED' && ! $request->hasFile('attachments')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Please upload at least one attachment for REWARDED status.',
@@ -1245,7 +1262,7 @@ class DealerController extends Controller
             [$leadId]
         );
         $fromStatusRaw = $lastActForValidation ? trim($lastActForValidation->STATUS ?? '') : '';
-        if (strtoupper($fromStatusRaw) === 'FAILED' && strtoupper($statusDb) === 'COMPLETED' && !$request->hasFile('attachments')) {
+        if (strtoupper($fromStatusRaw) === 'FAILED' && strtoupper($statusDb) === 'COMPLETED' && ! $request->hasFile('attachments')) {
             return response()->json([
                 'success' => false,
                 'message' => 'Please upload proof of completion (image) for recovered leads.',
@@ -1267,7 +1284,7 @@ class DealerController extends Controller
             try {
                 $lastDt = $parseFlexibleTimestamp($lastCreationDate);
                 $newDt = $parseFlexibleTimestamp($creationDate);
-                if (!$lastDt || !$newDt) {
+                if (! $lastDt || ! $newDt) {
                     throw new \RuntimeException('Unable to parse status timestamps.');
                 }
                 $lastComparableDt = $lastDt->copy()->startOfMinute();
@@ -1276,7 +1293,7 @@ class DealerController extends Controller
                 if ($newComparableDt->lt($lastComparableDt)) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Invalid date/time. It must be on/after the previous status time (' . $lastDt->format('Y-m-d H:i') . ').',
+                        'message' => 'Invalid date/time. It must be on/after the previous status time ('.$lastDt->format('Y-m-d H:i').').',
                     ], 422);
                 }
 
@@ -1294,6 +1311,7 @@ class DealerController extends Controller
 
         $normalizeTransitionStatus = static function (string $value): string {
             $upper = strtoupper(trim($value));
+
             return match ($upper) {
                 'FOLLOWUP' => 'FOLLOW UP',
                 'CASE CONFIRMED' => 'CONFIRMED',
@@ -1322,7 +1340,7 @@ class DealerController extends Controller
         // If dealer is "editing" the current status (same status again), allow it.
         $isSameStatusEdit = $toUpper === $fromUpper;
 
-        if (!$isSameStatusEdit) {
+        if (! $isSameStatusEdit) {
             $allowedTo = match ($fromUpper) {
                 'PENDING' => ['FOLLOW UP'],
                 'FOLLOW UP' => ['PENDING', 'DEMO', 'CONFIRMED', 'COMPLETED'],
@@ -1333,15 +1351,15 @@ class DealerController extends Controller
                 default => [],
             };
 
-            if (!in_array($toUpper, $allowedTo, true)) {
+            if (! in_array($toUpper, $allowedTo, true)) {
                 if ($fromUpper === 'PENDING') {
-                    $message = 'You cant change status from Pending To ' . $formatTransitionLabel($toUpper) . ', Please Follow Up First';
-                } elseif ($toUpper === 'REWARDED' && !$hasReferralCode) {
+                    $message = 'You cant change status from Pending To '.$formatTransitionLabel($toUpper).', Please Follow Up First';
+                } elseif ($toUpper === 'REWARDED' && ! $hasReferralCode) {
                     $message = 'You cant change status to Rewarded, Referral Code is required first';
                 } elseif ($toUpper === 'REWARDED') {
                     $message = 'You cant change status to Rewarded, Please Complete First';
                 } else {
-                    $message = 'You cant change status from ' . $formatTransitionLabel($fromUpper) . ' To ' . $formatTransitionLabel($toUpper);
+                    $message = 'You cant change status from '.$formatTransitionLabel($fromUpper).' To '.$formatTransitionLabel($toUpper);
                 }
 
                 return response()->json([
@@ -1366,8 +1384,8 @@ class DealerController extends Controller
                 // If remark is provided, we append it.
                 if ($remark !== '') {
                     $oldDesc = trim((string) ($latestActRow->DESCRIPTION ?? ''));
-                    $divider = "\n" . str_repeat('-', 30) . "\n" . now()->format('d/m/Y H:i') . ":\n";
-                    $newDesc = $oldDesc . ($oldDesc !== '' ? $divider : '') . $remark;
+                    $divider = "\n".str_repeat('-', 30)."\n".now()->format('d/m/Y H:i').":\n";
+                    $newDesc = $oldDesc.($oldDesc !== '' ? $divider : '').$remark;
                     DB::update('UPDATE "LEAD_ACT" SET "DESCRIPTION" = ?, "CREATIONDATE" = ? WHERE "LEAD_ACTID" = ?', [$newDesc, $creationDate, $latestActRow->LEAD_ACTID]);
                 } else {
                     DB::update('UPDATE "LEAD_ACT" SET "CREATIONDATE" = ? WHERE "LEAD_ACTID" = ?', [$creationDate, $latestActRow->LEAD_ACTID]);
@@ -1379,23 +1397,23 @@ class DealerController extends Controller
                 return response()->json([
                     'success' => true,
                     'message' => 'Status updated iteratively',
-                    'counts' => $this->getDealerConsoleCounts($dealerId)
+                    'counts' => $this->getDealerConsoleCounts($dealerId),
                 ]);
             }
         }
 
         $toStatus = $statusDb;
-        $description = $remark !== '' ? $remark : ('Update Status from ' . $fromStatus . ' to ' . $toStatus);
+        $description = $remark !== '' ? $remark : ('Update Status from '.$fromStatus.' to '.$toStatus);
 
         if (! empty($products)) {
-            $productNames = array_map(fn ($p) => $p['name'] ?? 'Product ' . ($p['id'] ?? ''), $products);
-            $description = $description . "\nProducts: " . implode(', ', $productNames);
+            $productNames = array_map(fn ($p) => $p['name'] ?? 'Product '.($p['id'] ?? ''), $products);
+            $description = $description."\nProducts: ".implode(', ', $productNames);
         }
 
         $attachmentValue = null;
         if ($request->hasFile('attachments')) {
             $paths = [];
-            $dir = 'inquiry-attachments/lead_' . $leadId;
+            $dir = 'inquiry-attachments/lead_'.$leadId;
             foreach ($request->file('attachments') as $file) {
                 if ($file->isValid() && str_starts_with($file->getMimeType(), 'image/')) {
                     $path = $file->store($dir, 'public');
@@ -1440,7 +1458,7 @@ class DealerController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Status updated',
-            'counts' => $updatedCounts
+            'counts' => $updatedCounts,
         ]);
     }
 
@@ -1457,6 +1475,7 @@ class DealerController extends Controller
             'FAILED' => 'Failed',
         ];
         $upper = strtoupper(trim($status));
+
         return $map[$upper] ?? $status;
     }
 
@@ -1489,7 +1508,7 @@ class DealerController extends Controller
                     fn ($r) => (int) ($r->LEADID ?? 0),
                     $rows
                 ))));
-                if (!empty($leadIds)) {
+                if (! empty($leadIds)) {
                     $placeholders = implode(',', array_fill(0, count($leadIds), '?'));
                     $acts = DB::select(
                         'SELECT a."LEADID", a."STATUS",
@@ -1502,11 +1521,11 @@ class DealerController extends Controller
                          JOIN (
                              SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD, MAX("LEAD_ACTID") AS MAXID
                              FROM "LEAD_ACT"
-                             WHERE "LEADID" IN (' . $placeholders . ')
+                             WHERE "LEADID" IN ('.$placeholders.')
                              GROUP BY "LEADID"
                          ) x
                            ON x."LEADID" = a."LEADID" AND x.MAXCD = a."CREATIONDATE" AND x.MAXID = a."LEAD_ACTID"
-                         WHERE a."LEADID" IN (' . $placeholders . ')',
+                         WHERE a."LEADID" IN ('.$placeholders.')',
                         array_merge($leadIds, $leadIds)
                     );
                     $statusMap = [];
@@ -1531,14 +1550,18 @@ class DealerController extends Controller
             } catch (\Throwable $e) {
                 // default values if override fails
                 foreach ($rows as $r) {
-                    if (!isset($r->CURRENTSTATUS)) $r->CURRENTSTATUS = 'Created';
-                    if (!isset($r->ACT_NON_FAILED_STATUS)) $r->ACT_NON_FAILED_STATUS = 'Pending';
+                    if (! isset($r->CURRENTSTATUS)) {
+                        $r->CURRENTSTATUS = 'Created';
+                    }
+                    if (! isset($r->ACT_NON_FAILED_STATUS)) {
+                        $r->ACT_NON_FAILED_STATUS = 'Pending';
+                    }
                 }
             }
 
             // Attach latest COMPLETED dealt products per lead (for "Dealt Products" column)
             try {
-                if (!empty($leadIds)) {
+                if (! empty($leadIds)) {
                     $placeholders = implode(',', array_fill(0, count($leadIds), '?'));
                     $dealRows = DB::select(
                         'SELECT a."LEADID", a."DEALTPRODUCT"
@@ -1546,10 +1569,10 @@ class DealerController extends Controller
                          JOIN (
                              SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD, MAX("LEAD_ACTID") AS MAXID
                              FROM "LEAD_ACT"
-                             WHERE UPPER(TRIM("STATUS")) = \'COMPLETED\' AND "LEADID" IN (' . $placeholders . ')
+                             WHERE UPPER(TRIM("STATUS")) = \'COMPLETED\' AND "LEADID" IN ('.$placeholders.')
                              GROUP BY "LEADID"
                          ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE" AND m.MAXID = a."LEAD_ACTID"
-                         WHERE UPPER(TRIM(a."STATUS")) = \'COMPLETED\' AND a."LEADID" IN (' . $placeholders . ')',
+                         WHERE UPPER(TRIM(a."STATUS")) = \'COMPLETED\' AND a."LEADID" IN ('.$placeholders.')',
                         array_merge($leadIds, $leadIds)
                     );
                     $dealtMap = [];
@@ -1559,7 +1582,7 @@ class DealerController extends Controller
                             $dealtMap[$lid] = $dr->DEALTPRODUCT ?? $dr->dealtproduct ?? null;
                         }
                     }
-                    if (!empty($dealtMap)) {
+                    if (! empty($dealtMap)) {
                         foreach ($rows as $r) {
                             $lid = (int) ($r->LEADID ?? 0);
                             if ($lid > 0 && isset($dealtMap[$lid])) {
@@ -1574,7 +1597,7 @@ class DealerController extends Controller
 
             // Attach latest assignment date per lead for optional "Assign Date" column
             try {
-                if (!empty($leadIds)) {
+                if (! empty($leadIds)) {
                     $placeholders = implode(',', array_fill(0, count($leadIds), '?'));
                     $assignRows = DB::select(
                         'SELECT a."LEADID", a."CREATIONDATE" AS "ASSIGNDATE"
@@ -1582,14 +1605,14 @@ class DealerController extends Controller
                          JOIN (
                              SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD, MAX("LEAD_ACTID") AS MAXID
                              FROM "LEAD_ACT"
-                             WHERE "LEADID" IN (' . $placeholders . ')
+                             WHERE "LEADID" IN ('.$placeholders.')
                                AND (
                                    UPPER(TRIM(COALESCE("SUBJECT", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
                                    OR UPPER(TRIM(COALESCE("DESCRIPTION", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
                                )
                              GROUP BY "LEADID"
                          ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE" AND m.MAXID = a."LEAD_ACTID"
-                         WHERE a."LEADID" IN (' . $placeholders . ')
+                         WHERE a."LEADID" IN ('.$placeholders.')
                            AND (
                                UPPER(TRIM(COALESCE(a."SUBJECT", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
                                OR UPPER(TRIM(COALESCE(a."DESCRIPTION", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
@@ -1603,7 +1626,7 @@ class DealerController extends Controller
                             $assignDateMap[$lid] = $ar->ASSIGNDATE ?? null;
                         }
                     }
-                    if (!empty($assignDateMap)) {
+                    if (! empty($assignDateMap)) {
                         foreach ($rows as $r) {
                             $lid = (int) ($r->LEADID ?? 0);
                             if ($lid > 0 && isset($assignDateMap[$lid])) {
@@ -1634,7 +1657,7 @@ class DealerController extends Controller
                     fn ($r) => (int) ($r->LEADID ?? 0),
                     $completed
                 ))));
-                if (!empty($completedIds)) {
+                if (! empty($completedIds)) {
                     $placeholders = implode(',', array_fill(0, count($completedIds), '?'));
                     $attachRows = DB::select(
                         'SELECT a."LEADID", a."LEAD_ACTID", a."ATTACHMENT"
@@ -1643,11 +1666,11 @@ class DealerController extends Controller
                              SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD, MAX("LEAD_ACTID") AS MAXID
                              FROM "LEAD_ACT"
                              WHERE UPPER(TRIM("STATUS")) = \'COMPLETED\'
-                               AND "LEADID" IN (' . $placeholders . ')
+                               AND "LEADID" IN ('.$placeholders.')
                              GROUP BY "LEADID"
                          ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE" AND m.MAXID = a."LEAD_ACTID"
                          WHERE UPPER(TRIM(a."STATUS")) = \'COMPLETED\'
-                           AND a."LEADID" IN (' . $placeholders . ')',
+                           AND a."LEADID" IN ('.$placeholders.')',
                         array_merge($completedIds, $completedIds)
                     );
                     $attachmentMap = [];
@@ -1659,7 +1682,7 @@ class DealerController extends Controller
                             $attachmentActMap[$lid] = (int) ($ar->LEAD_ACTID ?? 0);
                         }
                     }
-                    if (!empty($attachmentMap)) {
+                    if (! empty($attachmentMap)) {
                         foreach ($completed as $r) {
                             $lid = (int) ($r->LEADID ?? 0);
                             if ($lid > 0 && array_key_exists($lid, $attachmentMap)) {
@@ -1679,7 +1702,7 @@ class DealerController extends Controller
                     fn ($r) => (int) ($r->LEADID ?? 0),
                     $rewarded
                 ))));
-                if (!empty($rewardedIds)) {
+                if (! empty($rewardedIds)) {
                     $placeholders = implode(',', array_fill(0, count($rewardedIds), '?'));
                     $completedRows = DB::select(
                         'SELECT a."LEADID", a."CREATIONDATE"
@@ -1688,11 +1711,11 @@ class DealerController extends Controller
                              SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD, MAX("LEAD_ACTID") AS MAXID
                              FROM "LEAD_ACT"
                              WHERE UPPER(TRIM("STATUS")) = \'COMPLETED\'
-                               AND "LEADID" IN (' . $placeholders . ')
+                               AND "LEADID" IN ('.$placeholders.')
                              GROUP BY "LEADID"
                          ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE" AND m.MAXID = a."LEAD_ACTID"
                          WHERE UPPER(TRIM(a."STATUS")) = \'COMPLETED\'
-                           AND a."LEADID" IN (' . $placeholders . ')',
+                           AND a."LEADID" IN ('.$placeholders.')',
                         array_merge($rewardedIds, $rewardedIds)
                     );
                     $completedDateMap = [];
@@ -1709,11 +1732,11 @@ class DealerController extends Controller
                              SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD, MAX("LEAD_ACTID") AS MAXID
                              FROM "LEAD_ACT"
                              WHERE UPPER(TRIM("STATUS")) IN (\'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\')
-                               AND "LEADID" IN (' . $placeholders . ')
+                               AND "LEADID" IN ('.$placeholders.')
                              GROUP BY "LEADID"
                          ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE" AND m.MAXID = a."LEAD_ACTID"
                          WHERE UPPER(TRIM(a."STATUS")) IN (\'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\')
-                           AND a."LEADID" IN (' . $placeholders . ')',
+                           AND a."LEADID" IN ('.$placeholders.')',
                         array_merge($rewardedIds, $rewardedIds)
                     );
                     $attachmentMap = [];
@@ -1782,12 +1805,12 @@ class DealerController extends Controller
                     }
                 }
                 $ids = array_keys($ids);
-                if (!empty($ids)) {
+                if (! empty($ids)) {
                     $placeholders = implode(',', array_fill(0, count($ids), '?'));
                     $users = DB::select(
                         'SELECT "USERID","SYSTEMROLE","ALIAS","COMPANY","EMAIL"
                          FROM "USERS"
-                         WHERE CAST("USERID" AS VARCHAR(50)) IN (' . $placeholders . ')',
+                         WHERE CAST("USERID" AS VARCHAR(50)) IN ('.$placeholders.')',
                         $ids
                     );
                     $assignedToMap = [];
@@ -1804,7 +1827,7 @@ class DealerController extends Controller
                         $fallback = $email !== '' ? $email : $uid;
 
                         if ($company !== '' && $alias !== '') {
-                            $assignedToMap[$uid] = $company . '- ' . $alias;
+                            $assignedToMap[$uid] = $company.'- '.$alias;
                         } elseif ($company !== '') {
                             $assignedToMap[$uid] = $company;
                         } elseif ($alias !== '') {
@@ -1814,9 +1837,9 @@ class DealerController extends Controller
                         }
 
                         if ($role !== '' && $alias !== '') {
-                            $createdByMap[$uid] = $role . '- ' . $alias;
+                            $createdByMap[$uid] = $role.'- '.$alias;
                         } elseif ($role !== '') {
-                            $createdByMap[$uid] = $role . '-' . ($company !== '' ? $company : ($email !== '' ? $email : $uid));
+                            $createdByMap[$uid] = $role.'-'.($company !== '' ? $company : ($email !== '' ? $email : $uid));
                         } elseif ($alias !== '') {
                             $createdByMap[$uid] = $alias;
                         } else {
@@ -1886,7 +1909,7 @@ class DealerController extends Controller
             'rewarded' => 0,
         ];
 
-        if (!$dealerId) {
+        if (! $dealerId) {
             return $counts;
         }
 
@@ -1908,7 +1931,7 @@ class DealerController extends Controller
             foreach ($rows as $row) {
                 $status = $row->LATEST_STATUS ?? '';
                 $counts['inquiries']++;
-                
+
                 if ($status === 'PENDING') {
                     $counts['pending']++;
                 } elseif ($status === 'FOLLOWUP' || $status === 'FOLLOW UP') {
@@ -1964,77 +1987,77 @@ class DealerController extends Controller
         $fromInput = $request->get('from');
         $toInput = $request->get('to');
 
-    $dateFrom = null;
-    $dateTo = null;
-    $periodLabel = 'Last 60 Days';
-    $trendLabels = [];
+        $dateFrom = null;
+        $dateTo = null;
+        $periodLabel = 'Last 60 Days';
+        $trendLabels = [];
 
-    $days = 0;
-    if ($period === 'range') {
-        if (!empty($fromInput) && !empty($toInput)) {
-            $dateFrom = Carbon::parse($fromInput)->startOfDay();
-            $dateTo = Carbon::parse($toInput)->endOfDay();
-            $periodLabel = $dateFrom->isSameDay($dateTo)
-                ? $dateFrom->format('M j, Y')
-                : $dateFrom->format('M j, Y') . ' – ' . $dateTo->format('M j, Y');
-            $days = (int) ($dateFrom->diffInDays($dateTo) + 1);
-            $days = max(1, $days);
-        } else {
-            // Default to last 30 days if range is selected but dates are missing
+        $days = 0;
+        if ($period === 'range') {
+            if (! empty($fromInput) && ! empty($toInput)) {
+                $dateFrom = Carbon::parse($fromInput)->startOfDay();
+                $dateTo = Carbon::parse($toInput)->endOfDay();
+                $periodLabel = $dateFrom->isSameDay($dateTo)
+                    ? $dateFrom->format('M j, Y')
+                    : $dateFrom->format('M j, Y').' – '.$dateTo->format('M j, Y');
+                $days = (int) ($dateFrom->diffInDays($dateTo) + 1);
+                $days = max(1, $days);
+            } else {
+                // Default to last 30 days if range is selected but dates are missing
+                $dateFrom = Carbon::now()->subDays(29)->startOfDay();
+                $dateTo = Carbon::now()->endOfDay();
+                $periodLabel = 'Custom Range';
+                $days = 30;
+            }
+            $trendLabels = []; // Will be populated later
+        } elseif ($period === '30_days') {
             $dateFrom = Carbon::now()->subDays(29)->startOfDay();
             $dateTo = Carbon::now()->endOfDay();
-            $periodLabel = 'Custom Range';
+            $periodLabel = 'Last 30 Days';
             $days = 30;
+            $trendLabels = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+        } elseif ($period === '90_days') {
+            $dateFrom = Carbon::now()->subDays(89)->startOfDay();
+            $dateTo = Carbon::now()->endOfDay();
+            $periodLabel = 'Last 90 Days';
+            $days = 90;
+            $trendLabels = ['Month 1', 'Month 2', 'Month 3'];
+        } else {
+            $period = '60_days';
+            $dateFrom = Carbon::now()->subDays(59)->startOfDay();
+            $dateTo = Carbon::now()->endOfDay();
+            $periodLabel = 'Last 60 Days';
+            $days = 60;
+            $trendLabels = ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Week 7', 'Week 8'];
         }
-        $trendLabels = []; // Will be populated later
-    } elseif ($period === '30_days') {
-        $dateFrom = Carbon::now()->subDays(29)->startOfDay();
-        $dateTo = Carbon::now()->endOfDay();
-        $periodLabel = 'Last 30 Days';
-        $days = 30;
-        $trendLabels = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
-    } elseif ($period === '90_days') {
-        $dateFrom = Carbon::now()->subDays(89)->startOfDay();
-        $dateTo = Carbon::now()->endOfDay();
-        $periodLabel = 'Last 90 Days';
-        $days = 90;
-        $trendLabels = ['Month 1', 'Month 2', 'Month 3'];
-    } else {
-        $period = '60_days';
-        $dateFrom = Carbon::now()->subDays(59)->startOfDay();
-        $dateTo = Carbon::now()->endOfDay();
-        $periodLabel = 'Last 60 Days';
-        $days = 60;
-        $trendLabels = ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Week 7', 'Week 8'];
-    }
 
-    $statusMap = [
-        'PENDING' => 'PENDING', 'Pending' => 'PENDING',
-        'FOLLOW UP' => 'FOLLOW UP', 'FOLLOWUP' => 'FOLLOW UP', 'FollowUp' => 'FOLLOW UP',
-        'DEMO' => 'DEMO', 'Demo' => 'DEMO',
-        'CONFIRMED' => 'CONFIRMED', 'Confirmed' => 'CONFIRMED', 'CASE CONFIRMED' => 'CONFIRMED',
-        'COMPLETED' => 'COMPLETED', 'Completed' => 'COMPLETED', 'CASE COMPLETED' => 'COMPLETED',
-        'FAILED' => 'FAILED', 'Failed' => 'FAILED',
-        'REWARDED' => 'REWARDED', 'Rewarded' => 'REWARDED', 'REWARD' => 'REWARDED', 'REWARD DISTRIBUTED' => 'REWARDED', 'Reward Distributed' => 'REWARDED',
-    ];
-    $buildStatusCounts = function (?Carbon $rangeStart = null, ?Carbon $rangeEnd = null) use ($dealerId, $statusMap) {
-        $counts = [
-            'PENDING' => 0,
-            'FOLLOW UP' => 0,
-            'DEMO' => 0,
-            'CONFIRMED' => 0,
-            'COMPLETED' => 0,
-            'FAILED' => 0,
-            'REWARDED' => 0,
+        $statusMap = [
+            'PENDING' => 'PENDING', 'Pending' => 'PENDING',
+            'FOLLOW UP' => 'FOLLOW UP', 'FOLLOWUP' => 'FOLLOW UP', 'FollowUp' => 'FOLLOW UP',
+            'DEMO' => 'DEMO', 'Demo' => 'DEMO',
+            'CONFIRMED' => 'CONFIRMED', 'Confirmed' => 'CONFIRMED', 'CASE CONFIRMED' => 'CONFIRMED',
+            'COMPLETED' => 'COMPLETED', 'Completed' => 'COMPLETED', 'CASE COMPLETED' => 'COMPLETED',
+            'FAILED' => 'FAILED', 'Failed' => 'FAILED',
+            'REWARDED' => 'REWARDED', 'Rewarded' => 'REWARDED', 'REWARD' => 'REWARDED', 'REWARD DISTRIBUTED' => 'REWARDED', 'Reward Distributed' => 'REWARDED',
         ];
-        if (!$dealerId) {
-            return $counts;
-        }
+        $buildStatusCounts = function (?Carbon $rangeStart = null, ?Carbon $rangeEnd = null) use ($dealerId, $statusMap) {
+            $counts = [
+                'PENDING' => 0,
+                'FOLLOW UP' => 0,
+                'DEMO' => 0,
+                'CONFIRMED' => 0,
+                'COMPLETED' => 0,
+                'FAILED' => 0,
+                'REWARDED' => 0,
+            ];
+            if (! $dealerId) {
+                return $counts;
+            }
 
-        if ($rangeStart && $rangeEnd) {
-            $rangeStartValue = $rangeStart->format('Y-m-d H:i:s');
-            $rangeEndValue = $rangeEnd->format('Y-m-d H:i:s');
-            $query = 'SELECT l."LEADID",
+            if ($rangeStart && $rangeEnd) {
+                $rangeStartValue = $rangeStart->format('Y-m-d H:i:s');
+                $rangeEndValue = $rangeEnd->format('Y-m-d H:i:s');
+                $query = 'SELECT l."LEADID",
                     COALESCE(
                         (SELECT FIRST 1 la."STATUS"
                            FROM "LEAD_ACT" la
@@ -2054,9 +2077,9 @@ class DealerController extends Controller
                         AND lae."CREATIONDATE" >= ?
                         AND lae."CREATIONDATE" <= ?
                   )';
-            $bindings = [$rangeStartValue, $rangeEndValue, $dealerId, $rangeStartValue, $rangeEndValue];
-        } else {
-            $query = 'SELECT l."LEADID",
+                $bindings = [$rangeStartValue, $rangeEndValue, $dealerId, $rangeStartValue, $rangeEndValue];
+            } else {
+                $query = 'SELECT l."LEADID",
                     COALESCE(
                         (SELECT FIRST 1 la."STATUS"
                            FROM "LEAD_ACT" la
@@ -2067,137 +2090,138 @@ class DealerController extends Controller
                 FROM "LEAD" l
                 WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                   AND UPPER(TRIM(COALESCE((SELECT FIRST 1 la2."STATUS" FROM "LEAD_ACT" la2 WHERE la2."LEADID" = l."LEADID" ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC), \'\'))) <> \'CANCELLED\'';
-            $bindings = [$dealerId];
-        }
-
-        $rows = DB::select($query, $bindings);
-
-        foreach ($rows as $row) {
-            $raw = trim($row->LATEST_STATUS ?? '');
-            $normalized = $statusMap[strtoupper($raw)] ?? $statusMap[$raw] ?? 'PENDING';
-            if (isset($counts[$normalized])) {
-                $counts[$normalized]++;
-            } else {
-                $counts['PENDING']++;
+                $bindings = [$dealerId];
             }
-        }
 
-        return $counts;
-    };
+            $rows = DB::select($query, $bindings);
 
-    $statusCounts = [
-        'PENDING' => 0,
-        'FOLLOW UP' => 0,
-        'DEMO' => 0,
-        'CONFIRMED' => 0,
-        'COMPLETED' => 0,
-        'FAILED' => 0,
-        'REWARDED' => 0,
-    ];
-    $totalInquiry = 0;
-    $inquiryTrendData = array_fill(0, count($trendLabels), 0);
-    $productCounts = array_fill(0, 13, 0);
+            foreach ($rows as $row) {
+                $raw = trim($row->LATEST_STATUS ?? '');
+                $normalized = $statusMap[strtoupper($raw)] ?? $statusMap[$raw] ?? 'PENDING';
+                if (isset($counts[$normalized])) {
+                    $counts[$normalized]++;
+                } else {
+                    $counts['PENDING']++;
+                }
+            }
 
-    if ($dealerId && $dateFrom && $dateTo) {
-        $df = $dateFrom->format('Y-m-d H:i:s');
-        $dt = $dateTo->format('Y-m-d H:i:s');
-        $dealerPendingDateSql = 'SELECT a."LEADID", MAX(a."CREATIONDATE") AS "PENDING_AT"
+            return $counts;
+        };
+
+        $statusCounts = [
+            'PENDING' => 0,
+            'FOLLOW UP' => 0,
+            'DEMO' => 0,
+            'CONFIRMED' => 0,
+            'COMPLETED' => 0,
+            'FAILED' => 0,
+            'REWARDED' => 0,
+        ];
+        $totalInquiry = 0;
+        $inquiryTrendData = array_fill(0, count($trendLabels), 0);
+        $productCounts = array_fill(0, 13, 0);
+
+        if ($dealerId && $dateFrom && $dateTo) {
+            $df = $dateFrom->format('Y-m-d H:i:s');
+            $dt = $dateTo->format('Y-m-d H:i:s');
+            $dealerPendingDateSql = 'SELECT a."LEADID", MAX(a."CREATIONDATE") AS "PENDING_AT"
             FROM "LEAD_ACT" a
             WHERE UPPER(TRIM(COALESCE(a."STATUS", \'\'))) = ?
             GROUP BY a."LEADID"';
 
-        $totalRow = DB::selectOne(
-            'SELECT COUNT(*) AS "CNT"
+            $totalRow = DB::selectOne(
+                'SELECT COUNT(*) AS "CNT"
              FROM "LEAD" l
-             JOIN (' . $dealerPendingDateSql . ') p ON p."LEADID" = l."LEADID"
+             JOIN ('.$dealerPendingDateSql.') p ON p."LEADID" = l."LEADID"
              WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                AND UPPER(TRIM(COALESCE((SELECT FIRST 1 la2."STATUS" FROM "LEAD_ACT" la2 WHERE la2."LEADID" = l."LEADID" ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC), \'\'))) <> \'CANCELLED\'
                AND p."PENDING_AT" >= ?
                AND p."PENDING_AT" <= ?',
-            ['PENDING', $dealerId, $df, $dt]
-        );
-        $totalInquiry = (int) ($totalRow->CNT ?? 0);
+                ['PENDING', $dealerId, $df, $dt]
+            );
+            $totalInquiry = (int) ($totalRow->CNT ?? 0);
 
-        $inquiryTrendData = [];
-        $trendLabels = [];
-        
-        $currentDate = $dateFrom->copy();
-        while ($currentDate->lte($dateTo)) {
-            $d = $currentDate->format('Y-m-d');
-            $row = DB::selectOne(
-                'SELECT COUNT(*) AS "CNT"
+            $inquiryTrendData = [];
+            $trendLabels = [];
+
+            $currentDate = $dateFrom->copy();
+            while ($currentDate->lte($dateTo)) {
+                $d = $currentDate->format('Y-m-d');
+                $row = DB::selectOne(
+                    'SELECT COUNT(*) AS "CNT"
                  FROM "LEAD" l
-                 JOIN (' . $dealerPendingDateSql . ') p ON p."LEADID" = l."LEADID"
+                 JOIN ('.$dealerPendingDateSql.') p ON p."LEADID" = l."LEADID"
                  WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
                    AND UPPER(TRIM(COALESCE((SELECT FIRST 1 la2."STATUS" FROM "LEAD_ACT" la2 WHERE la2."LEADID" = l."LEADID" ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC), \'\'))) <> \'CANCELLED\'
                    AND CAST(p."PENDING_AT" AS DATE) = ?',
-                ['PENDING', $dealerId, $d]
-            );
-            $inquiryTrendData[] = (int) ($row->CNT ?? 0);
-            $trendLabels[] = $currentDate->format('M j');
-            $currentDate->addDay();
-        }
-
-        $statusCounts = $buildStatusCounts($dateFrom, $dateTo);
-
-        // Trend indicators logic (comparison with previous period)
-        $currentRangeDays = (int) ($dateFrom->diffInDays($dateTo) + 1);
-        $prevDateFrom = $dateFrom->copy()->subDays($currentRangeDays)->startOfDay();
-        $prevDateTo = $dateFrom->copy()->subSecond();
-        $prevStatusCounts = $buildStatusCounts($prevDateFrom, $prevDateTo);
-
-        $percentChange = function ($current, $previous) {
-            if ($previous == 0) {
-                return $current > 0 ? 100 : 0;
+                    ['PENDING', $dealerId, $d]
+                );
+                $inquiryTrendData[] = (int) ($row->CNT ?? 0);
+                $trendLabels[] = $currentDate->format('M j');
+                $currentDate->addDay();
             }
-            return (int) round(($current - $previous) / $previous * 100);
-        };
 
-        $metricPercent = [
-            'PENDING' => $percentChange($statusCounts['PENDING'], $prevStatusCounts['PENDING']),
-            'FOLLOW UP' => $percentChange($statusCounts['FOLLOW UP'], $prevStatusCounts['FOLLOW UP']),
-            'DEMO' => $percentChange($statusCounts['DEMO'], $prevStatusCounts['DEMO']),
-            'CONFIRMED' => $percentChange($statusCounts['CONFIRMED'], $prevStatusCounts['CONFIRMED']),
-            'COMPLETED' => $percentChange($statusCounts['COMPLETED'], $prevStatusCounts['COMPLETED']),
-            'FAILED' => $percentChange($statusCounts['FAILED'], $prevStatusCounts['FAILED']),
-            'REWARDED' => $percentChange($statusCounts['REWARDED'], $prevStatusCounts['REWARDED']),
-        ];
+            $statusCounts = $buildStatusCounts($dateFrom, $dateTo);
 
-        $productRows = DB::select(
-            'SELECT la."DEALTPRODUCT" FROM "LEAD_ACT" la
+            // Trend indicators logic (comparison with previous period)
+            $currentRangeDays = (int) ($dateFrom->diffInDays($dateTo) + 1);
+            $prevDateFrom = $dateFrom->copy()->subDays($currentRangeDays)->startOfDay();
+            $prevDateTo = $dateFrom->copy()->subSecond();
+            $prevStatusCounts = $buildStatusCounts($prevDateFrom, $prevDateTo);
+
+            $percentChange = function ($current, $previous) {
+                if ($previous == 0) {
+                    return $current > 0 ? 100 : 0;
+                }
+
+                return (int) round(($current - $previous) / $previous * 100);
+            };
+
+            $metricPercent = [
+                'PENDING' => $percentChange($statusCounts['PENDING'], $prevStatusCounts['PENDING']),
+                'FOLLOW UP' => $percentChange($statusCounts['FOLLOW UP'], $prevStatusCounts['FOLLOW UP']),
+                'DEMO' => $percentChange($statusCounts['DEMO'], $prevStatusCounts['DEMO']),
+                'CONFIRMED' => $percentChange($statusCounts['CONFIRMED'], $prevStatusCounts['CONFIRMED']),
+                'COMPLETED' => $percentChange($statusCounts['COMPLETED'], $prevStatusCounts['COMPLETED']),
+                'FAILED' => $percentChange($statusCounts['FAILED'], $prevStatusCounts['FAILED']),
+                'REWARDED' => $percentChange($statusCounts['REWARDED'], $prevStatusCounts['REWARDED']),
+            ];
+
+            $productRows = DB::select(
+                'SELECT la."DEALTPRODUCT" FROM "LEAD_ACT" la
             JOIN "LEAD" l ON l."LEADID" = la."LEADID"
             WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND la."USERID" = ? AND la."CREATIONDATE" >= ? AND la."CREATIONDATE" <= ?
             AND la."DEALTPRODUCT" IS NOT NULL AND la."DEALTPRODUCT" <> \'\'
             AND UPPER(TRIM(COALESCE((SELECT FIRST 1 la2."STATUS" FROM "LEAD_ACT" la2 WHERE la2."LEADID" = l."LEADID" ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC), \'\'))) <> \'CANCELLED\'',
-            [$dealerId, $df, $dt]
-        );
-        foreach ($productRows as $pr) {
-            $val = trim($pr->DEALTPRODUCT ?? '');
-            $ids = array_map('intval', array_filter(preg_split('/[\s,\(\)]+/', $val)));
-            foreach ($ids as $pid) {
-                if ($pid >= 1 && $pid <= 12) {
-                    $productCounts[$pid - 1]++;
-                } elseif ($pid >= 13) {
-                    $productCounts[12]++;
+                [$dealerId, $df, $dt]
+            );
+            foreach ($productRows as $pr) {
+                $val = trim($pr->DEALTPRODUCT ?? '');
+                $ids = array_map('intval', array_filter(preg_split('/[\s,\(\)]+/', $val)));
+                foreach ($ids as $pid) {
+                    if ($pid >= 1 && $pid <= 12) {
+                        $productCounts[$pid - 1]++;
+                    } elseif ($pid >= 13) {
+                        $productCounts[12]++;
+                    }
                 }
             }
         }
-    }
 
-    return view('dealer.reports', [
-        'currentPage' => 'reports',
-        'statusCounts' => $statusCounts,
-        'totalInquiry' => $totalInquiry,
-        'inquiryTrendData' => $inquiryTrendData,
-        'trendLabels' => $trendLabels,
-        'metricPercent' => $metricPercent,
-        'period' => $period,
-        'periodLabel' => $periodLabel,
-        'from' => $fromInput,
-        'to' => $toInput,
-        'productCounts' => $productCounts,
-    ]);
-}
+        return view('dealer.reports', [
+            'currentPage' => 'reports',
+            'statusCounts' => $statusCounts,
+            'totalInquiry' => $totalInquiry,
+            'inquiryTrendData' => $inquiryTrendData,
+            'trendLabels' => $trendLabels,
+            'metricPercent' => $metricPercent,
+            'period' => $period,
+            'periodLabel' => $periodLabel,
+            'from' => $fromInput,
+            'to' => $toInput,
+            'productCounts' => $productCounts,
+        ]);
+    }
 
     public function history(Request $request): View
     {
@@ -2213,13 +2237,14 @@ class DealerController extends Controller
                 [$dealerId]
             );
         }
+
         return view('dealer.history', ['activities' => $activities, 'currentPage' => 'history']);
     }
 
     public function notifications(Request $request): JsonResponse
     {
         $dealerId = $request->session()->get('user_id');
-        if (!$dealerId) {
+        if (! $dealerId) {
             return response()->json(['items' => []], 200);
         }
 
@@ -2244,22 +2269,23 @@ class DealerController extends Controller
         $items = array_map(function ($r) {
             $leadId = (int) ($r->LEADID ?? 0);
             $createdAt = null;
-            if (!empty($r->CREATIONDATE)) {
+            if (! empty($r->CREATIONDATE)) {
                 try {
                     $createdAt = Carbon::parse($r->CREATIONDATE);
                 } catch (\Throwable $e) {
                     $createdAt = Carbon::createFromTimestamp(strtotime((string) $r->CREATIONDATE));
                 }
             }
-            $title = 'Inquiry #SQL-' . $leadId . ' assigned';
+            $title = 'Inquiry #SQL-'.$leadId.' assigned';
             $who = trim((string) ($r->FROM_EMAIL ?? ''));
             $desc = trim((string) ($r->DESCRIPTION ?? ''));
             if ($desc === '' && $who !== '') {
-                $desc = 'Assigned by ' . $who;
+                $desc = 'Assigned by '.$who;
             }
             if ($desc === '') {
                 $desc = 'Assigned';
             }
+
             return [
                 'id' => (string) ($r->LEAD_ACTID ?? ''),
                 'lead_id' => $leadId,
@@ -2275,4 +2301,3 @@ class DealerController extends Controller
         return response()->json(['items' => $items]);
     }
 }
-

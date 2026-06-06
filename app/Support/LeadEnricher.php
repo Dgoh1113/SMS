@@ -192,7 +192,7 @@ class LeadEnricher
             if ($lid > 0 && array_key_exists($lid, $attachmentMap)) {
                 $r->ASSIGNED_ATTACHMENT = $attachmentMap[$lid]['attachment'];
                 $r->ASSIGNED_LEAD_ACT_ID = $attachmentMap[$lid]['lead_act_id'];
-                
+
                 // Build URLs
                 $urls = AttachmentUrlBuilder::buildUrls(
                     $attachmentMap[$lid]['attachment'],

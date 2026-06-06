@@ -20,6 +20,7 @@ class RequireAuth
             if ($last > 0 && ($now - $last) > $maxIdleSeconds) {
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
+
                 return redirect('/login');
             }
             $request->session()->put('last_activity_ts', $now);
@@ -27,15 +28,15 @@ class RequireAuth
             // If session isn't available, fall through to auth check
         }
 
-        if (!$request->session()->has('user_role')) {
+        if (! $request->session()->has('user_role')) {
             return redirect('/login');
         }
 
         if ($request->session()->get('passkey_setup_required')) {
             if (
-                !$request->routeIs('passkey.register.form') &&
-                !$request->routeIs('passkey.register.options') &&
-                !$request->routeIs('passkey.register.verify')
+                ! $request->routeIs('passkey.register.form') &&
+                ! $request->routeIs('passkey.register.options') &&
+                ! $request->routeIs('passkey.register.verify')
             ) {
                 return redirect()->route('login');
             }

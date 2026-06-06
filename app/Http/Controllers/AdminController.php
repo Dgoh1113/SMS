@@ -15,15 +15,15 @@ use App\Support\LeadEnricher;
 use App\Support\ProductConstants;
 use App\Support\QueryCache;
 use App\Support\StringHelper;
-use Illuminate\Http\Request;
-use Illuminate\Http\RedirectResponse;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
-use Carbon\Carbon;
 
 class AdminController extends Controller
 {
@@ -79,7 +79,7 @@ class AdminController extends Controller
                 ];
             }
         } catch (\Throwable $e) {
-            \Log::warning('Failed to aggregate dealer stats: ' . $e->getMessage());
+            \Log::warning('Failed to aggregate dealer stats: '.$e->getMessage());
             // Leave stats empty if aggregation fails
         }
 
@@ -113,28 +113,29 @@ class AdminController extends Controller
 
             $lookup = [];
             $path = base_path('malaysia-postcodes.json');
-            if (!is_file($path)) {
+            if (! is_file($path)) {
                 return $lookup;
             }
 
             try {
                 $decoded = json_decode((string) file_get_contents($path), true);
             } catch (\Throwable $e) {
-                \Log::warning('Failed to load postcode lookup file: ' . $e->getMessage());
+                \Log::warning('Failed to load postcode lookup file: '.$e->getMessage());
+
                 return $lookup;
             }
 
-            if (!is_array($decoded) || !isset($decoded['state']) || !is_array($decoded['state'])) {
+            if (! is_array($decoded) || ! isset($decoded['state']) || ! is_array($decoded['state'])) {
                 return $lookup;
             }
 
             foreach ($decoded['state'] as $state) {
-                if (!is_array($state)) {
+                if (! is_array($state)) {
                     continue;
                 }
 
                 foreach (($state['city'] ?? []) as $city) {
-                    if (!is_array($city)) {
+                    if (! is_array($city)) {
                         continue;
                     }
 
@@ -151,7 +152,7 @@ class AdminController extends Controller
 
                         $lookup[$normalizedPostcode] = [
                             'city' => $cityName,
-                            'state' => $state['name'] ?? ''
+                            'state' => $state['name'] ?? '',
                         ];
                     }
                 }
@@ -199,14 +200,14 @@ class AdminController extends Controller
             return [];
         }
 
-        $cacheKey = AppConstants::CACHE_KEY_LATEST_ASSIGNMENT . md5(implode(',', $leadIds));
-        
+        $cacheKey = AppConstants::CACHE_KEY_LATEST_ASSIGNMENT.md5(implode(',', $leadIds));
+
         return QueryCache::remember($cacheKey, function () use ($leadIds) {
             $placeholders = implode(',', array_fill(0, count($leadIds), '?'));
             $rows = DB::select(
                 'SELECT "LEADID", "LEAD_ACTID", "USERID", "DESCRIPTION"
                  FROM "LEAD_ACT"
-                 WHERE "LEADID" IN (' . $placeholders . ')
+                 WHERE "LEADID" IN ('.$placeholders.')
                    AND (
                        UPPER(TRIM(COALESCE("SUBJECT", \'\'))) STARTING WITH ?
                        OR UPPER(TRIM(COALESCE("DESCRIPTION", \'\'))) STARTING WITH ?
@@ -250,14 +251,14 @@ class AdminController extends Controller
             return ['assignedToMap' => [], 'actorMap' => []];
         }
 
-        $cacheKey = AppConstants::CACHE_KEY_USER_DISPLAY_MAPS . md5(implode(',', $userIds));
-        
+        $cacheKey = AppConstants::CACHE_KEY_USER_DISPLAY_MAPS.md5(implode(',', $userIds));
+
         return QueryCache::remember($cacheKey, function () use ($userIds) {
             $placeholders = implode(',', array_fill(0, count($userIds), '?'));
             $users = DB::select(
                 'SELECT "USERID","SYSTEMROLE","ALIAS","COMPANY","EMAIL"
                  FROM "USERS"
-                 WHERE CAST("USERID" AS VARCHAR(50)) IN (' . $placeholders . ')',
+                 WHERE CAST("USERID" AS VARCHAR(50)) IN ('.$placeholders.')',
                 $userIds
             );
 
@@ -285,7 +286,7 @@ class AdminController extends Controller
             [$leadId]
         );
 
-        if (!$lead) {
+        if (! $lead) {
             return null;
         }
 
@@ -327,7 +328,7 @@ class AdminController extends Controller
             return sprintf(AppConstants::ERR_INQUIRY_ALREADY_ASSIGNED, $assignedLabel);
         }
 
-        if ($status !== '' && !in_array($status, [AppConstants::STATUS_OPEN, AppConstants::STATUS_CREATED], true)) {
+        if ($status !== '' && ! in_array($status, [AppConstants::STATUS_OPEN, AppConstants::STATUS_CREATED], true)) {
             return sprintf(AppConstants::ERR_INQUIRY_ALREADY_PROCESSED, $status);
         }
 
@@ -386,17 +387,17 @@ class AdminController extends Controller
             );
 
             $leadTimings = [];
-            
+
             foreach ($allRows as $row) {
                 $leadId = (int) ($row->LEADID ?? 0);
                 $status = strtoupper(trim((string) ($row->STATUS ?? '')));
                 $createdAt = $row->CREATIONDATE;
 
-                if ($leadId <= 0 || !$createdAt || !$status) {
+                if ($leadId <= 0 || ! $createdAt || ! $status) {
                     continue;
                 }
 
-                if (!isset($leadTimings[$leadId])) {
+                if (! isset($leadTimings[$leadId])) {
                     $leadTimings[$leadId] = [
                         'pending_at' => null,
                         'completed_at' => null,
@@ -404,12 +405,12 @@ class AdminController extends Controller
                 }
 
                 // Capture first PENDING
-                if ($status === 'PENDING' && !$leadTimings[$leadId]['pending_at']) {
+                if ($status === 'PENDING' && ! $leadTimings[$leadId]['pending_at']) {
                     $leadTimings[$leadId]['pending_at'] = $createdAt;
                 }
 
                 // Capture first COMPLETED or REWARDED
-                if (($status === 'COMPLETED' || $status === 'REWARDED') && !$leadTimings[$leadId]['completed_at']) {
+                if (($status === 'COMPLETED' || $status === 'REWARDED') && ! $leadTimings[$leadId]['completed_at']) {
                     $leadTimings[$leadId]['completed_at'] = $createdAt;
                 }
             }
@@ -422,14 +423,14 @@ class AdminController extends Controller
                 $pendingAt = $timing['pending_at'];
                 $completedAt = $timing['completed_at'];
 
-                if (!$pendingAt || !$completedAt) {
+                if (! $pendingAt || ! $completedAt) {
                     continue;
                 }
 
                 $pendingTs = strtotime((string) $pendingAt);
                 $completedTs = strtotime((string) $completedAt);
 
-                if (!$pendingTs || !$completedTs || $completedTs < $pendingTs) {
+                if (! $pendingTs || ! $completedTs || $completedTs < $pendingTs) {
                     continue;
                 }
 
@@ -442,7 +443,7 @@ class AdminController extends Controller
                 $avgClosingSeconds = (int) round($total / $count);
             }
         } catch (\Throwable $e) {
-            \Log::error('Dashboard closing time calculation failed: ' . $e->getMessage());
+            \Log::error('Dashboard closing time calculation failed: '.$e->getMessage());
             $avgClosingSeconds = null;
         }
 
@@ -568,8 +569,8 @@ class AdminController extends Controller
             // Pull dealer list first so we can build a readable company/alias label.
             // Older schemas may not expose every profile column; still return rows.
             $topDealersRaw = [];
-        try {
-            $topDealersRaw = DB::select(
+            try {
+                $topDealersRaw = DB::select(
                     'SELECT u."USERID", u."EMAIL", u."COMPANY" AS "COMPANY", u."ALIAS" AS "ALIAS", u."POSTCODE" AS "POSTCODE", u."CITY" AS "CITY"
                 FROM "USERS" u
                      WHERE UPPER(TRIM(u."SYSTEMROLE")) LIKE \'%DEALER%\''
@@ -591,13 +592,13 @@ class AdminController extends Controller
             }
 
             // PERFORMANCE: Get dealer statistics with proper dealer ID extraction
-            $dealerIds = array_map(fn($d) => (string) ($d->USERID ?? ''), $topDealersRaw);
+            $dealerIds = array_map(fn ($d) => (string) ($d->USERID ?? ''), $topDealersRaw);
             $allStats = DealerStatsAggregator::getAllDealerStats($dealerIds);
             $allClosingTimes = DealerStatsAggregator::getAllDealerClosingTimes($dealerIds);
 
             $dealerStats = collect($topDealersRaw)->map(function ($d) use ($allStats, $allClosingTimes) {
                 $userId = (string) ($d->USERID ?? '');
-                
+
                 // Get pre-fetched stats for this dealer (eliminates N+1)
                 $stats = $allStats[$userId] ?? ['totalLead' => 0, 'totalClosed' => 0, 'totalFailed' => 0, 'totalOngoing' => 0];
                 $leads = $stats['totalLead'] ?? 0;
@@ -614,14 +615,14 @@ class AdminController extends Controller
                 $email = trim((string) ($d->EMAIL ?? ''));
                 $dealerName = $company !== '' ? $company : ($alias !== '' ? $alias : ($email !== '' ? $email : $userId));
                 if (strcasecmp($company, 'E Stream Sdn Bhd') === 0 && $alias !== '') {
-                    $dealerName = $company . '-' . $alias;
+                    $dealerName = $company.'-'.$alias;
                 }
 
                 $avgClosingDisplay = DealerStatsAggregator::formatClosingTime($avgClosingSeconds);
 
                 $postcode = trim((string) ($d->POSTCODE ?? ''));
                 $city = trim((string) ($d->CITY ?? ''));
-                $location = trim(trim($postcode . ' ' . $city));
+                $location = trim(trim($postcode.' '.$city));
 
                 return [
                     'dealer_name' => $dealerName,
@@ -637,20 +638,27 @@ class AdminController extends Controller
             })
                 ->sort(function (array $a, array $b) {
                     $c = ($b['conversion_rate'] <=> $a['conversion_rate']);
-                    if ($c !== 0) return $c;
+                    if ($c !== 0) {
+                        return $c;
+                    }
                     $ta = $a['avg_closing_seconds'] ?? null;
                     $tb = $b['avg_closing_seconds'] ?? null;
                     $hasA = is_int($ta);
                     $hasB = is_int($tb);
                     if ($hasA && $hasB) {
                         $c2 = ($ta <=> $tb);
-                        if ($c2 !== 0) return $c2;
+                        if ($c2 !== 0) {
+                            return $c2;
+                        }
                     } elseif ($hasA !== $hasB) {
                         return $hasA ? -1 : 1;
                     }
                     $c3 = ($b['closed_count'] <=> $a['closed_count']);
-                    if ($c3 !== 0) return $c3;
-                    return ($b['total_leads'] <=> $a['total_leads']);
+                    if ($c3 !== 0) {
+                        return $c3;
+                    }
+
+                    return $b['total_leads'] <=> $a['total_leads'];
                 })
                 ->values()
                 ->all();
@@ -704,12 +712,12 @@ class AdminController extends Controller
                 $referralMonthData[] = (int) ($ro->c ?? $ro->C ?? current((array) $ro) ?? 0);
             }
         } catch (\Throwable $e) {
-            $chartMonthLabels = ['1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20','21','22','23','24','25','26','27','28','29','30'];
+            $chartMonthLabels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '30'];
             $chartMonthData = array_slice([12, 19, 15, 22, 18, 24, 20, 16, 21, 13, 17, 23, 19, 14, 18, 24, 20, 15, 22, 18, 24, 20, 16, 21, 13, 17, 23, 19, 14, 18], 0, count($chartMonthLabels));
             $referralMonthData = array_fill(0, count($chartMonthLabels), 0);
         }
 
-        $chartYearLabels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        $chartYearLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         $chartYearData = array_fill(0, 12, 0);
         $referralYearData = array_fill(0, 12, 0);
         try {
@@ -894,9 +902,9 @@ class AdminController extends Controller
                 $createdAt = $r->CREATEDAT ?? '';
                 $desc = trim((string) ($r->DESCRIPTION ?? ''));
 
-                $title = $company ?: $contact ?: ('Inquiry #SQL-' . $leadId);
+                $title = $company ?: $contact ?: ('Inquiry #SQL-'.$leadId);
                 if ($company && $contact) {
-                    $title = $company . ' (' . $contact . ')';
+                    $title = $company.' ('.$contact.')';
                 }
 
                 return [
@@ -905,7 +913,7 @@ class AdminController extends Controller
                     'title' => $title,
                     'description' => Str::limit($desc, 60),
                     'time' => $createdAt ? Carbon::parse($createdAt)->diffForHumans() : '',
-                    'target_url' => route('admin.inquiries', ['lead' => $leadId])
+                    'target_url' => route('admin.inquiries', ['lead' => $leadId]),
                 ];
             }, $rows);
 
@@ -937,7 +945,7 @@ class AdminController extends Controller
                     break;
                 }
             }
-            if (!$found) {
+            if (! $found) {
                 $focusRow = DB::selectOne(
                     'SELECT
                         "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL","ADDRESS1","ADDRESS2","CITY","STATE","COUNTRY","POSTCODE",
@@ -957,13 +965,13 @@ class AdminController extends Controller
         try {
             $leadIds = [];
             foreach ($rows as $r) {
-                $lid = (int)($r->LEADID ?? 0);
+                $lid = (int) ($r->LEADID ?? 0);
                 if ($lid > 0) {
                     $leadIds[$lid] = true;
                 }
             }
             $leadIds = array_keys($leadIds);
-            if (!empty($leadIds)) {
+            if (! empty($leadIds)) {
                 $placeholders = implode(',', array_fill(0, count($leadIds), '?'));
                 $acts = DB::select(
                     'SELECT a."LEADID", a."STATUS"
@@ -971,22 +979,22 @@ class AdminController extends Controller
                      JOIN (
                          SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
                          FROM "LEAD_ACT"
-                         WHERE "LEADID" IN (' . $placeholders . ')
+                         WHERE "LEADID" IN ('.$placeholders.')
                          GROUP BY "LEADID"
                      ) x
                        ON x."LEADID" = a."LEADID" AND x.MAXCD = a."CREATIONDATE"
-                     WHERE a."LEADID" IN (' . $placeholders . ')',
+                     WHERE a."LEADID" IN ('.$placeholders.')',
                     array_merge($leadIds, $leadIds)
                 );
                 $statusMap = [];
                 foreach ($acts as $a) {
-                    $lid = (int)($a->LEADID ?? 0);
+                    $lid = (int) ($a->LEADID ?? 0);
                     if ($lid > 0) {
-                        $statusMap[$lid] = trim((string)($a->STATUS ?? ''));
+                        $statusMap[$lid] = trim((string) ($a->STATUS ?? ''));
                     }
                 }
                 foreach ($rows as $r) {
-                    $lid = (int)($r->LEADID ?? 0);
+                    $lid = (int) ($r->LEADID ?? 0);
                     if ($lid > 0 && isset($statusMap[$lid]) && $statusMap[$lid] !== '') {
                         $r->CURRENTSTATUS = $statusMap[$lid];
                     } else {
@@ -997,7 +1005,7 @@ class AdminController extends Controller
         } catch (\Throwable $e) {
             // If LEAD_ACT lookup fails, default to Created
             foreach ($rows as $r) {
-                if (!isset($r->CURRENTSTATUS)) {
+                if (! isset($r->CURRENTSTATUS)) {
                     $r->CURRENTSTATUS = 'Created';
                 }
             }
@@ -1019,11 +1027,13 @@ class AdminController extends Controller
         usort($unassigned, function ($a, $b) {
             $ta = strtotime($a->CREATEDAT ?? '0');
             $tb = strtotime($b->CREATEDAT ?? '0');
+
             return $tb <=> $ta;
         });
         usort($assigned, function ($a, $b) {
             $ta = strtotime($a->LASTMODIFIED ?? $a->CREATEDAT ?? '0');
             $tb = strtotime($b->LASTMODIFIED ?? $b->CREATEDAT ?? '0');
+
             return $tb <=> $ta;
         });
 
@@ -1044,24 +1054,36 @@ class AdminController extends Controller
             foreach ($rows as $r) {
                 $to = trim((string) ($r->assignedTo ?? ''));
                 $by = trim((string) ($r->CREATEDBY ?? ''));
-                if ($to !== '') $ids[$to] = true;
-                if ($by !== '') $ids[$by] = true;
+                if ($to !== '') {
+                    $ids[$to] = true;
+                }
+                if ($by !== '') {
+                    $ids[$by] = true;
+                }
                 $leadId = (int) ($r->LEADID ?? 0);
                 $assignerId = $leadId > 0 ? trim((string) ($assignmentByLeadMap[$leadId] ?? '')) : '';
-                if ($assignerId !== '') $ids[$assignerId] = true;
+                if ($assignerId !== '') {
+                    $ids[$assignerId] = true;
+                }
             }
             $maps = $this->userDisplayMaps(array_keys($ids));
             $assignedToMap = $maps['assignedToMap'];
             $actorMap = $maps['actorMap'];
-            if (!empty($assignedToMap) || !empty($actorMap)) {
+            if (! empty($assignedToMap) || ! empty($actorMap)) {
                 foreach ($rows as $r) {
                     $to = trim((string) ($r->assignedTo ?? ''));
                     $by = trim((string) ($r->CREATEDBY ?? ''));
                     $leadId = (int) ($r->LEADID ?? 0);
                     $assignerId = $leadId > 0 ? trim((string) ($assignmentByLeadMap[$leadId] ?? '')) : '';
-                    if ($to !== '' && isset($assignedToMap[$to])) $r->assignedToName = $assignedToMap[$to];
-                    if ($by !== '' && isset($actorMap[$by])) $r->CREATEDBY_NAME = $actorMap[$by];
-                    if ($assignerId !== '') $r->ASSIGNEDBY = $assignerId;
+                    if ($to !== '' && isset($assignedToMap[$to])) {
+                        $r->assignedToName = $assignedToMap[$to];
+                    }
+                    if ($by !== '' && isset($actorMap[$by])) {
+                        $r->CREATEDBY_NAME = $actorMap[$by];
+                    }
+                    if ($assignerId !== '') {
+                        $r->ASSIGNEDBY = $assignerId;
+                    }
                     if ($assignerId !== '' && isset($actorMap[$assignerId])) {
                         $r->ASSIGNEDBY_NAME = $actorMap[$assignerId];
                     }
@@ -1075,7 +1097,7 @@ class AdminController extends Controller
         $totalOngoing = 0;
         foreach ($assigned as $r) {
             $status = strtoupper(trim((string) ($r->CURRENTSTATUS ?? '')));
-            if (!in_array($status, ['COMPLETED', 'CASE COMPLETED', 'FAILED', 'REWARDED', 'REWARD', 'REWARD DISTRIBUTED', 'CANCELLED'], true)) {
+            if (! in_array($status, ['COMPLETED', 'CASE COMPLETED', 'FAILED', 'REWARDED', 'REWARD', 'REWARD DISTRIBUTED', 'CANCELLED'], true)) {
                 $totalOngoing++;
             }
         }
@@ -1117,10 +1139,12 @@ class AdminController extends Controller
                      GROUP BY TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50)))'
                 );
                 foreach ($statsRows as $sr) {
-                    $uid = trim((string)($sr->UID ?? $sr->uid ?? ''));
-                    if ($uid === '') continue;
-                    $totalLead = (int)($sr->TOTAL_LEAD ?? $sr->total_lead ?? 0);
-                    $totalClosed = (int)($sr->TOTAL_CLOSED ?? $sr->total_closed ?? 0);
+                    $uid = trim((string) ($sr->UID ?? $sr->uid ?? ''));
+                    if ($uid === '') {
+                        continue;
+                    }
+                    $totalLead = (int) ($sr->TOTAL_LEAD ?? $sr->total_lead ?? 0);
+                    $totalClosed = (int) ($sr->TOTAL_CLOSED ?? $sr->total_closed ?? 0);
                     $leadStats[$uid] = [
                         'totalLead' => $totalLead,
                         'totalClosed' => $totalClosed,
@@ -1131,13 +1155,14 @@ class AdminController extends Controller
             }
 
             $dealers = array_map(function ($r) use ($leadStats) {
-                $uid = trim((string)($r->USERID ?? ''));
+                $uid = trim((string) ($r->USERID ?? ''));
                 $totalLead = $leadStats[$uid]['totalLead'] ?? 0;
                 $totalClosed = $leadStats[$uid]['totalClosed'] ?? 0;
                 $conversion = $totalLead > 0 ? ($totalClosed / $totalLead) * 100 : 0;
                 $r->TOTAL_LEAD = $totalLead;
                 $r->TOTAL_CLOSED = $totalClosed;
                 $r->CONVERSION_RATE = $conversion;
+
                 return $r;
             }, $baseDealers);
         } catch (\Throwable $e) {
@@ -1154,12 +1179,12 @@ class AdminController extends Controller
                  HAVING COUNT(*) > 1'
             );
 
-            if (!empty($dupKeys)) {
+            if (! empty($dupKeys)) {
                 foreach ($dupKeys as $k) {
                     $comp = $k->comp ?? '';
                     $phone = $k->phone ?? '';
                     $email_addr = $k->email_addr ?? '';
-                    
+
                     $leads = DB::select(
                         'SELECT "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL",
                                 "ADDRESS1","ADDRESS2","CITY","STATE","COUNTRY","POSTCODE",
@@ -1177,7 +1202,7 @@ class AdminController extends Controller
                     // Check if there is at least one unassigned lead in the duplicate group
                     $hasUnassigned = false;
                     foreach ($leads as $l) {
-                        if (empty(trim((string)($l->ASSIGNEDTO ?? '')))) {
+                        if (empty(trim((string) ($l->ASSIGNEDTO ?? '')))) {
                             $hasUnassigned = true;
                             break;
                         }
@@ -1188,7 +1213,7 @@ class AdminController extends Controller
                             'company' => $leads[0]->COMPANYNAME,
                             'phone' => $leads[0]->CONTACTNO,
                             'email' => $leads[0]->EMAIL,
-                            'leads' => $leads
+                            'leads' => $leads,
                         ];
                     }
                 }
@@ -1221,7 +1246,7 @@ class AdminController extends Controller
             'dealers' => $dealers,
             'currentPage' => 'inquiries',
             'focusLeadId' => $focusLeadId,
-            'duplicateGroups' => $duplicateGroups
+            'duplicateGroups' => $duplicateGroups,
         ]);
     }
 
@@ -1248,11 +1273,14 @@ class AdminController extends Controller
         usort($assigned, function ($a, $b) {
             $ta = strtotime($a->LASTMODIFIED ?? $a->CREATEDAT ?? '0');
             $tb = strtotime($b->LASTMODIFIED ?? $b->CREATEDAT ?? '0');
+
             return $tb <=> $ta;
         });
 
-        $leadIds = array_values(array_unique(array_filter(array_map(function ($r) { return (int)($r->LEADID ?? 0); }, $rows))));
-        if (!empty($leadIds)) {
+        $leadIds = array_values(array_unique(array_filter(array_map(function ($r) {
+            return (int) ($r->LEADID ?? 0);
+        }, $rows))));
+        if (! empty($leadIds)) {
             $placeholders = implode(',', array_fill(0, count($leadIds), '?'));
             try {
                 $acts = DB::select(
@@ -1261,27 +1289,31 @@ class AdminController extends Controller
                      JOIN (
                          SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
                          FROM "LEAD_ACT"
-                         WHERE "LEADID" IN (' . $placeholders . ')
+                         WHERE "LEADID" IN ('.$placeholders.')
                          GROUP BY "LEADID"
                      ) x
                        ON x."LEADID" = a."LEADID" AND x.MAXCD = a."CREATIONDATE"
-                     WHERE a."LEADID" IN (' . $placeholders . ')',
+                     WHERE a."LEADID" IN ('.$placeholders.')',
                     array_merge($leadIds, $leadIds)
                 );
                 $statusMap = [];
                 foreach ($acts as $a) {
-                    $lid = (int)($a->LEADID ?? 0);
-                    if ($lid > 0) $statusMap[$lid] = trim((string)($a->STATUS ?? ''));
+                    $lid = (int) ($a->LEADID ?? 0);
+                    if ($lid > 0) {
+                        $statusMap[$lid] = trim((string) ($a->STATUS ?? ''));
+                    }
                 }
                 foreach ($rows as $r) {
-                    $lid = (int)($r->LEADID ?? 0);
+                    $lid = (int) ($r->LEADID ?? 0);
                     $r->CURRENTSTATUS = ($lid > 0 && isset($statusMap[$lid]) && $statusMap[$lid] !== '')
                         ? $statusMap[$lid]
                         : 'Created';
                 }
             } catch (\Throwable $e) {
                 foreach ($rows as $r) {
-                    if (!isset($r->CURRENTSTATUS)) $r->CURRENTSTATUS = 'Created';
+                    if (! isset($r->CURRENTSTATUS)) {
+                        $r->CURRENTSTATUS = 'Created';
+                    }
                 }
             }
         }
@@ -1302,11 +1334,17 @@ class AdminController extends Controller
             foreach ($rows as $r) {
                 $to = trim((string) ($r->assignedTo ?? ''));
                 $by = trim((string) ($r->CREATEDBY ?? ''));
-                if ($to !== '') $ids[$to] = true;
-                if ($by !== '') $ids[$by] = true;
+                if ($to !== '') {
+                    $ids[$to] = true;
+                }
+                if ($by !== '') {
+                    $ids[$by] = true;
+                }
                 $leadId = (int) ($r->LEADID ?? 0);
                 $assignerId = $leadId > 0 ? trim((string) ($assignmentByLeadMap[$leadId] ?? '')) : '';
-                if ($assignerId !== '') $ids[$assignerId] = true;
+                if ($assignerId !== '') {
+                    $ids[$assignerId] = true;
+                }
             }
             $maps = $this->userDisplayMaps(array_keys($ids));
             $assignedToMap = $maps['assignedToMap'];
@@ -1316,9 +1354,15 @@ class AdminController extends Controller
                 $by = trim((string) ($r->CREATEDBY ?? ''));
                 $leadId = (int) ($r->LEADID ?? 0);
                 $assignerId = $leadId > 0 ? trim((string) ($assignmentByLeadMap[$leadId] ?? '')) : '';
-                if ($to !== '' && isset($assignedToMap[$to])) $r->assignedToName = $assignedToMap[$to];
-                if ($by !== '' && isset($actorMap[$by])) $r->CREATEDBY_NAME = $actorMap[$by];
-                if ($assignerId !== '') $r->ASSIGNEDBY = $assignerId;
+                if ($to !== '' && isset($assignedToMap[$to])) {
+                    $r->assignedToName = $assignedToMap[$to];
+                }
+                if ($by !== '' && isset($actorMap[$by])) {
+                    $r->CREATEDBY_NAME = $actorMap[$by];
+                }
+                if ($assignerId !== '') {
+                    $r->ASSIGNEDBY = $assignerId;
+                }
                 if ($assignerId !== '' && isset($actorMap[$assignerId])) {
                     $r->ASSIGNEDBY_NAME = $actorMap[$assignerId];
                 }
@@ -1391,7 +1435,7 @@ class AdminController extends Controller
                 'SELECT "USERID","SYSTEMROLE","ISACTIVE" FROM "USERS" WHERE CAST("USERID" AS VARCHAR(50)) = ?',
                 [$assignedTo]
             );
-            if (!$assignee) {
+            if (! $assignee) {
                 return back()->with('error', 'Selected user not found.');
             }
             if (trim((string) ($assignee->SYSTEMROLE ?? '')) !== 'Dealer') {
@@ -1451,7 +1495,7 @@ class AdminController extends Controller
                     $assignedToMap = $maps['assignedToMap'] ?? [];
                     $currentAssignedLabel = $assignedToMap[$currentAssigned] ?? $currentAssigned;
 
-                    return back()->with('error', 'This inquiry is already assigned to ' . $currentAssignedLabel . '. Please sync and try again.');
+                    return back()->with('error', 'This inquiry is already assigned to '.$currentAssignedLabel.'. Please sync and try again.');
                 }
 
                 return back()->with('error', 'This inquiry was updated by another user. Please sync and try again.');
@@ -1459,6 +1503,7 @@ class AdminController extends Controller
             DB::commit();
         } catch (\Throwable $e) {
             DB::rollBack();
+
             return back()->with('error', 'Could not assign lead. Please try again.');
         }
 
@@ -1488,7 +1533,7 @@ class AdminController extends Controller
         $assignedTo = trim((string) $validated['assignedTo']);
 
         $row = DB::selectOne('SELECT "ASSIGNEDTO" AS "assignedTo" FROM "LEAD" WHERE "LEADID" = ?', [$leadId]);
-        if (!$row) {
+        if (! $row) {
             return response()->json(['success' => false, 'message' => 'Lead not found.'], 404);
         }
         $currentAssigned = trim((string) ($row->assignedTo ?? ''));
@@ -1497,6 +1542,7 @@ class AdminController extends Controller
         }
 
         $this->sendInquiryAssignedEmail($assignedTo, $leadId);
+
         return response()->json(['success' => true]);
     }
 
@@ -1535,28 +1581,30 @@ class AdminController extends Controller
 
             if ((int) $updated < 1) {
                 DB::rollBack();
+
                 return redirect()->route('admin.inquiries')->with('error', 'Lead not found.');
             }
 
-              if ($prev === '') {
-                  DB::delete(
-                      'DELETE FROM "LEAD_ACT"
+            if ($prev === '') {
+                DB::delete(
+                    'DELETE FROM "LEAD_ACT"
                        WHERE "LEADID" = ?
                          AND UPPER(TRIM(COALESCE("STATUS", \'\'))) = ?',
-                      [$leadId, 'PENDING']
-                  );
+                    [$leadId, 'PENDING']
+                );
 
-                  DB::update(
-                      'UPDATE "LEAD"
+                DB::update(
+                    'UPDATE "LEAD"
                        SET "LASTMODIFIED" = ?
                        WHERE "LEADID" = ?',
-                      [$restoredLastModified, $leadId]
-                  );
-              }
+                    [$restoredLastModified, $leadId]
+                );
+            }
 
             DB::commit();
         } catch (\Throwable $e) {
             DB::rollBack();
+
             return redirect()->route('admin.inquiries')->with('error', 'Could not undo assignment. Please try again.');
         }
 
@@ -1567,7 +1615,7 @@ class AdminController extends Controller
     {
         $leadId = (int) $request->input('lead_id');
         $message = trim((string) $request->input('FAIL_REASON', ''));
-        
+
         if ($message === '') {
             $message = trim((string) $request->input('reason', 'Marked as Cancelled by Admin.'));
         }
@@ -1583,7 +1631,7 @@ class AdminController extends Controller
             [$leadId]
         );
 
-        if (!$lead) {
+        if (! $lead) {
             return back()->with('error', 'Lead not found.');
         }
 
@@ -1598,7 +1646,7 @@ class AdminController extends Controller
         $currentStatus = $currentStatusRow->CURRENT_STATUS ?? '';
 
         if (in_array($currentStatus, ['COMPLETED', 'REWARDED', 'FAILED', 'CANCELLED'], true)) {
-            return back()->with('error', 'Cannot mark as Cancelled: lead is already ' . $currentStatus . '.');
+            return back()->with('error', 'Cannot mark as Cancelled: lead is already '.$currentStatus.'.');
         }
 
         DB::beginTransaction();
@@ -1620,7 +1668,8 @@ class AdminController extends Controller
             DB::commit();
         } catch (\Throwable $e) {
             DB::rollBack();
-            \Log::error('Admin mark inquiry cancelled failed: ' . $e->getMessage());
+            \Log::error('Admin mark inquiry cancelled failed: '.$e->getMessage());
+
             return back()->with('error', 'Could not mark the inquiry as cancelled. Please try again.');
         }
 
@@ -1646,12 +1695,12 @@ class AdminController extends Controller
         $userNameMap = [];
         try {
             $ids = array_keys($userIds);
-            if (!empty($ids)) {
+            if (! empty($ids)) {
                 $placeholders = implode(',', array_fill(0, count($ids), '?'));
                 $users = DB::select(
                     'SELECT "USERID","SYSTEMROLE","ALIAS","COMPANY","EMAIL"
                      FROM "USERS"
-                     WHERE CAST("USERID" AS VARCHAR(50)) IN (' . $placeholders . ')',
+                     WHERE CAST("USERID" AS VARCHAR(50)) IN ('.$placeholders.')',
                     $ids
                 );
                 foreach ($users as $u) {
@@ -1666,9 +1715,9 @@ class AdminController extends Controller
                     $fallback = $email !== '' ? $email : $uid;
 
                     if ($role !== '' && $alias !== '') {
-                        $userNameMap[$uid] = $role . '- ' . $alias;
+                        $userNameMap[$uid] = $role.'- '.$alias;
                     } elseif ($role !== '') {
-                        $userNameMap[$uid] = $role . '- ' . ($company !== '' ? $company : ($email !== '' ? $email : $uid));
+                        $userNameMap[$uid] = $role.'- '.($company !== '' ? $company : ($email !== '' ? $email : $uid));
                     } elseif ($alias !== '') {
                         $userNameMap[$uid] = $alias;
                     } else {
@@ -1683,7 +1732,7 @@ class AdminController extends Controller
         $activities = [];
         foreach ($rows as $r) {
             $createdAtIso = null;
-            if (!empty($r->CREATIONDATE)) {
+            if (! empty($r->CREATIONDATE)) {
                 try {
                     $createdAtIso = Carbon::parse($r->CREATIONDATE)->toIso8601String();
                 } catch (\Throwable $e) {
@@ -1745,7 +1794,7 @@ class AdminController extends Controller
                  ORDER BY "LEADID" DESC',
                 [$name]
             );
-            if (!$row) {
+            if (! $row) {
                 return response()->json(['found' => false]);
             }
 
@@ -1792,7 +1841,7 @@ class AdminController extends Controller
              FROM "LEAD" WHERE "LEADID" = ?',
             [$leadId]
         );
-        if (!$row) {
+        if (! $row) {
             return redirect()->route('admin.inquiries')->with('error', 'Lead not found.');
         }
 
@@ -1801,7 +1850,7 @@ class AdminController extends Controller
 
     public function storeInquiry(Request $request): RedirectResponse
     {
-        $country = trim((string)$request->input('COUNTRY', ''));
+        $country = trim((string) $request->input('COUNTRY', ''));
         $isMY = ($country === 'MY' || $country === 'Malaysia' || $country === '');
 
         $validated = $request->validate(
@@ -1827,22 +1876,22 @@ class AdminController extends Controller
                 'assignedTo' => 'nullable|string|max:50',
             ],
             [
-                'CONTACTNO.min'          => 'Invalid Contact Number.',
-                'CONTACTNO.max'          => 'Invalid Contact Number.',
-                'POSTCODE.digits'        => 'Invalid PostCode.',
-                'product_interested.*'   => 'Please select at least one product.',
+                'CONTACTNO.min' => 'Invalid Contact Number.',
+                'CONTACTNO.max' => 'Invalid Contact Number.',
+                'POSTCODE.digits' => 'Invalid PostCode.',
+                'product_interested.*' => 'Please select at least one product.',
                 'product_interested.min' => 'Please select at least one product.',
                 'product_interested.required' => 'Please select at least one product.',
             ],
             [
                 'CONTACTNO' => 'Contact no',
-                'POSTCODE'  => 'Post code',
+                'POSTCODE' => 'Post code',
             ]
         );
 
         // Soft-check for existing lead with the same company name (case-insensitive).
         // First submit: show a friendly warning; second submit with duplicate_ok=1: proceed.
-        if (!$request->boolean('duplicate_ok')) {
+        if (! $request->boolean('duplicate_ok')) {
             try {
                 $existing = DB::selectOne(
                     'SELECT FIRST 1 l."LEADID",l."COMPANYNAME",l."CONTACTNAME",l."EMAIL",
@@ -1883,16 +1932,16 @@ class AdminController extends Controller
                         $line1 = 'This company already has an open inquiry.';
                         $parts = [];
                         if ($leadId > 0) {
-                            $parts[] = 'Lead #SQL-' . $leadId;
+                            $parts[] = 'Lead #SQL-'.$leadId;
                         }
                         if ($createdLabel) {
-                            $parts[] = 'was created on ' . $createdLabel;
+                            $parts[] = 'was created on '.$createdLabel;
                         }
                         if ($status !== '') {
-                            $parts[] = 'with status ' . $status;
+                            $parts[] = 'with status '.$status;
                         }
-                        $line2 = $parts ? implode(' ', $parts) . '.' : '';
-                        $message = trim($line1 . "\n\n" . $line2);
+                        $line2 = $parts ? implode(' ', $parts).'.' : '';
+                        $message = trim($line1."\n\n".$line2);
 
                         return back()
                             ->withInput($request->except('duplicate_ok'))
@@ -1960,12 +2009,13 @@ class AdminController extends Controller
         if ($assignEmailPending !== null) {
             $redirect->with('assign_email_pending', $assignEmailPending);
         }
+
         return $redirect;
     }
 
     public function updateInquiry(Request $request, int $leadId): RedirectResponse
     {
-        $country = trim((string)$request->input('COUNTRY', ''));
+        $country = trim((string) $request->input('COUNTRY', ''));
         $isMY = ($country === 'MY' || $country === 'Malaysia' || $country === '');
 
         $validated = $request->validate(
@@ -1991,20 +2041,20 @@ class AdminController extends Controller
                 'INQUIRY_SNAPSHOT_AT' => 'nullable|string|max:50',
             ],
             [
-                'CONTACTNO.min'          => 'Invalid Contact Number.',
-                'CONTACTNO.max'          => 'Invalid Contact Number.',
-                'POSTCODE.digits'        => 'Invalid PostCode.',
-                'product_interested.*'   => 'Please select at least one product.',
+                'CONTACTNO.min' => 'Invalid Contact Number.',
+                'CONTACTNO.max' => 'Invalid Contact Number.',
+                'POSTCODE.digits' => 'Invalid PostCode.',
+                'product_interested.*' => 'Please select at least one product.',
                 'product_interested.required' => 'Please select at least one product.',
             ],
             [
                 'CONTACTNO' => 'Contact no',
-                'POSTCODE'  => 'Post code',
+                'POSTCODE' => 'Post code',
             ]
         );
 
         $exists = DB::selectOne('SELECT "LEADID" FROM "LEAD" WHERE "LEADID" = ?', [$leadId]);
-        if (!$exists) {
+        if (! $exists) {
             return redirect()->route('admin.inquiries')->with('error', 'Lead not found.');
         }
 
@@ -2023,7 +2073,7 @@ class AdminController extends Controller
         }
 
         // Same as create: if company name exists on another lead, show confirmation (exclude current lead)
-        if (!$request->boolean('duplicate_ok')) {
+        if (! $request->boolean('duplicate_ok')) {
             try {
                 $existing = DB::selectOne(
                     'SELECT FIRST 1 l."LEADID",l."COMPANYNAME",l."CONTACTNAME",l."EMAIL",
@@ -2064,16 +2114,16 @@ class AdminController extends Controller
                         $line1 = 'This company already has an open inquiry.';
                         $parts = [];
                         if ($otherLeadId > 0) {
-                            $parts[] = 'Lead #SQL-' . $otherLeadId;
+                            $parts[] = 'Lead #SQL-'.$otherLeadId;
                         }
                         if ($createdLabel) {
-                            $parts[] = 'was created on ' . $createdLabel;
+                            $parts[] = 'was created on '.$createdLabel;
                         }
                         if ($status !== '') {
-                            $parts[] = 'with status ' . $status;
+                            $parts[] = 'with status '.$status;
                         }
-                        $line2 = $parts ? implode(' ', $parts) . '.' : '';
-                        $message = trim($line1 . "\n\n" . $line2);
+                        $line2 = $parts ? implode(' ', $parts).'.' : '';
+                        $message = trim($line1."\n\n".$line2);
 
                         return redirect()
                             ->route('admin.inquiries.edit', $leadId)
@@ -2127,9 +2177,9 @@ class AdminController extends Controller
         }
 
         $activeTab = $request->input('return_tab');
-        if (!$activeTab) {
+        if (! $activeTab) {
             $leadAfterUpdate = DB::selectOne('SELECT "ASSIGNEDTO" AS "assignedTo" FROM "LEAD" WHERE "LEADID" = ?', [$leadId]);
-            $activeTab = (!empty($leadAfterUpdate->assignedTo)) ? 'assigned' : 'incoming';
+            $activeTab = (! empty($leadAfterUpdate->assignedTo)) ? 'assigned' : 'incoming';
         }
 
         return redirect()->route('admin.inquiries', ['tab' => $activeTab])->with('success', 'Inquiry updated.');
@@ -2141,13 +2191,14 @@ class AdminController extends Controller
             'SELECT "LEADID" FROM "LEAD" WHERE "LEADID" = ? AND COALESCE("ISDELETED", FALSE) = FALSE',
             [$leadId]
         );
-        if (!$row) {
+        if (! $row) {
             return response()->json(['success' => false, 'message' => 'Lead not found.'], 404);
         }
 
         $staleMessage = $this->incomingInquiryStaleMessage($leadId);
         if ($staleMessage !== null) {
             $code = $staleMessage === 'Lead not found.' ? 404 : 409;
+
             return response()->json(['success' => false, 'message' => $staleMessage], $code);
         }
 
@@ -2169,7 +2220,7 @@ class AdminController extends Controller
     {
         $validated = $request->validate([
             'lead_ids' => 'required|array',
-            'lead_ids.*' => 'required|integer|min:1'
+            'lead_ids.*' => 'required|integer|min:1',
         ]);
 
         $leadIds = array_map('intval', $validated['lead_ids']);
@@ -2185,7 +2236,8 @@ class AdminController extends Controller
             DB::commit();
         } catch (\Throwable $e) {
             DB::rollBack();
-            return response()->json(['success' => false, 'message' => 'Could not delete inquiries: ' . $e->getMessage()], 500);
+
+            return response()->json(['success' => false, 'message' => 'Could not delete inquiries: '.$e->getMessage()], 500);
         }
 
         return response()->json(['success' => true]);
@@ -2196,40 +2248,42 @@ class AdminController extends Controller
         $validated = $request->validate([
             'lead_id' => 'required|integer|min:1',
             'field' => 'required|string',
-            'value' => 'nullable|string'
+            'value' => 'nullable|string',
         ]);
 
-        $leadId = (int)$validated['lead_id'];
+        $leadId = (int) $validated['lead_id'];
         $field = strtoupper(trim($validated['field']));
         $value = $validated['value'];
 
         $allowedFields = [
-            'CONTACTNAME', 'POSTCODE', 'CITY', 'STATE', 
-            'BUSINESSNATURE', 'EXISTINGSOFTWARE', 
-            'DEMOMODE', 'PRODUCTID', 'USERCOUNT', 'REFERRALCODE', 'DESCRIPTION'
+            'CONTACTNAME', 'POSTCODE', 'CITY', 'STATE',
+            'BUSINESSNATURE', 'EXISTINGSOFTWARE',
+            'DEMOMODE', 'PRODUCTID', 'USERCOUNT', 'REFERRALCODE', 'DESCRIPTION',
         ];
 
-        if (!in_array($field, $allowedFields)) {
+        if (! in_array($field, $allowedFields)) {
             return response()->json(['success' => false, 'message' => 'Invalid column name.'], 400);
         }
 
         if ($field === 'USERCOUNT') {
-            $value = ($value !== null && $value !== '') ? (int)$value : null;
+            $value = ($value !== null && $value !== '') ? (int) $value : null;
         }
 
         try {
             DB::beginTransaction();
             $affected = DB::update(
-                'UPDATE "LEAD" SET "' . $field . '" = ?, "LASTMODIFIED" = CURRENT_TIMESTAMP WHERE "LEADID" = ?',
+                'UPDATE "LEAD" SET "'.$field.'" = ?, "LASTMODIFIED" = CURRENT_TIMESTAMP WHERE "LEADID" = ?',
                 [$value, $leadId]
             );
             DB::commit();
             \Log::info("updateInquiryField: leadId={$leadId}, field={$field}, value={$value}, affected_rows={$affected}");
+
             return response()->json(['success' => true, 'affected' => $affected]);
         } catch (\Throwable $e) {
             DB::rollBack();
-            \Log::error("updateInquiryField failed: " . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Database error: ' . $e->getMessage()], 500);
+            \Log::error('updateInquiryField failed: '.$e->getMessage());
+
+            return response()->json(['success' => false, 'message' => 'Database error: '.$e->getMessage()], 500);
         }
     }
 
@@ -2239,7 +2293,7 @@ class AdminController extends Controller
         $leadId = (int) $validated['LEADID'];
 
         $data = $request->session()->get('delete_undo');
-        if (!$data || (int) ($data['lead_id'] ?? 0) !== $leadId) {
+        if (! $data || (int) ($data['lead_id'] ?? 0) !== $leadId) {
             return redirect()->route('admin.inquiries')->with('error', 'Cannot undo: delete session expired or invalid.');
         }
 
@@ -2254,7 +2308,7 @@ class AdminController extends Controller
 
         $request->session()->forget('delete_undo');
 
-        return redirect()->route('admin.inquiries')->with('success', 'Delete undone. Lead #SQL-' . $leadId . ' restored.');
+        return redirect()->route('admin.inquiries')->with('success', 'Delete undone. Lead #SQL-'.$leadId.' restored.');
     }
 
     public function dealers(): View
@@ -2281,7 +2335,7 @@ class AdminController extends Controller
     public function serveRewardAttachment(Request $request): \Symfony\Component\HttpFoundation\Response
     {
         $path = $request->query('path');
-        if (!is_string($path) || $path === '') {
+        if (! is_string($path) || $path === '') {
             return response('', 404);
         }
         $path = trim(str_replace('\\', '/', rawurldecode($path)));
@@ -2293,6 +2347,7 @@ class AdminController extends Controller
             return response('', 404);
         }
         $mime = mime_content_type($fullPath) ?: 'image/jpeg';
+
         return response()->file($fullPath, ['Content-Type' => $mime]);
     }
 
@@ -2303,7 +2358,7 @@ class AdminController extends Controller
     public function rewardActivityAttachment(Request $request, int $leadId, int $leadActId): \Symfony\Component\HttpFoundation\Response
     {
         $row = DB::selectOne('SELECT "ATTACHMENT" FROM "LEAD_ACT" WHERE "LEAD_ACTID" = ? AND "LEADID" = ?', [$leadActId, $leadId]);
-        if (!$row) {
+        if (! $row) {
             return response('', 404);
         }
         $attachment = $row->ATTACHMENT ?? $row->attachment ?? null;
@@ -2318,6 +2373,7 @@ class AdminController extends Controller
                 return response('', 404);
             }
             $mime = mime_content_type($fullPath) ?: 'image/jpeg';
+
             return response()->file($fullPath, ['Content-Type' => $mime]);
         }
         if (is_string($attachment) && strlen($attachment) > 0) {
@@ -2331,8 +2387,10 @@ class AdminController extends Controller
             } elseif (str_starts_with($attachment, 'RIFF') && substr($attachment, 8, 4) === 'WEBP') {
                 $mime = 'image/webp';
             }
+
             return response($attachment, 200, ['Content-Type' => $mime]);
         }
+
         return response('', 404);
     }
 
@@ -2349,7 +2407,7 @@ class AdminController extends Controller
             'SELECT "LEADID","COMPANYNAME","CONTACTNAME","ASSIGNEDTO" AS "assignedTo","REFERRALCODE" FROM "LEAD" WHERE "LEADID" = ?',
             [$leadId]
         );
-        if (!$lead) {
+        if (! $lead) {
             return response()->json(['success' => false, 'message' => 'Lead not found.'], 404);
         }
 
@@ -2363,9 +2421,10 @@ class AdminController extends Controller
         $latestStatus = strtoupper(trim((string) ($latestAct->STATUS ?? '')));
         if ($latestStatus !== 'COMPLETED') {
             $displayStatus = $latestStatus !== '' ? ucfirst(strtolower($latestStatus)) : 'Unknown';
+
             return response()->json([
                 'success' => false,
-                'message' => 'This inquiry is already ' . $displayStatus . '. Please sync and try again.',
+                'message' => 'This inquiry is already '.$displayStatus.'. Please sync and try again.',
             ], 409);
         }
 
@@ -2383,12 +2442,12 @@ class AdminController extends Controller
             'SELECT "USERID","EMAIL","ALIAS","COMPANY" FROM "USERS" WHERE CAST("USERID" AS VARCHAR(50)) = ?',
             [$assignedTo]
         );
-        if (!$user) {
+        if (! $user) {
             return response()->json(['success' => false, 'message' => 'Assigned dealer not found in users.'], 400);
         }
 
         $email = trim((string) ($user->EMAIL ?? ''));
-        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if ($email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return response()->json(['success' => false, 'message' => 'No valid email address for the assigned dealer.'], 400);
         }
 
@@ -2406,12 +2465,13 @@ class AdminController extends Controller
                 toEmail: $email,
                 dealerName: $dealerName,
                 leadId: $leadId,
-                inquiryId: 'SQL-' . (string) ($lead->LEADID ?? $leadId),
+                inquiryId: 'SQL-'.(string) ($lead->LEADID ?? $leadId),
                 referralCode: $referralCode,
                 senderAlias: $senderAlias !== '' ? $senderAlias : 'SQL LMS',
                 companyName: trim((string) ($lead->COMPANYNAME ?? ''))
             ));
-            return response()->json(['success' => true, 'message' => 'Email sent to dealer: ' . $email . '.']);
+
+            return response()->json(['success' => true, 'message' => 'Email sent to dealer: '.$email.'.']);
         } catch (\Throwable $e) {
             return response()->json(['success' => false, 'message' => 'Failed to send email.'], 500);
         }
@@ -2434,7 +2494,7 @@ class AdminController extends Controller
         $fallbackId = trim((string) $fallbackId);
 
         if ($company !== '' && strtoupper($company) === $this->adminReportEstreamCompany() && $alias !== '') {
-            return $company . ' - ' . $alias;
+            return $company.' - '.$alias;
         }
 
         if ($company !== '') {
@@ -2467,7 +2527,7 @@ class AdminController extends Controller
         $rows = DB::select(
             'SELECT "USERID", "COMPANY", "ALIAS", "EMAIL"
              FROM "USERS"
-             WHERE CAST("USERID" AS VARCHAR(50)) IN (' . $placeholders . ')',
+             WHERE CAST("USERID" AS VARCHAR(50)) IN ('.$placeholders.')',
             $normalizedIds
         );
 
@@ -2533,7 +2593,7 @@ class AdminController extends Controller
                 $email = trim((string) ($dealerRow->EMAIL ?? ''));
 
                 if ($company !== '' && $alias !== '') {
-                    $label = $company . ' - ' . $alias;
+                    $label = $company.' - '.$alias;
                 } elseif ($company !== '') {
                     $label = $company;
                 } elseif ($alias !== '') {
@@ -2552,7 +2612,7 @@ class AdminController extends Controller
                     $dealerId,
                 ], static fn ($value) => trim((string) $value) !== '');
 
-                $options['dealer:' . $dealerId] = [
+                $options['dealer:'.$dealerId] = [
                     'label' => $label,
                     'company' => $company,
                     'alias' => $alias,
@@ -2569,7 +2629,7 @@ class AdminController extends Controller
     {
         return QueryCache::remember('admin_report_area_options', function () {
             $path = base_path('malaysia-postcodes.json');
-            if (!is_file($path)) {
+            if (! is_file($path)) {
                 return [];
             }
 
@@ -2590,6 +2650,7 @@ class AdminController extends Controller
                 }
                 $cities = array_values(array_unique($allCities));
                 sort($cities);
+
                 return $cities;
             } catch (\Throwable $e) {
                 return [];
@@ -2603,9 +2664,9 @@ class AdminController extends Controller
         if ($area === 'ALL' || $area === '') {
             return '';
         }
+
         return $area;
     }
-
 
     private function resolveAdminReportScope(Request $request): string
     {
@@ -2634,20 +2695,20 @@ class AdminController extends Controller
         if ($selectedScope === 'all_dealers') {
             if ($includeUnassignedForDealers) {
                 return [
-                    ' AND (' . $ownerColumnSql . ' IS NULL OR UPPER(TRIM(COALESCE(' . $companyColumnSql . ', \'\'))) <> ?)',
+                    ' AND ('.$ownerColumnSql.' IS NULL OR UPPER(TRIM(COALESCE('.$companyColumnSql.', \'\'))) <> ?)',
                     [$estreamCompany],
                 ];
             }
 
             return [
-                ' AND UPPER(TRIM(COALESCE(' . $companyColumnSql . ', \'\'))) <> ?',
+                ' AND UPPER(TRIM(COALESCE('.$companyColumnSql.', \'\'))) <> ?',
                 [$estreamCompany],
             ];
         }
 
         if ($selectedScope === 'estream') {
             return [
-                ' AND UPPER(TRIM(COALESCE(' . $companyColumnSql . ', \'\'))) = ?',
+                ' AND UPPER(TRIM(COALESCE('.$companyColumnSql.', \'\'))) = ?',
                 [$estreamCompany],
             ];
         }
@@ -2657,7 +2718,7 @@ class AdminController extends Controller
 
             return $dealerId === ''
                 ? [' AND 1 = 0', []]
-                : [' AND TRIM(CAST(' . $ownerColumnSql . ' AS VARCHAR(50))) = ?', [$dealerId]];
+                : [' AND TRIM(CAST('.$ownerColumnSql.' AS VARCHAR(50))) = ?', [$dealerId]];
         }
 
         return [' AND 1 = 0', []];
@@ -2676,7 +2737,7 @@ class AdminController extends Controller
                 ' AND EXISTS (
                     SELECT 1
                     FROM "USERS" ux
-                    WHERE ux."USERID" = ' . $ownerColumnSql . '
+                    WHERE ux."USERID" = '.$ownerColumnSql.'
                       AND UPPER(TRIM(COALESCE(ux."COMPANY", \'\'))) <> ?
                 )',
                 [$estreamCompany],
@@ -2688,7 +2749,7 @@ class AdminController extends Controller
                 ' AND EXISTS (
                     SELECT 1
                     FROM "USERS" ux
-                    WHERE ux."USERID" = ' . $ownerColumnSql . '
+                    WHERE ux."USERID" = '.$ownerColumnSql.'
                       AND UPPER(TRIM(COALESCE(ux."COMPANY", \'\'))) = ?
                 )',
                 [$estreamCompany],
@@ -2700,7 +2761,7 @@ class AdminController extends Controller
 
             return $dealerId === ''
                 ? [' AND 1 = 0', []]
-                : [' AND TRIM(CAST(' . $ownerColumnSql . ' AS VARCHAR(50))) = ?', [$dealerId]];
+                : [' AND TRIM(CAST('.$ownerColumnSql.' AS VARCHAR(50))) = ?', [$dealerId]];
         }
 
         return [' AND 1 = 0', []];
@@ -2732,16 +2793,16 @@ class AdminController extends Controller
             }
         }
 
-        if (!$useCustom) {
+        if (! $useCustom) {
             $days = (int) $daysParam;
-            if (!in_array($days, [30, 60, 90], true)) {
+            if (! in_array($days, [30, 60, 90], true)) {
                 $days = 60;
             }
             $startDate = Carbon::now()->subDays($days - 1)->startOfDay();
             $endDate = Carbon::now()->endOfDay();
         }
 
-        $periodLabel = $startDate->format('d/m/Y') . ' - ' . $endDate->format('d/m/Y');
+        $periodLabel = $startDate->format('d/m/Y').' - '.$endDate->format('d/m/Y');
         $startStr = $startDate->format('Y-m-d H:i:s');
         $endStr = $endDate->format('Y-m-d H:i:s');
 
@@ -2752,7 +2813,7 @@ class AdminController extends Controller
         $prevEndStr = $prevEndDate->format('Y-m-d H:i:s');
 
         $unassignedCount = 0;
-        if ($selectedReportScope === 'all' && !$selectedArea) {
+        if ($selectedReportScope === 'all' && ! $selectedArea) {
             $unassignedRow = DB::selectOne(
                 'SELECT COUNT(*) as c FROM "LEAD" WHERE COALESCE("ISDELETED", FALSE) = FALSE AND ("ASSIGNEDTO" IS NULL OR TRIM(CAST("ASSIGNEDTO" AS VARCHAR(50))) = \'\') AND "CREATEDAT" >= ? AND "CREATEDAT" <= ?',
                 [$startStr, $endStr]
@@ -2790,6 +2851,7 @@ class AdminController extends Controller
                         return $row[$key];
                     }
                 }
+
                 return null;
             }
             foreach ([$name, strtoupper($name), strtolower($name)] as $prop) {
@@ -2797,6 +2859,7 @@ class AdminController extends Controller
                     return $row->{$prop};
                 }
             }
+
             return null;
         };
 
@@ -2823,7 +2886,7 @@ class AdminController extends Controller
                  ) m ON m.\"LEADID\" = a.\"LEADID\" AND m.MAXCD = a.\"CREATIONDATE\"
              ) ls ON ls.\"LEADID\" = l.\"LEADID\"
              WHERE COALESCE(l.\"ISDELETED\", FALSE) = FALSE AND l.\"CREATEDAT\" >= ? AND l.\"CREATEDAT\" <= ?
-             " . $leadScopeSql . "
+             ".$leadScopeSql."
              GROUP BY
                 CASE
                     WHEN ls.latest_status IN ('PENDING', 'FOLLOWUP', 'FOLLOW UP', 'DEMO', 'CONFIRMED') THEN 'Ongoing'
@@ -2871,7 +2934,7 @@ class AdminController extends Controller
                  ) m ON m.\"LEADID\" = a.\"LEADID\" AND m.MAXCD = a.\"CREATIONDATE\"
              ) ls ON ls.\"LEADID\" = l.\"LEADID\"
              WHERE COALESCE(l.\"ISDELETED\", FALSE) = FALSE AND l.\"CREATEDAT\" >= ? AND l.\"CREATEDAT\" <= ?
-             " . $leadScopeSql . "
+             ".$leadScopeSql."
              GROUP BY
                 CASE
                     WHEN ls.latest_status IN ('PENDING', 'FOLLOWUP', 'FOLLOW UP', 'DEMO', 'CONFIRMED') THEN 'Ongoing'
@@ -2932,7 +2995,7 @@ class AdminController extends Controller
              JOIN "LEAD" l ON l."LEADID" = a."LEADID"
              LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
              WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
-             ' . $leadScopeSql . '
+             '.$leadScopeSql.'
              GROUP BY a."STATUS"',
             array_merge([$startStr, $endStr], $leadScopeBindings)
         );
@@ -2967,7 +3030,7 @@ class AdminController extends Controller
              JOIN "LEAD" l ON l."LEADID" = a."LEADID"
              LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
              WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
-             ' . $leadScopeSql . '
+             '.$leadScopeSql.'
              GROUP BY a."STATUS"',
             array_merge([$prevStartStr, $prevEndStr], $leadScopeBindings)
         );
@@ -2995,7 +3058,7 @@ class AdminController extends Controller
              FROM "REFERRER_PAYOUT" p
              LEFT JOIN "USERS" u ON u."USERID" = p."USERID"
              WHERE p."DATEGENERATED" >= ? AND p."DATEGENERATED" <= ?
-             ' . $payoutScopeSql . '
+             '.$payoutScopeSql.'
              GROUP BY p."STATUS"',
             array_merge([$startStr, $endStr], $payoutScopeBindings)
         );
@@ -3017,7 +3080,7 @@ class AdminController extends Controller
              FROM "REFERRER_PAYOUT" p
              LEFT JOIN "USERS" u ON u."USERID" = p."USERID"
              WHERE p."DATEGENERATED" >= ? AND p."DATEGENERATED" <= ?
-             ' . $payoutScopeSql . '
+             '.$payoutScopeSql.'
              GROUP BY p."STATUS"',
             array_merge([$prevStartStr, $prevEndStr], $payoutScopeBindings)
         );
@@ -3040,7 +3103,7 @@ class AdminController extends Controller
              FROM "LEAD" l
              LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
              WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
-             ' . $leadScopeSql . '
+             '.$leadScopeSql.'
              GROUP BY CAST(l."CREATEDAT" AS DATE)
              ORDER BY CAST(l."CREATEDAT" AS DATE)',
             array_merge([$startStr, $endStr], $leadScopeBindings)
@@ -3064,7 +3127,7 @@ class AdminController extends Controller
             $inquiryTrend[] = [
                 'day' => Carbon::parse($dayKey)->format('M j'),
                 'full_day' => Carbon::parse($dayKey)->format('d/m/Y'),
-                'count' => $count
+                'count' => $count,
             ];
         }
 
@@ -3074,7 +3137,7 @@ class AdminController extends Controller
              FROM "LEAD" l
              LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
              WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
-             ' . $leadScopeSql,
+             '.$leadScopeSql,
             array_merge([$prevStartStr, $prevEndStr], $leadScopeBindings)
         );
         $lastMonthTotal = (int) ($lastMonthRows[0]->c ?? 0);
@@ -3087,6 +3150,7 @@ class AdminController extends Controller
             if ($lastMonth == 0) {
                 return $current > 0 ? 100 : 0;
             }
+
             return (int) round(($current - $lastMonth) / $lastMonth * 100);
         };
         $metricPercent = [
@@ -3129,7 +3193,7 @@ class AdminController extends Controller
                AND TRIM(a."DEALTPRODUCT") <> \'\'
                AND a."CREATIONDATE" >= ?
                AND a."CREATIONDATE" <= ?
-               ' . $leadScopeSql,
+               '.$leadScopeSql,
             array_merge([$startStr, $endStr], $leadScopeBindings)
         );
         foreach ($dealRows as $row) {
@@ -3147,7 +3211,7 @@ class AdminController extends Controller
         $productConversion = [];
         foreach ($productIds as $pid) {
             $productConversion[] = [
-                'label' => $productNames[$pid] ?? ('Product ' . $pid),
+                'label' => $productNames[$pid] ?? ('Product '.$pid),
                 'count' => (int) ($productCounts[$pid] ?? 0),
             ];
         }
@@ -3218,15 +3282,15 @@ class AdminController extends Controller
                 $useCustomPrimary = false;
             }
         }
-        if (!$useCustomPrimary) {
+        if (! $useCustomPrimary) {
             $days = (int) $daysParam;
-            if (!in_array($days, [30, 60, 90], true)) {
+            if (! in_array($days, [30, 60, 90], true)) {
                 $days = 60;
             }
         }
 
         $compareDays = (int) $compareDaysParam;
-        if (!in_array($compareDays, [30, 60, 90], true)) {
+        if (! in_array($compareDays, [30, 60, 90], true)) {
             $compareDays = 30;
         }
 
@@ -3244,7 +3308,7 @@ class AdminController extends Controller
                 $useCustomCompare = false;
             }
         }
-        if (!$useCustomCompare) {
+        if (! $useCustomCompare) {
             $compareStartStr = null;
             $compareEndStr = null;
         }
@@ -3265,7 +3329,7 @@ class AdminController extends Controller
                  WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL
                    AND l."CREATEDAT" >= CAST(? AS TIMESTAMP) AND l."CREATEDAT" <= CAST(? AS TIMESTAMP)
                    AND COALESCE((SELECT FIRST 1 UPPER(TRIM(la2."STATUS")) FROM "LEAD_ACT" la2 WHERE la2."LEADID" = l."LEADID" ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC), \'\') <> \'CANCELLED\'
-                   ' . $dealerScopeSql . '
+                   '.$dealerScopeSql.'
                  GROUP BY l."ASSIGNEDTO", COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL")',
                 array_merge([$primaryStartStr, $primaryEndStr], $dealerScopeBindings)
             );
@@ -3284,7 +3348,7 @@ class AdminController extends Controller
                  WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL
                    AND l."CREATEDAT" >= DATEADD(DAY, ?, CURRENT_DATE)
                    AND COALESCE((SELECT FIRST 1 UPPER(TRIM(la2."STATUS")) FROM "LEAD_ACT" la2 WHERE la2."LEADID" = l."LEADID" ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC), \'\') <> \'CANCELLED\'
-                   ' . $dealerScopeSql . '
+                   '.$dealerScopeSql.'
                  GROUP BY l."ASSIGNEDTO", COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL")',
                 array_merge([-$days], $dealerScopeBindings)
             );
@@ -3298,7 +3362,9 @@ class AdminController extends Controller
         $totalsByDealer = [];
         foreach ($dealerTotals as $r) {
             $id = (string) ($r->DEALER_ID ?? $r->dealer_id ?? '');
-            if ($id === '') continue;
+            if ($id === '') {
+                continue;
+            }
             $total = (int) ($r->TOTAL_C ?? $r->total_c ?? 0);
             $closed = (int) ($r->CLOSED_C ?? $r->closed_c ?? 0);
             $totalsByDealer[$id] = [
@@ -3325,7 +3391,7 @@ class AdminController extends Controller
                         ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
                        ) IN (\'COMPLETED\', \'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\')
                    AND NOT EXISTS (SELECT 1 FROM "LEAD_ACT" a WHERE a."LEADID" = l."LEADID" AND UPPER(TRIM(a."STATUS")) = \'COMPLETED\')
-                   ' . $dealerScopeSql . '
+                   '.$dealerScopeSql.'
                  GROUP BY l."ASSIGNEDTO"',
                 array_merge([$primaryStartStr, $primaryEndStr], $dealerScopeBindings)
             );
@@ -3341,14 +3407,16 @@ class AdminController extends Controller
                         ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
                        ) IN (\'COMPLETED\', \'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\')
                    AND NOT EXISTS (SELECT 1 FROM "LEAD_ACT" a WHERE a."LEADID" = l."LEADID" AND UPPER(TRIM(a."STATUS")) = \'COMPLETED\')
-                   ' . $dealerScopeSql . '
+                   '.$dealerScopeSql.'
                  GROUP BY l."ASSIGNEDTO"',
                 array_merge([-$days], $dealerScopeBindings)
             );
         }
         foreach ($rejectedRows as $r) {
             $id = (string) ($r->DEALER_ID ?? $r->dealer_id ?? '');
-            if ($id === '' || !isset($totalsByDealer[$id])) continue;
+            if ($id === '' || ! isset($totalsByDealer[$id])) {
+                continue;
+            }
             $rej = (int) ($r->C ?? $r->c ?? 0);
             $totalsByDealer[$id]['rejected'] = $rej;
             $total = (int) $totalsByDealer[$id]['total'];
@@ -3367,7 +3435,7 @@ class AdminController extends Controller
                         WHERE la."LEADID" = l."LEADID"
                         ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
                        ) = \'FAILED\'
-                   ' . $dealerScopeSql . '
+                   '.$dealerScopeSql.'
                  GROUP BY l."ASSIGNEDTO"',
                 array_merge([$primaryStartStr, $primaryEndStr], $dealerScopeBindings)
             );
@@ -3382,20 +3450,22 @@ class AdminController extends Controller
                         WHERE la."LEADID" = l."LEADID"
                         ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
                        ) = \'FAILED\'
-                   ' . $dealerScopeSql . '
+                   '.$dealerScopeSql.'
                 GROUP BY l."ASSIGNEDTO"',
                 array_merge([-$days], $dealerScopeBindings)
             );
         }
         foreach ($failedCountRows as $r) {
             $id = (string) ($r->DEALER_ID ?? $r->dealer_id ?? '');
-            if ($id === '' || !isset($totalsByDealer[$id])) continue;
+            if ($id === '' || ! isset($totalsByDealer[$id])) {
+                continue;
+            }
             $totalsByDealer[$id]['failed'] = (int) ($r->FAILED_C ?? $r->failed_c ?? 0);
             $total = (int) $totalsByDealer[$id]['total'];
             $totalsByDealer[$id]['fail_rate'] = $total > 0 ? round($totalsByDealer[$id]['failed'] / $total * 100, 1) : 0;
         }
         foreach ($totalsByDealer as $id => $d) {
-            if (!isset($d['failed'])) {
+            if (! isset($d['failed'])) {
                 $totalsByDealer[$id]['failed'] = 0;
                 $totalsByDealer[$id]['fail_rate'] = 0.0;
             }
@@ -3415,7 +3485,7 @@ class AdminController extends Controller
                  WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL
                    AND l."CREATEDAT" >= CAST(? AS TIMESTAMP) AND l."CREATEDAT" <= CAST(? AS TIMESTAMP)
                    AND COALESCE((SELECT FIRST 1 UPPER(TRIM(la2."STATUS")) FROM "LEAD_ACT" la2 WHERE la2."LEADID" = l."LEADID" ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC), \'\') <> \'CANCELLED\'
-                   ' . $dealerScopeSql . '
+                   '.$dealerScopeSql.'
                  GROUP BY l."ASSIGNEDTO"',
                 array_merge([$compareStartStr, $compareEndStr], $dealerScopeBindings)
             );
@@ -3433,7 +3503,7 @@ class AdminController extends Controller
                    AND l."CREATEDAT" >= DATEADD(DAY, ?, CURRENT_DATE)
                    AND COALESCE((SELECT FIRST 1 UPPER(TRIM(la2."STATUS")) FROM "LEAD_ACT" la2 WHERE la2."LEADID" = l."LEADID" ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC), \'\') <> \'CANCELLED\'
                    AND l."CREATEDAT" <= CURRENT_DATE
-                   ' . $dealerScopeSql . '
+                   '.$dealerScopeSql.'
                  GROUP BY l."ASSIGNEDTO"',
                 array_merge([-$compareDays], $dealerScopeBindings)
             );
@@ -3441,7 +3511,9 @@ class AdminController extends Controller
         $compareByDealer = [];
         foreach ($compareTotals as $r) {
             $id = (string) ($r->DEALER_ID ?? $r->dealer_id ?? '');
-            if ($id === '') continue;
+            if ($id === '') {
+                continue;
+            }
             $total = (int) ($r->TOTAL_C ?? $r->total_c ?? 0);
             $failed = (int) ($r->FAILED_C ?? $r->failed_c ?? 0);
             $compareByDealer[$id] = [
@@ -3470,7 +3542,7 @@ class AdminController extends Controller
                         SUM(CASE WHEN l."CREATEDAT" >= CAST(? AS TIMESTAMP) AND l."CREATEDAT" <= CAST(? AS TIMESTAMP) THEN 1 ELSE 0 END) AS last_c
                  FROM "LEAD" l
                  WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL
-                   ' . $dealerScopeSql . '
+                   '.$dealerScopeSql.'
                  GROUP BY l."ASSIGNEDTO"',
                 array_merge([$primaryStartStr, $primaryEndStr, $compareStartStr, $compareEndStr], $dealerScopeBindings)
             );
@@ -3481,7 +3553,7 @@ class AdminController extends Controller
                         SUM(CASE WHEN l."CREATEDAT" >= DATEADD(DAY, ?, DATEADD(YEAR, -1, CURRENT_DATE)) AND l."CREATEDAT" <= DATEADD(YEAR, -1, CURRENT_DATE) THEN 1 ELSE 0 END) AS last_c
                  FROM "LEAD" l
                  WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL
-                   ' . $dealerScopeSql . '
+                   '.$dealerScopeSql.'
                  GROUP BY l."ASSIGNEDTO"',
                 array_merge([-$days, -$days], $dealerScopeBindings)
             );
@@ -3489,13 +3561,17 @@ class AdminController extends Controller
         $variance = [];
         foreach ($varianceRows as $r) {
             $id = (string) ($r->DEALER_ID ?? $r->dealer_id ?? '');
-            if ($id === '' || !isset($totalsByDealer[$id])) continue;
+            if ($id === '' || ! isset($totalsByDealer[$id])) {
+                continue;
+            }
             $curr = (int) ($r->CURR_C ?? $r->curr_c ?? 0);
             $last = (int) ($r->LAST_C ?? $r->last_c ?? 0);
             $pct = $last > 0 ? (int) round(($curr - $last) / $last * 100) : ($curr > 0 ? 100 : 0);
             $variance[] = ['dealer_id' => $id, 'name' => $totalsByDealer[$id]['name'], 'delta' => $pct];
         }
-        usort($variance, function ($a, $b) { return abs($b['delta']) <=> abs($a['delta']); });
+        usort($variance, function ($a, $b) {
+            return abs($b['delta']) <=> abs($a['delta']);
+        });
         $variance = array_slice($variance, 0, 10);
 
         // Last activity per dealer (any lead activity)
@@ -3505,15 +3581,16 @@ class AdminController extends Controller
              FROM "LEAD_ACT" a
              JOIN "LEAD" l ON l."LEADID" = a."LEADID"
              WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL
-               ' . $dealerScopeSql . '
-             GROUP BY l."ASSIGNEDTO"'
-            ,
+               '.$dealerScopeSql.'
+             GROUP BY l."ASSIGNEDTO"',
             $dealerScopeBindings
         );
         $lastActivityByDealer = [];
         foreach ($lastActivityRows as $r) {
             $id = (string) ($r->DEALER_ID ?? $r->dealer_id ?? '');
-            if ($id === '') continue;
+            if ($id === '') {
+                continue;
+            }
             $lastAt = $r->LAST_AT ?? $r->last_at ?? null;
             if ($lastAt) {
                 $dt = \Carbon\Carbon::parse($lastAt);
@@ -3575,7 +3652,7 @@ class AdminController extends Controller
                         WHERE la."LEADID" = l."LEADID"
                         ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
                        ) = \'FAILED\'
-                   ' . $dealerScopeSql . '
+                   '.$dealerScopeSql.'
                  GROUP BY l."ASSIGNEDTO", COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL")
                  ORDER BY failed_c DESC',
                 array_merge([$primaryStartStr, $primaryEndStr], $dealerScopeBindings)
@@ -3594,7 +3671,7 @@ class AdminController extends Controller
                         WHERE la."LEADID" = l."LEADID"
                         ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
                        ) = \'FAILED\'
-                   ' . $dealerScopeSql . '
+                   '.$dealerScopeSql.'
                  GROUP BY l."ASSIGNEDTO", COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL")
                  ORDER BY failed_c DESC',
                 array_merge([-$days], $dealerScopeBindings)
@@ -3629,7 +3706,7 @@ class AdminController extends Controller
                         WHERE la."LEADID" = l."LEADID"
                         ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
                        ) IN (\'COMPLETED\', \'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\')
-                   ' . $dealerScopeSql . '
+                   '.$dealerScopeSql.'
                  GROUP BY l."ASSIGNEDTO", COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL")
                  ORDER BY closed_c DESC',
                 array_merge([$primaryStartStr, $primaryEndStr], $dealerScopeBindings)
@@ -3648,7 +3725,7 @@ class AdminController extends Controller
                         WHERE la."LEADID" = l."LEADID"
                         ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
                        ) IN (\'COMPLETED\', \'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\')
-                   ' . $dealerScopeSql . '
+                   '.$dealerScopeSql.'
                  GROUP BY l."ASSIGNEDTO", COALESCE(NULLIF(TRIM(u."COMPANY"), \'\'), u."EMAIL")
                  ORDER BY closed_c DESC',
                 array_merge([-$days], $dealerScopeBindings)
@@ -3713,6 +3790,7 @@ class AdminController extends Controller
             'DESCRIPTION' => $r->DESCRIPTION,
             'STATUS' => $r->STATUS,
         ], $rows);
+
         return response()->json(['items' => $items]);
     }
 
@@ -3742,16 +3820,16 @@ class AdminController extends Controller
             }
         }
 
-        if (!$useCustom) {
+        if (! $useCustom) {
             $days = (int) $daysParam;
-            if (!in_array($days, [30, 60, 90], true)) {
+            if (! in_array($days, [30, 60, 90], true)) {
                 $days = 60;
             }
             $start = Carbon::now()->subDays($days - 1)->startOfDay();
             $end = Carbon::now()->endOfDay();
         }
 
-        $periodLabel = $start->format('d/m/Y') . ' - ' . $end->format('d/m/Y');
+        $periodLabel = $start->format('d/m/Y').' - '.$end->format('d/m/Y');
 
         $startStr = $start->format('Y-m-d H:i:s');
         $endStr = $end->format('Y-m-d H:i:s');
@@ -3800,7 +3878,7 @@ class AdminController extends Controller
                 AND l."CREATEDAT" >= ?
                 AND l."CREATEDAT" <= ?
                 AND COALESCE((SELECT FIRST 1 UPPER(TRIM(la2."STATUS")) FROM "LEAD_ACT" la2 WHERE la2."LEADID" = l."LEADID" ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC), \'\') <> \'CANCELLED\'
-                ' . $leadScopeSql . '
+                '.$leadScopeSql.'
               GROUP BY u."USERID", u."EMAIL", u."COMPANY", u."ALIAS"
               ORDER BY total_leads DESC';
         $rowsBindings = [$startStr, $endStr, $startStr, $endStr];
@@ -3862,7 +3940,7 @@ class AdminController extends Controller
                AND UPPER(TRIM(COALESCE(a."STATUS", \'\'))) = ?
                AND a."CREATIONDATE" >= ?
                AND a."CREATIONDATE" <= ?
-               ' . $productScopeSql;
+               '.$productScopeSql;
         $topProductBindings = ['COMPLETED', $startStr, $endStr];
         $topProductBindings = array_merge($topProductBindings, $productScopeBindings);
         $topProductRows = DB::select($topProductSql, $topProductBindings);
@@ -3890,7 +3968,7 @@ class AdminController extends Controller
             if ($count <= 0) {
                 continue;
             }
-            if (!isset($topProductByDealer[$id])) {
+            if (! isset($topProductByDealer[$id])) {
                 $topProductByDealer[$id] = [
                     'dealer_id' => $id,
                     'name' => $name,
@@ -3914,6 +3992,7 @@ class AdminController extends Controller
             if ($cmp !== 0) {
                 return $cmp;
             }
+
             return ((int) ($b['total'] ?? 0)) <=> ((int) ($a['total'] ?? 0));
         });
         $avgRejection = $totalLeads > 0 ? $weightedRejection / $totalLeads : 0.0;
@@ -3966,7 +4045,7 @@ class AdminController extends Controller
     public function history(Request $request): View
     {
         $historyDateFilter = $this->resolveHistoryDateFilter($request);
-        
+
         $where = 'WHERE a."CREATIONDATE" >= ? AND a."CREATIONDATE" <= ?';
         $bindings = [
             $historyDateFilter['rangeStart']->format('Y-m-d H:i:s'),
@@ -4006,7 +4085,7 @@ class AdminController extends Controller
     {
         $dateRange = strtolower(trim((string) $request->query('date_range', 'today')));
         $supportedRanges = ['today', 'yesterday', '2_days_ago', 'this_week', 'custom'];
-        if (!in_array($dateRange, $supportedRanges, true)) {
+        if (! in_array($dateRange, $supportedRanges, true)) {
             $dateRange = 'today';
         }
 
@@ -4063,7 +4142,6 @@ class AdminController extends Controller
         ];
     }
 
-
     private function ensureMaintainUsersAccess(Request $request): ?RedirectResponse
     {
         if (strtolower((string) $request->session()->get('user_role')) === 'manager') {
@@ -4100,7 +4178,7 @@ class AdminController extends Controller
             [$leadId]
         );
 
-        if (!$row) {
+        if (! $row) {
             return 'Lead not found.';
         }
 
@@ -4167,20 +4245,20 @@ class AdminController extends Controller
             $params[] = $roleFilter;
         }
         if ($search !== '') {
-            $like = '%' . $search . '%';
+            $like = '%'.$search.'%';
             $where[] = '('
-                . 'UPPER(TRIM(COALESCE(u."EMAIL", \'\'))) LIKE UPPER(?)'
-                . ' OR UPPER(TRIM(COALESCE(u."ALIAS", \'\'))) LIKE UPPER(?)'
-                . ' OR UPPER(TRIM(COALESCE(u."COMPANY", \'\'))) LIKE UPPER(?)'
-                . ')';
+                .'UPPER(TRIM(COALESCE(u."EMAIL", \'\'))) LIKE UPPER(?)'
+                .' OR UPPER(TRIM(COALESCE(u."ALIAS", \'\'))) LIKE UPPER(?)'
+                .' OR UPPER(TRIM(COALESCE(u."COMPANY", \'\'))) LIKE UPPER(?)'
+                .')';
             $params[] = $like;
             $params[] = $like;
             $params[] = $like;
         }
 
         $sql = 'SELECT "USERID","EMAIL","SYSTEMROLE","ISACTIVE","ALIAS","COMPANY","POSTCODE","CITY","LASTLOGIN" FROM "USERS" u';
-        if (!empty($where)) {
-            $sql .= ' WHERE ' . implode(' AND ', $where);
+        if (! empty($where)) {
+            $sql .= ' WHERE '.implode(' AND ', $where);
         }
         $sql .= ' ORDER BY "USERID"';
 
@@ -4190,7 +4268,7 @@ class AdminController extends Controller
         $users = array_map(function ($r) use ($setupLinks) {
             $userId = (string) ($r->USERID ?? '');
             $hasLoggedIn = $r->LASTLOGIN !== null;
-            $setupLink = !$hasLoggedIn && isset($setupLinks[$userId]) ? $setupLinks[$userId] : [];
+            $setupLink = ! $hasLoggedIn && isset($setupLinks[$userId]) ? $setupLinks[$userId] : [];
             $setupLinkEmailedAt = (string) ($setupLink['emailed_at'] ?? '');
             $setupLinkExpiresAt = (string) ($setupLink['expires_at'] ?? '');
             $setupLinkPending = $setupLinkExpiresAt !== '';
@@ -4229,10 +4307,11 @@ class AdminController extends Controller
     {
         return array_values(array_filter($users, static function ($u) {
             $email = trim((string) ($u['EMAIL'] ?? ''));
-            return !($u['HAS_LOGGED_IN'] ?? false)
+
+            return ! ($u['HAS_LOGGED_IN'] ?? false)
                 && (bool) ($u['ISACTIVE'] ?? false)
                 && $email !== ''
-                && !str_ends_with(strtolower($email), '@noemail.local');
+                && ! str_ends_with(strtolower($email), '@noemail.local');
         }));
     }
 
@@ -4277,7 +4356,7 @@ class AdminController extends Controller
                 ->with('error', 'Dealer accounts require alias, company, postcode, and city.');
         }
 
-        if (!$isDealer) {
+        if (! $isDealer) {
             $company = $estreamCompany;
             $postcode = '';
             $city = '';
@@ -4302,7 +4381,7 @@ class AdminController extends Controller
                 $maxNum = $num;
             }
         }
-        $newUserId = 'U' . str_pad((string)($maxNum + 1), 3, '0', STR_PAD_LEFT);
+        $newUserId = 'U'.str_pad((string) ($maxNum + 1), 3, '0', STR_PAD_LEFT);
 
         DB::insert(
             'INSERT INTO "USERS" ("USERID","EMAIL","PASSWORDHASH","SYSTEMROLE","ISACTIVE","ALIAS","COMPANY","POSTCODE","CITY") VALUES (?,?,?,?,?,?,?,?,?)',
@@ -4329,13 +4408,14 @@ class AdminController extends Controller
             try {
                 $newUser = $this->loadMaintainUserPasskeyTarget((string) $createdUser->USERID);
 
-                if (!$newUser || !$this->sendMaintainUserPasskeySetupLink($newUser)) {
+                if (! $newUser || ! $this->sendMaintainUserPasskeySetupLink($newUser)) {
                     return redirect()->route('admin.maintain-users')->with('error', 'User created, but failed to send passkey setup link email.');
                 }
 
                 return redirect()->route('admin.maintain-users')->with('success', 'User created and passkey setup link emailed.');
             } catch (\Throwable $e) {
                 report($e);
+
                 return redirect()->route('admin.maintain-users')->with('error', 'User created, but failed to send passkey setup link email.');
             }
         }
@@ -4350,7 +4430,7 @@ class AdminController extends Controller
         }
 
         $existing = DB::selectOne('SELECT "USERID","SYSTEMROLE" FROM "USERS" WHERE "USERID" = ?', [$userid]);
-        if (!$existing) {
+        if (! $existing) {
             return redirect()->route('admin.maintain-users')->with('error', 'User not found.');
         }
 
@@ -4382,7 +4462,7 @@ class AdminController extends Controller
             return back()->withInput()->with('error', 'Dealer accounts require alias, company, postcode, and city.');
         }
 
-        if (!$isDealer) {
+        if (! $isDealer) {
             $company = $estreamCompany;
             $postcode = '';
             $city = '';
@@ -4407,10 +4487,11 @@ class AdminController extends Controller
                     return $c;
                 }
             }
+
             return null;
         };
         $q = function (string $name): string {
-            return '"' . str_replace('"', '""', $name) . '"';
+            return '"'.str_replace('"', '""', $name).'"';
         };
         $emailCol = $col('EMAIL');
         $aliasCol = $col('ALIAS');
@@ -4419,35 +4500,35 @@ class AdminController extends Controller
         $cityCol = $col('CITY');
         $activeCol = $col('ISACTIVE');
         $idCol = $col('USERID');
-        if (!$emailCol || !$activeCol || !$idCol) {
+        if (! $emailCol || ! $activeCol || ! $idCol) {
             return back()->withInput()->with('error', 'User settings could not be loaded. Please contact support if this continues.');
         }
 
         $isActiveValue = $isActive ? 1 : 0;
         try {
-            $parts = [$q($emailCol) . ' = ?'];
+            $parts = [$q($emailCol).' = ?'];
             $bind = [$email];
             if ($aliasCol) {
-                $parts[] = $q($aliasCol) . ' = ?';
+                $parts[] = $q($aliasCol).' = ?';
                 $bind[] = $alias !== '' ? $alias : null;
             }
             if ($companyCol) {
-                $parts[] = $q($companyCol) . ' = ?';
+                $parts[] = $q($companyCol).' = ?';
                 $bind[] = $company !== '' ? $company : null;
             }
             if ($postcodeCol) {
-                $parts[] = $q($postcodeCol) . ' = ?';
+                $parts[] = $q($postcodeCol).' = ?';
                 $bind[] = $postcode !== '' ? $postcode : '';
             }
             if ($cityCol) {
-                $parts[] = $q($cityCol) . ' = ?';
+                $parts[] = $q($cityCol).' = ?';
                 $bind[] = $city !== '' ? $city : '';
             }
-            $parts[] = $q($activeCol) . ' = ?';
+            $parts[] = $q($activeCol).' = ?';
             $bind[] = $isActiveValue;
             $bind[] = $userid;
             DB::update(
-                'UPDATE "USERS" SET ' . implode(', ', $parts) . ' WHERE ' . $q($idCol) . ' = ?',
+                'UPDATE "USERS" SET '.implode(', ', $parts).' WHERE '.$q($idCol).' = ?',
                 $bind
             );
         } catch (\Throwable $e) {
@@ -4462,7 +4543,7 @@ class AdminController extends Controller
         if ($sendPasskeySetupLink) {
             try {
                 $updatedUser = $this->loadMaintainUserPasskeyTarget($userid);
-                if (!$updatedUser || trim((string) ($updatedUser->EMAIL ?? '')) === '') {
+                if (! $updatedUser || trim((string) ($updatedUser->EMAIL ?? '')) === '') {
                     return redirect()->route('admin.maintain-users')->with('error', 'User updated, but passkey setup link could not be sent because the account is missing email data.');
                 }
 
@@ -4473,6 +4554,7 @@ class AdminController extends Controller
                 $passkeySetupLinkSent = true;
             } catch (\Throwable $e) {
                 report($e);
+
                 return redirect()->route('admin.maintain-users')->with('error', 'User updated, but failed to send passkey setup link.');
             }
         }
@@ -4492,7 +4574,7 @@ class AdminController extends Controller
 
         $user = $this->loadMaintainUserPasskeyTarget($userid);
 
-        if (!$user) {
+        if (! $user) {
             return redirect()->route('admin.maintain-users')->with('error', 'User not found.');
         }
 
@@ -4502,6 +4584,7 @@ class AdminController extends Controller
             $this->sendMaintainUserPasskeySetupLink($user);
         } catch (\Throwable $e) {
             report($e);
+
             return redirect()->route('admin.maintain-users')->with('error', 'Failed to send passkey setup link email.');
         }
 
@@ -4529,9 +4612,8 @@ class AdminController extends Controller
             'SELECT "USERID","EMAIL","ALIAS","COMPANY","LASTLOGIN","ISACTIVE"
              FROM "USERS"
              WHERE "LASTLOGIN" IS NULL
-               AND "USERID" IN (' . $placeholders . ')
-             ORDER BY "USERID"'
-            ,
+               AND "USERID" IN ('.$placeholders.')
+             ORDER BY "USERID"',
             $selectedUserIds
         );
 
@@ -4551,7 +4633,7 @@ class AdminController extends Controller
             return redirect()->route('admin.maintain-users')->with('error', 'No eligible users found for passkey setup link email.');
         }
 
-        return redirect()->route('admin.maintain-users')->with('success', 'Passkey setup link emailed to ' . $sent . ' user(s).');
+        return redirect()->route('admin.maintain-users')->with('success', 'Passkey setup link emailed to '.$sent.' user(s).');
     }
 
     private function sendMaintainUserPasskeySetupLink(object $user, ?string $introLine = null): bool
@@ -4631,10 +4713,10 @@ class AdminController extends Controller
     /**
      * Send email to dealer when an inquiry is assigned to them (create or assign).
      *
-     * @param string $dealerUserId USERS.USERID of the assigned dealer
-     * @param int $leadId LEAD.LEADID
-     * @param string|null $companyName Optional; if null, fetched from LEAD
-     * @param string|null $contactName Optional; if null, fetched from LEAD
+     * @param  string  $dealerUserId  USERS.USERID of the assigned dealer
+     * @param  int  $leadId  LEAD.LEADID
+     * @param  string|null  $companyName  Optional; if null, fetched from LEAD
+     * @param  string|null  $contactName  Optional; if null, fetched from LEAD
      */
     private function sendInquiryAssignedEmail(string $dealerUserId, int $leadId, ?string $companyName = null, ?string $contactName = null): void
     {
@@ -4643,7 +4725,7 @@ class AdminController extends Controller
                 'SELECT "EMAIL", "ALIAS", "COMPANY" FROM "USERS" WHERE CAST("USERID" AS VARCHAR(50)) = ?',
                 [$dealerUserId]
             );
-            if (!$dealer || empty(trim((string) ($dealer->EMAIL ?? '')))) {
+            if (! $dealer || empty(trim((string) ($dealer->EMAIL ?? '')))) {
                 return;
             }
             $dealerEmail = trim((string) $dealer->EMAIL);
@@ -4663,13 +4745,13 @@ class AdminController extends Controller
             $companyName = $companyName !== '' ? $companyName : '—';
             $contactName = $contactName !== '' ? $contactName : '—';
 
-            $viewInquiryUrl = url(route('dealer.inquiries', [], false) . '?lead=' . $leadId);
+            $viewInquiryUrl = url(route('dealer.inquiries', [], false).'?lead='.$leadId);
 
             Mail::to($dealerEmail)->send(new InquiryAssignedToDealer(
                 dealerEmail: $dealerEmail,
                 dealerName: $dealerName,
                 leadId: $leadId,
-                inquiryId: 'SQL-' . $leadId,
+                inquiryId: 'SQL-'.$leadId,
                 companyName: $companyName,
                 contactName: $contactName,
                 viewInquiryUrl: $viewInquiryUrl
@@ -4680,14 +4762,3 @@ class AdminController extends Controller
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
