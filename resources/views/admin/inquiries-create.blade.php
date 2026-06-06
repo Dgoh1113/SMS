@@ -1351,13 +1351,13 @@
                 </div>
 
                 <div class="inquiry-form-actions" style="margin-top: auto; padding-top: 10px; display: flex; justify-content: flex-end; gap: 12px; align-items: center; width: 100%;">
-                    <a href="{{ route('admin.inquiries') }}" class="inquiry-form-cancel" style="padding: 10px 24px; border-radius: 12px; font-weight: 700; color: #666; text-decoration: none; transition: all 0.2s; min-width: 150px; text-align: center; border: 1px solid #e0e0e0; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <a href="{{ route('admin.inquiries') }}" class="inquiry-form-cancel" style="padding: 10px 24px; border-radius: 12px; font-weight: 700; color: #666; text-decoration: none; transition: all 0.2s; min-width: 150px; text-align: center; border: 1px solid #e0e0e0; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;">
                         <i class="bi bi-x-lg" style="font-size: 14px;"></i> Cancel
                     </a>
-                    <button type="button" id="clearFormBtn" class="inquiry-form-cancel" {{ $isEdit ? 'disabled' : '' }} style="padding: 10px 24px; border-radius: 12px; font-weight: 700; color: #dc2626; text-decoration: none; transition: all 0.2s; min-width: 150px; text-align: center; border: 1px solid #fca5a5; background: #fff5f5; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <button type="button" id="clearFormBtn" class="inquiry-form-cancel" {{ $isEdit ? 'disabled' : '' }} style="padding: 10px 24px; border-radius: 12px; font-weight: 700; color: #dc2626; text-decoration: none; transition: all 0.2s; min-width: 150px; text-align: center; border: 1px solid #fca5a5; background: #fff5f5; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;">
                         <i class="bi bi-trash" style="font-size: 14px;"></i> Clear form
                     </button>
-                    <button type="submit" class="login-primary-btn" style="padding: 10px 24px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; border: none; transition: all 0.2s; min-width: 150px; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2); margin-top: 0;">
+                    <button type="submit" class="login-primary-btn" style="padding: 10px 24px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; border: none; transition: all 0.2s; min-width: 150px; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2); margin-top: 0; cursor: pointer;">
                         <i class="bi bi-send"></i> {{ $isEdit ? 'Update inquiry' : 'Save inquiry' }}
                     </button>
                 </div>

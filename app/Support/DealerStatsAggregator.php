@@ -47,61 +47,9 @@ class DealerStatsAggregator
         }
 
         $stats = [];
-
         foreach ($dealerIds as $userId) {
             $userId = trim((string) $userId);
-            if ($userId === '') {
-                continue;
-            }
-
-            try {
-                $leadsRow = DB::selectOne(
-                    'SELECT COUNT(*) as c FROM "LEAD" l WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) = TRIM(CAST(? AS VARCHAR(50)))
-                     AND COALESCE((SELECT FIRST 1 UPPER(TRIM(la."STATUS")) FROM "LEAD_ACT" la WHERE la."LEADID" = l."LEADID" ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC), \'\') <> \'CANCELLED\'',
-                    [$userId]
-                );
-                $closedRow = DB::selectOne(
-                    'SELECT COUNT(*) as c FROM "LEAD" l
-                     WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
-                       AND TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) = TRIM(CAST(? AS VARCHAR(50)))
-                       AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
-                            FROM "LEAD_ACT" la
-                            WHERE la."LEADID" = l."LEADID"
-                            ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
-                           ) IN (\'COMPLETED\', \'REWARDED\')',
-                    [$userId]
-                );
-                $failedRow = DB::selectOne(
-                    'SELECT COUNT(*) as c FROM "LEAD" l
-                     WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
-                       AND TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) = TRIM(CAST(? AS VARCHAR(50)))
-                       AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
-                            FROM "LEAD_ACT" la
-                            WHERE la."LEADID" = l."LEADID"
-                            ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
-                           ) = \'FAILED\'',
-                    [$userId]
-                );
-                $ongoingRow = DB::selectOne(
-                    'SELECT COUNT(*) as c FROM "LEAD" l
-                     WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
-                       AND TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) = TRIM(CAST(? AS VARCHAR(50)))
-                       AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
-                            FROM "LEAD_ACT" la
-                            WHERE la."LEADID" = l."LEADID"
-                            ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
-                           ) IN (\'PENDING\', \'FOLLOWUP\', \'FOLLOW UP\', \'DEMO\', \'CONFIRMED\')',
-                    [$userId]
-                );
-
-                $stats[$userId] = [
-                    'totalLead' => (int) ($leadsRow->c ?? $leadsRow->C ?? current((array) $leadsRow) ?? 0),
-                    'totalClosed' => (int) ($closedRow->c ?? $closedRow->C ?? current((array) $closedRow) ?? 0),
-                    'totalFailed' => (int) ($failedRow->c ?? $failedRow->C ?? current((array) $failedRow) ?? 0),
-                    'totalOngoing' => (int) ($ongoingRow->c ?? $ongoingRow->C ?? current((array) $ongoingRow) ?? 0),
-                ];
-            } catch (\Throwable $e) {
-                // If query fails, set zeros
+            if ($userId !== '') {
                 $stats[$userId] = [
                     'totalLead' => 0,
                     'totalClosed' => 0,
@@ -109,6 +57,44 @@ class DealerStatsAggregator
                     'totalOngoing' => 0,
                 ];
             }
+        }
+
+        try {
+            $rows = DB::select(
+                'SELECT
+                    TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) AS UID,
+                    COUNT(*) AS TOTAL_LEAD,
+                    SUM(CASE WHEN ls."LATEST_STATUS" IN (\'PENDING\', \'FOLLOWUP\', \'FOLLOW UP\', \'DEMO\', \'CONFIRMED\') THEN 1 ELSE 0 END) AS TOTAL_ONGOING,
+                    SUM(CASE WHEN ls."LATEST_STATUS" IN (\'COMPLETED\', \'REWARDED\') THEN 1 ELSE 0 END) AS TOTAL_CLOSED,
+                    SUM(CASE WHEN ls."LATEST_STATUS" = \'FAILED\' THEN 1 ELSE 0 END) AS TOTAL_FAILED
+                 FROM "LEAD" l
+                 LEFT JOIN (
+                     SELECT a."LEADID", UPPER(TRIM(a."STATUS")) AS "LATEST_STATUS"
+                     FROM "LEAD_ACT" a
+                     JOIN (
+                         SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
+                         FROM "LEAD_ACT"
+                         GROUP BY "LEADID"
+                     ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
+                 ) ls ON ls."LEADID" = l."LEADID"
+                 WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL AND TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) <> \'\'
+                   AND COALESCE(ls."LATEST_STATUS", \'\') <> \'CANCELLED\'
+                 GROUP BY TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50)))'
+            );
+
+            foreach ($rows as $row) {
+                $uid = trim((string) ($row->UID ?? $row->uid ?? ''));
+                if ($uid !== '' && isset($stats[$uid])) {
+                    $stats[$uid] = [
+                        'totalLead' => (int) ($row->TOTAL_LEAD ?? $row->total_lead ?? 0),
+                        'totalClosed' => (int) ($row->TOTAL_CLOSED ?? $row->total_closed ?? 0),
+                        'totalFailed' => (int) ($row->TOTAL_FAILED ?? $row->total_failed ?? 0),
+                        'totalOngoing' => (int) ($row->TOTAL_ONGOING ?? $row->total_ongoing ?? 0),
+                    ];
+                }
+            }
+        } catch (\Throwable $e) {
+            \Log::error('Bulk dealer stats aggregation failed: '.$e->getMessage());
         }
 
         return $stats;
@@ -127,60 +113,26 @@ class DealerStatsAggregator
         $times = [];
 
         try {
-            // Get all LEAD_ACT records with status transitions
-            $allRows = DB::select(
+            $rows = DB::select(
                 'SELECT
-                    a."LEADID",
-                    a."STATUS",
-                    a."CREATIONDATE",
-                    l."ASSIGNEDTO" AS "assignedTo"
-                 FROM "LEAD_ACT" a
-                 LEFT JOIN "LEAD" l ON l."LEADID" = a."LEADID"
-                 WHERE a."STATUS" IS NOT NULL AND COALESCE(l."ISDELETED", FALSE) = FALSE
-                 ORDER BY a."LEADID", a."CREATIONDATE"'
+                    l."ASSIGNEDTO" AS "assignedTo",
+                    la."LEADID",
+                    MIN(CASE WHEN UPPER(TRIM(la."STATUS")) = \'PENDING\' THEN la."CREATIONDATE" END) AS "PENDING_AT",
+                    MIN(CASE WHEN UPPER(TRIM(la."STATUS")) IN (\'COMPLETED\', \'REWARDED\') THEN la."CREATIONDATE" END) AS "COMPLETED_AT"
+                 FROM "LEAD" l
+                 JOIN "LEAD_ACT" la ON la."LEADID" = l."LEADID"
+                 WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL
+                 GROUP BY l."ASSIGNEDTO", la."LEADID"'
             );
 
-            // Group by lead and extract start/end dates
-            $leadTimings = [];
-
-            foreach ($allRows as $row) {
-                $leadId = (int) ($row->LEADID ?? 0);
-                $status = strtoupper(trim((string) ($row->STATUS ?? '')));
-                $createdAt = $row->CREATIONDATE;
-                $assignedTo = trim((string) ($row->assignedTo ?? ''));
-
-                if ($leadId <= 0 || ! $createdAt || ! $status) {
-                    continue;
-                }
-
-                if (! isset($leadTimings[$leadId])) {
-                    $leadTimings[$leadId] = [
-                        'dealer' => $assignedTo,
-                        'pending_at' => null,
-                        'completed_at' => null,
-                    ];
-                }
-
-                // Capture first PENDING
-                if ($status === 'PENDING' && ! $leadTimings[$leadId]['pending_at']) {
-                    $leadTimings[$leadId]['pending_at'] = $createdAt;
-                }
-
-                // Capture first COMPLETED or REWARDED
-                if (($status === 'COMPLETED' || $status === 'REWARDED') && ! $leadTimings[$leadId]['completed_at']) {
-                    $leadTimings[$leadId]['completed_at'] = $createdAt;
-                }
-            }
-
-            // Calculate durations per dealer
             $dealerDurations = [];
 
-            foreach ($leadTimings as $leadId => $timing) {
-                $dealer = trim((string) ($timing['dealer'] ?? ''));
-                $pendingAt = $timing['pending_at'];
-                $completedAt = $timing['completed_at'];
+            foreach ($rows as $row) {
+                $dealer = trim((string) ($row->assignedTo ?? $row->ASSIGNEDTO ?? ''));
+                $pendingAt = $row->PENDING_AT ?? $row->pending_at ?? null;
+                $completedAt = $row->COMPLETED_AT ?? $row->completed_at ?? null;
 
-                if (! $dealer || ! $pendingAt || ! $completedAt) {
+                if ($dealer === '' || ! $pendingAt || ! $completedAt) {
                     continue;
                 }
 
@@ -203,12 +155,10 @@ class DealerStatsAggregator
             // Calculate averages per dealer
             foreach ($dealerDurations as $dealer => $durations) {
                 if (! empty($durations)) {
-                    $avgSeconds = (int) round(array_sum($durations) / count($durations));
-                    $times[$dealer] = $avgSeconds;
+                    $times[$dealer] = (int) round(array_sum($durations) / count($durations));
                 }
             }
         } catch (\Throwable $e) {
-            // Return empty if query fails
             \Log::error('Closing time calculation failed: '.$e->getMessage());
         }
 

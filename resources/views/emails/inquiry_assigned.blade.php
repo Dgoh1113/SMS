@@ -26,7 +26,7 @@
             <p>A new inquiry has been assigned to you.</p>
             <div class="detail"><strong>Inquiry ID:</strong> <span class="inquiry-id">#{{ $inquiryId }}</span></div>
             <div class="detail"><strong>Company:</strong> {{ $companyName }}</div>
-            <div class="detail"><strong>Contact:</strong> {{ $contactName }}</div>
+            <div class="detail"><strong>Contact Name:</strong> {{ $contactName }}</div>
             <p>
                 <a href="{{ $viewInquiryUrl }}" class="btn">View inquiry</a>
             </p>

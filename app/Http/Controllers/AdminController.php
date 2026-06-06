@@ -375,53 +375,21 @@ class AdminController extends Controller
         $avgClosingTime = '-';
 
         try {
-            // Get all lead activity records
-            $allRows = DB::select(
+            $rows = DB::select(
                 'SELECT
-                    a."LEADID",
-                    a."STATUS",
-                    a."CREATIONDATE"
-                 FROM "LEAD_ACT" a
-                 WHERE a."STATUS" IS NOT NULL
-                 ORDER BY a."LEADID", a."CREATIONDATE"'
+                    la."LEADID",
+                    MIN(CASE WHEN UPPER(TRIM(la."STATUS")) = \'PENDING\' THEN la."CREATIONDATE" END) AS "PENDING_AT",
+                    MIN(CASE WHEN UPPER(TRIM(la."STATUS")) IN (\'COMPLETED\', \'REWARDED\') THEN la."CREATIONDATE" END) AS "COMPLETED_AT"
+                 FROM "LEAD_ACT" la
+                 GROUP BY la."LEADID"'
             );
 
-            $leadTimings = [];
-
-            foreach ($allRows as $row) {
-                $leadId = (int) ($row->LEADID ?? 0);
-                $status = strtoupper(trim((string) ($row->STATUS ?? '')));
-                $createdAt = $row->CREATIONDATE;
-
-                if ($leadId <= 0 || ! $createdAt || ! $status) {
-                    continue;
-                }
-
-                if (! isset($leadTimings[$leadId])) {
-                    $leadTimings[$leadId] = [
-                        'pending_at' => null,
-                        'completed_at' => null,
-                    ];
-                }
-
-                // Capture first PENDING
-                if ($status === 'PENDING' && ! $leadTimings[$leadId]['pending_at']) {
-                    $leadTimings[$leadId]['pending_at'] = $createdAt;
-                }
-
-                // Capture first COMPLETED or REWARDED
-                if (($status === 'COMPLETED' || $status === 'REWARDED') && ! $leadTimings[$leadId]['completed_at']) {
-                    $leadTimings[$leadId]['completed_at'] = $createdAt;
-                }
-            }
-
-            // Calculate average across all leads
             $total = 0;
             $count = 0;
 
-            foreach ($leadTimings as $timing) {
-                $pendingAt = $timing['pending_at'];
-                $completedAt = $timing['completed_at'];
+            foreach ($rows as $row) {
+                $pendingAt = $row->PENDING_AT ?? $row->pending_at ?? null;
+                $completedAt = $row->COMPLETED_AT ?? $row->completed_at ?? null;
 
                 if (! $pendingAt || ! $completedAt) {
                     continue;
@@ -470,6 +438,95 @@ class AdminController extends Controller
 
             return abs($change) < 0.05 ? 0.0 : $change;
         };
+
+        // Pre-fetch activity transitions (past 180 days or start of the year, whichever is earlier)
+        $activityMap = [];
+        try {
+            $queryStart = min(Carbon::now()->startOfYear(), Carbon::today()->subDays(180))->format('Y-m-d 00:00:00');
+            $queryEnd = Carbon::now()->format('Y-m-d 23:59:59');
+
+            $actRows = DB::select(
+                'SELECT 
+                    CAST(la."CREATIONDATE" AS DATE) AS "ACT_DATE", 
+                    UPPER(TRIM(la."STATUS")) AS "ACT_STATUS", 
+                    COUNT(*) as "CNT" 
+                 FROM "LEAD_ACT" la
+                 WHERE la."CREATIONDATE" >= ? AND la."CREATIONDATE" <= ? 
+                   AND (UPPER(TRIM(la."STATUS")) = \'COMPLETED\' OR UPPER(TRIM(la."STATUS")) = \'FOLLOWUP\' OR UPPER(TRIM(la."STATUS")) = \'FOLLOW UP\')
+                 GROUP BY CAST(la."CREATIONDATE" AS DATE), UPPER(TRIM(la."STATUS"))',
+                [$queryStart, $queryEnd]
+            );
+
+            foreach ($actRows as $row) {
+                $actDate = $row->ACT_DATE ?? $row->act_date ?? null;
+                $actStatus = $row->ACT_STATUS ?? $row->act_status ?? '';
+                $cnt = (int) ($row->CNT ?? $row->cnt ?? 0);
+
+                if (! $actDate) {
+                    continue;
+                }
+
+                $dateStr = Carbon::parse($actDate)->format('Y-m-d');
+                $statusUpper = strtoupper(trim($actStatus));
+
+                if ($statusUpper === 'COMPLETED') {
+                    $key = 'COMPLETED';
+                } elseif ($statusUpper === 'FOLLOWUP' || $statusUpper === 'FOLLOW UP') {
+                    $key = 'FOLLOWUP';
+                } else {
+                    continue;
+                }
+
+                if (! isset($activityMap[$dateStr])) {
+                    $activityMap[$dateStr] = ['COMPLETED' => 0, 'FOLLOWUP' => 0];
+                }
+                $activityMap[$dateStr][$key] += $cnt;
+            }
+        } catch (\Throwable $e) {
+            \Log::error('Failed to pre-fetch dashboard activity map: '.$e->getMessage());
+        }
+
+        // Pre-fetch lead creation map (past 180 days)
+        $leadMap = [];
+        try {
+            $leadQueryStart = Carbon::today()->subDays(180)->format('Y-m-d 00:00:00');
+
+            $leadRows = DB::select(
+                'SELECT 
+                    CAST(l."CREATEDAT" AS DATE) AS "CREATED_DATE",
+                    COALESCE(ls."LATEST_STATUS", \'\') AS "LATEST_STATUS",
+                    COUNT(*) AS "CNT"
+                 FROM "LEAD" l
+                 LEFT JOIN (
+                     SELECT a."LEADID", UPPER(TRIM(a."STATUS")) AS "LATEST_STATUS"
+                     FROM "LEAD_ACT" a
+                     JOIN (
+                         SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
+                         FROM "LEAD_ACT"
+                         GROUP BY "LEADID"
+                     ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
+                 ) ls ON ls."LEADID" = l."LEADID"
+                 WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."CREATEDAT" >= ?
+                 GROUP BY CAST(l."CREATEDAT" AS DATE), COALESCE(ls."LATEST_STATUS", \'\')',
+                [$leadQueryStart]
+            );
+
+            foreach ($leadRows as $row) {
+                $createdDate = $row->CREATED_DATE ?? $row->created_date ?? null;
+                $latestStatus = strtoupper(trim((string) ($row->LATEST_STATUS ?? $row->latest_status ?? '')));
+                $cnt = (int) ($row->CNT ?? $row->cnt ?? 0);
+
+                if (! $createdDate || $latestStatus === 'CANCELLED') {
+                    continue;
+                }
+
+                $dateStr = Carbon::parse($createdDate)->format('Y-m-d');
+                $leadMap[$dateStr] = ($leadMap[$dateStr] ?? 0) + $cnt;
+            }
+        } catch (\Throwable $e) {
+            \Log::error('Failed to pre-fetch dashboard lead map: '.$e->getMessage());
+        }
+
         try {
             $countActiveSnapshot = function (string $cutoff) {
                 $row = DB::selectOne(
@@ -495,54 +552,28 @@ class AdminController extends Controller
                 return (int) ($row->c ?? $row->C ?? 0);
             };
 
-            $r = DB::selectOne(
-                'SELECT COUNT(*) AS c FROM "LEAD" l WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
-                 AND COALESCE((SELECT FIRST 1 UPPER(TRIM(la."STATUS")) FROM "LEAD_ACT" la WHERE la."LEADID" = l."LEADID" ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC), \'\') <> \'CANCELLED\'',
-                [$startThisWeek->format('Y-m-d H:i:s'), Carbon::now()->format('Y-m-d 23:59:59')]
-            );
-            $leadsThisWeek = (int) ($r->c ?? $r->C ?? 0);
-            $r = DB::selectOne(
-                'SELECT COUNT(*) AS c FROM "LEAD" l WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
-                 AND COALESCE((SELECT FIRST 1 UPPER(TRIM(la."STATUS")) FROM "LEAD_ACT" la WHERE la."LEADID" = l."LEADID" ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC), \'\') <> \'CANCELLED\'',
-                [$startLastWeek->format('Y-m-d H:i:s'), $endLastWeek->format('Y-m-d 23:59:59')]
-            );
-            $leadsLastWeek = (int) ($r->c ?? $r->C ?? 0);
+            // In-memory WoW metric generation
+            $temp = $startThisWeek->copy();
+            $today = Carbon::today();
+            while ($temp->lte($today)) {
+                $dStr = $temp->format('Y-m-d');
+                $leadsThisWeek += $leadMap[$dStr] ?? 0;
+                $closedThisWeek += $activityMap[$dStr]['COMPLETED'] ?? 0;
+                $referralThisWeek += $activityMap[$dStr]['FOLLOWUP'] ?? 0;
+                $temp->addDay();
+            }
 
-            $r = DB::selectOne(
-                'SELECT COUNT(*) AS c FROM "LEAD_ACT" WHERE UPPER(TRIM("STATUS")) = \'COMPLETED\' AND "CREATIONDATE" >= ? AND "CREATIONDATE" <= ?',
-                [$startThisWeek->format('Y-m-d H:i:s'), Carbon::now()->format('Y-m-d 23:59:59')]
-            );
-            $closedThisWeek = (int) ($r->c ?? $r->C ?? 0);
-            $r = DB::selectOne(
-                'SELECT COUNT(*) AS c FROM "LEAD_ACT" WHERE UPPER(TRIM("STATUS")) = \'COMPLETED\' AND "CREATIONDATE" >= ? AND "CREATIONDATE" <= ?',
-                [$startLastWeek->format('Y-m-d H:i:s'), $endLastWeek->format('Y-m-d 23:59:59')]
-            );
-            $closedLastWeek = (int) ($r->c ?? $r->C ?? 0);
+            $temp = $startLastWeek->copy();
+            while ($temp->lte($endLastWeek)) {
+                $dStr = $temp->format('Y-m-d');
+                $leadsLastWeek += $leadMap[$dStr] ?? 0;
+                $closedLastWeek += $activityMap[$dStr]['COMPLETED'] ?? 0;
+                $referralLastWeek += $activityMap[$dStr]['FOLLOWUP'] ?? 0;
+                $temp->addDay();
+            }
 
-            $r = DB::selectOne(
-                'SELECT COUNT(*) AS c FROM "LEAD" l WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."CREATEDAT" <= ?
-                 AND COALESCE((SELECT FIRST 1 UPPER(TRIM(la."STATUS")) FROM "LEAD_ACT" la WHERE la."LEADID" = l."LEADID" ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC), \'\') <> \'CANCELLED\'',
-                [$endLastWeek->format('Y-m-d H:i:s')]
-            );
-            $leadsUntilLastWeek = (int) ($r->c ?? $r->C ?? 0);
-
-            $r = DB::selectOne(
-                'SELECT COUNT(*) AS c FROM "LEAD_ACT" WHERE UPPER(TRIM("STATUS")) = \'COMPLETED\' AND "CREATIONDATE" <= ?',
-                [$endLastWeek->format('Y-m-d H:i:s')]
-            );
-            $closedUntilLastWeek = (int) ($r->c ?? $r->C ?? 0);
-
-            $r = DB::selectOne(
-                'SELECT COUNT(*) AS c FROM "LEAD_ACT" WHERE "STATUS" = \'FollowUp\' AND "CREATIONDATE" >= ? AND "CREATIONDATE" <= ?',
-                [$startThisWeek->format('Y-m-d H:i:s'), Carbon::now()->format('Y-m-d 23:59:59')]
-            );
-            $referralThisWeek = (int) ($r->c ?? $r->C ?? 0);
-            $r = DB::selectOne(
-                'SELECT COUNT(*) AS c FROM "LEAD_ACT" WHERE "STATUS" = \'FollowUp\' AND "CREATIONDATE" >= ? AND "CREATIONDATE" <= ?',
-                [$startLastWeek->format('Y-m-d H:i:s'), $endLastWeek->format('Y-m-d 23:59:59')]
-            );
-            $referralLastWeek = (int) ($r->c ?? $r->C ?? 0);
-
+            $leadsUntilLastWeek = $totalLeads - $leadsThisWeek;
+            $closedUntilLastWeek = $totalClosed - $closedThisWeek;
             $activeThisWeek = $activeInquiries;
             $activeLastWeek = $countActiveSnapshot($endLastWeek->format('Y-m-d H:i:s'));
         } catch (\Throwable $e) {
@@ -562,17 +593,11 @@ class AdminController extends Controller
 
         $dealerStats = [];
         try {
-            // Top Active Dealers (USERS + LEAD) per requested logic:
-            // Leads: COUNT(*) from LEAD where assignedTo = dealer
-            // Closed: leads whose latest LEAD_ACT status is COMPLETED or REWARDED
-            // Conversion: Closed / Leads
-            // Pull dealer list first so we can build a readable company/alias label.
-            // Older schemas may not expose every profile column; still return rows.
             $topDealersRaw = [];
             try {
                 $topDealersRaw = DB::select(
                     'SELECT u."USERID", u."EMAIL", u."COMPANY" AS "COMPANY", u."ALIAS" AS "ALIAS", u."POSTCODE" AS "POSTCODE", u."CITY" AS "CITY"
-                FROM "USERS" u
+                     FROM "USERS" u
                      WHERE UPPER(TRIM(u."SYSTEMROLE")) LIKE \'%DEALER%\''
                 );
             } catch (\Throwable $e) {
@@ -591,23 +616,18 @@ class AdminController extends Controller
                 }
             }
 
-            // PERFORMANCE: Get dealer statistics with proper dealer ID extraction
             $dealerIds = array_map(fn ($d) => (string) ($d->USERID ?? ''), $topDealersRaw);
             $allStats = DealerStatsAggregator::getAllDealerStats($dealerIds);
             $allClosingTimes = DealerStatsAggregator::getAllDealerClosingTimes($dealerIds);
 
             $dealerStats = collect($topDealersRaw)->map(function ($d) use ($allStats, $allClosingTimes) {
                 $userId = (string) ($d->USERID ?? '');
-
-                // Get pre-fetched stats for this dealer (eliminates N+1)
                 $stats = $allStats[$userId] ?? ['totalLead' => 0, 'totalClosed' => 0, 'totalFailed' => 0, 'totalOngoing' => 0];
                 $leads = $stats['totalLead'] ?? 0;
                 $closed = $stats['totalClosed'] ?? 0;
                 $failed = $stats['totalFailed'] ?? 0;
                 $ongoing = $stats['totalOngoing'] ?? 0;
                 $conversion = $leads > 0 ? ($closed / $leads) : 0;
-
-                // Get pre-fetched closing time (eliminates N+1)
                 $avgClosingSeconds = $allClosingTimes[$userId] ?? null;
 
                 $company = trim((string) ($d->COMPANY ?? ''));
@@ -619,7 +639,6 @@ class AdminController extends Controller
                 }
 
                 $avgClosingDisplay = DealerStatsAggregator::formatClosingTime($avgClosingSeconds);
-
                 $postcode = trim((string) ($d->POSTCODE ?? ''));
                 $city = trim((string) ($d->CITY ?? ''));
                 $location = trim(trim($postcode.' '.$city));
@@ -663,33 +682,25 @@ class AdminController extends Controller
                 ->values()
                 ->all();
         } catch (\Throwable $e) {
-            // Schema may differ; keep empty
+            \Log::warning('Dealer mapping generation failed: '.$e->getMessage());
         }
 
-        // Closed cases (LEAD_ACT STATUS = 'Completed') - week/month/year
+        // In-memory weekly chart labels and counts
         $chartLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-        $chartData = [12, 19, 15, 22, 18, 24, 20];
+        $chartData = [0, 0, 0, 0, 0, 0, 0];
         $referralWeekData = [0, 0, 0, 0, 0, 0, 0];
         try {
-            $startOfWeek = now()->startOfWeek(\Carbon\Carbon::MONDAY);
+            $startOfWeek = now()->startOfWeek(Carbon::MONDAY);
             for ($i = 0; $i < 7; $i++) {
-                $day = $startOfWeek->copy()->addDays($i)->format('Y-m-d');
-                $r = DB::selectOne(
-                    'SELECT COUNT(*) as c FROM "LEAD_ACT" WHERE CAST("CREATIONDATE" AS DATE) = CAST(? AS DATE) AND UPPER(TRIM("STATUS")) = \'COMPLETED\'',
-                    [$day]
-                );
-                $chartData[$i] = (int) ($r->c ?? $r->C ?? current((array) $r) ?? 0);
-
-                $ro = DB::selectOne(
-                    'SELECT COUNT(*) as c FROM "LEAD_ACT" WHERE CAST("CREATIONDATE" AS DATE) = CAST(? AS DATE) AND "STATUS" = \'FollowUp\'',
-                    [$day]
-                );
-                $referralWeekData[$i] = (int) ($ro->c ?? $ro->C ?? current((array) $ro) ?? 0);
+                $dayStr = $startOfWeek->copy()->addDays($i)->format('Y-m-d');
+                $chartData[$i] = $activityMap[$dayStr]['COMPLETED'] ?? 0;
+                $referralWeekData[$i] = $activityMap[$dayStr]['FOLLOWUP'] ?? 0;
             }
         } catch (\Throwable $e) {
-            // keep default chartData
+            \Log::error('In-memory weekly chart population failed: '.$e->getMessage());
         }
 
+        // In-memory monthly chart labels and counts
         $chartMonthLabels = [];
         $chartMonthData = [];
         $referralMonthData = [];
@@ -698,51 +709,33 @@ class AdminController extends Controller
             $daysInMonth = $start->daysInMonth;
             for ($i = 1; $i <= $daysInMonth; $i++) {
                 $chartMonthLabels[] = (string) $i;
-                $day = $start->copy()->day($i)->format('Y-m-d');
-                $r = DB::selectOne(
-                    'SELECT COUNT(*) as c FROM "LEAD_ACT" WHERE CAST("CREATIONDATE" AS DATE) = CAST(? AS DATE) AND UPPER(TRIM("STATUS")) = \'COMPLETED\'',
-                    [$day]
-                );
-                $chartMonthData[] = (int) ($r->c ?? $r->C ?? current((array) $r) ?? 0);
-
-                $ro = DB::selectOne(
-                    'SELECT COUNT(*) as c FROM "LEAD_ACT" WHERE CAST("CREATIONDATE" AS DATE) = CAST(? AS DATE) AND "STATUS" = \'FollowUp\'',
-                    [$day]
-                );
-                $referralMonthData[] = (int) ($ro->c ?? $ro->C ?? current((array) $ro) ?? 0);
+                $dayStr = $start->copy()->day($i)->format('Y-m-d');
+                $chartMonthData[] = $activityMap[$dayStr]['COMPLETED'] ?? 0;
+                $referralMonthData[] = $activityMap[$dayStr]['FOLLOWUP'] ?? 0;
             }
         } catch (\Throwable $e) {
-            $chartMonthLabels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '30'];
-            $chartMonthData = array_slice([12, 19, 15, 22, 18, 24, 20, 16, 21, 13, 17, 23, 19, 14, 18, 24, 20, 15, 22, 18, 24, 20, 16, 21, 13, 17, 23, 19, 14, 18], 0, count($chartMonthLabels));
-            $referralMonthData = array_fill(0, count($chartMonthLabels), 0);
+            \Log::error('In-memory monthly chart population failed: '.$e->getMessage());
         }
 
+        // In-memory yearly chart labels and counts
         $chartYearLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         $chartYearData = array_fill(0, 12, 0);
         $referralYearData = array_fill(0, 12, 0);
         try {
             $yearStart = now()->startOfYear();
-            for ($m = 0; $m < 12; $m++) {
-                $monthStart = $yearStart->copy()->addMonths($m);
-                $monthEnd = $monthStart->copy()->endOfMonth();
-                $r = DB::selectOne(
-                    'SELECT COUNT(*) as c FROM "LEAD_ACT" WHERE "CREATIONDATE" >= ? AND "CREATIONDATE" <= ? AND UPPER(TRIM("STATUS")) = \'COMPLETED\'',
-                    [$monthStart->format('Y-m-d 00:00:00'), $monthEnd->format('Y-m-d 23:59:59')]
-                );
-                $chartYearData[$m] = (int) ($r->c ?? $r->C ?? current((array) $r) ?? 0);
-
-                $ro = DB::selectOne(
-                    'SELECT COUNT(*) as c FROM "LEAD_ACT" WHERE "CREATIONDATE" >= ? AND "CREATIONDATE" <= ? AND "STATUS" = \'FollowUp\'',
-                    [$monthStart->format('Y-m-d 00:00:00'), $monthEnd->format('Y-m-d 23:59:59')]
-                );
-                $referralYearData[$m] = (int) ($ro->c ?? $ro->C ?? current((array) $ro) ?? 0);
+            foreach ($activityMap as $dateStr => $counts) {
+                $date = Carbon::parse($dateStr);
+                if ($date->year === $yearStart->year) {
+                    $monthIdx = $date->month - 1; // 0-11
+                    $chartYearData[$monthIdx] += $counts['COMPLETED'] ?? 0;
+                    $referralYearData[$monthIdx] += $counts['FOLLOWUP'] ?? 0;
+                }
             }
         } catch (\Throwable $e) {
-            $chartYearData = [120, 98, 110, 130, 90, 105, 125, 115, 100, 140, 135, 150];
-            $referralYearData = array_fill(0, 12, 0);
+            \Log::error('In-memory yearly chart population failed: '.$e->getMessage());
         }
 
-        // Build 30/60/90-day range data for dashboard charts
+        // In-memory 30/60/90-day range calculations
         $dashboardClosedCaseRanges = [];
         $dashboardReferralRanges = [];
         $dashboardReferralRangeChanges = [];
@@ -755,87 +748,70 @@ class AdminController extends Controller
             $referralData = [];
             $tooltipTitles = [];
 
-            try {
-                $rangeEnd = Carbon::today();
-                $rangeStart = $rangeEnd->copy()->subDays($rangeDays - 1);
+            $rangeEnd = Carbon::today();
+            $rangeStart = $rangeEnd->copy()->subDays($rangeDays - 1);
 
-                for ($d = 0; $d < $rangeDays; $d++) {
-                    $day = $rangeStart->copy()->addDays($d);
-                    $dayStr = $day->format('Y-m-d');
-                    $labels[] = $day->format('d M');
-                    $tooltipTitles[] = $day->format('d/m/Y');
+            for ($d = 0; $d < $rangeDays; $d++) {
+                $day = $rangeStart->copy()->addDays($d);
+                $dayStr = $day->format('Y-m-d');
+                $labels[] = $day->format('d M');
+                $tooltipTitles[] = $day->format('d/m/Y');
 
-                    $r = DB::selectOne(
-                        'SELECT COUNT(*) as c FROM "LEAD_ACT" WHERE CAST("CREATIONDATE" AS DATE) = CAST(? AS DATE) AND UPPER(TRIM("STATUS")) = \'COMPLETED\'',
-                        [$dayStr]
-                    );
-                    $closedData[] = (int) ($r->c ?? $r->C ?? 0);
-
-                    $ro = DB::selectOne(
-                        'SELECT COUNT(*) as c FROM "LEAD_ACT" WHERE CAST("CREATIONDATE" AS DATE) = CAST(? AS DATE) AND "STATUS" = \'FollowUp\'',
-                        [$dayStr]
-                    );
-                    $referralData[] = (int) ($ro->c ?? $ro->C ?? 0);
-                }
-
-                // Previous period for comparison
-                $prevEnd = $rangeStart->copy()->subDay();
-                $prevStart = $prevEnd->copy()->subDays($rangeDays - 1);
-
-                $rCur = DB::selectOne(
-                    'SELECT COUNT(*) as c FROM "LEAD_ACT" WHERE UPPER(TRIM("STATUS")) = \'COMPLETED\' AND "CREATIONDATE" >= ? AND "CREATIONDATE" <= ?',
-                    [$rangeStart->format('Y-m-d 00:00:00'), $rangeEnd->format('Y-m-d 23:59:59')]
-                );
-                $rPrev = DB::selectOne(
-                    'SELECT COUNT(*) as c FROM "LEAD_ACT" WHERE UPPER(TRIM("STATUS")) = \'COMPLETED\' AND "CREATIONDATE" >= ? AND "CREATIONDATE" <= ?',
-                    [$prevStart->format('Y-m-d 00:00:00'), $prevEnd->format('Y-m-d 23:59:59')]
-                );
-                $curClosed = (int) ($rCur->c ?? $rCur->C ?? 0);
-                $prevClosed = (int) ($rPrev->c ?? $rPrev->C ?? 0);
-
-                $refCur = DB::selectOne(
-                    'SELECT COUNT(*) as c FROM "LEAD_ACT" WHERE "STATUS" = \'FollowUp\' AND "CREATIONDATE" >= ? AND "CREATIONDATE" <= ?',
-                    [$rangeStart->format('Y-m-d 00:00:00'), $rangeEnd->format('Y-m-d 23:59:59')]
-                );
-                $refPrev = DB::selectOne(
-                    'SELECT COUNT(*) as c FROM "LEAD_ACT" WHERE "STATUS" = \'FollowUp\' AND "CREATIONDATE" >= ? AND "CREATIONDATE" <= ?',
-                    [$prevStart->format('Y-m-d 00:00:00'), $prevEnd->format('Y-m-d 23:59:59')]
-                );
-                $curRef = (int) ($refCur->c ?? $refCur->C ?? 0);
-                $prevRef = (int) ($refPrev->c ?? $refPrev->C ?? 0);
-
-                $dashboardReferralRangeChanges[$rangeKey] = $percentChange($curRef, $prevRef);
-
-                // Metric range changes (leads, closed, active, conversion)
-                $leadsCur = DB::selectOne(
-                    'SELECT COUNT(*) as c FROM "LEAD" l WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
-                     AND COALESCE((SELECT FIRST 1 UPPER(TRIM(la."STATUS")) FROM "LEAD_ACT" la WHERE la."LEADID" = l."LEADID" ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC), \'\') <> \'CANCELLED\'',
-                    [$rangeStart->format('Y-m-d 00:00:00'), $rangeEnd->format('Y-m-d 23:59:59')]
-                );
-                $leadsPrev = DB::selectOne(
-                    'SELECT COUNT(*) as c FROM "LEAD" l WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
-                     AND COALESCE((SELECT FIRST 1 UPPER(TRIM(la."STATUS")) FROM "LEAD_ACT" la WHERE la."LEADID" = l."LEADID" ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC), \'\') <> \'CANCELLED\'',
-                    [$prevStart->format('Y-m-d 00:00:00'), $prevEnd->format('Y-m-d 23:59:59')]
-                );
-                $curLeadsCount = (int) ($leadsCur->c ?? $leadsCur->C ?? 0);
-                $prevLeadsCount = (int) ($leadsPrev->c ?? $leadsPrev->C ?? 0);
-
-                $dashboardMetricRangeChanges[$rangeKey] = [
-                    'leads' => $percentChange($curLeadsCount, $prevLeadsCount),
-                    'closed' => $percentChange($curClosed, $prevClosed),
-                    'active' => $percentChange($activeInquiries, max($activeInquiries - ($curLeadsCount - $prevLeadsCount), 0)),
-                    'conversion' => $totalLeads > 0
-                        ? round(($curClosed / max($curLeadsCount, 1)) * 100 - ($prevClosed / max($prevLeadsCount, 1)) * 100, 1)
-                        : 0.0,
-                ];
-            } catch (\Throwable $e) {
-                $labels = array_fill(0, $rangeDays, '');
-                $closedData = array_fill(0, $rangeDays, 0);
-                $referralData = array_fill(0, $rangeDays, 0);
-                $tooltipTitles = $labels;
-                $dashboardReferralRangeChanges[$rangeKey] = 0;
-                $dashboardMetricRangeChanges[$rangeKey] = ['leads' => 0, 'closed' => 0, 'active' => 0, 'conversion' => 0];
+                $closedData[] = $activityMap[$dayStr]['COMPLETED'] ?? 0;
+                $referralData[] = $activityMap[$dayStr]['FOLLOWUP'] ?? 0;
             }
+
+            // Previous period for comparison
+            $prevEnd = $rangeStart->copy()->subDay();
+            $prevStart = $prevEnd->copy()->subDays($rangeDays - 1);
+
+            // Sum current period
+            $curClosed = 0;
+            $curRef = 0;
+            $temp = $rangeStart->copy();
+            while ($temp->lte($rangeEnd)) {
+                $dStr = $temp->format('Y-m-d');
+                $curClosed += $activityMap[$dStr]['COMPLETED'] ?? 0;
+                $curRef += $activityMap[$dStr]['FOLLOWUP'] ?? 0;
+                $temp->addDay();
+            }
+
+            // Sum previous period
+            $prevClosed = 0;
+            $prevRef = 0;
+            $temp = $prevStart->copy();
+            while ($temp->lte($prevEnd)) {
+                $dStr = $temp->format('Y-m-d');
+                $prevClosed += $activityMap[$dStr]['COMPLETED'] ?? 0;
+                $prevRef += $activityMap[$dStr]['FOLLOWUP'] ?? 0;
+                $temp->addDay();
+            }
+
+            $dashboardReferralRangeChanges[$rangeKey] = $percentChange($curRef, $prevRef);
+
+            // Sum leads in current/previous range
+            $curLeadsCount = 0;
+            $temp = $rangeStart->copy();
+            while ($temp->lte($rangeEnd)) {
+                $curLeadsCount += $leadMap[$temp->format('Y-m-d')] ?? 0;
+                $temp->addDay();
+            }
+
+            $prevLeadsCount = 0;
+            $temp = $prevStart->copy();
+            while ($temp->lte($prevEnd)) {
+                $prevLeadsCount += $leadMap[$temp->format('Y-m-d')] ?? 0;
+                $temp->addDay();
+            }
+
+            $dashboardMetricRangeChanges[$rangeKey] = [
+                'leads' => $percentChange($curLeadsCount, $prevLeadsCount),
+                'closed' => $percentChange($curClosed, $prevClosed),
+                'active' => $percentChange($activeInquiries, max($activeInquiries - ($curLeadsCount - $prevLeadsCount), 0)),
+                'conversion' => $totalLeads > 0
+                    ? round(($curClosed / max($curLeadsCount, 1)) * 100 - ($prevClosed / max($prevLeadsCount, 1)) * 100, 1)
+                    : 0.0,
+            ];
 
             $dashboardClosedCaseRanges[$rangeKey] = [
                 'labels' => $labels,
