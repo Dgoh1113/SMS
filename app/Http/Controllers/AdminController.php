@@ -1206,6 +1206,13 @@ class AdminController extends Controller
         $allPerPage = 10;
         $allTotal = count($allRows);
 
+        $duplicateLeadIds = [];
+        foreach ($duplicateGroups as $group) {
+            foreach ($group['leads'] as $l) {
+                $duplicateLeadIds[(int) $l->LEADID] = true;
+            }
+        }
+
         return view('admin.inquiries', [
             'unassigned' => $unassigned,
             'assigned' => $assignedForView,
@@ -1223,6 +1230,7 @@ class AdminController extends Controller
             'currentPage' => 'inquiries',
             'focusLeadId' => $focusLeadId,
             'duplicateGroups' => $duplicateGroups,
+            'duplicateLeadIds' => $duplicateLeadIds,
         ]);
     }
 
@@ -1354,9 +1362,12 @@ class AdminController extends Controller
         $offset = ($page - 1) * $perPage;
         $assignedSlice = array_slice($assigned, $offset, $perPage);
 
+        $duplicateLeadIds = $this->getDuplicateLeadIds();
+
         $html = view('admin.partials.inquiries_assigned_rows', [
             'assigned' => $assignedSlice,
             'productLabels' => $productLabels,
+            'duplicateLeadIds' => $duplicateLeadIds,
         ])->render();
 
         return response()->json([
@@ -1839,7 +1850,7 @@ class AdminController extends Controller
                 'STATE' => 'nullable|string|max:100',
                 'COUNTRY' => 'nullable|string|max:100',
                 'POSTCODE' => $isMY ? 'required|string|digits:5' : 'nullable|string|max:20',
-                'BUSINESSNATURE' => 'required|string|max:30',
+                'BUSINESSNATURE' => 'required|string|max:50',
                 'USERCOUNT' => 'nullable|integer',
                 'EXISTINGSOFTWARE' => 'required|string|max:40',
                 'DEMOMODE' => 'required|string|in:Zoom,On-site',
@@ -2002,14 +2013,14 @@ class AdminController extends Controller
                 'STATE' => 'nullable|string|max:100',
                 'COUNTRY' => 'nullable|string|max:100',
                 'POSTCODE' => $isMY ? 'required|string|digits:5' : 'nullable|string|max:20',
-                'BUSINESSNATURE' => 'required|string|max:30',
+                'BUSINESSNATURE' => 'required|string|max:50',
                 'USERCOUNT' => 'nullable|integer',
                 'EXISTINGSOFTWARE' => 'required|string|max:40',
                 'DEMOMODE' => 'required|string|in:Zoom,On-site',
                 'product_interested' => 'required|array',
                 'product_interested.*' => 'integer|in:1,2,3,4,5,6,7,8,9,10,11',
-                'DESCRIPTION' => 'nullable|string|max:160',
-                'REFERRALCODE' => 'nullable|string|max:20',
+                'DESCRIPTION' => 'nullable|string|max:4000',
+                'REFERRALCODE' => 'nullable|string|max:100',
                 'INQUIRY_SNAPSHOT_AT' => 'nullable|string|max:50',
             ],
             [
@@ -4732,5 +4743,53 @@ class AdminController extends Controller
             // Log but do not fail the request (assignment already succeeded)
             report($e);
         }
+    }
+
+    private function getDuplicateLeadIds(): array
+    {
+        $duplicateLeadIds = [];
+        try {
+            $dupKeys = DB::select(
+                'SELECT LOWER(TRIM("COMPANYNAME")) AS "comp", LOWER(TRIM("CONTACTNO")) AS "phone", LOWER(TRIM("EMAIL")) AS "email_addr", COUNT(*) AS "cnt"
+                 FROM "LEAD"
+                 WHERE COALESCE("ISDELETED", FALSE) = FALSE
+                 GROUP BY LOWER(TRIM("COMPANYNAME")), LOWER(TRIM("CONTACTNO")), LOWER(TRIM("EMAIL"))
+                 HAVING COUNT(*) > 1'
+            );
+
+            if (! empty($dupKeys)) {
+                foreach ($dupKeys as $k) {
+                    $comp = $k->comp ?? '';
+                    $phone = $k->phone ?? '';
+                    $email_addr = $k->email_addr ?? '';
+
+                    $leads = DB::select(
+                        'SELECT "LEADID", "ASSIGNEDTO" FROM "LEAD"
+                         WHERE COALESCE("ISDELETED", FALSE) = FALSE
+                           AND LOWER(TRIM("COMPANYNAME")) = ?
+                           AND LOWER(TRIM("CONTACTNO")) = ?
+                           AND LOWER(TRIM("EMAIL")) = ?',
+                        [$comp, $phone, $email_addr]
+                    );
+
+                    $hasUnassigned = false;
+                    foreach ($leads as $l) {
+                        if (empty(trim((string) ($l->ASSIGNEDTO ?? '')))) {
+                            $hasUnassigned = true;
+                            break;
+                        }
+                    }
+
+                    if ($hasUnassigned && count($leads) > 1) {
+                        foreach ($leads as $l) {
+                            $duplicateLeadIds[(int) $l->LEADID] = true;
+                        }
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            // ignore
+        }
+        return $duplicateLeadIds;
     }
 }

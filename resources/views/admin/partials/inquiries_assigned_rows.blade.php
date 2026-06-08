@@ -7,7 +7,12 @@
         $ccontact = trim((string) ($r->CONTACTNAME ?? ''));
         $custDisp = $ccompany !== '' && $ccontact !== '' ? ($ccompany . ' - ' . $ccontact) : ($ccompany !== '' ? $ccompany : ($ccontact !== '' ? $ccontact : '-'));
     @endphp
-    <td data-col="customername">{{ $custDisp }}</td>
+    <td data-col="customername">
+        {{ $custDisp }}
+        @if(isset($duplicateLeadIds[(int)$r->LEADID]))
+            <span class="inquiries-pill" style="background:#f59e0b; color:#fff; font-size:9px; padding:1px 4px; border-radius:4px; margin-left:4px; font-weight:700; display:inline-block; vertical-align:middle;" title="Duplicate Inquiry found">DUP</span>
+        @endif
+    </td>
     <td data-col="email">{{ $r->EMAIL ?? '-' }}</td>
     <td data-col="source">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '-') }}</td>
     <td data-col="postcode">{{ $r->POSTCODE ?? '-' }}</td>
