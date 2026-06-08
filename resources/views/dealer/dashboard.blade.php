@@ -3,6 +3,56 @@
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/pages/dealer-dashboard.css') }}?v=20260424-6">
+    <style>
+        .dealer-chart-expand-btn {
+            order: 0;
+            margin-right: auto;
+            border: none;
+            background: transparent;
+            padding: 4px;
+            cursor: pointer;
+            color: #94a3b8;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .dealer-chart-expand-btn:hover {
+            color: #7c3aed;
+            background: rgba(124, 58, 237, 0.08);
+            transform: scale(1.08);
+        }
+        
+        /* Modal Window styling */
+        .dealer-chart-modal-window {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            color: #1e293b;
+        }
+        html.theme-dark .dealer-chart-modal-window {
+            background: #0f172a;
+            border-color: #1e293b;
+            color: #f8fafc;
+        }
+        html.theme-dark .dealer-chart-modal-title {
+            color: #f8fafc !important;
+        }
+        html.theme-dark .dealer-chart-modal-title i {
+            color: #a78bfa !important;
+        }
+        html.theme-dark .dealer-chart-modal-close {
+            color: #94a3b8 !important;
+        }
+        html.theme-dark .dealer-chart-modal-close:hover {
+            color: #ffffff !important;
+        }
+        html.theme-dark .dealer-chart-empty-state {
+            background: #0f172a !important;
+            color: #94a3b8;
+        }
+    </style>
 @endpush
 
 @section('content')
@@ -180,6 +230,9 @@
         <div class="dealer-dashboard-main-right" id="dealerRightPanel">
             <div class="dealer-panel dealer-closed-case-panel dashboard-chart-panel">
                 <div class="dashboard-panel-header">
+                    <button type="button" class="dealer-chart-expand-btn" id="expandClosedCaseChartBtn" title="Expand Chart">
+                        <i class="bi bi-arrows-fullscreen"></i>
+                    </button>
                     <div class="dashboard-panel-title">
                         Closed Case
                         <i class="bi bi-info-circle dashboard-info-icon"
@@ -253,6 +306,34 @@
         </div>
     </div>
 
+</div>
+
+{{-- Expanded Chart Modal --}}
+<div class="dealer-chart-modal" id="dealerChartModal" style="position: fixed; inset: 0; z-index: 1500; display: none; align-items: center; justify-content: center; padding: 24px; background: rgba(15, 23, 42, 0.45); backdrop-filter: blur(4px); transition: opacity 0.25s ease;">
+    <div class="dealer-chart-modal-backdrop" style="position: absolute; inset: 0; cursor: pointer;"></div>
+    <div class="dealer-chart-modal-window" style="position: relative; width: min(800px, 100%); border-radius: 20px; box-shadow: 0 24px 48px rgba(15, 23, 42, 0.18); padding: 24px; display: flex; flex-direction: column; gap: 16px; z-index: 10;">
+        <div class="dealer-chart-modal-header" style="display: flex; align-items: center; justify-content: space-between;">
+            <div class="dealer-chart-modal-title" style="font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                <i class="bi bi-bar-chart-line-fill" style="color: #7c3aed;"></i>
+                <span>Closed Case Analysis</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="dashboard-chart-tabs" id="modalClosedCaseRangeTabs">
+                    <button type="button" class="dashboard-chart-tab active" data-range="30">30 Days</button>
+                    <button type="button" class="dashboard-chart-tab" data-range="60">60 Days</button>
+                    <button type="button" class="dashboard-chart-tab" data-range="90">90 Days</button>
+                </div>
+                <button type="button" class="dealer-chart-modal-close" style="border: none; background: transparent; font-size: 22px; cursor: pointer; padding: 0 4px; line-height: 1;">&times;</button>
+            </div>
+        </div>
+        <div class="dealer-chart-modal-body" style="height: 380px; position: relative;">
+            <canvas id="modalClosedCaseChart"></canvas>
+            <div class="dealer-chart-empty-state" id="modalClosedCaseEmpty" style="position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; background: inherit;">
+                <span class="dealer-chart-empty-icon" style="font-size: 32px; color: #9ca3af;"><i class="bi bi-bar-chart-line"></i></span>
+                <strong class="dealer-chart-empty-title" style="margin-top: 8px;">No closed cases</strong>
+            </div>
+        </div>
+    </div>
 </div>
 
 @push('scripts')
@@ -595,12 +676,102 @@
         });
     }
 
+    // Modal expand logic
+    var expandBtn = document.getElementById('expandClosedCaseChartBtn');
+    var modal = document.getElementById('dealerChartModal');
+    var modalClose = modal ? modal.querySelector('.dealer-chart-modal-close') : null;
+    var modalBackdrop = modal ? modal.querySelector('.dealer-chart-modal-backdrop') : null;
+    var modalCtx = document.getElementById('modalClosedCaseChart')?.getContext('2d');
+    var modalChart = null;
+
+    function renderModalChart(range) {
+        if (!modalCtx) return;
+        var activeRange = range || activeClosedCaseRange || '30';
+        var theme = getClosedCaseTheme();
+
+        if (modalChart) {
+            modalChart.destroy();
+            modalChart = null;
+        }
+
+        modalChart = new Chart(modalCtx, {
+            type: 'bar',
+            data: {
+                labels: ranges[activeRange].labels,
+                datasets: [{
+                    label: 'Closed',
+                    data: ranges[activeRange].data,
+                    backgroundColor: theme.lineFill,
+                    borderColor: theme.lineBorder,
+                    borderWidth: 1,
+                    borderRadius: 10,
+                    maxBarThickness: 52,
+                    hoverBackgroundColor: theme.lineBorder
+                }]
+            },
+            options: buildClosedCaseChartOptions(activeRange)
+        });
+
+        var isEmpty = !hasClosedCaseData(ranges[activeRange].data);
+        var emptyState = document.getElementById('modalClosedCaseEmpty');
+        if (emptyState) emptyState.style.display = isEmpty ? 'flex' : 'none';
+    }
+
+    function syncModalTabs(range) {
+        var modalTabs = document.getElementById('modalClosedCaseRangeTabs');
+        if (modalTabs) {
+            var buttons = modalTabs.querySelectorAll('.dashboard-chart-tab');
+            buttons.forEach(function(btn) {
+                var isActive = btn.getAttribute('data-range') === range;
+                btn.classList.toggle('active', isActive);
+            });
+        }
+    }
+
+    if (expandBtn && modal) {
+        expandBtn.addEventListener('click', function() {
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            syncModalTabs(activeClosedCaseRange);
+            setTimeout(function() {
+                renderModalChart(activeClosedCaseRange);
+            }, 100);
+        });
+
+        var closeModalFunc = function() {
+            modal.style.display = 'none';
+            document.body.style.overflow = '';
+            if (modalChart) {
+                modalChart.destroy();
+                modalChart = null;
+            }
+        };
+
+        if (modalClose) modalClose.addEventListener('click', closeModalFunc);
+        if (modalBackdrop) modalBackdrop.addEventListener('click', closeModalFunc);
+
+        var modalTabs = document.getElementById('modalClosedCaseRangeTabs');
+        if (modalTabs) {
+            modalTabs.addEventListener('click', function(e) {
+                var btn = e.target.closest('.dashboard-chart-tab');
+                if (!btn) return;
+                var range = btn.getAttribute('data-range');
+                setClosedCaseRange(range);
+                syncModalTabs(range);
+                renderModalChart(range);
+            });
+        }
+    }
+
     if (window.MutationObserver) {
         var themeObserver = new MutationObserver(function(mutations) {
             for (var i = 0; i < mutations.length; i++) {
                 if (mutations[i].type === 'attributes') {
                     applyClosedChartTheme(activeClosedCaseRange);
                     syncClosedCaseEmptyState(activeClosedCaseRange);
+                    if (modalChart) {
+                        renderModalChart(activeClosedCaseRange);
+                    }
                     break;
                 }
             }

@@ -2658,7 +2658,7 @@ textarea.inquiry-form-input {
   flex-wrap: wrap;
   align-self: stretch;
   position: relative;
-  z-index: 950;
+  z-index: 10;
 }
 
 .inquiries-page-wrap > .inquiries-tabs .inquiries-tab {
