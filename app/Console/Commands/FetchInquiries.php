@@ -134,7 +134,11 @@ class FetchInquiries extends Command
                     $companyName = Str::limit($data['CompanyName'] ?? '', 50, '');
                     $contactName = Str::limit($data['ContactName'] ?? '', 100, '');
                     $contactNo = Str::limit($data['ContactNo'] ?? '', 15, '');
-                    $email = Str::limit($data['Email'] ?? '', 50, '');
+                    
+                    $rawEmail = $data['Email'] ?? '';
+                    $emailParts = array_filter(array_map('trim', preg_split('/[\s,;]+/', $rawEmail)));
+                    $firstEmail = !empty($emailParts) ? array_values($emailParts)[0] : '';
+                    $email = Str::limit($firstEmail, 50, '');
                     $city = Str::limit($data['City'] ?? '', 40, '');
                     $postcode = Str::limit($data['Postcode'] ?? '', 5, '');
                     $businessNature = Str::limit($data['BusinessNature'] ?? '', 50, '');

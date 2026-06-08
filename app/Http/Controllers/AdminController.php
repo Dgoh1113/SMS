@@ -1208,8 +1208,12 @@ class AdminController extends Controller
 
         $duplicateLeadIds = [];
         foreach ($duplicateGroups as $group) {
-            foreach ($group['leads'] as $l) {
-                $duplicateLeadIds[(int) $l->LEADID] = true;
+            $groupLeads = $group['leads'];
+            usort($groupLeads, function ($a, $b) {
+                return (int) $a->LEADID <=> (int) $b->LEADID;
+            });
+            for ($i = 1; $i < count($groupLeads); $i++) {
+                $duplicateLeadIds[(int) $groupLeads[$i]->LEADID] = true;
             }
         }
 
@@ -4639,27 +4643,27 @@ class AdminController extends Controller
             $systemName = 'SQL SMS';
         }
 
-        // Support comma-separated emails: send the same setup link to all addresses
-        $emails = array_filter(array_map('trim', explode(',', $emailRaw)), fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL));
+        // Send setup link only to the first email address (supporting space, comma, semicolon delimiters)
+        $emails = array_filter(array_map('trim', preg_split('/[\s,;]+/', $emailRaw)), fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL));
 
         if (empty($emails)) {
             return false;
         }
 
-        foreach ($emails as $singleEmail) {
-            Mail::to($singleEmail)->send(new UserPasskeySetupLink(
-                toEmail: $singleEmail,
-                recipientName: $recipientName,
-                setupUrl: route('passkey.setup.form', ['token' => $token, 'e' => $singleEmail]),
-                systemName: $systemName,
-                subjectLine: 'Set up your SQL SMS passkey',
-                introLine: $introLine ?? 'Your SQL SMS account is ready.',
-                instructionLine: 'Click the link below to start setting up your passkey:',
-                buttonLabel: 'Set up passkey',
-                expiryLine: 'This link will expire in 24 hours.',
-                ignoreLine: ''
-            ));
-        }
+        $singleEmail = array_values($emails)[0];
+
+        Mail::to($singleEmail)->send(new UserPasskeySetupLink(
+            toEmail: $singleEmail,
+            recipientName: $recipientName,
+            setupUrl: route('passkey.setup.form', ['token' => $token, 'e' => $singleEmail]),
+            systemName: $systemName,
+            subjectLine: 'Set up your SQL SMS passkey',
+            introLine: $introLine ?? 'Your SQL SMS account is ready.',
+            instructionLine: 'Click the link below to start setting up your passkey:',
+            buttonLabel: 'Set up passkey',
+            expiryLine: 'This link will expire in 24 hours.',
+            ignoreLine: ''
+        ));
 
         $this->setupLinkStore()->markSetupTokenEmailed($userId);
 
@@ -4781,8 +4785,11 @@ class AdminController extends Controller
                     }
 
                     if ($hasUnassigned && count($leads) > 1) {
-                        foreach ($leads as $l) {
-                            $duplicateLeadIds[(int) $l->LEADID] = true;
+                        usort($leads, function ($a, $b) {
+                            return (int) $a->LEADID <=> (int) $b->LEADID;
+                        });
+                        for ($i = 1; $i < count($leads); $i++) {
+                            $duplicateLeadIds[(int) $leads[$i]->LEADID] = true;
                         }
                     }
                 }

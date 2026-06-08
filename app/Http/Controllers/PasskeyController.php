@@ -478,21 +478,7 @@ class PasskeyController extends Controller
             // Lock the account to the specific email address they clicked from
             $sessionEmail = trim((string) $request->session()->get('user_email', ''));
 
-            $currentUser = DB::selectOne('SELECT "EMAIL" FROM "USERS" WHERE "USERID" = ?', [$userId]);
-            $storedEmail = trim((string) ($currentUser->EMAIL ?? ''));
 
-            if (str_contains($storedEmail, ',')) {
-                // If they have a valid session email, use it. Otherwise fallback to the first stored email.
-                if ($sessionEmail !== '' && filter_var($sessionEmail, FILTER_VALIDATE_EMAIL)) {
-                    $finalEmail = $sessionEmail;
-                } else {
-                    $allEmails = array_filter(array_map('trim', explode(',', $storedEmail)), fn ($e) => filter_var($e, FILTER_VALIDATE_EMAIL));
-                    $finalEmail = ! empty($allEmails) ? reset($allEmails) : $storedEmail;
-                }
-
-                DB::update('UPDATE "USERS" SET "EMAIL" = ? WHERE "USERID" = ?', [$finalEmail, $userId]);
-                $request->session()->put('user_email', $finalEmail);
-            }
 
             DB::update('UPDATE "USERS" SET "LASTLOGIN" = CURRENT_TIMESTAMP WHERE "USERID" = ?', [$userId]);
             $redirect = $this->dashboardPathForRole($request, (string) $request->session()->get('user_role', 'dealer'));

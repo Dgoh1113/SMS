@@ -133,19 +133,18 @@ class SyncDealers extends Command
                         $city = $branches[0]['city'] ?? '';
                     }
 
-                    // Clean and validate email – collect ALL valid emails as comma-separated
-                    $validEmails = [];
+                    // Clean and validate email – take only the first valid email
+                    $email = '';
                     if (! empty($emailRaw)) {
-                        // Split by comma or semicolon
-                        $parts = preg_split('/[,;]/', $emailRaw);
+                        $parts = preg_split('/[\s,;]+/', $emailRaw);
                         foreach ($parts as $part) {
                             $cleaned = trim(filter_var(trim($part), FILTER_SANITIZE_EMAIL));
                             if (filter_var($cleaned, FILTER_VALIDATE_EMAIL)) {
-                                $validEmails[] = $cleaned;
+                                $email = $cleaned;
+                                break;
                             }
                         }
                     }
-                    $email = implode(',', $validEmails);
 
                     // Apply strict Firebird schema column limits to prevent truncation exceptions
                     $code = Str::limit($code, 50, '');
@@ -156,39 +155,23 @@ class SyncDealers extends Command
 
                     // Check if dealer code already exists in ALIAS
                     $existingByCode = DB::selectOne(
-                        'SELECT "USERID", "EMAIL", "LASTLOGIN" FROM "USERS" WHERE UPPER(TRIM("ALIAS")) = UPPER(TRIM(?))',
+                        'SELECT "USERID", "EMAIL" FROM "USERS" WHERE UPPER(TRIM("ALIAS")) = UPPER(TRIM(?))',
                         [$code]
                     );
 
                     if ($existingByCode) {
-                        // Skip EMAIL overwrite if the user has already registered (has logged in)
-                        $hasRegistered = ! empty($existingByCode->LASTLOGIN);
-                        if ($hasRegistered) {
-                            $this->line("<fg=green>Updating existing dealer (by code, keeping registered email): $code</>");
-                            DB::update(
-                                'UPDATE "USERS" SET "COMPANY" = ?, "POSTCODE" = ?, "CITY" = ?, "ISACTIVE" = ? WHERE "USERID" = ?',
-                                [
-                                    $companyName !== '' ? $companyName : null,
-                                    $postcode !== '' ? $postcode : '',
-                                    $city !== '' ? $city : '',
-                                    $isActive,
-                                    $existingByCode->USERID,
-                                ]
-                            );
-                        } else {
-                            $this->line("<fg=green>Updating existing dealer (by code): $code | Email: ".($email !== '' ? $email : 'N/A').'</>');
-                            DB::update(
-                                'UPDATE "USERS" SET "EMAIL" = ?, "COMPANY" = ?, "POSTCODE" = ?, "CITY" = ?, "ISACTIVE" = ? WHERE "USERID" = ?',
-                                [
-                                    $email,
-                                    $companyName !== '' ? $companyName : null,
-                                    $postcode !== '' ? $postcode : '',
-                                    $city !== '' ? $city : '',
-                                    $isActive,
-                                    $existingByCode->USERID,
-                                ]
-                            );
-                        }
+                        $this->line("<fg=green>Updating existing dealer (by code): $code | Email: ".($email !== '' ? $email : 'N/A').'</>');
+                        DB::update(
+                            'UPDATE "USERS" SET "EMAIL" = ?, "COMPANY" = ?, "POSTCODE" = ?, "CITY" = ?, "ISACTIVE" = ? WHERE "USERID" = ?',
+                            [
+                                $email,
+                                $companyName !== '' ? $companyName : null,
+                                $postcode !== '' ? $postcode : '',
+                                $city !== '' ? $city : '',
+                                $isActive,
+                                $existingByCode->USERID,
+                            ]
+                        );
                         $updated++;
                     } else {
                         // Check if user with same email exists (only if email is not a placeholder)
