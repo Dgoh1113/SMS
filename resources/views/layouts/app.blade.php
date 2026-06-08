@@ -438,13 +438,9 @@
                 <h3 class="dashboard-passkey-quick-title" id="profilePasskeyQuickTitle">Manage passkeys</h3>
                 <p class="dashboard-passkey-quick-subtitle">Add a new passkey for a trusted device, and remove old ones when you no longer need them.</p>
                 <div class="dashboard-passkey-quick-actions dashboard-passkey-manage-actions">
-                    <button type="button" class="login-primary-btn" id="profilePasskeyPhoneBtn" style="margin-top: 0;">
+                    <button type="button" class="login-primary-btn" id="profilePasskeyPhoneBtn" style="margin-top: 0; width: 100%;">
                         <i class="bi bi-phone" aria-hidden="true"></i>
-                        <span>Use Phone / Scan QR</span>
-                    </button>
-                    <button type="button" class="login-passkey-btn" id="profilePasskeyDeviceBtn">
-                        <i class="bi bi-laptop" aria-hidden="true"></i>
-                        <span>Register On This Device</span>
+                        <span>Add new passkey on new phone</span>
                     </button>
                 </div>
 
@@ -1210,6 +1206,10 @@
 
         passkeyNicknameBox.hidden = !open;
         passkeyPendingPreference = open ? (preference === 'phone' ? 'phone' : 'device') : null;
+
+        if (passkeyPhoneBtn && passkeyPhoneBtn.parentElement) {
+            passkeyPhoneBtn.parentElement.hidden = open;
+        }
 
         if (!open) {
             if (passkeyNicknameInput) {

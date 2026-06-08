@@ -231,11 +231,7 @@
                         <div style="display: grid; gap: 12px;">
                             <button type="button" class="login-primary-btn" id="register-passkey-phone-btn">
                                 <i class="bi bi-phone" aria-hidden="true"></i>
-                                <span>Use Phone / Scan QR</span>
-                            </button>
-                            <button type="button" class="login-passkey-btn" id="register-passkey-btn">
-                                <i class="bi bi-laptop" aria-hidden="true"></i>
-                                <span>{{ !empty($passkey_setup_required) ? 'Set Up On This Device' : 'Register On This Device' }}</span>
+                                <span>Add new passkey on new phone</span>
                             </button>
                         </div>
                         <p class="login-passkey-note" style="margin-top: 12px;">

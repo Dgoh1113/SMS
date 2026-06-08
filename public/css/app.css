@@ -2492,6 +2492,8 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.dashboard-passkey-quick-actions[hidden],
+.dashboard-passkey-manage-actions[hidden],
 .dashboard-passkey-nickname-box[hidden] {
   display: none !important;
 }
@@ -2551,7 +2553,8 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
 .dashboard-passkey-nickname-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 12px;
+  margin-top: 16px;
 }
 
 .dashboard-passkey-secondary-btn {
@@ -2570,6 +2573,51 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
 .dashboard-passkey-secondary-btn:hover {
   background: #f8faff;
   border-color: #bcc9e3;
+  transform: translateY(-1px);
+}
+
+.dashboard-passkey-nickname-actions .dashboard-passkey-secondary-btn,
+.dashboard-passkey-nickname-actions .login-primary-btn {
+  min-height: 44px;
+  height: 44px;
+  padding: 0 24px;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.dashboard-passkey-nickname-actions .login-primary-btn {
+  width: auto;
+  background: var(--primary);
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 4px 12px rgba(109, 61, 245, 0.25);
+  transition: all 0.2s ease;
+}
+
+.dashboard-passkey-nickname-actions .login-primary-btn:hover {
+  background: var(--primary-dark);
+  box-shadow: 0 6px 16px rgba(109, 61, 245, 0.35);
+  transform: translateY(-1px);
+}
+
+.dashboard-passkey-nickname-actions .dashboard-passkey-secondary-btn {
+  background: #ffffff;
+  color: #4b5563;
+  border: 1px solid #d1d5db;
+  transition: all 0.2s ease;
+}
+
+.dashboard-passkey-nickname-actions .dashboard-passkey-secondary-btn:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+  color: #1f2937;
   transform: translateY(-1px);
 }
 
@@ -8904,6 +8952,18 @@ html.theme-dark .dashboard-passkey-secondary-btn {
 html.theme-dark .dashboard-passkey-secondary-btn:hover {
   background: #172133;
   border-color: #3b4a61;
+}
+
+html.theme-dark .dashboard-passkey-nickname-actions .dashboard-passkey-secondary-btn {
+  background: #10192b;
+  border-color: #2a3447;
+  color: #dce6ff;
+}
+
+html.theme-dark .dashboard-passkey-nickname-actions .dashboard-passkey-secondary-btn:hover {
+  background: #172133;
+  border-color: #3b4a61;
+  color: #ffffff;
 }
 
 html.theme-dark .dashboard-passkey-manage-list-wrap {

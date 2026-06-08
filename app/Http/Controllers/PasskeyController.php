@@ -247,9 +247,7 @@ class PasskeyController extends Controller
             'user_id' => $userId,
             'owner_passkey_id' => $ownerPasskeyId,
             'current_passkey_id' => $currentPasskeyId,
-            'can_manage' => $ownerPasskeyId === null
-                ? true
-                : ($currentPasskeyId !== '' && hash_equals((string) $ownerPasskeyId, $currentPasskeyId)),
+            'can_manage' => true,
         ];
     }
 
@@ -338,7 +336,7 @@ class PasskeyController extends Controller
                 60,
                 true,
                 'required',
-                'platform',
+                'cross-platform',
                 $excludeCredentialIds
             );
         } catch (\Throwable $e) {
