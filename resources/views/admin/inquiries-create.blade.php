@@ -1199,7 +1199,7 @@
                     </div>
                     <div class="inquiry-form-grid">
                         <div class="inquiry-form-label full">
-                            <label for="address1Input" class="inquiry-form-label-title">Address 1 <span class="required">*</span></label>
+                            <label for="address1Input" class="inquiry-form-label-title">Address 1</label>
                             <div class="inquiry-form-input-wrapper">
                                 <i class="bi bi-building inquiry-input-icon"></i>
                                 <input type="text" id="address1Input" name="ADDRESS1" value="{{ old('ADDRESS1', $inquiry->ADDRESS1 ?? '') }}" maxlength="255" class="inquiry-form-input has-icon" placeholder="Enter address line 1">

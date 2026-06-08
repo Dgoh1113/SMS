@@ -1483,16 +1483,14 @@ class AdminController extends Controller
             return back()->with('error', 'Could not assign lead. Please try again.');
         }
 
-        $undoPayload = [
-            'lead_id' => $leadId,
-            'prevAssignedTo' => $prevAssignedTo,
-            'new_assignedTo' => $assignedTo,
-            'prev_lastmodified' => $prevLastModified,
-        ];
+        try {
+            $this->sendInquiryAssignedEmail($assignedTo, $leadId);
+        } catch (\Throwable $e) {
+            \Log::error('Failed to send assignment email: ' . $e->getMessage());
+        }
 
         return redirect()->route('admin.inquiries')
-            ->with('success', 'Lead assigned successfully.')
-            ->with('assign_undo', $undoPayload);
+            ->with('success', 'Lead assigned successfully.');
     }
 
     /**
@@ -1972,21 +1970,19 @@ class AdminController extends Controller
         }
 
         $assignedTo = trim((string) ($validated['assignedTo'] ?? ''));
-        $assignEmailPending = null;
         if ($assignedTo !== '') {
             $newLeadIdRow = DB::selectOne('SELECT GEN_ID(GEN_LEADID, 0) AS "ID" FROM RDB$DATABASE');
             $newLeadId = (int) ($newLeadIdRow->ID ?? $newLeadIdRow->id ?? 0);
             if ($newLeadId > 0) {
-                $assignEmailPending = ['lead_id' => $newLeadId, 'assignedTo' => $assignedTo];
+                try {
+                    $this->sendInquiryAssignedEmail($assignedTo, $newLeadId);
+                } catch (\Throwable $e) {
+                    \Log::error('Failed to send assignment email: ' . $e->getMessage());
+                }
             }
         }
 
-        $redirect = redirect()->route('admin.inquiries')->with('success', 'Inquiry created.');
-        if ($assignEmailPending !== null) {
-            $redirect->with('assign_email_pending', $assignEmailPending);
-        }
-
-        return $redirect;
+        return redirect()->route('admin.inquiries')->with('success', 'Inquiry created.');
     }
 
     public function updateInquiry(Request $request, int $leadId): RedirectResponse
