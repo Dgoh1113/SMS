@@ -1774,7 +1774,16 @@
                         return ma;
                     }
 
-                    const maPeriod = inquiryValues.length <= 10 ? 3 : 7;
+                    let maPeriod = 7;
+                    if (inquiryValues.length <= 10) {
+                        maPeriod = 3;
+                    } else if (inquiryValues.length <= 30) {
+                        maPeriod = 7;
+                    } else if (inquiryValues.length <= 60) {
+                        maPeriod = 14;
+                    } else {
+                        maPeriod = 30;
+                    }
                     const movingAverageValues = calculateMovingAverage(inquiryValues, maPeriod);
 
                     const showAllWeekTicks = reportPeriod === 'month';
@@ -2046,6 +2055,9 @@
                                         },
                                         label: function (context) {
                                             const value = typeof context.parsed.y === 'number' ? context.parsed.y : 0;
+                                            if (context.dataset.label === 'Moving Average') {
+                                                return context.dataset.label + ': ' + (value % 1 === 0 ? value : value.toFixed(2));
+                                            }
                                             return context.dataset.label + ': ' + Math.round(value);
                                         }
                                     }

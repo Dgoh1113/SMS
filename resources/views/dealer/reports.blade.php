@@ -92,6 +92,59 @@
     html.theme-dark .dealer-reports-page .report-donut { border-color:#27334e; box-shadow:0 14px 30px rgba(2,6,23,.24); }
     html.theme-dark .dealer-reports-page .report-donut-center { background:linear-gradient(180deg,#131b2f 0%,#0f1728 100%); box-shadow:0 12px 28px rgba(2,6,23,.28); }
     html.theme-dark .dealer-reports-page .report-legend-color--failed { background:#f8fafc !important; box-shadow:0 0 0 1px rgba(148,163,184,.4); }
+
+    .admin-inquiry-trend-legend {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 14px;
+        padding: 6px 0 0;
+    }
+    .admin-inquiry-trend-legend-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: #334155;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: opacity 0.16s ease, color 0.16s ease;
+    }
+    .admin-inquiry-trend-legend-button:hover {
+        color: #0f172a;
+    }
+    .admin-inquiry-trend-legend-button.is-hidden {
+        opacity: 0.35;
+    }
+    .admin-inquiry-trend-legend-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        flex-shrink: 0;
+    }
+    .admin-inquiry-trend-legend-dot--trend {
+        background: #7f5af0;
+    }
+    .admin-inquiry-trend-legend-dot--ma {
+        background: #f59e0b;
+    }
+    html.theme-dark .admin-inquiry-trend-legend-dot--ma {
+        background: #ffd384;
+    }
+    html.theme-dark .admin-inquiry-trend-legend-button {
+        color: #a6b3d3;
+    }
+    html.theme-dark .admin-inquiry-trend-legend-button:hover {
+        color: #ffffff;
+    }
+    html.theme-dark .admin-inquiry-trend-legend-button:focus-visible {
+        outline-color: rgba(124, 91, 255, 0.34);
+    }
+
     @media (min-width:1024px) and (max-width:1600px) and (max-height:920px) {
         .dashboard-content.reports-page.dealer-reports-page { padding-top:10px; padding-bottom:12px; gap:8px; }
         .dealer-reports-page .reports-header { margin-bottom:6px; }
@@ -243,6 +296,10 @@
             background: #7c3aed !important;
             border-radius: 10px !important;
             border: 2px solid #f1f5f9 !important;
+        }
+        .admin-inquiry-trend-legend {
+            margin-top: 0 !important;
+            padding-bottom: 10px !important;
         }
         .dealer-reports-chart-wrapper#dealerInquiryTrendChartWrapper {
             width: 900px !important;
@@ -440,10 +497,21 @@
                         <p class="dealer-reports-empty">No leads created in this period yet.</p>
                     @else
                         <div class="dealer-reports-chart-scroll-wrapper">
-                            <div class="dealer-reports-chart-wrapper" id="dealerInquiryTrendChartWrapper" style="height: 336px;">
+                            <div class="dealer-reports-chart-wrapper" id="dealerInquiryTrendChartWrapper" style="height: 272px;">
                                 <p class="dealer-reports-chart-fallback">Unable to load inquiry trend chart.</p>
                                 <canvas id="dealerInquiryTrendChart"></canvas>
                             </div>
+                        </div>
+
+                        <div class="admin-inquiry-trend-legend" id="dealerInquiryTrendLegend" style="justify-content: center; gap: 20px; margin-top: 8px;">
+                            <button class="admin-inquiry-trend-legend-button" data-dataset-index="0" type="button">
+                                <span class="admin-inquiry-trend-legend-dot admin-inquiry-trend-legend-dot--trend"></span>
+                                <span>Trend</span>
+                            </button>
+                            <button class="admin-inquiry-trend-legend-button" data-dataset-index="1" type="button">
+                                <span class="admin-inquiry-trend-legend-dot admin-inquiry-trend-legend-dot--ma"></span>
+                                <span>Moving Average</span>
+                            </button>
                         </div>
                     @endif
                 </div>
@@ -787,6 +855,33 @@ function initDealerReportsPage() {
                 return normalized;
             });
 
+            function calculateMovingAverage(values, period) {
+                var ma = [];
+                for (var i = 0; i < values.length; i++) {
+                    var sum = 0;
+                    var count = 0;
+                    var start = Math.max(0, i - period + 1);
+                    for (var j = start; j <= i; j++) {
+                        sum += Number(values[j] || 0);
+                        count++;
+                    }
+                    ma.push(count > 0 ? sum / count : 0);
+                }
+                return ma;
+            }
+
+            var maPeriod = 7;
+            if (inquiryValues.length <= 10) {
+                maPeriod = 3;
+            } else if (inquiryValues.length <= 30) {
+                maPeriod = 7;
+            } else if (inquiryValues.length <= 60) {
+                maPeriod = 14;
+            } else {
+                maPeriod = 30;
+            }
+            var movingAverageValues = calculateMovingAverage(inquiryValues, maPeriod);
+
             var totalDays = inquiryLabels.length;
             var tickStep = 15;
             if (totalDays > 180) {
@@ -863,9 +958,12 @@ function initDealerReportsPage() {
                         return;
                     }
 
-                    var activeElements = chart.data.datasets.map(function(dataset, datasetIndex) {
-                        return { datasetIndex: datasetIndex, index: nearestIndex };
-                    });
+                    var activeElements = chart.data.datasets.reduce(function(elements, dataset, datasetIndex) {
+                        if (chart.isDatasetVisible(datasetIndex)) {
+                            elements.push({ datasetIndex: datasetIndex, index: nearestIndex });
+                        }
+                        return elements;
+                    }, []);
                     var anchorX = chart.scales.x.getPixelForTick(nearestIndex);
                     var anchorY = chart.scales.y.getPixelForValue(Number(inquiryValues[nearestIndex] || 0));
 
@@ -903,41 +1001,61 @@ function initDealerReportsPage() {
                 }
             };
 
-            new Chart(inquiryCanvas.getContext('2d'), {
+            var inquiryChart = new Chart(inquiryCanvas.getContext('2d'), {
                 plugins: [exactDateHover, activeDateGuide],
                 data: {
                     labels: inquiryLabels,
                     datasets: [
                         {
-                            type: 'bar',
-                            label: 'Inquiries',
-                            data: inquiryValues,
-                            backgroundColor: columnColor,
-                            borderColor: 'rgba(127, 90, 240, 0.18)',
-                            borderWidth: 0,
-                            borderRadius: 4,
-                            borderSkipped: false,
-                            barPercentage: 0.34,
-                            categoryPercentage: 0.78,
-                            maxBarThickness: 14,
-                            pointStyle: 'circle'
-                        },
-                        {
                             type: 'line',
                             label: 'Trend',
                             data: inquiryValues,
                             borderColor: brandColor,
-                            backgroundColor: brandColor,
-                            borderWidth: 2.25,
-                            pointBackgroundColor: brandColor,
+                            borderWidth: 3,
+                            pointBackgroundColor: darkTheme ? '#0e1424' : '#ffffff',
                             pointBorderColor: brandColor,
-                            pointBorderWidth: 0,
-                            pointRadius: 0,
-                            pointHoverRadius: 4,
-                            pointHitRadius: 0,
+                            pointBorderWidth: 2.5,
+                            pointRadius: 2,
+                            pointHoverRadius: 6,
+                            pointHoverBackgroundColor: brandColor,
+                            pointHoverBorderColor: '#ffffff',
+                            pointHoverBorderWidth: 2,
+                            pointHitRadius: 10,
                             pointStyle: 'circle',
                             cubicInterpolationMode: 'monotone',
-                            tension: 0.42,
+                            tension: 0.35,
+                            fill: 'origin',
+                            backgroundColor: function(context) {
+                                var chart = context.chart;
+                                var ctx = chart.ctx;
+                                var chartArea = chart.chartArea;
+                                if (!chartArea) {
+                                    return null;
+                                }
+                                var gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                                gradient.addColorStop(0, darkTheme ? 'rgba(178, 150, 255, 0.36)' : 'rgba(127, 90, 240, 0.28)');
+                                gradient.addColorStop(1, darkTheme ? 'rgba(178, 150, 255, 0.01)' : 'rgba(127, 90, 240, 0.01)');
+                                return gradient;
+                            }
+                        },
+                        {
+                            type: 'line',
+                            label: 'Moving Average',
+                            data: movingAverageValues,
+                            borderColor: darkTheme ? '#ffd384' : '#f59e0b',
+                            borderWidth: 2.5,
+                            pointBackgroundColor: darkTheme ? '#0e1424' : '#ffffff',
+                            pointBorderColor: darkTheme ? '#ffd384' : '#f59e0b',
+                            pointBorderWidth: 2,
+                            pointRadius: 0,
+                            pointHoverRadius: 5,
+                            pointHoverBackgroundColor: darkTheme ? '#ffd384' : '#f59e0b',
+                            pointHoverBorderColor: '#ffffff',
+                            pointHoverBorderWidth: 2,
+                            pointHitRadius: 10,
+                            pointStyle: 'circle',
+                            cubicInterpolationMode: 'monotone',
+                            tension: 0.35,
                             fill: false
                         }
                     ]
@@ -962,21 +1080,7 @@ function initDealerReportsPage() {
                     },
                     plugins: {
                         legend: {
-                            display: true,
-                            position: 'bottom',
-                            align: 'center',
-                            labels: {
-                                usePointStyle: true,
-                                pointStyle: 'circle',
-                                boxWidth: 9,
-                                boxHeight: 9,
-                                padding: 18,
-                                color: legendColor,
-                                font: {
-                                    size: 12,
-                                    weight: '500'
-                                }
-                            }
+                            display: false
                         },
                         tooltip: {
                             displayColors: true,
@@ -995,9 +1099,12 @@ function initDealerReportsPage() {
                                     return tooltipLabels[item.dataIndex] || item.label || '';
                                 },
                                 label: function(context) {
-                                    var value = typeof context.parsed.y === 'number' ? context.parsed.y : 0;
-                                    return context.dataset.label + ': ' + Math.round(value);
-                                }
+                                     var value = typeof context.parsed.y === 'number' ? context.parsed.y : 0;
+                                     if (context.dataset.label === 'Moving Average') {
+                                         return context.dataset.label + ': ' + (value % 1 === 0 ? value : value.toFixed(2));
+                                     }
+                                     return context.dataset.label + ': ' + Math.round(value);
+                                 }
                             }
                         }
                     },
@@ -1061,6 +1168,32 @@ function initDealerReportsPage() {
                     }
                 }
             });
+
+            var inquiryLegend = document.getElementById('dealerInquiryTrendLegend');
+            if (inquiryLegend && inquiryChart) {
+                var legendButtons = Array.from(inquiryLegend.querySelectorAll('[data-dataset-index]'));
+
+                var syncInquiryLegend = function () {
+                    legendButtons.forEach(function (button) {
+                        var datasetIndex = Number(button.getAttribute('data-dataset-index'));
+                        var isVisible = inquiryChart.isDatasetVisible(datasetIndex);
+                        button.classList.toggle('is-hidden', !isVisible);
+                        button.setAttribute('aria-pressed', isVisible ? 'true' : 'false');
+                    });
+                };
+
+                legendButtons.forEach(function (button) {
+                    button.addEventListener('click', function () {
+                        var datasetIndex = Number(button.getAttribute('data-dataset-index'));
+                        inquiryChart.setDatasetVisibility(datasetIndex, !inquiryChart.isDatasetVisible(datasetIndex));
+                        clearInquiryHover(inquiryChart);
+                        inquiryChart.update();
+                        syncInquiryLegend();
+                    });
+                });
+
+                syncInquiryLegend();
+            }
 
             if (inquiryWrapper) inquiryWrapper.classList.remove('is-error');
         } catch (error) {
