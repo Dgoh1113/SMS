@@ -4349,14 +4349,16 @@ class AdminController extends Controller
             $city = '';
         }
 
-        $existing = DB::selectOne(
-            'SELECT "USERID" FROM "USERS" WHERE UPPER(TRIM("EMAIL")) = UPPER(TRIM(?)) AND UPPER(TRIM("SYSTEMROLE")) = UPPER(TRIM(?))',
-            [$email, $systemRole]
-        );
-        if ($existing) {
-            return back()
-                ->withInput()
-                ->with('error', "User with this email already has the '{$systemRole}' role.");
+        if (!$isDealer) {
+            $existing = DB::selectOne(
+                'SELECT "USERID" FROM "USERS" WHERE UPPER(TRIM("EMAIL")) = UPPER(TRIM(?)) AND UPPER(TRIM("SYSTEMROLE")) = UPPER(TRIM(?))',
+                [$email, $systemRole]
+            );
+            if ($existing) {
+                return back()
+                    ->withInput()
+                    ->with('error', "User with this email already has the '{$systemRole}' role.");
+            }
         }
 
         $users = DB::select('SELECT "USERID" FROM "USERS" WHERE "USERID" STARTING WITH ?', ['U']);
@@ -4455,14 +4457,16 @@ class AdminController extends Controller
             $city = '';
         }
 
-        // Email + Role unique except current user
+        // Email + Role unique except current user (non-dealers only)
         $roleValue = $existing->SYSTEMROLE ?? '';
-        $emailConflict = DB::selectOne(
-            'SELECT "USERID" FROM "USERS" WHERE UPPER(TRIM("EMAIL")) = UPPER(TRIM(?)) AND UPPER(TRIM("SYSTEMROLE")) = UPPER(TRIM(?)) AND "USERID" <> ?',
-            [$email, $roleValue, $userid]
-        );
-        if ($emailConflict) {
-            return back()->withInput()->with('error', "Another user already has this email with the '{$roleValue}' role.");
+        if (!$isDealer) {
+            $emailConflict = DB::selectOne(
+                'SELECT "USERID" FROM "USERS" WHERE UPPER(TRIM("EMAIL")) = UPPER(TRIM(?)) AND UPPER(TRIM("SYSTEMROLE")) = UPPER(TRIM(?)) AND "USERID" <> ?',
+                [$email, $roleValue, $userid]
+            );
+            if ($emailConflict) {
+                return back()->withInput()->with('error', "Another user already has this email with the '{$roleValue}' role.");
+            }
         }
 
         // Use actual USERS table column names (same as Full Database) for Firebird compatibility
@@ -4605,14 +4609,22 @@ class AdminController extends Controller
         );
 
         $sent = 0;
+        $seenEmails = [];
 
         foreach ($users as $user) {
-            try {
-                if ($this->sendMaintainUserPasskeySetupLink($user)) {
-                    $sent++;
+            $emailRaw = trim((string) ($user->EMAIL ?? ''));
+            $emailLower = strtolower($emailRaw);
+            
+            // Skip if we already sent a setup link to this email address in this batch
+            if ($emailLower !== '' && !isset($seenEmails[$emailLower])) {
+                $seenEmails[$emailLower] = true;
+                try {
+                    if ($this->sendMaintainUserPasskeySetupLink($user)) {
+                        $sent++;
+                    }
+                } catch (\Throwable $e) {
+                    report($e);
                 }
-            } catch (\Throwable $e) {
-                report($e);
             }
         }
 

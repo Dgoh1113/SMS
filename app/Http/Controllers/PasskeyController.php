@@ -768,6 +768,30 @@ class PasskeyController extends Controller
             return response()->json(['error' => 'Account not found or inactive.'], 400);
         }
 
+        $role = $this->systemRoleToSessionRole((string) ($user->SYSTEMROLE ?? ''));
+
+        $email = trim((string) ($user->EMAIL ?? ''));
+        if ($email !== '') {
+            $driver = DB::connection()->getDriverName();
+            $activeClause = ($driver === 'sqlsrv') 
+                ? '"ISACTIVE" = 1 OR "ISACTIVE" IS NULL' 
+                : '"ISACTIVE" = true OR "ISACTIVE" IS NULL';
+
+            $activeAccounts = DB::select(
+                'SELECT "USERID", "COMPANY", "ALIAS", "SYSTEMROLE" FROM "USERS" WHERE UPPER(TRIM("EMAIL")) = UPPER(TRIM(?)) AND (' . $activeClause . ')',
+                [$email]
+            );
+            
+            if (count($activeAccounts) > 1) {
+                $request->session()->forget('passkey_challenge');
+                $request->session()->put('pending_login_user_ids', array_map(fn($d) => (string) $d->USERID, $activeAccounts));
+                $request->session()->put('pending_login_email', $email);
+                $request->session()->put('pending_passkey_manage_id', (string) $passkeyAutoId);
+                
+                return response()->json(['success' => true, 'redirect' => route('login.select-company')]);
+            }
+        }
+
         DB::update('UPDATE "USERS" SET "LASTLOGIN" = CURRENT_TIMESTAMP WHERE "USERID" = ?', [$userId]);
 
         $request->session()->forget('passkey_challenge');
@@ -775,7 +799,6 @@ class PasskeyController extends Controller
         $request->session()->put('user_email', $user->EMAIL);
         $request->session()->put('user_alias', $user->ALIAS ?? '');
         $request->session()->put('passkey_manage_passkey_id', (string) $passkeyAutoId);
-        $role = $this->systemRoleToSessionRole((string) ($user->SYSTEMROLE ?? ''));
         $request->session()->put('user_role', $role);
         $request->session()->forget([
             'passkey_setup_required',

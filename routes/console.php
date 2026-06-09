@@ -136,8 +136,8 @@ Artisan::command('leads:auto-fail', function () {
     $this->info('Auto-fail complete. Updated '.$count.' lead(s).');
 })->purpose('Automatically fail leads older than 8 months without completion');
 
-// Run auto-fail check every 2 minutes
-Schedule::command('leads:auto-fail')->everyTwoMinutes()->withoutOverlapping();
+// Run auto-fail check every day
+Schedule::command('leads:auto-fail')->daily()->withoutOverlapping();
 
 // Run inquiry email fetch every minute
 Schedule::command('inquiries:fetch')->everyMinute()->withoutOverlapping();

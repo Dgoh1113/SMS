@@ -10,8 +10,9 @@ Route::get('/', fn () => redirect()->route('login'));
 
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
+Route::get('/login/select-company', [AuthController::class, 'showSelectCompanyForm'])->name('login.select-company');
+Route::post('/login/select-company', [AuthController::class, 'selectCompany']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-Route::post('/switch-role', [AuthController::class, 'switchRole'])->name('switch-role');
 
 Route::get('/passkey/setup', [AuthController::class, 'showPasskeySetupForm'])->name('passkey.setup.form');
 

@@ -132,79 +132,77 @@ class AuthController extends Controller
         return redirect('/login');
     }
 
-    public function switchRole(Request $request): RedirectResponse
+    public function showSelectCompanyForm(Request $request): View|RedirectResponse
     {
-        $email = $request->session()->get('user_email');
-        $currentId = $request->session()->get('user_id');
+        $email = $request->session()->get('pending_login_email');
+        $userIds = $request->session()->get('pending_login_user_ids');
 
-        if (! $email || ! $currentId) {
+        if (!$email || !$userIds || !is_array($userIds) || empty($userIds)) {
             return redirect()->route('login');
         }
 
-        // Find another active account with same email but different ID
-        $otherAccount = DB::selectOne(
-            'SELECT FIRST 1 "USERID", "SYSTEMROLE", "ALIAS"
-             FROM "USERS"
-             WHERE "EMAIL" = ? AND CAST("USERID" AS VARCHAR(50)) <> ? AND "ISACTIVE" = TRUE',
-            [$email, (string) $currentId]
+        $placeholders = implode(',', array_fill(0, count($userIds), '?'));
+        $companies = DB::select(
+            'SELECT "USERID", "COMPANY", "ALIAS", "SYSTEMROLE" FROM "USERS" WHERE "USERID" IN ('.$placeholders.') ORDER BY "COMPANY" ASC, "ALIAS" ASC',
+            $userIds
         );
 
-        if (! $otherAccount) {
-            return redirect()->back()->with('error', 'No other role available for this account.');
-        }
-
-        $sessionRole = $this->systemRoleToSessionRole((string) ($otherAccount->SYSTEMROLE ?? ''));
-
-        $newUserId = (string) $otherAccount->USERID;
-
-        // Find the passkey ID to allow management on the switched account
-        $driver = DB::connection()->getDriverName();
-        $selectSql = $driver === 'pgsql'
-            ? 'SELECT "AutoID" AS pk, "Credential" FROM "User_Passkey" WHERE "UserID" = ? ORDER BY "CreationDate" ASC, "AutoID" ASC'
-            : ($driver === 'sqlsrv'
-                ? 'SELECT [id] AS pk, [Credential] FROM [User_Passkey] WHERE [UserID] = ? ORDER BY [CreationDate] ASC, [id] ASC'
-                : ($driver === 'firebird'
-                    ? 'SELECT "USER_PASSKEYID" AS "pk", "CREDENTIAL" AS "Credential" FROM "USER_PASSKEY" WHERE "USERID" = ? ORDER BY "CREATIONDATE" ASC, "USER_PASSKEYID" ASC'
-                    : 'SELECT id AS pk, Credential FROM User_Passkey WHERE UserID = ? ORDER BY CreationDate ASC, id ASC'));
-
-        $passkeys = DB::select($selectSql, [$newUserId]);
-        $newPasskeyId = null;
-        if (! empty($passkeys)) {
-            $fallback = null;
-            foreach ($passkeys as $p) {
-                $pk = trim((string) ($p->pk ?? $p->PK ?? $p->user_passkeyid ?? $p->USER_PASSKEYID ?? $p->id ?? ''));
-                if ($pk === '') {
-                    continue;
-                }
-                if ($fallback === null) {
-                    $fallback = $pk;
-                }
-                $cred = json_decode((string) ($p->Credential ?? $p->CREDENTIAL ?? '{}'), true);
-                if (is_array($cred) && ! empty($cred['managementOwner'])) {
-                    $newPasskeyId = $pk;
-                    break;
-                }
-            }
-            if ($newPasskeyId === null) {
-                $newPasskeyId = $fallback;
-            }
-        }
-
-        // Update session with new account details
-        $request->session()->put('user_id', $newUserId);
-        $request->session()->put('user_role', $sessionRole);
-        $request->session()->put('user_alias', (string) ($otherAccount->ALIAS ?? ''));
-        $request->session()->put('last_activity_ts', time());
-
-        if ($newPasskeyId !== null) {
-            $request->session()->put('passkey_manage_passkey_id', (string) $newPasskeyId);
-        } else {
-            $request->session()->forget('passkey_manage_passkey_id');
-        }
-
-        return redirect($this->dashboardPathForRole($request, $sessionRole))
-            ->with('success', 'Switched to '.strtoupper($sessionRole).' dashboard.');
+        return view('auth.select-company', [
+            'email' => $email,
+            'companies' => $companies
+        ]);
     }
+
+    public function selectCompany(Request $request): RedirectResponse
+    {
+        $email = $request->session()->get('pending_login_email');
+        $userIds = $request->session()->get('pending_login_user_ids');
+        $passkeyAutoId = $request->session()->get('pending_passkey_manage_id');
+
+        if (!$email || !$userIds || !is_array($userIds) || empty($userIds)) {
+            return redirect()->route('login')->with('error', 'Login session expired. Please try again.');
+        }
+
+        $selectedUserId = $request->input('user_id');
+        if (!in_array($selectedUserId, $userIds)) {
+            return redirect()->back()->with('error', 'Invalid company selected.');
+        }
+
+        $user = DB::selectOne(
+            'SELECT "USERID", "EMAIL", "SYSTEMROLE", "ISACTIVE", "ALIAS" FROM "USERS" WHERE "USERID" = ?',
+            [$selectedUserId]
+        );
+
+        if (!$user || !$user->ISACTIVE) {
+            return redirect()->route('login')->with('error', 'Account not found or inactive.');
+        }
+
+        DB::update('UPDATE "USERS" SET "LASTLOGIN" = CURRENT_TIMESTAMP WHERE "USERID" = ?', [$selectedUserId]);
+
+        $request->session()->forget([
+            'pending_login_email',
+            'pending_login_user_ids',
+            'pending_passkey_manage_id'
+        ]);
+
+        $request->session()->put('user_id', $user->USERID);
+        $request->session()->put('user_email', $user->EMAIL);
+        $request->session()->put('user_alias', $user->ALIAS ?? '');
+        if ($passkeyAutoId) {
+            $request->session()->put('passkey_manage_passkey_id', (string) $passkeyAutoId);
+        }
+        $role = $this->systemRoleToSessionRole((string) ($user->SYSTEMROLE ?? ''));
+        $request->session()->put('user_role', $role);
+        $request->session()->forget([
+            'passkey_setup_required',
+            'passkey_setup_token_user_id',
+            'show_register_passkey',
+        ]);
+
+        return redirect($this->dashboardPathForRole($request, $role));
+    }
+
+
 
     private function invalidPasskeySetupLinkView(string $message): View
     {
