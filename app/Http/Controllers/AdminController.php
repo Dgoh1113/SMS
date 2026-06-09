@@ -6,6 +6,7 @@ use App\Http\Controllers\Concerns\DatabaseAggregates;
 use App\Http\Controllers\Concerns\ResolvesInquiryAttachments;
 use App\Http\Controllers\Concerns\UsesSetupLinkStore;
 use App\Mail\InquiryAssignedToDealer;
+use App\Mail\InquiryAssignedToCustomer;
 use App\Mail\PayoutCompletedNotification;
 use App\Mail\UserPasskeySetupLink;
 use App\Support\AppConstants;
@@ -4736,8 +4737,10 @@ class AdminController extends Controller
                 $dealerName = $dealerEmail;
             }
 
+            $lead = DB::selectOne('SELECT "COMPANYNAME", "CONTACTNAME", "EMAIL" FROM "LEAD" WHERE "LEADID" = ?', [$leadId]);
+            $customerEmail = $lead ? trim((string) ($lead->EMAIL ?? '')) : '';
+
             if ($companyName === null || $contactName === null) {
-                $lead = DB::selectOne('SELECT "COMPANYNAME", "CONTACTNAME" FROM "LEAD" WHERE "LEADID" = ?', [$leadId]);
                 $companyName = $lead ? trim((string) ($lead->COMPANYNAME ?? '')) : '';
                 $contactName = $lead ? trim((string) ($lead->CONTACTNAME ?? '')) : '';
             }
@@ -4746,6 +4749,7 @@ class AdminController extends Controller
 
             $viewInquiryUrl = url(route('dealer.inquiries', [], false).'?lead='.$leadId);
 
+            // Send assignment email to dealer
             Mail::to($dealerEmail)->send(new InquiryAssignedToDealer(
                 dealerEmail: $dealerEmail,
                 dealerName: $dealerName,
@@ -4755,6 +4759,17 @@ class AdminController extends Controller
                 contactName: $contactName,
                 viewInquiryUrl: $viewInquiryUrl
             ));
+
+            // Send assignment email to customer
+            if ($customerEmail !== '') {
+                Mail::to($customerEmail)->send(new InquiryAssignedToCustomer(
+                    customerEmail: $customerEmail,
+                    customerName: $contactName !== '—' ? $contactName : 'Customer',
+                    inquiryId: 'SQL-'.$leadId,
+                    dealerName: $dealerName,
+                    dealerEmail: $dealerEmail
+                ));
+            }
         } catch (\Throwable $e) {
             // Log but do not fail the request (assignment already succeeded)
             report($e);
