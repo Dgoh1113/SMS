@@ -87,7 +87,9 @@ class SyncDealers extends Command
                     $companyName = trim($d['companyname'] ?? '');
                     $area = strtoupper(trim($d['area'] ?? ''));
                     $status = strtoupper(trim($d['status'] ?? 'A'));
-                    $isActive = ($status === 'A' && $area !== 'INCATIVE D') ? 1 : 0;
+                    
+                    // Support both spelling variations 'INCATIVE' and 'INACTIVE'
+                    $isActive = ($status === 'A' && !str_starts_with($area, 'INCATIVE') && !str_starts_with($area, 'INACTIVE')) ? 1 : 0;
 
                     if (empty($code)) {
                         continue;
