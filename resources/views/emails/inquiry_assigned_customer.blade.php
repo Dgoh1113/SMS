@@ -23,8 +23,8 @@
             
             <p>Assigned Dealer Details:<br>
             Dealer Name: {{ $dealerName }}</p>
-            
             <p>Email: {{ $dealerEmail }}<br>
+            
             Our dealer will get in touch with you soon to assist you with your request.</p>
         </div>
         <p class="footer">This is an automated message from SQL SMS.</p>
