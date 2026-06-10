@@ -397,7 +397,6 @@
 
         textarea.inquiry-form-input {
             min-height: 60px !important;
-            height: 60px !important;
             padding: 8px 12px 6px !important;
             resize: vertical;
         }
@@ -607,7 +606,6 @@
 
             textarea.inquiry-form-input {
                 min-height: 42px !important;
-                height: 42px !important;
                 padding: 6px 10px 4px !important;
             }
 
@@ -636,7 +634,7 @@
             .inquiry-form-actions .login-primary-btn,
             .inquiry-form-actions .inquiry-form-cancel {
                 height: 34px !important;
-                width: 150px !important;
+                width: auto !important;
                 min-width: 150px !important;
                 padding: 0 24px !important;
                 font-size: 13.5px !important;
@@ -750,7 +748,7 @@
 
             .inquiry-form-actions { flex-direction: column !important; }
             .inquiry-form-actions .login-primary-btn,
-            .inquiry-form-actions .inquiry-form-cancel { width: 100%; justify-content: center; }
+            .inquiry-form-actions .inquiry-form-cancel { width: 100% !important; justify-content: center; }
         }
 
         @media (max-width: 480px) {
@@ -801,7 +799,6 @@
             }
             textarea.inquiry-form-input {
                 min-height: 32px !important;
-                height: 32px !important;
                 padding: 4px 10px 3px !important;
             }
             .inquiry-form-checkboxes {
@@ -1198,30 +1195,19 @@
                         </div>
                     </div>
                     <div class="inquiry-form-grid">
-                        <div class="inquiry-form-label full">
+                        <div class="inquiry-form-label half">
                             <label for="address1Input" class="inquiry-form-label-title">Address 1</label>
                             <div class="inquiry-form-input-wrapper">
                                 <i class="bi bi-building inquiry-input-icon"></i>
                                 <input type="text" id="address1Input" name="ADDRESS1" value="{{ old('ADDRESS1', $inquiry->ADDRESS1 ?? '') }}" maxlength="255" class="inquiry-form-input has-icon" placeholder="Enter address line 1">
                             </div>
-                            @php
-                                $address2Value = old('ADDRESS2', $inquiry->ADDRESS2 ?? '');
-                                $hasAddress2Value = trim((string) $address2Value) !== '';
-                            @endphp
-                            <div style="margin-top: 5px; display: flex; justify-content: flex-start;">
-                                <button type="button" class="inquiry-inline-toggle" id="address2ToggleBtn" aria-controls="address2FieldWrap" aria-expanded="{{ $hasAddress2Value ? 'true' : 'false' }}" style="font-size: 0.8rem; font-weight: 600;">
-                                    {{ $hasAddress2Value ? '- Remove Address 2' : '+ Add Address 2' }}
-                                </button>
-                            </div>
                         </div>
 
-                        <div class="inquiry-address2-wrap full{{ $hasAddress2Value ? ' is-visible' : '' }}" id="address2FieldWrap" {{ $hasAddress2Value ? '' : 'hidden' }}>
-                            <div class="inquiry-form-label" style="width: 100%;">
-                                <label for="address2Input" class="inquiry-form-label-title">Address 2</label>
-                                <div class="inquiry-form-input-wrapper">
-                                    <i class="bi bi-building inquiry-input-icon"></i>
-                                    <input type="text" name="ADDRESS2" id="address2Input" value="{{ $address2Value }}" maxlength="255" class="inquiry-form-input has-icon" placeholder="Enter address line 2">
-                                </div>
+                        <div class="inquiry-form-label half">
+                            <label for="address2Input" class="inquiry-form-label-title">Address 2</label>
+                            <div class="inquiry-form-input-wrapper">
+                                <i class="bi bi-building inquiry-input-icon"></i>
+                                <input type="text" name="ADDRESS2" id="address2Input" value="{{ old('ADDRESS2', $inquiry->ADDRESS2 ?? '') }}" maxlength="255" class="inquiry-form-input has-icon" placeholder="Enter address line 2">
                             </div>
                         </div>
 
@@ -1330,15 +1316,6 @@
                                 <input type="hidden" name="DEMOMODE" id="demoModeInput" value="{{ $demoOld }}">
                             </div>
 
-                            <!-- Bottom: Message (Moved here for mobile layout) -->
-                            <label class="inquiry-form-label full inquiry-message-field" style="margin-top: 0px;">
-                                <span class="inquiry-form-label-title">Message</span>
-                                <div class="inquiry-form-input-wrapper">
-                                    <i class="bi bi-chat-left-text inquiry-input-icon" style="top: 14px;"></i>
-                                    <textarea name="DESCRIPTION" rows="4" maxlength="4000" class="inquiry-form-input has-icon" placeholder="Type the customer message / notes..." style="padding-top: 10px;">{{ old('DESCRIPTION', $inquiry->DESCRIPTION ?? '') }}</textarea>
-                                </div>
-                            </label>
-
                             <label class="inquiry-form-label">
                                 <span class="inquiry-form-label-title">Referral code</span>
                                 <div class="inquiry-form-input-wrapper">
@@ -1346,19 +1323,42 @@
                                     <input type="text" name="REFERRALCODE" value="{{ old('REFERRALCODE', $inquiry->REFERRALCODE ?? '') }}" maxlength="100" class="inquiry-form-input has-icon" placeholder="Enter referral code">
                                 </div>
                             </label>
+
+                            <label class="inquiry-form-label">
+                                <span class="inquiry-form-label-title">Assign To</span>
+                                <div style="display: flex; gap: 8px;">
+                                    <div class="inquiry-form-input-wrapper" style="flex: 1;">
+                                        <i class="bi bi-person-badge inquiry-input-icon"></i>
+                                        <input type="text" id="assignToDisplay" class="inquiry-form-input has-icon" style="padding-left: 34px; background: #f8f9fa; color: #4b5563; font-weight: 500;" readonly placeholder="Unassigned">
+                                        <input type="hidden" name="assignedTo" id="assignToHidden" value="{{ old('assignedTo', $inquiry->ASSIGNEDTO ?? '') }}">
+                                    </div>
+                                    <button type="button" class="inquiries-btn inquiries-btn-secondary" id="openAssignModalBtn" style="height: 30px; font-size: 13px; padding: 0 12px; min-width: 80px;">Assign</button>
+                                </div>
+                            </label>
                         </div>
+
+                        <!-- Bottom: Message (Full width) -->
+                        <label class="inquiry-form-label full inquiry-message-field" style="grid-column: span 12; margin-top: 8px;">
+                            <span class="inquiry-form-label-title">Message</span>
+                            <div class="inquiry-form-input-wrapper">
+                                <i class="bi bi-chat-left-text inquiry-input-icon" style="top: 14px;"></i>
+                                <textarea name="DESCRIPTION" rows="8" maxlength="4000" class="inquiry-form-input has-icon" placeholder="Type the customer message / notes..." style="padding-top: 10px; min-height: 120px;">{{ old('DESCRIPTION', $inquiry->DESCRIPTION ?? '') }}</textarea>
+                            </div>
+                        </label>
                     </div>
                 </div>
 
-                <div class="inquiry-form-actions" style="margin-top: auto; padding-top: 10px; display: flex; justify-content: flex-end; gap: 12px; align-items: center; width: 100%;">
-                    <a href="{{ route('admin.inquiries') }}" class="inquiry-form-cancel" style="padding: 10px 24px; border-radius: 12px; font-weight: 700; color: #666; text-decoration: none; transition: all 0.2s; min-width: 150px; text-align: center; border: 1px solid #e0e0e0; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;">
+                <div class="inquiry-form-actions" style="margin-top: auto; padding-top: 10px; display: flex; justify-content: flex-end; gap: 12px; align-items: center; width: 100%; flex-wrap: wrap;">
+                    <a href="{{ route('admin.inquiries') }}" class="inquiry-form-cancel" style="padding: 10px 24px; border-radius: 12px; font-weight: 700; color: #666; text-decoration: none; transition: all 0.2s; min-width: 150px; text-align: center; border: 1px solid #e0e0e0; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; flex-shrink: 0;">
                         <i class="bi bi-x-lg" style="font-size: 14px;"></i> Cancel
                     </a>
-                    <button type="button" id="clearFormBtn" class="inquiry-form-cancel" {{ $isEdit ? 'disabled' : '' }} style="padding: 10px 24px; border-radius: 12px; font-weight: 700; color: #dc2626; text-decoration: none; transition: all 0.2s; min-width: 150px; text-align: center; border: 1px solid #fca5a5; background: #fff5f5; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;">
+                    @if(!$isEdit)
+                    <button type="button" id="clearFormBtn" class="inquiry-form-cancel" style="padding: 10px 24px; border-radius: 12px; font-weight: 700; color: #dc2626; text-decoration: none; transition: all 0.2s; min-width: 150px; text-align: center; border: 1px solid #fca5a5; background: #fff5f5; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; flex-shrink: 0;">
                         <i class="bi bi-trash" style="font-size: 14px;"></i> Clear form
                     </button>
-                    <button type="submit" class="login-primary-btn" style="padding: 10px 24px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; border: none; transition: all 0.2s; min-width: 150px; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2); margin-top: 0; cursor: pointer;">
-                        <i class="bi bi-send"></i> {{ $isEdit ? 'Update inquiry' : 'Save inquiry' }}
+                    @endif
+                    <button type="submit" id="submitInquiryBtn" class="login-primary-btn" style="padding: 10px 24px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; border: none; transition: all 0.2s; min-width: 150px; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2); margin-top: 0; cursor: pointer; flex-shrink: 0; white-space: nowrap;">
+                        <i class="bi bi-send"></i> <span id="submitBtnText">{{ $isEdit ? 'Update inquiry' : 'Save inquiry' }}</span>
                     </button>
                 </div>
             </div>
@@ -1367,8 +1367,10 @@
         </div>
     </div>
 </section>
-@endsection
 
+@include('admin.partials.assign_dealer_modal_create')
+
+@endsection
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -1478,6 +1480,9 @@ document.addEventListener('DOMContentLoaded', function () {
         postcodeInput.addEventListener('input', syncLocationFromPostcode);
         postcodeInput.addEventListener('change', syncLocationFromPostcode);
     }
+    
+    // Initial check on page load to show the icon if city already has a value
+    updateGoogleMapsLink();
 
     // Demo mode toggle (Zoom / On-site)
     var toggle = document.querySelector('.inquiry-toggle[data-toggle="demomode"]');
@@ -1641,9 +1646,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             // Handle Address 2 visibility specifically
-            if (lastCompanyData.address2 && lastCompanyData.address2.trim() !== '') {
-                setAddress2Expanded(true);
-            }
+            // (Address 2 is now always visible)
 
             // Demo mode toggle (Zoom / On-site) from existing lead
             if (lastCompanyData.demomode) {
@@ -1683,56 +1686,6 @@ document.addEventListener('DOMContentLoaded', function () {
     syncPhoneStackMode();
     window.addEventListener('resize', syncPhoneStackMode);
     window.addEventListener('orientationchange', syncPhoneStackMode);
-
-    function setAddress2Expanded(expanded) {
-        if (!address2ToggleBtn || !address2FieldWrap) return;
-
-        address2ToggleBtn.textContent = expanded ? 'â€“ Remove Address 2' : '+ Add Address 2';
-        address2ToggleBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-        address2ToggleBtn.textContent = expanded ? '- Remove Address 2' : '+ Add Address 2';
-
-        if (expanded) {
-            if (inquiryFormGrid) {
-                inquiryFormGrid.classList.add('has-address2');
-            }
-            address2FieldWrap.hidden = false;
-            requestAnimationFrame(function () {
-                address2FieldWrap.classList.add('is-visible');
-            });
-            if (address2Input) {
-                setTimeout(function () {
-                    address2Input.focus();
-                }, 140);
-            }
-            return;
-        }
-
-        address2FieldWrap.classList.remove('is-visible');
-        if (inquiryFormGrid) {
-            inquiryFormGrid.classList.remove('has-address2');
-        }
-        if (address2Input) {
-            address2Input.value = '';
-        }
-        window.setTimeout(function () {
-            if (!address2FieldWrap.classList.contains('is-visible')) {
-                address2FieldWrap.hidden = true;
-            }
-        }, 220);
-    }
-
-    if (address2ToggleBtn && address2FieldWrap) {
-        address2ToggleBtn.textContent = address2ToggleBtn.getAttribute('aria-expanded') === 'true'
-            ? '- Remove Address 2'
-            : '+ Add Address 2';
-        if (inquiryFormGrid && address2ToggleBtn.getAttribute('aria-expanded') === 'true') {
-            inquiryFormGrid.classList.add('has-address2');
-        }
-        address2ToggleBtn.addEventListener('click', function () {
-            var expanded = address2ToggleBtn.getAttribute('aria-expanded') === 'true';
-            setAddress2Expanded(!expanded);
-        });
-    }
 
     var clearFormBtn = document.getElementById('clearFormBtn');
     if (clearFormBtn) {
@@ -1824,6 +1777,145 @@ document.addEventListener('DOMContentLoaded', function () {
             // Re-dispatch change event to propagate any changes if needed
             otherCountryInput.dispatchEvent(new Event('change'));
         });
+    }
+
+    // Assign Modal Logic for Create/Edit Form
+    try {
+        var assignModal = document.getElementById('createAssignModal');
+        var openAssignModalBtn = document.getElementById('openAssignModalBtn');
+        var assignToDisplay = document.getElementById('assignToDisplay');
+        var assignToHidden = document.getElementById('assignToHidden');
+        var assignSubmitBtn = document.getElementById('createAssignSubmitBtn');
+        var dealerRows = document.querySelectorAll('#createAssignModal .inquiries-assign-dealer-row');
+        
+        // Initialize display text based on current assignedTo value
+        function updateAssignDisplay() {
+            var submitBtnText = document.getElementById('submitBtnText');
+            var isEdit = {{ $isEdit ? 'true' : 'false' }};
+            
+            if (!assignToHidden || !assignToHidden.value) {
+                if (assignToDisplay) assignToDisplay.value = '';
+                if (openAssignModalBtn) openAssignModalBtn.textContent = 'Assign';
+                if (submitBtnText) submitBtnText.textContent = isEdit ? 'Update inquiry' : 'Save inquiry';
+                return;
+            }
+            var found = false;
+            dealerRows.forEach(function(r) {
+                if (r.getAttribute('data-assign-userid') === assignToHidden.value) {
+                    if (assignToDisplay) assignToDisplay.value = r.getAttribute('data-assign-label') || r.getAttribute('data-assign-userid');
+                    found = true;
+                }
+            });
+            if (!found && assignToDisplay) {
+                assignToDisplay.value = assignToHidden.value;
+            }
+            if (openAssignModalBtn) openAssignModalBtn.textContent = 'Unassign';
+            if (submitBtnText) submitBtnText.textContent = isEdit ? 'Update inquiry and assign' : 'Save inquiry and assign';
+        }
+        
+        updateAssignDisplay();
+
+        if (openAssignModalBtn) {
+            openAssignModalBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (assignToHidden && assignToHidden.value) {
+                    // If already assigned, unassign it
+                    assignToHidden.value = '';
+                    updateAssignDisplay();
+                } else {
+                    // Open modal
+                    if (assignModal) {
+                        assignModal.hidden = false;
+                        assignModal.style.display = 'block'; // force display block just in case
+                    }
+                    
+                    // Set the Lead label in the modal
+                    var companyInput = document.getElementById('companyNameInput');
+                    var leadLabel = document.getElementById('createAssignLeadLabel');
+                    if (companyInput && leadLabel) {
+                        leadLabel.textContent = companyInput.value || 'New Lead';
+                    }
+                    
+                    // Clear selection
+                    dealerRows.forEach(function(r) { r.classList.remove('selected'); });
+                    if (assignSubmitBtn) assignSubmitBtn.disabled = true;
+                }
+            });
+        }
+        
+        // Handle closing the modal
+        var closeAssignBtns = document.querySelectorAll('#createAssignModal [data-assign-close="1"]');
+        closeAssignBtns.forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (assignModal) {
+                    assignModal.hidden = true;
+                    assignModal.style.display = ''; // Reset inline style
+                }
+            });
+        });
+
+        // Handle row selection
+        dealerRows.forEach(function(row) {
+            row.addEventListener('click', function(e) {
+                e.preventDefault();
+                var uid = row.getAttribute('data-assign-userid');
+                if (!uid) return;
+                dealerRows.forEach(function(r) { r.classList.remove('selected'); });
+                row.classList.add('selected');
+                if (assignSubmitBtn) {
+                    assignSubmitBtn.disabled = false;
+                    // Temporarily store the selected uid and label on the button
+                    assignSubmitBtn.setAttribute('data-selected-uid', uid);
+                    assignSubmitBtn.setAttribute('data-selected-label', row.getAttribute('data-assign-label'));
+                }
+            });
+        });
+        
+        // Handle filtering (basic text match)
+        var filterInputs = document.querySelectorAll('#createAssignModal .inquiries-assign-filter');
+        filterInputs.forEach(function(inp) {
+            inp.addEventListener('input', function() {
+                var filters = {};
+                filterInputs.forEach(function(fi) {
+                    var val = fi.value.trim().toLowerCase();
+                    if (val) filters[fi.getAttribute('data-col')] = val;
+                });
+                
+                dealerRows.forEach(function(row) {
+                    var match = true;
+                    for (var col in filters) {
+                        var td = row.querySelector('td[data-col="' + col + '"]');
+                        if (td) {
+                            var tdText = td.textContent.trim().toLowerCase();
+                            if (tdText.indexOf(filters[col]) === -1) {
+                                match = false;
+                                break;
+                            }
+                        }
+                    }
+                    row.style.display = match ? '' : 'none';
+                });
+            });
+        });
+
+        if (assignSubmitBtn) {
+            assignSubmitBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                var uid = this.getAttribute('data-selected-uid');
+                if (uid) {
+                    if (assignToHidden) assignToHidden.value = uid;
+                    updateAssignDisplay();
+                    if (assignModal) {
+                        assignModal.hidden = true;
+                        assignModal.style.display = '';
+                    }
+                }
+            });
+        }
+    } catch (err) {
+        var btn = document.getElementById('openAssignModalBtn');
+        if (btn) btn.textContent = 'Err: ' + err.message;
     }
 
 });

@@ -22,10 +22,10 @@
             <p>Thank you for contacting us. Your inquiry (#{{ $inquiryId }}) has been assigned to one of our authorized dealers who will be following up on your case shortly.</p>
             
             <p>Assigned Dealer Details:<br>
-            Dealer Name: {{ $dealerName }}</p>
-            <p>Email: {{ $dealerEmail }}<br>
+            Dealer Name: {{ $dealerName }}<br>
+            Email: {{ $dealerEmail }}</p>
             
-            Our dealer will get in touch with you soon to assist you with your request.</p>
+            <p>Our dealer will get in touch with you soon to assist you with your request.</p>
         </div>
         <p class="footer">This is an automated message from SQL SMS.</p>
     </div>

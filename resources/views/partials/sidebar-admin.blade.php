@@ -20,6 +20,7 @@
     </div>
     <nav class="dashboard-nav">
         <div class="dashboard-nav-group">
+        @if ($role !== 'admin')
         <a href="{{ route('admin.dashboard') }}" class="dashboard-nav-item {{ $current === 'dashboard' ? 'dashboard-nav-item-active' : '' }}">
             <span class="dashboard-nav-icon"><i class="bi {{ $current === 'dashboard' ? 'bi-grid-fill' : 'bi-grid' }}"></i></span>
             <span>Dashboard</span>
@@ -40,6 +41,7 @@
             <span class="dashboard-nav-icon"><i class="bi {{ $current === 'history' ? 'bi-clock-fill' : 'bi-clock-history' }}"></i></span>
             <span>Lead Activities</span>
         </a>
+        @endif
         </div>
 
         @if ($role === 'admin')

@@ -15,6 +15,11 @@ class RequireAdmin
             return redirect('/login');
         }
 
+        // Restrict 'admin' role to only maintain-users routes within the admin prefix
+        if ($role === 'admin' && ! $request->is('admin/maintain-users*')) {
+            return redirect()->route('admin.maintain-users');
+        }
+
         return $next($request);
     }
 }

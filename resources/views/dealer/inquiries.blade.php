@@ -827,11 +827,11 @@ function initDealerInquiriesPage() {
             var useShortHeight = (visibleDataCount > 0 && visibleDataCount < perPage) || (visibleDataCount === 0 && allowZeroFill);
             var targetRows = getDealerPaginationTargetRows();
             
-            var defaultPlaceholderHeight = 57;
+            var defaultPlaceholderHeight = 56;
             if (window.innerWidth >= 1200 && window.innerHeight <= 900) {
                 defaultPlaceholderHeight = 44;
             }
-            var placeholderRowHeight = getDealerReferenceRowHeight(tbody) || defaultPlaceholderHeight;
+            var placeholderRowHeight = defaultPlaceholderHeight;
             
             var emptyRow = resetDealerEmptyRowHeight(tbody);
             var emptyCell = emptyRow ? emptyRow.querySelector('.inquiries-empty-cell, .inquiries-empty') : null;

@@ -4036,6 +4036,12 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
 }
 .inquiries-table .inquiries-placeholder-cell {
   height: 56px;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  line-height: 0;
+  box-sizing: border-box;
+  border-bottom: none;
+  background: #ffffff;
 }
 
 .inquiries-table td {
@@ -6330,12 +6336,11 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
   border-collapse: separate;
   border-spacing: 0;
   font-size: 12px;
-  --assign-dealers-header-height: 36px;
 }
-.inquiries-assign-dealers-table thead tr:first-child th {
+.inquiries-assign-dealers-table thead {
   position: sticky;
   top: 0;
-  z-index: 3;
+  z-index: 10;
 }
 .inquiries-assign-dealers-table thead th {
   background: #ede9fe;
@@ -6346,12 +6351,9 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
   white-space: nowrap;
 }
 .inquiries-assign-dealers-filter-row th {
-  position: sticky;
-  top: var(--assign-dealers-header-height);
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
+  background: #ede9fe;
+  border-bottom: 1px solid #ddd6fe;
   padding: 6px 10px 8px;
-  z-index: 2;
 }
 .inquiries-assign-filter {
   width: 100%;
@@ -9015,7 +9017,7 @@ html.theme-dark .inquiries-assign-dealers-table thead th {
 }
 
 html.theme-dark .inquiries-assign-dealers-filter-row th {
-  background: #111a2d !important;
+  background: #172133 !important;
 }
 
 html.theme-dark .inquiries-table td,

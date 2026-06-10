@@ -522,7 +522,6 @@
                             $assignLeadLabel = $acompany !== '' && $acontact !== '' ? ($acompany . ' - ' . $acontact) : ($acompany !== '' ? $acompany : ($acontact !== '' ? $acontact : ('#SQL-' . ($r->LEADID ?? ''))));
                         @endphp
                         <a href="{{ route('admin.inquiries.edit', ['leadId' => $r->LEADID, 'tab' => 'incoming']) }}" class="inquiries-btn inquiries-btn-assign inquiries-edit-inquiry-btn" data-lead-id="{{ $r->LEADID }}" title="Edit" aria-label="Edit"><i class="bi bi-pencil-square" aria-hidden="true"></i></a>
-                        <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-incoming-assign-btn" data-assign-lead="{{ $r->LEADID }}" data-assign-name="{{ e($assignLeadLabel) }}" title="Assign" aria-label="Assign"><i class="bi bi-person-check" aria-hidden="true"></i></button>
                         <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-delete-inquiry-btn" data-lead-id="{{ $r->LEADID }}" title="Delete" aria-label="Delete"><i class="bi bi-trash" aria-hidden="true"></i></button>
                     </td>
                 </tr>
@@ -914,7 +913,7 @@
             <div class="duplicates-groups-container">
                 @if(!empty($duplicateGroups))
                     @foreach($duplicateGroups as $groupIdx => $group)
-                        <div class="duplicates-group-card" style="border: 1px solid #e5e7eb; border-radius: 12px; margin-bottom: 20px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                        <div class="duplicates-group-card" data-lead-ids="{{ implode(',', array_map(function($l) { return $l->LEADID; }, $group['leads'])) }}" style="border: 1px solid #e5e7eb; border-radius: 12px; margin-bottom: 20px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
                             <div class="duplicates-group-header" style="background: #f9fafb; padding: 12px 16px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                                 <div>
                                     <span style="font-weight: 700; color: #1f2937; font-size: 13.5px;">{{ $group['company'] }}</span>
@@ -3314,18 +3313,34 @@ document.addEventListener('DOMContentLoaded', function() {
     (function initDuplicatesModal() {
         var modal = document.getElementById('inquiryDuplicatesModal');
         var btn = document.getElementById('resolveDuplicatesBtn');
-        if (!modal || !btn) return;
+        if (!modal) return;
 
         var modalWin = modal.querySelector('.inquiries-assign-window');
         var modalHeader = modal.querySelector('.inquiries-assign-header');
         var dragOffsetX = 0, dragOffsetY = 0;
-
-        function open() {
+        function open(onlyLeadId) {
+            if (onlyLeadId && onlyLeadId.preventDefault) {
+                onlyLeadId = undefined;
+            }
             if (modalWin) {
                 modalWin.style.transform = '';
                 dragOffsetX = 0;
                 dragOffsetY = 0;
             }
+            var cards = modal.querySelectorAll('.duplicates-group-card');
+            var duplicateCard = null;
+            if (onlyLeadId) {
+                for (var i = 0; i < cards.length; i++) {
+                    var ids = (cards[i].getAttribute('data-lead-ids') || '').split(',');
+                    if (ids.indexOf(String(onlyLeadId)) !== -1) {
+                        duplicateCard = cards[i];
+                        break;
+                    }
+                }
+            }
+            cards.forEach(function(card) {
+                card.style.display = (!onlyLeadId || card === duplicateCard) ? 'block' : 'none';
+            });
             modal.hidden = false;
             updateSelectDropdownState();
         }
@@ -3337,9 +3352,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 dragOffsetX = 0;
                 dragOffsetY = 0;
             }
+            var cards = modal.querySelectorAll('.duplicates-group-card');
+            cards.forEach(function(card) {
+                card.style.display = '';
+            });
         }
+        window.openDuplicatesModal = open;
 
-        btn.addEventListener('click', open);
+        if (btn) btn.addEventListener('click', open);
 
         var closeBtn = document.getElementById('duplicatesCloseBtn');
         var cancelBtn = document.getElementById('duplicatesCancelBtn');
@@ -3925,19 +3945,42 @@ document.addEventListener('DOMContentLoaded', function() {
             inp.addEventListener('change', applyDealerFilters);
         });
         bindInquiryOperatorMenus(dealerTable, applyDealerFilters);
-
         document.addEventListener('click', function(e) {
             var btn = e.target && e.target.closest ? e.target.closest('[data-assign-lead]') : null;
             if (btn) {
+                var leadId = btn.getAttribute('data-assign-lead');
+                
+                // Check if this lead belongs to any duplicate group
+                var hasDuplicate = false;
+                var dupModal = document.getElementById('inquiryDuplicatesModal');
+                if (dupModal) {
+                    var cards = dupModal.querySelectorAll('.duplicates-group-card');
+                    for (var i = 0; i < cards.length; i++) {
+                        var ids = (cards[i].getAttribute('data-lead-ids') || '').split(',');
+                        if (ids.indexOf(String(leadId)) !== -1) {
+                            hasDuplicate = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if (!window.__bypassDuplicateCheck && hasDuplicate && typeof window.openDuplicatesModal === 'function') {
+                    window.__pendingAssignLeadBtn = btn;
+                    window.openDuplicatesModal(leadId);
+                    return;
+                }
+                window.__bypassDuplicateCheck = false;
+
                 var inquiryLocation = getInquiryLocationFromTrigger(btn);
                 open(
-                    btn.getAttribute('data-assign-lead'),
+                    leadId,
                     btn.getAttribute('data-assign-name'),
                     inquiryLocation.postcode,
                     inquiryLocation.city
                 );
                 return;
             }
+
             var row = e.target && e.target.closest ? e.target.closest('.inquiries-assign-dealer-row') : null;
             if (row && modal.contains(row)) {
                 var uid = row.getAttribute('data-assign-userid') || '';
@@ -4502,6 +4545,18 @@ document.addEventListener('DOMContentLoaded', function() {
           }
       })();
   });
-  </script>
-  @endsection
+</script>
 
+@if(session('auto_resolve_duplicate'))
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Small timeout to ensure everything is initialized
+    setTimeout(function() {
+        if (typeof window.openDuplicatesModal === 'function') {
+            window.openDuplicatesModal('{{ session('auto_resolve_duplicate') }}');
+        }
+    }, 100);
+});
+</script>
+@endif
+@endsection

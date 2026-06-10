@@ -17,7 +17,10 @@ trait ResolvesConsoleRedirects
 
     protected function dashboardPathForRole(Request $request, string $role): string
     {
-        if ($role === 'admin' || $role === 'manager') {
+        if ($role === 'admin') {
+            return '/admin/maintain-users';
+        }
+        if ($role === 'manager') {
             return '/admin/dashboard';
         }
 

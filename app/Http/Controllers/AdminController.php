@@ -165,20 +165,7 @@ class AdminController extends Controller
 
     private function inquiryFormViewData(?object $inquiry = null): array
     {
-        $dealers = [];
-        try {
-            $dealers = DB::select(
-                'SELECT "USERID", "COMPANY", "EMAIL" FROM "USERS" WHERE UPPER(TRIM("SYSTEMROLE")) LIKE \'%DEALER%\' ORDER BY "COMPANY"'
-            );
-        } catch (\Throwable $e) {
-            try {
-                $dealers = DB::select(
-                    'SELECT "USERID", "EMAIL" FROM "USERS" WHERE UPPER(TRIM("SYSTEMROLE")) LIKE \'%DEALER%\' ORDER BY "USERID"'
-                );
-            } catch (\Throwable $e2) {
-                // leave empty
-            }
-        }
+        $dealers = $this->buildDealerItems();
 
         $data = [
             'dealers' => $dealers,
@@ -1178,14 +1165,17 @@ class AdminController extends Controller
 
                     // Check if there is at least one unassigned lead in the duplicate group
                     $hasUnassigned = false;
+                    $forceInclude = false;
                     foreach ($leads as $l) {
                         if (empty(trim((string) ($l->ASSIGNEDTO ?? '')))) {
                             $hasUnassigned = true;
-                            break;
+                        }
+                        if (session('auto_resolve_duplicate') && $l->LEADID == session('auto_resolve_duplicate')) {
+                            $forceInclude = true;
                         }
                     }
 
-                    if ($hasUnassigned && count($leads) > 1) {
+                    if (($hasUnassigned || $forceInclude) && count($leads) > 1) {
                         $duplicateGroups[] = [
                             'company' => $leads[0]->COMPANYNAME,
                             'phone' => $leads[0]->CONTACTNO,
@@ -1765,6 +1755,56 @@ class AdminController extends Controller
         ]);
     }
 
+    public function checkDuplicatesAjax(Request $request): JsonResponse
+    {
+        $comp = strtolower(trim((string) $request->input('COMPANYNAME', '')));
+        $leadId = $request->input('LEADID');
+
+        if ($comp === '') {
+            return response()->json(['has_duplicates' => false]);
+        }
+
+        $leads = DB::select(
+            'SELECT "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL",
+                    "ADDRESS1","ADDRESS2","CITY","STATE","COUNTRY","POSTCODE",
+                    "BUSINESSNATURE","USERCOUNT","EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION",
+                    "REFERRALCODE","CREATEDAT","ASSIGNEDTO"
+             FROM "LEAD"
+             WHERE COALESCE("ISDELETED", FALSE) = FALSE
+               AND LOWER(TRIM("COMPANYNAME")) = ?
+             ORDER BY "LEADID" DESC',
+            [$comp]
+        );
+
+        $otherLeadsCount = 0;
+        foreach ($leads as $l) {
+            if ($leadId === null || $l->LEADID != $leadId) {
+                $otherLeadsCount++;
+            }
+        }
+
+        if ($otherLeadsCount > 0) {
+            $group = [
+                'company' => $leads[0]->COMPANYNAME,
+                'phone' => $leads[0]->CONTACTNO,
+                'email' => $leads[0]->EMAIL,
+                'leads' => $leads,
+            ];
+            
+            $html = view('admin.partials.resolve_duplicates_modal_standalone', [
+                'group' => $group,
+                'groupIdx' => 0
+            ])->render();
+
+            return response()->json([
+                'has_duplicates' => true,
+                'html' => $html
+            ]);
+        }
+
+        return response()->json(['has_duplicates' => false]);
+    }
+
     public function companyLookup(Request $request): JsonResponse
     {
         $name = trim((string) $request->query('q', ''));
@@ -1826,7 +1866,7 @@ class AdminController extends Controller
         $row = DB::selectOne(
             'SELECT "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL",
                 "ADDRESS1","ADDRESS2","CITY","STATE","COUNTRY","POSTCODE","BUSINESSNATURE","USERCOUNT",
-                "EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION","REFERRALCODE",
+                "EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION","REFERRALCODE","ASSIGNEDTO",
                 COALESCE("LASTMODIFIED", "CREATEDAT") AS "SNAPSHOT_MODIFIED_AT"
              FROM "LEAD" WHERE "LEADID" = ?',
             [$leadId]
@@ -2027,6 +2067,7 @@ class AdminController extends Controller
                 'DESCRIPTION' => 'nullable|string|max:4000',
                 'REFERRALCODE' => 'nullable|string|max:100',
                 'INQUIRY_SNAPSHOT_AT' => 'nullable|string|max:50',
+                'assignedTo' => 'nullable|string|max:50',
             ],
             [
                 'CONTACTNO.min' => 'Invalid Contact Number.',
@@ -2136,7 +2177,7 @@ class AdminController extends Controller
                 'UPDATE "LEAD" SET
                     "PRODUCTID" = ?, "COMPANYNAME" = ?, "CONTACTNAME" = ?, "CONTACTNO" = ?, "EMAIL" = ?,
                     "ADDRESS1" = ?, "ADDRESS2" = ?, "CITY" = ?, "STATE" = ?, "COUNTRY" = ?, "POSTCODE" = ?, "BUSINESSNATURE" = ?,
-                    "USERCOUNT" = ?, "EXISTINGSOFTWARE" = ?, "DEMOMODE" = ?, "DESCRIPTION" = ?, "REFERRALCODE" = ?,
+                    "USERCOUNT" = ?, "EXISTINGSOFTWARE" = ?, "DEMOMODE" = ?, "DESCRIPTION" = ?, "REFERRALCODE" = ?, "ASSIGNEDTO" = ?,
                     "LASTMODIFIED" = CURRENT_TIMESTAMP
                  WHERE "LEADID" = ?',
                 [
@@ -2157,6 +2198,7 @@ class AdminController extends Controller
                     $validated['DEMOMODE'],
                     $descriptionValue,
                     $validated['REFERRALCODE'] ?? null,
+                    $validated['assignedTo'] ?? null,
                     $leadId,
                 ]
             );
@@ -2581,7 +2623,7 @@ class AdminController extends Controller
                 $email = trim((string) ($dealerRow->EMAIL ?? ''));
 
                 if ($company !== '' && $alias !== '') {
-                    $label = $company.' - '.$alias;
+                    $label = $company.' ('.$alias.')';
                 } elseif ($company !== '') {
                     $label = $company;
                 } elseif ($alias !== '') {

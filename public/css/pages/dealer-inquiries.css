@@ -216,7 +216,11 @@ html.theme-dark .inquiry-row--notif-highlight td span:not(.inquiries-badge):not(
 }
 
 .dealer-inquiries-panel .inquiries-table .inquiries-placeholder-cell {
-  height: 57px;
+  height: 56px;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  line-height: 0;
+  box-sizing: border-box;
   border-bottom: none;
   background: #ffffff;
 }
