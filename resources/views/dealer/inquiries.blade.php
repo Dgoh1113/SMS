@@ -1120,6 +1120,11 @@ if (document.readyState === 'loading') {
                     <span>Update Details</span>
                 </div>
                 <div class="inquiry-followup-fields">
+                    <div class="inquiry-field" id="inquiryHistoryRemarkWrap" style="display:none;">
+                        <span class="inquiry-field-label">PREVIOUS REMARKS</span>
+                        <div class="inquiry-history-remark" id="inquiryHistoryRemark"></div>
+                    </div>
+                    
                     <label class="inquiry-field">
                         <span class="inquiry-field-label" id="inquiryDateLabel">FOLLOW-UP DATE</span>
                         <div class="inquiry-field-input-wrap">
@@ -1148,24 +1153,45 @@ if (document.readyState === 'loading') {
                         </div>
                     </div>
                     
-                    <label class="inquiry-field" id="inquiryAttachmentField">
-                        <span class="inquiry-field-label" id="inquiryAttachmentLabel">ATTACHMENT (images)</span>
+                    <div style="display: flex; gap: 15px; align-items: flex-start; width: 100%;">
+                        <label class="inquiry-field" id="inquiryAttachmentField" style="flex: 2; margin-bottom: 0;">
+                            <span class="inquiry-field-label" id="inquiryAttachmentLabel">ATTACHMENT (images)</span>
+                            <div class="inquiry-field-input-wrap">
+                                <i class="bi bi-image"></i>
+                                <input type="file" class="inquiry-field-input inquiry-field-file" id="inquiryAttachment" accept="image/*" multiple>
+                            </div>
+                            <div class="inquiry-attachment-preview-wrap" id="inquiryAttachmentPreview" aria-live="polite"></div>
+                        </label>
+
+                        <div id="inquirySerialsRow" style="display: none; flex: 2; gap: 15px; margin-bottom: 0; align-items: flex-start;">
+                            <label class="inquiry-field" style="flex: 1; margin-bottom: 0;">
+                                <span class="inquiry-field-label">SERIAL NO (ACC)</span>
+                                <div class="inquiry-field-input-wrap" style="height: 38px; padding: 4px 10px; display: flex; align-items: center;">
+                                    <span style="font-size: 0.85em; font-weight: bold; color: #777; margin-right: 5px; white-space: nowrap; font-family: inherit;">S/N :</span>
+                                    <input type="text" class="inquiry-field-input" id="inquirySerialAcc" style="font-size: 0.85em; padding: 0; border: none; outline: none; background: transparent; width: 100%; height: 100%;">
+                                </div>
+                            </label>
+                            <label class="inquiry-field" style="flex: 1; margin-bottom: 0;">
+                                <span class="inquiry-field-label">SERIAL NO (PAY)</span>
+                                <div class="inquiry-field-input-wrap" style="height: 38px; padding: 4px 10px; display: flex; align-items: center;">
+                                    <span style="font-size: 0.85em; font-weight: bold; color: #777; margin-right: 5px; white-space: nowrap; font-family: inherit;">S/N :</span>
+                                    <input type="text" class="inquiry-field-input" id="inquirySerialPay" style="font-size: 0.85em; padding: 0; border: none; outline: none; background: transparent; width: 100%; height: 100%;">
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <label class="inquiry-field" id="inquiryAttachment2Field" style="display:none;">
+                        <span class="inquiry-field-label" id="inquiryAttachment2Label">Upload your customer's payment proof <span class="inquiry-field-required">*</span></span>
                         <div class="inquiry-field-input-wrap">
                             <i class="bi bi-image"></i>
-                            <input type="file" class="inquiry-field-input inquiry-field-file" id="inquiryAttachment" accept="image/*" multiple>
+                            <input type="file" class="inquiry-field-input inquiry-field-file" id="inquiryAttachment2" accept="image/*" multiple>
                         </div>
-                        <div class="inquiry-attachment-preview-wrap" id="inquiryAttachmentPreview" aria-live="polite"></div>
+                        <div class="inquiry-attachment-preview-wrap" id="inquiryAttachment2Preview" aria-live="polite"></div>
                     </label>
-                    <div class="inquiry-field" id="inquiryHistoryRemarkWrap" style="display:none;">
-                        <span class="inquiry-field-label">PREVIOUS REMARKS</span>
-                        <div class="inquiry-history-remark" id="inquiryHistoryRemark"></div>
-                    </div>
 
                     <label class="inquiry-field">
                         <span class="inquiry-field-label">NEW REMARK</span>
-                        <div id="inquiryNewRemarkDateWrap" style="display:none;">
-                            <span class="inquiry-history-date-badge" id="inquiryNewRemarkDate"></span>
-                        </div>
                         <textarea class="inquiry-field-input inquiry-field-textarea" id="inquiryRemark" placeholder="Type your update here..." rows="4"></textarea>
                     </label>
                 </div>
@@ -1505,8 +1531,8 @@ if (document.readyState === 'loading') {
         var toIdx = statusOrder.indexOf(toStatus);
         if (fromIdx < 0) return false;
 
-        // Allow SAME status if it's FOLLOW UP or DEMO (for editing remarks)
-        if (fromStatus === toStatus && (fromStatus === 'FOLLOW UP' || fromStatus === 'DEMO')) {
+        // Allow SAME status if it's FOLLOW UP, DEMO, CONFIRMED, or COMPLETED (for editing remarks / updating completed again)
+        if (fromStatus === toStatus && (fromStatus === 'FOLLOW UP' || fromStatus === 'DEMO' || fromStatus === 'CONFIRMED' || fromStatus === 'COMPLETED')) {
             return true;
         }
 
@@ -1706,11 +1732,11 @@ if (document.readyState === 'loading') {
         var remarkField = document.getElementById('inquiryRemark');
         var dateWrap = document.getElementById('inquiryNewRemarkDateWrap');
         var dateBadge = document.getElementById('inquiryNewRemarkDate');
-        if (!historyWrap || !historyEl || !remarkField || !dateWrap || !dateBadge) return;
+        if (!historyWrap || !historyEl || !remarkField) return;
 
         var selectedName = getSelectedStatusName();
         var fromStatus = statusOrder[currentStatusIdx] || 'PENDING';
-        var isLoggableStatus = (selectedName === 'FOLLOW UP' || selectedName === 'DEMO');
+        var isLoggableStatus = (selectedName === 'FOLLOW UP' || selectedName === 'DEMO' || selectedName === 'CONFIRMED');
         var isSameStatusUpdate = isLoggableStatus && fromStatus === selectedName;
 
         var act = findActivityForStatus(selectedName);
@@ -1729,19 +1755,19 @@ if (document.readyState === 'loading') {
         if (!viewMode) {
             remarkField.closest('.inquiry-field').style.display = 'block';
             if (isSameStatusUpdate && (act || isLoadingActivities)) {
-                dateWrap.style.display = 'block';
-                dateBadge.textContent = new Date().toLocaleDateString('en-GB'); // d/m/Y
+                if (dateWrap) dateWrap.style.display = 'block';
+                if (dateBadge) dateBadge.textContent = new Date().toLocaleDateString('en-GB'); // d/m/Y
                 remarkField.placeholder = "Add your NEW notes for " + selectedName + " here...";
                 if (attachmentField) attachmentField.style.display = 'none';
             } else {
-                dateWrap.style.display = 'none';
+                if (dateWrap) dateWrap.style.display = 'none';
                 remarkField.placeholder = "Type your update here...";
                 if (attachmentField) attachmentField.style.display = 'block';
             }
         } else {
             // In View Mode, hide the "New Remark" field entirely
             remarkField.closest('.inquiry-field').style.display = 'none';
-            dateWrap.style.display = 'none';
+            if (dateWrap) dateWrap.style.display = 'none';
             if (attachmentField) attachmentField.style.display = 'block';
         }
     }
@@ -1829,23 +1855,88 @@ if (document.readyState === 'loading') {
         if (remarkEl) remarkEl.placeholder = remarkPlaceholders[status] || remarkPlaceholders['PENDING'];
     }
 
+    function getOrdinal(n) {
+        var s = ["th", "st", "nd", "rd"],
+            v = n % 100;
+        return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    }
+
+    function getStatusUpdateCount(statusOrderName) {
+        if (!cachedActivities) return 0;
+        var count = 0;
+        for (var j = 0; j < cachedActivities.length; j++) {
+            if (cachedActivities[j].type === 'activity' && statusMatches(statusOrderName, cachedActivities[j].status)) {
+                count++;
+                var desc = cachedActivities[j].description || '';
+                var matches = desc.match(/^-{10,}\s*$/gm);
+                if (matches) {
+                    count += matches.length;
+                }
+            }
+        }
+        return count;
+    }
+
     function setDateTimeLabels(status) {
         var labels = dateTimeLabels[status] || dateTimeLabels['FOLLOW UP'];
         var dateLabel = document.getElementById('inquiryDateLabel');
         var timeLabel = document.getElementById('inquiryTimeLabel');
         var attachmentLabel = document.getElementById('inquiryAttachmentLabel');
 
-        if (dateLabel) dateLabel.textContent = labels.date;
-        if (timeLabel) timeLabel.textContent = labels.time;
+        var displayDateLabel = labels.date;
+        var displayTimeLabel = labels.time;
+
+        if (status === 'FOLLOW UP' || status === 'DEMO' || status === 'CONFIRMED') {
+            var count = getStatusUpdateCount(status);
+            var seq = count;
+            if (!viewMode) {
+                seq = count + 1;
+            }
+            if (seq > 1) {
+                var prefix = getOrdinal(seq) + ' ';
+                if (status === 'FOLLOW UP') {
+                    displayDateLabel = prefix + 'FOLLOW-UP DATE';
+                    displayTimeLabel = prefix + 'FOLLOW-UP TIME';
+                } else if (status === 'DEMO') {
+                    displayDateLabel = prefix + 'DEMO DATE';
+                    displayTimeLabel = prefix + 'DEMO TIME';
+                } else if (status === 'CONFIRMED') {
+                    displayDateLabel = prefix + 'CONFIRMED DATE';
+                    displayTimeLabel = prefix + 'CONFIRMED TIME';
+                }
+            }
+        }
+
+        if (dateLabel) dateLabel.textContent = displayDateLabel;
+        if (timeLabel) timeLabel.textContent = displayTimeLabel;
         
+        var hasCompletedAct = !!findActivityForStatus('COMPLETED');
         if (attachmentLabel) {
             if (status === 'COMPLETED') {
-                attachmentLabel.innerHTML = 'Upload Your own company\'s invoice <span class="inquiry-field-required">*</span>';
+                attachmentLabel.innerHTML = hasCompletedAct 
+                    ? 'Upload Your own company\'s invoice' 
+                    : 'Upload Your own company\'s invoice <span class="inquiry-field-required">*</span>';
             } else if (status === 'REWARDED') {
                 attachmentLabel.innerHTML = 'UPLOAD REFERRAL PAYOUT PROOF <span class="inquiry-field-required">*</span>';
             } else {
                 attachmentLabel.textContent = 'ATTACHMENT (images)';
             }
+        }
+
+        var attachment2Field = document.getElementById('inquiryAttachment2Field');
+        var attachment2Label = document.getElementById('inquiryAttachment2Label');
+        if (attachment2Label) {
+            attachment2Label.innerHTML = hasCompletedAct 
+                ? 'Upload your customer\'s payment proof' 
+                : 'Upload your customer\'s payment proof <span class="inquiry-field-required">*</span>';
+        }
+        var serialsRow = document.getElementById('inquirySerialsRow');
+        if (status === 'COMPLETED') {
+            if (attachment2Field) attachment2Field.style.display = 'block';
+            if (serialsRow) serialsRow.style.display = 'flex';
+        } else {
+            if (attachment2Field) attachment2Field.style.display = 'none';
+            if (serialsRow) serialsRow.style.display = 'none';
         }
     }
 
@@ -1854,13 +1945,18 @@ if (document.readyState === 'loading') {
         var dateEl = document.getElementById('inquiryFollowupDate');
         var timeEl = document.getElementById('inquiryFollowupTime');
         var productBoxes = document.querySelectorAll('.inquiry-product-checkbox');
+        var serialAccEl = document.getElementById('inquirySerialAcc');
+        var serialPayEl = document.getElementById('inquirySerialPay');
         if (remarkEl) remarkEl.value = '';
         if (dateEl) dateEl.value = getDefaultDate();
         if (timeEl) timeEl.value = getDefaultTime();
         if (productBoxes.length) {
             productBoxes.forEach(function(cb) { cb.checked = false; });
         }
+        if (serialAccEl) serialAccEl.value = '';
+        if (serialPayEl) serialPayEl.value = '';
         clearAttachmentPreviews();
+        clearAttachment2Previews();
     }
 
     function syncModalAfterSuccessfulStatusSave(savedStatus) {
@@ -1885,6 +1981,17 @@ if (document.readyState === 'loading') {
             setRemarkPlaceholder(getSelectedStatusName());
             setDateTimeLabels(getSelectedStatusName());
             resetEditableFieldsForSelectedStatus();
+        } else if (normalizeStatus(displayStatus) === 'COMPLETED') {
+            viewMode = false;
+            setProgression(displayStatus);
+            setFieldsReadOnly(false);
+            setRemarkPlaceholder(getSelectedStatusName());
+            setDateTimeLabels(getSelectedStatusName());
+            // Clear only remark and attachment previews; products/serials will be prefilled from the loaded activity
+            var remarkEl = document.getElementById('inquiryRemark');
+            if (remarkEl) remarkEl.value = '';
+            clearAttachmentPreviews();
+            clearAttachment2Previews();
         } else {
             viewMode = true;
             setProgression(displayStatus);
@@ -2006,9 +2113,20 @@ if (document.readyState === 'loading') {
         
         var selectedName = getSelectedStatusName();
         var fromStatus = statusOrder[currentStatusIdx] || 'PENDING';
-        var isSameStatusUpdate = !viewMode && (selectedName === 'FOLLOW UP' || selectedName === 'DEMO') && fromStatus === selectedName;
+        var isSameStatusUpdate = !viewMode && (selectedName === 'FOLLOW UP' || selectedName === 'DEMO' || selectedName === 'CONFIRMED' || selectedName === 'COMPLETED') && fromStatus === selectedName;
 
-        if (!activity || !activity.created_at) {
+        console.log('populateFormFromActivity:', {
+            selectedName: selectedName,
+            fromStatus: fromStatus,
+            viewMode: viewMode,
+            isSameStatusUpdate: isSameStatusUpdate,
+            activity: activity
+        });
+
+        if (isSameStatusUpdate) {
+            if (dateEl) dateEl.value = getDefaultDate();
+            if (timeEl) timeEl.value = getDefaultTime();
+        } else if (!activity || !activity.created_at) {
             if (dateEl) dateEl.value = '';
             if (timeEl) timeEl.value = '';
             if (remarkEl) remarkEl.value = '';
@@ -2016,16 +2134,16 @@ if (document.readyState === 'loading') {
                 productBoxes.forEach(function(cb) { cb.checked = false; });
             }
             return;
-        }
-        
-        if (isSameStatusUpdate) {
-            if (dateEl) dateEl.value = getDefaultDate();
-            if (timeEl) timeEl.value = getDefaultTime();
         } else {
             var d = new Date(activity.created_at);
             if (dateEl) dateEl.value = isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
             if (timeEl) timeEl.value = isNaN(d.getTime()) ? '' : String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
         }
+        
+        var serialAccEl = document.getElementById('inquirySerialAcc');
+        var serialPayEl = document.getElementById('inquirySerialPay');
+        if (serialAccEl) serialAccEl.value = (activity && activity.serial_acc) ? activity.serial_acc : '';
+        if (serialPayEl) serialPayEl.value = (activity && activity.serial_pay) ? activity.serial_pay : '';
         
         // History is now handled by refreshRemarkHistoryDisplay
         if (remarkEl) remarkEl.value = '';
@@ -2050,6 +2168,9 @@ if (document.readyState === 'loading') {
         var timeEl = document.getElementById('inquiryFollowupTime');
         var remarkEl = document.getElementById('inquiryRemark');
         var fileEl = document.getElementById('inquiryAttachment');
+        var file2El = document.getElementById('inquiryAttachment2');
+        var serialAccEl = document.getElementById('inquirySerialAcc');
+        var serialPayEl = document.getElementById('inquirySerialPay');
         var productBoxes = document.querySelectorAll('.inquiry-product-checkbox');
         // Using readOnly on <input type="date/time"> is buggy in some browsers
         // (it can prevent typing/picker until refocus). Use disabled instead.
@@ -2057,6 +2178,9 @@ if (document.readyState === 'loading') {
         if (timeEl) timeEl.disabled = !!readOnly;
         if (remarkEl) remarkEl.readOnly = readOnly;
         if (fileEl) fileEl.disabled = readOnly;
+        if (file2El) file2El.disabled = readOnly;
+        if (serialAccEl) serialAccEl.readOnly = readOnly;
+        if (serialPayEl) serialPayEl.readOnly = readOnly;
         productBoxes.forEach(function(b) { b.disabled = readOnly; });
     }
 
@@ -2124,6 +2248,7 @@ if (document.readyState === 'loading') {
             var html = '<span class="inquiry-activity-bullet"></span><div class="inquiry-activity-content">';
             if (a.type === 'created') {
                 html += '<strong>' + user + '</strong> created inquiry <span class="inquiry-activity-link">#SQL-' + currentLeadId + '</span>';
+                html += ' <span class="inquiry-activity-time">' + timeStr + '</span>';
             } else {
                 var subj = escapeInquiryHtml(a.subject || '');
                 var desc = escapeInquiryHtml(a.description || '').replace(/\r?\n/g, '<br>');
@@ -2137,13 +2262,29 @@ if (document.readyState === 'loading') {
                 html += '<strong>' + user + '</strong> ' + (subj ? subj + ' ' : '');
                 if (status) html += 'changed status to <strong class="inquiry-activity-status">' + status + '</strong> ';
                 if (desc) html += '<span class="inquiry-activity-desc">' + desc + '</span> ';
+                html += ' <span class="inquiry-activity-time">' + timeStr + '</span>';
             }
-            html += '<span class="inquiry-activity-time">' + timeStr + '</span>';
+            if (a.serial_acc || a.serial_pay) {
+                html += '<div class="inquiry-activity-serials" style="margin-top: 5px; font-size: 0.85em; color: #555;">';
+                if (a.serial_acc) html += '<span style="margin-right: 15px;"><strong>Serial No (Acc):</strong> ' + escapeInquiryHtml(a.serial_acc) + '</span>';
+                if (a.serial_pay) html += '<span><strong>Serial No (Pay):</strong> ' + escapeInquiryHtml(a.serial_pay) + '</span>';
+                html += '</div>';
+            }
             if (a.attachment_urls && a.attachment_urls.length > 0) {
+                html += '<div class="inquiry-activity-attachments-label" style="margin-top: 5px; font-size: 0.85em; font-weight: bold; color: #555;">Company Invoice:</div>';
                 html += '<div class="inquiry-activity-attachments">';
                 a.attachment_urls.forEach(function(url) {
                     var safe = (url || '').replace(/"/g, '&quot;');
                     html += '<a href="' + safe + '" target="_blank" rel="noopener" class="inquiry-activity-attachment-link"><img src="' + safe + '" alt="Attachment" class="inquiry-activity-attachment-img"></a>';
+                });
+                html += '</div>';
+            }
+            if (a.attachment2_urls && a.attachment2_urls.length > 0) {
+                html += '<div class="inquiry-activity-attachments-label" style="margin-top: 5px; font-size: 0.85em; font-weight: bold; color: #555;">Payment Proof:</div>';
+                html += '<div class="inquiry-activity-attachments">';
+                a.attachment2_urls.forEach(function(url) {
+                    var safe = (url || '').replace(/"/g, '&quot;');
+                    html += '<a href="' + safe + '" target="_blank" rel="noopener" class="inquiry-activity-attachment-link"><img src="' + safe + '" alt="Payment Proof" class="inquiry-activity-attachment-img"></a>';
                 });
                 html += '</div>';
             }
@@ -2184,6 +2325,7 @@ if (document.readyState === 'loading') {
                 renderLatestFailedNotice(normalizeStatus(latestStatusRaw) === 'CANCELLED' ? findLatestCancelledActivity() : findLatestFailedActivity());
                 toggleFailedSummaryMode();
                 if (typeof refreshRemarkHistoryDisplay === 'function') refreshRemarkHistoryDisplay();
+                setDateTimeLabels(getSelectedStatusName());
 
                 // Re-compute the latest status from DB activities (by created_at) to keep UI in sync
                 // with whatever Firebird considers the latest row.
@@ -2211,10 +2353,7 @@ if (document.readyState === 'loading') {
                         latestMinTime = String(dmin.getHours()).padStart(2, '0') + ':' + String(dmin.getMinutes()).padStart(2, '0');
                     }
                 }
-
-                // In view mode, always populate the selected (submitted) status from DB.
-                // Submitted statuses are view-only (read-only fields).
-                if (modal && modal.classList.contains('inquiry-modal-open') && viewMode && selectedStatusIdx <= currentStatusIdx) {
+                  if (modal && modal.classList.contains('inquiry-modal-open') && viewMode && selectedStatusIdx <= currentStatusIdx) {
                     var cur = statusOrder[selectedStatusIdx] || 'PENDING';
                     var act = findActivityForStatus(cur);
                     populateFormFromActivity(act);
@@ -2224,7 +2363,14 @@ if (document.readyState === 'loading') {
                     populateFormFromActivity(findLatestFailedActivity());
                     setFieldsReadOnly(true);
                     setDateTimeLabels('FAILED');
+                } else if (modal && modal.classList.contains('inquiry-modal-open') && !viewMode && getSelectedStatusName() === 'COMPLETED') {
+                    var act = findActivityForStatus('COMPLETED');
+                    if (act) {
+                        populateFormFromActivity(act);
+                        setFieldsReadOnly(false);
+                    }
                 }
+
 
                 var details = data.last_reward_details;
                 if (details && currentStatusIdx === statusOrder.length - 1) {
@@ -2469,6 +2615,72 @@ if (document.readyState === 'loading') {
         });
     }
 
+    var attachment2Files = [];
+    var attachment2PreviewUrls = [];
+
+    function clearAttachment2Previews() {
+        attachment2PreviewUrls.forEach(function(url) { try { URL.revokeObjectURL(url); } catch (e) {} });
+        attachment2PreviewUrls = [];
+        attachment2Files = [];
+        var previewEl = document.getElementById('inquiryAttachment2Preview');
+        if (previewEl) previewEl.innerHTML = '';
+        var inputEl = document.getElementById('inquiryAttachment2');
+        if (inputEl) inputEl.value = '';
+    }
+
+    function renderAttachment2Previews() {
+        var previewEl = document.getElementById('inquiryAttachment2Preview');
+        if (!previewEl) return;
+        attachment2PreviewUrls.forEach(function(url) { try { URL.revokeObjectURL(url); } catch (e) {} });
+        attachment2PreviewUrls = [];
+        previewEl.innerHTML = '';
+        attachment2Files.forEach(function(file, index) {
+            if (!file.type || file.type.indexOf('image/') !== 0) return;
+            var url = URL.createObjectURL(file);
+            attachment2PreviewUrls.push(url);
+            var item = document.createElement('div');
+            item.className = 'inquiry-attachment-preview-item';
+            var img = document.createElement('img');
+            img.src = url;
+            img.alt = file.name || 'Image';
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'inquiry-attachment-preview-remove';
+            btn.setAttribute('aria-label', 'Remove image');
+            btn.innerHTML = '&times;';
+            btn.addEventListener('click', function() {
+                attachment2Files.splice(index, 1);
+                renderAttachment2Previews();
+            });
+            item.appendChild(img);
+            item.appendChild(btn);
+            previewEl.appendChild(item);
+        });
+    }
+
+    var attachment2Input = document.getElementById('inquiryAttachment2');
+    if (attachment2Input) {
+        attachment2Input.addEventListener('change', function() {
+            var files = this.files;
+            if (!files || !files.length) return;
+            var maxSizeBytes = 5 * 1024 * 1024; // 5MB
+            for (var i = 0; i < files.length; i++) {
+                var file = files[i];
+                if (file.type && file.type.indexOf('image/') === 0) {
+                    if (file.size > maxSizeBytes) {
+                        showDealerInquiryToast('File "' + file.name + '" exceeds the 5MB limit.');
+                        continue;
+                    }
+                    attachment2Files.push(file);
+                } else {
+                    showDealerInquiryToast('File "' + file.name + '" is not a valid image.');
+                }
+            }
+            renderAttachment2Previews();
+            this.value = '';
+        });
+    }
+
     function formatIsoDateForDisplay(value) {
         var raw = String(value || '').trim();
         if (!raw) return '';
@@ -2564,6 +2776,7 @@ if (document.readyState === 'loading') {
         if (productBoxes.length) productBoxes.forEach(function(b) { b.checked = false; });
         
         clearAttachmentPreviews();
+        clearAttachment2Previews();
         setDateTimeLabels(getSelectedStatusName());
         toggleAddCalendarButton();
         toggleProductChecklist();
@@ -2578,6 +2791,7 @@ if (document.readyState === 'loading') {
 
     function closeModal() {
         clearAttachmentPreviews();
+        clearAttachment2Previews();
         modal.setAttribute('aria-hidden', 'true');
         modal.classList.remove('inquiry-modal-open');
         document.body.style.overflow = '';
@@ -2611,7 +2825,7 @@ if (document.readyState === 'loading') {
             
             selectedStatusIdx = stepIdx;
             var stepName = step.dataset.step;
-            var isEditAllowedStatus = ['FOLLOW UP', 'DEMO'].indexOf(stepName) !== -1;
+            var isEditAllowedStatus = ['FOLLOW UP', 'DEMO', 'CONFIRMED', 'COMPLETED'].indexOf(stepName) !== -1;
             
             if (isDoneStep) {
                 if (isEditAllowedStatus) {
@@ -2904,8 +3118,8 @@ if (document.readyState === 'loading') {
         if (selectedStatusIdx <= currentStatusIdx) {
             var currentStatus = statusOrder[currentStatusIdx] || 'PENDING';
             
-            // Allow SAME status if it's FOLLOW UP or DEMO
-            if (toStatus === currentStatus && (toStatus === 'FOLLOW UP' || toStatus === 'DEMO')) {
+            // Allow SAME status if it's FOLLOW UP, DEMO, CONFIRMED, or COMPLETED
+            if (toStatus === currentStatus && (toStatus === 'FOLLOW UP' || toStatus === 'DEMO' || toStatus === 'CONFIRMED' || toStatus === 'COMPLETED')) {
                 // Continue
             } else {
                 showDealerInquiryToast('Status is already ' + formatStatusLabel(currentStatus) + '. Please choose the next available status.');
@@ -2925,12 +3139,18 @@ if (document.readyState === 'loading') {
                 return;
             }
         }
-        if (toStatus === 'COMPLETED' && attachmentFiles.length === 0) {
+        var hasCompletedAct = !!findActivityForStatus('COMPLETED');
+        if (toStatus === 'COMPLETED' && !hasCompletedAct && attachmentFiles.length === 0) {
             var msg = isFailedLatestStatus() 
                 ? 'Please upload proof of completion (image) for recovered leads.' 
                 : 'Please upload your own company\'s invoice for COMPLETED status.';
             showDealerInquiryToast(msg);
             if (attachmentInput) attachmentInput.focus();
+            return;
+        }
+        if (toStatus === 'COMPLETED' && !hasCompletedAct && attachment2Files.length === 0) {
+            showDealerInquiryToast('Please upload your customer\'s payment proof for COMPLETED status.');
+            if (attachment2Input) attachment2Input.focus();
             return;
         }
         if (toStatus === 'REWARDED' && attachmentFiles.length === 0) {
@@ -2951,6 +3171,10 @@ if (document.readyState === 'loading') {
         }
         var activityDate = validation.activityDate;
         var activityTime = validation.activityTime;
+        var serialAccEl = document.getElementById('inquirySerialAcc');
+        var serialPayEl = document.getElementById('inquirySerialPay');
+        var serialAcc = serialAccEl ? serialAccEl.value.trim() : '';
+        var serialPay = serialPayEl ? serialPayEl.value.trim() : '';
         var products = [];
         if (toStatus === 'COMPLETED') {
             document.querySelectorAll('.inquiry-product-checkbox:checked').forEach(function(cb) {
@@ -2966,7 +3190,7 @@ if (document.readyState === 'loading') {
             'X-CSRF-TOKEN': csrfToken,
             'X-Requested-With': 'XMLHttpRequest'
         };
-        if (attachmentFiles.length > 0) {
+        if (attachmentFiles.length > 0 || attachment2Files.length > 0) {
             var formData = new FormData();
             formData.append('lead_id', leadId);
             formData.append('status', toStatus);
@@ -2974,13 +3198,18 @@ if (document.readyState === 'loading') {
             formData.append('activity_date', activityDate);
             formData.append('activity_time', activityTime);
             formData.append('products', JSON.stringify(products));
+            formData.append('serial_acc', serialAcc);
+            formData.append('serial_pay', serialPay);
             attachmentFiles.forEach(function(file) {
                 formData.append('attachments[]', file);
+            });
+            attachment2Files.forEach(function(file) {
+                formData.append('attachments2[]', file);
             });
             body = formData;
         } else {
             headers['Content-Type'] = 'application/json';
-            body = JSON.stringify({ lead_id: leadId, status: toStatus, remark: remark, activity_date: activityDate, activity_time: activityTime, products: products });
+            body = JSON.stringify({ lead_id: leadId, status: toStatus, remark: remark, activity_date: activityDate, activity_time: activityTime, products: products, serial_acc: serialAcc, serial_pay: serialPay });
         }
         fetch(updateUrl, {
             method: 'POST',

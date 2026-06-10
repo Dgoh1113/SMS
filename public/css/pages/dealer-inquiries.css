@@ -228,15 +228,15 @@ html.theme-dark .inquiry-row--notif-highlight td span:not(.inquiries-badge):not(
 }
 
 .dealer-inquiries-panel .inquiries-table-scroll {
-  min-height: auto !important;
+  min-height: 570px !important;
 }
 
 .dealer-inquiries-panel .inquiries-table-scroll.inquiries-table-scroll-empty {
-  min-height: auto !important;
+  min-height: 570px !important;
 }
 
 .dealer-inquiries-panel .inquiries-table-scroll.inquiries-table-scroll-short {
-  min-height: auto !important;
+  min-height: 570px !important;
 }
 
 #inquiryUpdateModal .inquiry-latest-failed-notice {
@@ -410,21 +410,21 @@ html.theme-dark .inquiry-row--notif-highlight td span:not(.inquiries-badge):not(
 
   .dealer-inquiries-panel .inquiries-table-scroll {
     flex: 1 1 auto;
-    min-height: auto !important;
+    min-height: 440px !important;
     height: auto;
     max-height: none;
   }
 
   .dealer-inquiries-panel .inquiries-table-scroll.inquiries-table-scroll-empty {
     flex: 1 1 auto;
-    min-height: auto !important;
+    min-height: 440px !important;
     height: auto;
     max-height: none;
   }
 
   .dealer-inquiries-panel .inquiries-table-scroll.inquiries-table-scroll-short {
     flex: 1 1 auto;
-    min-height: auto !important;
+    min-height: 440px !important;
     height: auto;
     max-height: none;
   }
@@ -485,15 +485,15 @@ html.theme-dark .inquiry-row--notif-highlight td span:not(.inquiries-badge):not(
   }
 
   .dealer-inquiries-panel .inquiries-table-scroll.inquiries-table-scroll-empty {
-    min-height: auto !important;
+    min-height: 570px !important;
   }
 
   .dealer-inquiries-panel .inquiries-table-scroll.inquiries-table-scroll-short {
-    min-height: auto !important;
+    min-height: 570px !important;
   }
 
   .dealer-inquiries-panel .inquiries-table-scroll {
-    min-height: auto !important;
+    min-height: 570px !important;
   }
 
   .dealer-inquiries-panel .inquiries-table thead .inquiries-header-row th {
@@ -542,15 +542,15 @@ html.theme-dark .inquiry-row--notif-highlight td span:not(.inquiries-badge):not(
   }
 
   .dealer-inquiries-panel .inquiries-table-scroll {
-    min-height: auto !important;
+    min-height: 570px !important;
   }
 
   .dealer-inquiries-panel .inquiries-table-scroll.inquiries-table-scroll-short {
-    min-height: auto !important;
+    min-height: 570px !important;
   }
 
   .dealer-inquiries-panel .inquiries-table-scroll.inquiries-table-scroll-empty {
-    min-height: auto !important;
+    min-height: 570px !important;
   }
 
   .dealer-inquiries-panel .inquiries-assigned-pagination {

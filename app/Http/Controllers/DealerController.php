@@ -829,7 +829,7 @@ class DealerController extends Controller
         $activities = [];
         $lastProductIds = [];
         $rows = DB::select(
-            'SELECT la."LEAD_ACTID", la."USERID", la."CREATIONDATE", la."SUBJECT", la."DESCRIPTION", la."STATUS", la."ATTACHMENT", la."DEALTPRODUCT", u."EMAIL" AS "USER_EMAIL"
+            'SELECT la."LEAD_ACTID", la."USERID", la."CREATIONDATE", la."SUBJECT", la."DESCRIPTION", la."STATUS", la."ATTACHMENT", la."DEALTPRODUCT", la."SERIALACC", la."SERIALPAY", la."ATTACHMENT2", u."EMAIL" AS "USER_EMAIL"
              FROM "LEAD_ACT" la
              LEFT JOIN "USERS" u ON u."USERID" = la."USERID"
              WHERE la."LEADID" = ?
@@ -941,6 +941,27 @@ class DealerController extends Controller
                 }
             }
 
+            $attachment2Urls = [];
+            $attachment2Raw = $r->ATTACHMENT2 ?? $r->attachment2 ?? null;
+            if ($attachment2Raw !== null && trim((string) $attachment2Raw) !== '') {
+                $attachment2Str = trim((string) $attachment2Raw);
+                $attachment2Str = str_replace('\\', '/', $attachment2Str);
+                if (str_contains($attachment2Str, ',') || str_starts_with($attachment2Str, 'inquiry-attachments')) {
+                    foreach (explode(',', $attachment2Str) as $path) {
+                        $path = trim(str_replace('\\', '/', $path));
+                        if ($path !== '' && str_starts_with($path, 'inquiry-attachments/')) {
+                            $attachment2Urls[] = route('dealer.inquiries.serve-attachment', ['path' => $path]);
+                        }
+                    }
+                } else {
+                    if (str_starts_with($attachment2Str, 'inquiry-attachments/')) {
+                        $attachment2Urls[] = route('dealer.inquiries.serve-attachment', ['path' => $attachment2Str]);
+                    } elseif (preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', $attachment2Str)) {
+                        $attachment2Urls[] = route('dealer.inquiries.activity-attachment', ['leadId' => $leadId, 'leadActId' => (int) ($r->LEAD_ACTID ?? 0)]);
+                    }
+                }
+            }
+
             $productIds = [];
             // Parse DEALTPRODUCT (e.g. "1, 2, 3") into numeric product IDs for the UI
             $dealtRaw = $r->DEALTPRODUCT ?? null;
@@ -981,6 +1002,9 @@ class DealerController extends Controller
                 'status' => $status,
                 'created_at' => $createdAtIso,
                 'attachment_urls' => $attachmentUrls,
+                'attachment2_urls' => $attachment2Urls,
+                'serial_acc' => trim((string) ($r->SERIALACC ?? '')),
+                'serial_pay' => trim((string) ($r->SERIALPAY ?? '')),
                 'product_ids' => $productIds,
             ];
         }
@@ -1155,6 +1179,8 @@ class DealerController extends Controller
                 'products' => 'nullable|array',
                 'products.*.id' => 'nullable',
                 'products.*.name' => 'nullable|string|max:100',
+                'serial_acc' => 'nullable|string|max:100',
+                'serial_pay' => 'nullable|string|max:100',
             ]);
             $products = $validated['products'] ?? [];
         }
@@ -1239,13 +1265,35 @@ class DealerController extends Controller
         if (! $lead) {
             return response()->json(['success' => false, 'message' => 'Lead not found or not assigned to you'], 404);
         }
-        if (strtoupper($this->mapStatusToDb($status)) === 'COMPLETED' && empty($products)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Please select at least one product for COMPLETED status.',
-            ], 422);
-        }
         $statusDb = $this->mapStatusToDb($status);
+        if (strtoupper($statusDb) === 'COMPLETED') {
+            if (empty($products)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please select at least one product for COMPLETED status.',
+                ], 422);
+            }
+            
+            $hasPreviousCompleted = DB::selectOne(
+                'SELECT FIRST 1 1 FROM "LEAD_ACT" WHERE "LEADID" = ? AND UPPER(TRIM("STATUS")) = \'COMPLETED\'',
+                [$leadId]
+            );
+
+            if (! $hasPreviousCompleted) {
+                if (! $request->hasFile('attachments')) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Please upload your own company\'s invoice for COMPLETED status.',
+                    ], 422);
+                }
+                if (! $request->hasFile('attachments2')) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Please upload your customer\'s payment proof for COMPLETED status.',
+                    ], 422);
+                }
+            }
+        }
         if (strtoupper($statusDb) === 'REWARDED' && ! $request->hasFile('attachments')) {
             return response()->json([
                 'success' => false,
@@ -1371,9 +1419,9 @@ class DealerController extends Controller
 
         // For FOLLOW UP and DEMO, we always try to update the existing record (iterative editing)
         // rather than creating a new row, regardless of whether it's a backtrack or current status.
-        if (in_array($toUpper, ['FOLLOW UP', 'DEMO'])) {
+        if (in_array($toUpper, ['FOLLOW UP', 'DEMO', 'CONFIRMED'])) {
             $latestActRow = DB::selectOne(
-                'SELECT FIRST 1 "LEAD_ACTID", "DESCRIPTION" FROM "LEAD_ACT"
+                'SELECT FIRST 1 "LEAD_ACTID", "DESCRIPTION", "CREATIONDATE" FROM "LEAD_ACT"
                  WHERE "LEADID" = ? AND UPPER(TRIM("STATUS")) = ?
                  ORDER BY "CREATIONDATE" DESC, "LEAD_ACTID" DESC',
                 [$leadId, $toUpper === 'FOLLOW UP' ? 'FOLLOWUP' : $toUpper]
@@ -1384,7 +1432,12 @@ class DealerController extends Controller
                 // If remark is provided, we append it.
                 if ($remark !== '') {
                     $oldDesc = trim((string) ($latestActRow->DESCRIPTION ?? ''));
-                    $divider = "\n".str_repeat('-', 30)."\n".now()->format('d/m/Y H:i').":\n";
+                    if ($oldDesc !== '' && !str_contains($oldDesc, '------------------------------')) {
+                        $origDt = $parseFlexibleTimestamp($latestActRow->CREATIONDATE) ?? Carbon::now();
+                        $oldDesc = $origDt->format('d/m/Y H:i').":\n".$oldDesc;
+                    }
+                    $parsedNewDt = $parseFlexibleTimestamp($creationDate) ?? Carbon::now();
+                    $divider = "\n".str_repeat('-', 30)."\n".$parsedNewDt->format('d/m/Y H:i').":\n";
                     $newDesc = $oldDesc.($oldDesc !== '' ? $divider : '').$remark;
                     DB::update('UPDATE "LEAD_ACT" SET "DESCRIPTION" = ?, "CREATIONDATE" = ? WHERE "LEAD_ACTID" = ?', [$newDesc, $creationDate, $latestActRow->LEAD_ACTID]);
                 } else {
@@ -1427,6 +1480,26 @@ class DealerController extends Controller
             }
         }
 
+        $serialAcc = trim((string) ($request->input('serial_acc') ?? ''));
+        $serialPay = trim((string) ($request->input('serial_pay') ?? ''));
+
+        $attachment2Value = null;
+        if ($request->hasFile('attachments2')) {
+            $paths = [];
+            $dir = 'inquiry-attachments/lead_'.$leadId;
+            foreach ($request->file('attachments2') as $file) {
+                if ($file->isValid() && str_starts_with($file->getMimeType(), 'image/')) {
+                    $path = $file->store($dir, 'public');
+                    if ($path) {
+                        $paths[] = $path;
+                    }
+                }
+            }
+            if (! empty($paths)) {
+                $attachment2Value = implode(',', $paths);
+            }
+        }
+
         $isCompleted = strtoupper($statusDb) === 'COMPLETED' && ! empty($products);
         if ($isCompleted) {
             $productIds = [];
@@ -1438,9 +1511,9 @@ class DealerController extends Controller
             }
             $dealtProduct = ! empty($productIds) ? implode(', ', $productIds) : null;
             DB::insert(
-                'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS","DEALTPRODUCT")
-                 VALUES (GEN_ID("GEN_LEAD_ACTID", 1),?,?,?,?,?,?,?,?)',
-                [$leadId, $dealerId, $creationDate, 'Updated Status', $description, $attachmentValue, $statusDb, $dealtProduct]
+                'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS","DEALTPRODUCT","SERIALACC","SERIALPAY","ATTACHMENT2")
+                 VALUES (GEN_ID("GEN_LEAD_ACTID", 1),?,?,?,?,?,?,?,?,?,?,?)',
+                [$leadId, $dealerId, $creationDate, 'Updated Status', $description, $attachmentValue, $statusDb, $dealtProduct, $serialAcc, $serialPay, $attachment2Value]
             );
         } else {
             DB::insert(

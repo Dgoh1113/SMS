@@ -55,7 +55,7 @@
                 'steps' => [
                     'Click your profile icon in the top-right corner.',
                     'Choose Register passkey.',
-                    'Select Use Phone / Scan QR or Register On This Device.',
+                    'Select Use Phone / Scan QR.',
                     'Follow your browser or device prompt to save the passkey.',
                     'Next time, use the passkey sign-in option when available.',
                 ],
@@ -228,7 +228,7 @@
                 'steps' => [
                     'Click your profile icon in the top-right corner.',
                     'Choose Register passkey.',
-                    'Select Use Phone / Scan QR or Register On This Device.',
+                    'Select Use Phone / Scan QR.',
                     'Follow your browser or device prompt to save the passkey.',
                     'Use the passkey option the next time you sign in.',
                 ],
@@ -284,7 +284,7 @@
                 ],
                 'tipsHeading' => 'Keep it useful',
                 'tips' => [
-                    'Update after calls, demos, confirmations, or failed outcomes.',
+                    'Update after calls, demos, or confirmations.',
                     'Add clear notes when a follow-up date or blocker matters.',
                     'Try not to leave inquiries parked in an older status after the outcome changes.',
                 ],

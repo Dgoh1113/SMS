@@ -197,13 +197,41 @@
                             @endforeach
                         </div>
                     </label>
-                    <label class="inquiry-field">
-                        <span class="inquiry-field-label">ATTACHMENT (images)</span>
+                    <div style="display: flex; gap: 15px; align-items: flex-start; width: 100%;">
+                        <label class="inquiry-field" id="inquiryAttachmentField" style="flex: 2; margin-bottom: 0;">
+                            <span class="inquiry-field-label" id="inquiryAttachmentLabel">ATTACHMENT (images)</span>
+                            <div class="inquiry-field-input-wrap">
+                                <i class="bi bi-image"></i>
+                                <input type="file" class="inquiry-field-input inquiry-field-file" id="inquiryAttachment" accept="image/*" multiple>
+                            </div>
+                            <div class="inquiry-attachment-preview-wrap" id="inquiryAttachmentPreview" aria-live="polite"></div>
+                        </label>
+
+                        <div id="inquirySerialsRow" style="display: none; flex: 2; gap: 15px; margin-bottom: 0; align-items: flex-start;">
+                            <label class="inquiry-field" style="flex: 1; margin-bottom: 0;">
+                                <span class="inquiry-field-label">SERIAL NO (ACC)</span>
+                                <div class="inquiry-field-input-wrap" style="height: 38px; padding: 4px 10px; display: flex; align-items: center;">
+                                    <span style="font-size: 0.85em; font-weight: bold; color: #777; margin-right: 5px; white-space: nowrap; font-family: inherit;">S/N :</span>
+                                    <input type="text" class="inquiry-field-input" id="inquirySerialAcc" style="font-size: 0.85em; padding: 0; border: none; outline: none; background: transparent; width: 100%; height: 100%;">
+                                </div>
+                            </label>
+                            <label class="inquiry-field" style="flex: 1; margin-bottom: 0;">
+                                <span class="inquiry-field-label">SERIAL NO (PAY)</span>
+                                <div class="inquiry-field-input-wrap" style="height: 38px; padding: 4px 10px; display: flex; align-items: center;">
+                                    <span style="font-size: 0.85em; font-weight: bold; color: #777; margin-right: 5px; white-space: nowrap; font-family: inherit;">S/N :</span>
+                                    <input type="text" class="inquiry-field-input" id="inquirySerialPay" style="font-size: 0.85em; padding: 0; border: none; outline: none; background: transparent; width: 100%; height: 100%;">
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <label class="inquiry-field" id="inquiryAttachment2Field" style="display:none;">
+                        <span class="inquiry-field-label" id="inquiryAttachment2Label">Upload your customer's payment proof <span class="inquiry-field-required">*</span></span>
                         <div class="inquiry-field-input-wrap">
                             <i class="bi bi-image"></i>
-                            <input type="file" class="inquiry-field-input inquiry-field-file" id="inquiryAttachment" accept="image/*" multiple>
+                            <input type="file" class="inquiry-field-input inquiry-field-file" id="inquiryAttachment2" accept="image/*" multiple>
                         </div>
-                        <div class="inquiry-attachment-preview-wrap" id="inquiryAttachmentPreview" aria-live="polite"></div>
+                        <div class="inquiry-attachment-preview-wrap" id="inquiryAttachment2Preview" aria-live="polite"></div>
                     </label>
                     <label class="inquiry-field">
                         <span class="inquiry-field-label">REMARK</span>
@@ -1027,6 +1055,25 @@ if (document.readyState === 'loading') {
         return normalized !== '' && normalized !== '-' && normalized !== '—' && normalized.toLowerCase() !== 'noreferral';
     }
 
+    function getTodayIsoDate() {
+        var d = new Date();
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    function getCurrentLocalTime() {
+        var d = new Date();
+        return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    }
+
+    function getDefaultDate() {
+        return getTodayIsoDate();
+    }
+
+    function getDefaultTime() {
+        var d = new Date();
+        return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    }
+
     function formatStatusLabel(status) {
         switch (status) {
             case 'FOLLOW UP': return 'Follow Up';
@@ -1043,17 +1090,22 @@ if (document.readyState === 'loading') {
         if (!fromStatus || !toStatus) return false;
         var fromIdx = statusOrder.indexOf(fromStatus);
         var toIdx = statusOrder.indexOf(toStatus);
-        if (fromIdx < 0 || toIdx <= fromIdx) return false;
+        if (fromIdx < 0) return false;
+
+        // Allow SAME status if it's FOLLOW UP, DEMO, CONFIRMED, or COMPLETED (for editing remarks / updating completed again)
+        if (fromStatus === toStatus && (fromStatus === 'FOLLOW UP' || fromStatus === 'DEMO' || fromStatus === 'CONFIRMED' || fromStatus === 'COMPLETED')) {
+            return true;
+        }
 
         switch (fromStatus) {
             case 'PENDING':
                 return toStatus === 'FOLLOW UP';
             case 'FOLLOW UP':
-                return toStatus === 'DEMO' || toStatus === 'CONFIRMED' || toStatus === 'COMPLETED';
+                return toStatus === 'PENDING' || toStatus === 'DEMO' || toStatus === 'CONFIRMED' || toStatus === 'COMPLETED';
             case 'DEMO':
-                return toStatus === 'CONFIRMED' || toStatus === 'COMPLETED';
+                return toStatus === 'FOLLOW UP' || toStatus === 'CONFIRMED' || toStatus === 'COMPLETED';
             case 'CONFIRMED':
-                return toStatus === 'COMPLETED';
+                return toStatus === 'FOLLOW UP' || toStatus === 'DEMO' || toStatus === 'COMPLETED';
             case 'COMPLETED':
                 return toStatus === 'REWARDED' && hasReferralCode(currentReferralCode);
             default:
@@ -1136,6 +1188,36 @@ if (document.readyState === 'loading') {
         var timeLabel = document.getElementById('inquiryTimeLabel');
         if (dateLabel) dateLabel.textContent = labels.date;
         if (timeLabel) timeLabel.textContent = labels.time;
+
+        var attachmentLabel = document.getElementById('inquiryAttachmentLabel');
+        var hasCompletedAct = !!findActivityForStatus('COMPLETED');
+        if (attachmentLabel) {
+            if (status === 'COMPLETED') {
+                attachmentLabel.innerHTML = hasCompletedAct 
+                    ? 'Upload Your own company\'s invoice' 
+                    : 'Upload Your own company\'s invoice <span class="inquiry-field-required">*</span>';
+            } else if (status === 'REWARDED') {
+                attachmentLabel.innerHTML = 'UPLOAD REFERRAL PAYOUT PROOF <span class="inquiry-field-required">*</span>';
+            } else {
+                attachmentLabel.textContent = 'ATTACHMENT (images)';
+            }
+        }
+
+        var attachment2Field = document.getElementById('inquiryAttachment2Field');
+        var attachment2Label = document.getElementById('inquiryAttachment2Label');
+        if (attachment2Label) {
+            attachment2Label.innerHTML = hasCompletedAct 
+                ? 'Upload your customer\'s payment proof' 
+                : 'Upload your customer\'s payment proof <span class="inquiry-field-required">*</span>';
+        }
+        var serialsRow = document.getElementById('inquirySerialsRow');
+        if (status === 'COMPLETED') {
+            if (attachment2Field) attachment2Field.style.display = 'block';
+            if (serialsRow) serialsRow.style.display = 'flex';
+        } else {
+            if (attachment2Field) attachment2Field.style.display = 'none';
+            if (serialsRow) serialsRow.style.display = 'none';
+        }
     }
 
     function toggleAddCalendarButton() {
@@ -1158,8 +1240,11 @@ if (document.readyState === 'loading') {
     function toggleUpdateButton() {
         var isRewarded = currentStatusIdx === statusOrder.length - 1;
         var selectedName = statusOrder[selectedStatusIdx] || '';
-        var isBlockedFuture = selectedStatusIdx > currentStatusIdx && !canSelectFutureStatus(statusOrder[currentStatusIdx] || 'PENDING', selectedName);
-        var disable = isRewarded || viewMode || selectedStatusIdx <= currentStatusIdx || isBlockedFuture;
+        var fromStatus = statusOrder[currentStatusIdx] || 'PENDING';
+        
+        var canUpdate = canSelectFutureStatus(fromStatus, selectedName);
+        var disable = isRewarded || viewMode || !canUpdate;
+        
         updateBtn.disabled = disable;
         updateBtn.classList.toggle('inquiry-btn-update--disabled', disable);
     }
@@ -1184,16 +1269,47 @@ if (document.readyState === 'loading') {
         var dateEl = document.getElementById('inquiryFollowupDate');
         var timeEl = document.getElementById('inquiryFollowupTime');
         var remarkEl = document.getElementById('inquiryRemark');
-        if (!activity || !activity.created_at) {
+        var productBoxes = document.querySelectorAll('.inquiry-product-checkbox');
+        
+        var selectedName = statusOrder[selectedStatusIdx] || '';
+        var fromStatus = statusOrder[currentStatusIdx] || 'PENDING';
+        var isSameStatusUpdate = !viewMode && (selectedName === 'FOLLOW UP' || selectedName === 'DEMO' || selectedName === 'CONFIRMED' || selectedName === 'COMPLETED') && fromStatus === selectedName;
+
+        if (isSameStatusUpdate) {
+            if (dateEl) dateEl.value = getDefaultDate();
+            if (timeEl) timeEl.value = getDefaultTime();
+        } else if (!activity || !activity.created_at) {
             if (dateEl) dateEl.value = '';
             if (timeEl) timeEl.value = '';
             if (remarkEl) remarkEl.value = '';
+            if (productBoxes.length) {
+                productBoxes.forEach(function(cb) { cb.checked = false; });
+            }
             return;
+        } else {
+            var d = new Date(activity.created_at);
+            if (dateEl) dateEl.value = isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
+            if (timeEl) timeEl.value = isNaN(d.getTime()) ? '' : String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
         }
-        var d = new Date(activity.created_at);
-        if (dateEl) dateEl.value = isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10);
-        if (timeEl) timeEl.value = isNaN(d.getTime()) ? '' : String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
-        if (remarkEl) remarkEl.value = activity.description || '';
+
+        var serialAccEl = document.getElementById('inquirySerialAcc');
+        var serialPayEl = document.getElementById('inquirySerialPay');
+        if (serialAccEl) serialAccEl.value = (activity && activity.serial_acc) ? activity.serial_acc : '';
+        if (serialPayEl) serialPayEl.value = (activity && activity.serial_pay) ? activity.serial_pay : '';
+
+        if (productBoxes.length) {
+            productBoxes.forEach(function(cb) { cb.checked = false; });
+            if (activity && Array.isArray(activity.product_ids)) {
+                var ids = activity.product_ids.map(function(v) { return parseInt(v, 10); }).filter(function(v) { return !isNaN(v); });
+                productBoxes.forEach(function(cb) {
+                    var pid = parseInt(cb.value, 10);
+                    if (!isNaN(pid) && ids.indexOf(pid) !== -1) {
+                        cb.checked = true;
+                    }
+                });
+            }
+        }
+        if (remarkEl) remarkEl.value = '';
     }
 
     function setFieldsReadOnly(readOnly) {
@@ -1201,11 +1317,17 @@ if (document.readyState === 'loading') {
         var timeEl = document.getElementById('inquiryFollowupTime');
         var remarkEl = document.getElementById('inquiryRemark');
         var fileEl = document.getElementById('inquiryAttachment');
+        var file2El = document.getElementById('inquiryAttachment2');
+        var serialAccEl = document.getElementById('inquirySerialAcc');
+        var serialPayEl = document.getElementById('inquirySerialPay');
         var productBoxes = document.querySelectorAll('.inquiry-product-checkbox');
-        if (dateEl) dateEl.readOnly = readOnly;
-        if (timeEl) timeEl.readOnly = readOnly;
+        if (dateEl) dateEl.disabled = !!readOnly;
+        if (timeEl) timeEl.disabled = !!readOnly;
         if (remarkEl) remarkEl.readOnly = readOnly;
         if (fileEl) fileEl.disabled = readOnly;
+        if (file2El) file2El.disabled = readOnly;
+        if (serialAccEl) serialAccEl.readOnly = readOnly;
+        if (serialPayEl) serialPayEl.readOnly = readOnly;
         productBoxes.forEach(function(b) { b.disabled = readOnly; });
     }
 
@@ -1271,6 +1393,7 @@ if (document.readyState === 'loading') {
             var html = '<span class="inquiry-activity-bullet"></span><div class="inquiry-activity-content">';
             if (a.type === 'created') {
                 html += '<strong>' + user + '</strong> created inquiry <span class="inquiry-activity-link">#SQL-' + currentLeadId + '</span>';
+                html += ' <span class="inquiry-activity-time">' + timeStr + '</span>';
             } else {
                 var subj = (a.subject || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                 var desc = (a.description || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -1278,13 +1401,30 @@ if (document.readyState === 'loading') {
                 html += '<strong>' + user + '</strong> ' + (subj ? subj + ' ' : '');
                 if (status) html += 'changed status to <strong class="inquiry-activity-status">' + status + '</strong> ';
                 if (desc) html += '<span class="inquiry-activity-desc">' + desc + '</span> ';
+                html += ' <span class="inquiry-activity-time">' + timeStr + '</span>';
             }
-            html += '<span class="inquiry-activity-time">' + timeStr + '</span>';
+            if (a.serial_acc || a.serial_pay) {
+                var escapeHtml = function(str) { return (str || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
+                html += '<div class="inquiry-activity-serials" style="margin-top: 5px; font-size: 0.85em; color: #555;">';
+                if (a.serial_acc) html += '<span style="margin-right: 15px;"><strong>Serial No (Acc):</strong> ' + escapeHtml(a.serial_acc) + '</span>';
+                if (a.serial_pay) html += '<span><strong>Serial No (Pay):</strong> ' + escapeHtml(a.serial_pay) + '</span>';
+                html += '</div>';
+            }
             if (a.attachment_urls && a.attachment_urls.length > 0) {
+                html += '<div class="inquiry-activity-attachments-label" style="margin-top: 5px; font-size: 0.85em; font-weight: bold; color: #555;">Company Invoice:</div>';
                 html += '<div class="inquiry-activity-attachments">';
                 a.attachment_urls.forEach(function(url) {
                     var safe = (url || '').replace(/"/g, '&quot;');
                     html += '<a href="' + safe + '" target="_blank" rel="noopener" class="inquiry-activity-attachment-link"><img src="' + safe + '" alt="Attachment" class="inquiry-activity-attachment-img"></a>';
+                });
+                html += '</div>';
+            }
+            if (a.attachment2_urls && a.attachment2_urls.length > 0) {
+                html += '<div class="inquiry-activity-attachments-label" style="margin-top: 5px; font-size: 0.85em; font-weight: bold; color: #555;">Payment Proof:</div>';
+                html += '<div class="inquiry-activity-attachments">';
+                a.attachment2_urls.forEach(function(url) {
+                    var safe = (url || '').replace(/"/g, '&quot;');
+                    html += '<a href="' + safe + '" target="_blank" rel="noopener" class="inquiry-activity-attachment-link"><img src="' + safe + '" alt="Payment Proof" class="inquiry-activity-attachment-img"></a>';
                 });
                 html += '</div>';
             }
@@ -1301,6 +1441,21 @@ if (document.readyState === 'loading') {
             .then(function(data) {
                 cachedActivities = data.activities || [];
                 renderActivity(cachedActivities);
+                
+                if (viewMode && selectedStatusIdx <= currentStatusIdx) {
+                    var cur = statusOrder[selectedStatusIdx] || 'PENDING';
+                    var act = findActivityForStatus(cur);
+                    populateFormFromActivity(act);
+                    setFieldsReadOnly(true);
+                    setDateTimeLabels(cur);
+                } else if (!viewMode && (statusOrder[selectedStatusIdx] || '') === 'COMPLETED') {
+                    var act = findActivityForStatus('COMPLETED');
+                    if (act) {
+                        populateFormFromActivity(act);
+                        setFieldsReadOnly(false);
+                    }
+                }
+
                 var details = data.last_reward_details;
                 if (details && currentStatusIdx === statusOrder.length - 1) {
                     var dateEl = document.getElementById('inquiryFollowupDate');
@@ -1375,6 +1530,64 @@ if (document.readyState === 'loading') {
         });
     }
 
+    var attachment2Files = [];
+    var attachment2PreviewUrls = [];
+
+    function clearAttachment2Previews() {
+        attachment2PreviewUrls.forEach(function(url) { try { URL.revokeObjectURL(url); } catch (e) {} });
+        attachment2PreviewUrls = [];
+        attachment2Files = [];
+        var previewEl = document.getElementById('inquiryAttachment2Preview');
+        if (previewEl) previewEl.innerHTML = '';
+        var inputEl = document.getElementById('inquiryAttachment2');
+        if (inputEl) inputEl.value = '';
+    }
+
+    function renderAttachment2Previews() {
+        var previewEl = document.getElementById('inquiryAttachment2Preview');
+        if (!previewEl) return;
+        attachment2PreviewUrls.forEach(function(url) { try { URL.revokeObjectURL(url); } catch (e) {} });
+        attachment2PreviewUrls = [];
+        previewEl.innerHTML = '';
+        attachment2Files.forEach(function(file, index) {
+            if (!file.type || file.type.indexOf('image/') !== 0) return;
+            var url = URL.createObjectURL(file);
+            attachment2PreviewUrls.push(url);
+            var item = document.createElement('div');
+            item.className = 'inquiry-attachment-preview-item';
+            var img = document.createElement('img');
+            img.src = url;
+            img.alt = file.name || 'Image';
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'inquiry-attachment-preview-remove';
+            btn.setAttribute('aria-label', 'Remove image');
+            btn.innerHTML = '&times;';
+            btn.addEventListener('click', function() {
+                attachment2Files.splice(index, 1);
+                renderAttachment2Previews();
+            });
+            item.appendChild(img);
+            item.appendChild(btn);
+            previewEl.appendChild(item);
+        });
+    }
+
+    var attachment2Input = document.getElementById('inquiryAttachment2');
+    if (attachment2Input) {
+        attachment2Input.addEventListener('change', function() {
+            var files = this.files;
+            if (!files || !files.length) return;
+            for (var i = 0; i < files.length; i++) {
+                if (files[i].type && files[i].type.indexOf('image/') === 0) {
+                    attachment2Files.push(files[i]);
+                }
+            }
+            renderAttachment2Previews();
+            this.value = '';
+        });
+    }
+
     function openModal(leadId, customer, status, referralCode) {
         currentLeadId = leadId;
         currentReferralCode = String(referralCode || '').trim();
@@ -1387,11 +1600,16 @@ if (document.readyState === 'loading') {
         var dateEl = document.getElementById('inquiryFollowupDate');
         var timeEl = document.getElementById('inquiryFollowupTime');
         if (remarkEl) remarkEl.value = '';
-        if (dateEl) dateEl.value = '';
-        if (timeEl) timeEl.value = '';
+        if (dateEl) dateEl.value = getDefaultDate();
+        if (timeEl) timeEl.value = getDefaultTime();
         var productBoxes = document.querySelectorAll('.inquiry-product-checkbox');
         if (productBoxes.length) productBoxes.forEach(function(b) { b.checked = false; });
+        var serialAccEl = document.getElementById('inquirySerialAcc');
+        var serialPayEl = document.getElementById('inquirySerialPay');
+        if (serialAccEl) serialAccEl.value = '';
+        if (serialPayEl) serialPayEl.value = '';
         clearAttachmentPreviews();
+        clearAttachment2Previews();
         setFieldsReadOnly(false);
         loadActivity(leadId);
         modal.setAttribute('aria-hidden', 'false');
@@ -1401,6 +1619,7 @@ if (document.readyState === 'loading') {
 
     function closeModal() {
         clearAttachmentPreviews();
+        clearAttachment2Previews();
         modal.setAttribute('aria-hidden', 'true');
         modal.classList.remove('inquiry-modal-open');
         document.body.style.overflow = '';
@@ -1417,23 +1636,34 @@ if (document.readyState === 'loading') {
             var isFutureStep = step.classList.contains('inquiry-step--clickable');
             if (!isDoneStep && !isFutureStep) return;
             selectedStatusIdx = stepIdx;
+            var stepName = step.dataset.step;
+            var isEditAllowedStatus = ['FOLLOW UP', 'DEMO', 'CONFIRMED', 'COMPLETED'].indexOf(stepName) !== -1;
             if (isDoneStep) {
-                viewMode = true;
-                var act = findActivityForStatus(statusOrder[stepIdx]);
-                populateFormFromActivity(act);
-                setFieldsReadOnly(true);
-                setDateTimeLabels(statusOrder[stepIdx]);
+                if (isEditAllowedStatus) {
+                    viewMode = false;
+                    var act = findActivityForStatus(stepName);
+                    populateFormFromActivity(act);
+                    setFieldsReadOnly(false);
+                    setRemarkPlaceholder(stepName);
+                    setDateTimeLabels(stepName);
+                } else {
+                    viewMode = true;
+                    var act = findActivityForStatus(stepName);
+                    populateFormFromActivity(act);
+                    setFieldsReadOnly(true);
+                    setDateTimeLabels(stepName);
+                }
             } else {
                 viewMode = false;
                 var remarkEl = document.getElementById('inquiryRemark');
                 var dateEl = document.getElementById('inquiryFollowupDate');
                 var timeEl = document.getElementById('inquiryFollowupTime');
                 if (remarkEl) remarkEl.value = '';
-                if (dateEl) dateEl.value = '';
-                if (timeEl) timeEl.value = '';
+                if (dateEl) dateEl.value = getDefaultDate();
+                if (timeEl) timeEl.value = getDefaultTime();
                 setFieldsReadOnly(false);
-                setRemarkPlaceholder(statusOrder[stepIdx]);
-                setDateTimeLabels(statusOrder[stepIdx]);
+                setRemarkPlaceholder(stepName);
+                setDateTimeLabels(stepName);
             }
             refreshProgressionState();
             toggleAddCalendarButton();
@@ -1515,13 +1745,26 @@ if (document.readyState === 'loading') {
     }
 
     updateBtn.addEventListener('click', function() {
-        if (this.disabled || selectedStatusIdx <= currentStatusIdx) return;
+        if (this.disabled) return;
         var toStatus = statusOrder[selectedStatusIdx];
         var fromStatus = statusOrder[currentStatusIdx] || 'PENDING';
-        if (!canSelectFutureStatus(fromStatus, toStatus)) {
+
+        if (selectedStatusIdx <= currentStatusIdx) {
+            var currentStatus = statusOrder[currentStatusIdx] || 'PENDING';
+            // Allow SAME status if it's FOLLOW UP, DEMO, CONFIRMED, or COMPLETED
+            if (toStatus === currentStatus && (toStatus === 'FOLLOW UP' || toStatus === 'DEMO' || toStatus === 'CONFIRMED' || toStatus === 'COMPLETED')) {
+                // Continue
+            } else {
+                showDealerPayoutToast('Status is already ' + formatStatusLabel(currentStatus) + '. Please choose the next available status.');
+                return;
+            }
+        }
+
+        if (selectedStatusIdx > currentStatusIdx && !canSelectFutureStatus(fromStatus, toStatus)) {
             showDealerPayoutToast(getBlockedStatusMessage(fromStatus, toStatus));
             return;
         }
+
         if (toStatus === 'COMPLETED') {
             var checked = document.querySelectorAll('.inquiry-product-checkbox:checked');
             if (!checked.length) {
@@ -1529,6 +1772,25 @@ if (document.readyState === 'loading') {
                 return;
             }
         }
+
+        var hasCompletedAct = !!findActivityForStatus('COMPLETED');
+        if (toStatus === 'COMPLETED' && !hasCompletedAct && attachmentFiles.length === 0) {
+            showDealerPayoutToast('Please upload your own company\'s invoice for COMPLETED status.');
+            if (attachmentInput) attachmentInput.focus();
+            return;
+        }
+        if (toStatus === 'COMPLETED' && !hasCompletedAct && attachment2Files.length === 0) {
+            showDealerPayoutToast('Please upload your customer\'s payment proof for COMPLETED status.');
+            var attachment2Input = document.getElementById('inquiryAttachment2');
+            if (attachment2Input) attachment2Input.focus();
+            return;
+        }
+        if (toStatus === 'REWARDED' && attachmentFiles.length === 0) {
+            showDealerPayoutToast('Please upload the Referral Payout Proof.');
+            if (attachmentInput) attachmentInput.focus();
+            return;
+        }
+
         var leadId = currentLeadId;
         var remarkEl = document.getElementById('inquiryRemark');
         var remark = remarkEl ? remarkEl.value.trim() : '';
@@ -1538,28 +1800,48 @@ if (document.readyState === 'loading') {
                 products.push({ id: cb.value, name: cb.dataset.name });
             });
         }
+
+        var serialAccEl = document.getElementById('inquirySerialAcc');
+        var serialPayEl = document.getElementById('inquirySerialPay');
+        var serialAcc = serialAccEl ? serialAccEl.value.trim() : '';
+        var serialPay = serialPayEl ? serialPayEl.value.trim() : '';
+
         var updateUrl = '{{ route("dealer.inquiries.update-status") }}';
         var csrfToken = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').getAttribute('content') : '';
         updateBtn.disabled = true;
+
         var body;
         var headers = {
             'Accept': 'application/json',
             'X-CSRF-TOKEN': csrfToken,
             'X-Requested-With': 'XMLHttpRequest'
         };
-        if (attachmentFiles.length > 0) {
+
+        if (attachmentFiles.length > 0 || attachment2Files.length > 0) {
             var formData = new FormData();
             formData.append('lead_id', leadId);
             formData.append('status', toStatus);
             formData.append('remark', remark);
             formData.append('products', JSON.stringify(products));
+            formData.append('serial_acc', serialAcc);
+            formData.append('serial_pay', serialPay);
             attachmentFiles.forEach(function(file) {
                 formData.append('attachments[]', file);
+            });
+            attachment2Files.forEach(function(file) {
+                formData.append('attachments2[]', file);
             });
             body = formData;
         } else {
             headers['Content-Type'] = 'application/json';
-            body = JSON.stringify({ lead_id: leadId, status: toStatus, remark: remark, products: products });
+            body = JSON.stringify({
+                lead_id: leadId,
+                status: toStatus,
+                remark: remark,
+                products: products,
+                serial_acc: serialAcc,
+                serial_pay: serialPay
+            });
         }
         fetch(updateUrl, {
             method: 'POST',
