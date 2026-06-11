@@ -52,8 +52,8 @@ Route::middleware(['auth.sms', 'admin'])->prefix('admin')->name('admin.')->group
     Route::post('/dealers', [AdminController::class, 'dealersStore'])->name('dealers.store');
     Route::post('/dealers/{userId}', [AdminController::class, 'dealersUpdate'])->name('dealers.update');
     Route::get('/rewards', fn () => redirect()->route('admin.inquiries', ['tab' => 'all']))->name('rewards');
-    Route::get('/rewards/serve-attachment', [AdminController::class, 'serveRewardAttachment'])->name('rewards.serve-attachment');
-    Route::get('/rewards/{leadId}/activity-attachment/{leadActId}', [AdminController::class, 'rewardActivityAttachment'])->name('rewards.activity-attachment');
+    Route::get('/rewards/serve-attachment/{filename?}', [AdminController::class, 'serveRewardAttachment'])->name('rewards.serve-attachment');
+    Route::get('/rewards/{leadId}/activity-attachment/{leadActId}/{filename?}', [AdminController::class, 'rewardActivityAttachment'])->name('rewards.activity-attachment');
     Route::post('/rewards/send-email', [AdminController::class, 'sendPayoutEmail'])->name('rewards.send-email');
     Route::get('/reports', [AdminController::class, 'reports'])->name('reports');
     Route::get('/reports-v2', [AdminController::class, 'reportsV2'])->name('reports.v2');
@@ -73,8 +73,8 @@ Route::middleware(['auth.sms', 'dealer'])->prefix('dealer')->name('dealer.')->gr
     Route::get('/inquiries', [DealerController::class, 'inquiries'])->name('inquiries');
     Route::get('/inquiries/sync', [DealerController::class, 'inquiriesSync'])->name('inquiries.sync');
     Route::get('/inquiries/{leadId}/activity', [DealerController::class, 'inquiryActivity'])->name('inquiries.activity');
-    Route::get('/inquiries/serve-attachment', [DealerController::class, 'serveInquiryAttachment'])->name('inquiries.serve-attachment');
-    Route::get('/inquiries/{leadId}/activity-attachment/{leadActId}', [DealerController::class, 'inquiryActivityAttachment'])->name('inquiries.activity-attachment');
+    Route::get('/inquiries/serve-attachment/{filename?}', [DealerController::class, 'serveInquiryAttachment'])->name('inquiries.serve-attachment');
+    Route::get('/inquiries/{leadId}/activity-attachment/{leadActId}/{filename?}', [DealerController::class, 'inquiryActivityAttachment'])->name('inquiries.activity-attachment');
     Route::post('/inquiries/update-status', [DealerController::class, 'updateInquiryStatus'])->name('inquiries.update-status');
     Route::get('/payouts', [DealerController::class, 'payouts'])->name('payouts');
     Route::get('/payouts/sync', [DealerController::class, 'payoutsSync'])->name('payouts.sync');

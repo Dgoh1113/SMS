@@ -1101,7 +1101,21 @@ class DealerController extends Controller
         }
         $mime = mime_content_type($fullPath) ?: 'image/jpeg';
 
-        return response()->file($fullPath, ['Content-Type' => $mime]);
+        if ($htmlResponse = \App\Support\AttachmentUrlBuilder::serveHtmlWrapper((string) $request->query('name', ''), $mime, $request)) {
+            return $htmlResponse;
+        }
+
+        $headers = ['Content-Type' => $mime];
+        $name = $request->query('name');
+        if (is_string($name) && $name !== '') {
+            $ext = pathinfo($fullPath, PATHINFO_EXTENSION);
+            if ($ext && !str_ends_with(strtolower($name), '.' . strtolower($ext))) {
+                $name .= '.' . $ext;
+            }
+            $headers['Content-Disposition'] = 'inline; filename="' . addslashes($name) . '"';
+        }
+
+        return response()->file($fullPath, $headers);
     }
 
     /**
@@ -1134,21 +1148,53 @@ class DealerController extends Controller
             }
             $mime = mime_content_type($fullPath) ?: 'image/jpeg';
 
-            return response()->file($fullPath, ['Content-Type' => $mime]);
+            if ($htmlResponse = \App\Support\AttachmentUrlBuilder::serveHtmlWrapper((string) $request->query('name', ''), $mime, $request)) {
+                return $htmlResponse;
+            }
+
+            $headers = ['Content-Type' => $mime];
+            $name = $request->query('name');
+            if (is_string($name) && $name !== '') {
+                $ext = pathinfo($fullPath, PATHINFO_EXTENSION);
+                if ($ext && !str_ends_with(strtolower($name), '.' . strtolower($ext))) {
+                    $name .= '.' . $ext;
+                }
+                $headers['Content-Disposition'] = 'inline; filename="' . addslashes($name) . '"';
+            }
+
+            return response()->file($fullPath, $headers);
         }
         if (is_string($attachment) && strlen($attachment) > 0) {
             $mime = 'image/jpeg';
+            $ext = 'jpg';
             if (preg_match('/^\x89PNG/', $attachment)) {
                 $mime = 'image/png';
+                $ext = 'png';
             } elseif (str_starts_with($attachment, "\xFF\xD8")) {
                 $mime = 'image/jpeg';
+                $ext = 'jpg';
             } elseif (str_starts_with($attachment, 'GIF8')) {
                 $mime = 'image/gif';
+                $ext = 'gif';
             } elseif (str_starts_with($attachment, 'RIFF') && substr($attachment, 8, 4) === 'WEBP') {
                 $mime = 'image/webp';
+                $ext = 'webp';
             }
 
-            return response($attachment, 200, ['Content-Type' => $mime]);
+            if ($htmlResponse = \App\Support\AttachmentUrlBuilder::serveHtmlWrapper((string) $request->query('name', ''), $mime, $request)) {
+                return $htmlResponse;
+            }
+
+            $headers = ['Content-Type' => $mime];
+            $name = $request->query('name');
+            if (is_string($name) && $name !== '') {
+                if (!str_ends_with(strtolower($name), '.' . $ext)) {
+                    $name .= '.' . $ext;
+                }
+                $headers['Content-Disposition'] = 'inline; filename="' . addslashes($name) . '"';
+            }
+
+            return response($attachment, 200, $headers);
         }
 
         return response('', 404);

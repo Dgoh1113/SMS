@@ -2282,12 +2282,21 @@ if (document.readyState === 'loading') {
                 if (a.serial_pay) html += '<span><strong>Serial No (Pay):</strong> ' + escapeInquiryHtml(a.serial_pay) + '</span>';
                 html += '</div>';
             }
+            var rawStatusForReward = String(a.status || '').trim();
+            var isRewarded = rawStatusForReward.toUpperCase() === 'REWARDED';
+            var labelText1 = isRewarded ? 'Payouts Prove:' : 'Company Invoice:';
+            var filePrefix1 = isRewarded ? ' Payouts Prove' : ' Customer Invoice';
+
             if (a.attachment_urls && a.attachment_urls.length > 0) {
-                html += '<div class="inquiry-activity-attachments-label" style="margin-top: 5px; font-size: 0.85em; font-weight: bold; color: #555;">Company Invoice:</div>';
+                html += '<div class="inquiry-activity-attachments-label" style="margin-top: 5px; font-size: 0.85em; font-weight: bold; color: #555;">' + labelText1 + '</div>';
                 html += '<div class="inquiry-activity-attachments">';
                 a.attachment_urls.forEach(function(url) {
-                    var safe = (url || '').replace(/"/g, '&quot;');
-                    html += '<a href="' + safe + '" target="_blank" rel="noopener" class="inquiry-activity-attachment-link"><img src="' + safe + '" alt="Attachment" class="inquiry-activity-attachment-img"></a>';
+                    var safeUrl = (url || '').replace(/"/g, '&quot;');
+                    var downloadName = encodeURIComponent('SQL-' + currentLeadId + filePrefix1);
+                    var qIndex = safeUrl.indexOf('?');
+                    var urlWithName = qIndex !== -1 ? safeUrl.substring(0, qIndex) + '/' + downloadName + safeUrl.substring(qIndex) : safeUrl + '/' + downloadName;
+                    var hrefUrl = urlWithName + (urlWithName.indexOf('?') !== -1 ? '&' : '?') + 'view=1';
+                    html += '<a href="' + hrefUrl + '" target="_blank" rel="noopener" class="inquiry-activity-attachment-link"><img src="' + urlWithName + '" alt="Attachment" class="inquiry-activity-attachment-img"></a>';
                 });
                 html += '</div>';
             }
@@ -2295,8 +2304,12 @@ if (document.readyState === 'loading') {
                 html += '<div class="inquiry-activity-attachments-label" style="margin-top: 5px; font-size: 0.85em; font-weight: bold; color: #555;">Payment Proof:</div>';
                 html += '<div class="inquiry-activity-attachments">';
                 a.attachment2_urls.forEach(function(url) {
-                    var safe = (url || '').replace(/"/g, '&quot;');
-                    html += '<a href="' + safe + '" target="_blank" rel="noopener" class="inquiry-activity-attachment-link"><img src="' + safe + '" alt="Payment Proof" class="inquiry-activity-attachment-img"></a>';
+                    var safeUrl = (url || '').replace(/"/g, '&quot;');
+                    var downloadName = encodeURIComponent('SQL-' + currentLeadId + ' Customer Payment');
+                    var qIndex = safeUrl.indexOf('?');
+                    var urlWithName = qIndex !== -1 ? safeUrl.substring(0, qIndex) + '/' + downloadName + safeUrl.substring(qIndex) : safeUrl + '/' + downloadName;
+                    var hrefUrl = urlWithName + (urlWithName.indexOf('?') !== -1 ? '&' : '?') + 'view=1';
+                    html += '<a href="' + hrefUrl + '" target="_blank" rel="noopener" class="inquiry-activity-attachment-link"><img src="' + urlWithName + '" alt="Payment Proof" class="inquiry-activity-attachment-img"></a>';
                 });
                 html += '</div>';
             }

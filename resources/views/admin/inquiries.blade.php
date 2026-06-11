@@ -910,10 +910,14 @@
                 The system recommends keeping the latest inquiry and deleting the older ones. Review and choose which ones to remove.
             </p>
             
+            <div style="margin-bottom: 16px;">
+                <input type="text" id="duplicatesSearchInput" placeholder="Search company name..." style="width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 13px; box-sizing: border-box;">
+            </div>
+            
             <div class="duplicates-groups-container">
                 @if(!empty($duplicateGroups))
                     @foreach($duplicateGroups as $groupIdx => $group)
-                        <div class="duplicates-group-card" data-lead-ids="{{ implode(',', array_map(function($l) { return $l->LEADID; }, $group['leads'])) }}" style="border: 1px solid #e5e7eb; border-radius: 12px; margin-bottom: 20px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                        <div class="duplicates-group-card" data-company="{{ strtolower($group['company']) }}" data-lead-ids="{{ implode(',', array_map(function($l) { return $l->LEADID; }, $group['leads'])) }}" style="border: 1px solid #e5e7eb; border-radius: 12px; margin-bottom: 20px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
                             <div class="duplicates-group-header" style="background: #f9fafb; padding: 12px 16px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                                 <div>
                                     <span style="font-weight: 700; color: #1f2937; font-size: 13.5px;">{{ $group['company'] }}</span>
@@ -1439,18 +1443,48 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (desc) {
                         html += '<div class="inquiries-status-body">' + desc + '</div>';
                     }
+                    var serialAcc = String(it.serial_acc || it.SERIALACC || '').trim();
+                    var serialPay = String(it.serial_pay || it.SERIALPAY || '').trim();
+                    if (serialAcc || serialPay) {
+                        html += '<div class="inquiries-status-meta" style="margin-top: 4px; color: #4b5563; font-size: 12.5px;">';
+                        if (serialAcc) html += '<span style="margin-right: 15px;"><strong>Serial No (Acc):</strong> ' + escapeStatusHtml(serialAcc) + '</span>';
+                        if (serialPay) html += '<span style="margin-right: 15px;"><strong>Serial No (Pay):</strong> ' + escapeStatusHtml(serialPay) + '</span>';
+                        html += '</div>';
+                    }
                     html += '<div class="inquiries-status-meta"><span class="inquiry-activity-time">' + timeStr + '</span>';
                     if (stamp) {
                         html += '<span class="inquiries-status-date">' + stamp + '</span>';
                     }
                     html += '</div>';
+                    var isRewarded = rawStatus.toUpperCase() === 'REWARDED';
+                    var labelText1 = isRewarded ? 'Payouts Prove:' : 'Company Invoice:';
+                    var filePrefix1 = isRewarded ? ' Payouts Prove' : ' Customer Invoice';
+
                     if (it.attachment_urls && it.attachment_urls.length > 0) {
-                        html += '<div class="inquiries-status-attachments"><span class="inquiries-status-attachments-label">Attachments</span><div class="inquiry-activity-attachments">';
+                        html += '<div class="inquiry-activity-attachments-label" style="margin-top: 5px; font-size: 0.85em; font-weight: bold; color: #555;">' + labelText1 + '</div>';
+                        html += '<div class="inquiry-activity-attachments" style="margin-bottom: 5px;">';
                         it.attachment_urls.forEach(function(url, index) {
                             var safeUrl = escapeStatusHtml(url || '');
-                            html += '<a href="' + safeUrl + '" target="_blank" rel="noopener" class="inquiry-activity-attachment-link" title="Open attachment ' + (index + 1) + '"><img src="' + safeUrl + '" alt="Attachment ' + (index + 1) + '" class="inquiry-activity-attachment-img"></a>';
+                            var downloadName = encodeURIComponent('SQL-' + leadId + filePrefix1);
+                            var qIndex = safeUrl.indexOf('?');
+                            var urlWithName = qIndex !== -1 ? safeUrl.substring(0, qIndex) + '/' + downloadName + safeUrl.substring(qIndex) : safeUrl + '/' + downloadName;
+                            var hrefUrl = urlWithName + (urlWithName.indexOf('?') !== -1 ? '&' : '?') + 'view=1';
+                            html += '<a href="' + hrefUrl + '" target="_blank" rel="noopener" class="inquiry-activity-attachment-link" title="Open attachment ' + (index + 1) + '"><img src="' + urlWithName + '" alt="Attachment ' + (index + 1) + '" class="inquiry-activity-attachment-img"></a>';
                         });
-                        html += '</div></div>';
+                        html += '</div>';
+                    }
+                    if (it.attachment2_urls && it.attachment2_urls.length > 0) {
+                        html += '<div class="inquiry-activity-attachments-label" style="margin-top: 5px; font-size: 0.85em; font-weight: bold; color: #555;">Payment Proof:</div>';
+                        html += '<div class="inquiry-activity-attachments">';
+                        it.attachment2_urls.forEach(function(url, index) {
+                            var safeUrl = escapeStatusHtml(url || '');
+                            var downloadName = encodeURIComponent('SQL-' + leadId + ' Customer Payment');
+                            var qIndex = safeUrl.indexOf('?');
+                            var urlWithName = qIndex !== -1 ? safeUrl.substring(0, qIndex) + '/' + downloadName + safeUrl.substring(qIndex) : safeUrl + '/' + downloadName;
+                            var hrefUrl = urlWithName + (urlWithName.indexOf('?') !== -1 ? '&' : '?') + 'view=1';
+                            html += '<a href="' + hrefUrl + '" target="_blank" rel="noopener" class="inquiry-activity-attachment-link" title="Open payment proof ' + (index + 1) + '"><img src="' + urlWithName + '" alt="Payment Proof ' + (index + 1) + '" class="inquiry-activity-attachment-img"></a>';
+                        });
+                        html += '</div>';
                     }
                     html += '</div>';
                     item.className = 'inquiry-activity-item inquiries-status-item';
@@ -3379,6 +3413,22 @@ document.addEventListener('DOMContentLoaded', function() {
         if (closeBtn) closeBtn.addEventListener('click', close);
         if (cancelBtn) cancelBtn.addEventListener('click', close);
         if (backdrop) backdrop.addEventListener('click', close);
+
+        var duplicatesSearchInput = document.getElementById('duplicatesSearchInput');
+        if (duplicatesSearchInput) {
+            duplicatesSearchInput.addEventListener('input', function() {
+                var query = this.value.toLowerCase().trim();
+                var cards = modal.querySelectorAll('.duplicates-group-card');
+                cards.forEach(function(card) {
+                    var companyName = card.getAttribute('data-company') || '';
+                    if (companyName.indexOf(query) !== -1 || query === '') {
+                        card.style.display = '';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+        }
 
         // Dropdown Selection logic
         var selectMenuBtn = document.getElementById('duplicatesSelectDropdownBtn');
