@@ -154,7 +154,7 @@
                             $idx = $idx !== false ? $idx : 0;
                             $filledCount = $idx + 1;
                             $displayStatus = $status;
-                            $rowPage = (int) floor($i / ($inquiriesPerPage ?? 8)) + 1;
+                            $rowPage = (int) floor($i / ($inquiriesPerPage ?? 6)) + 1;
                             
                             // Customer label: Company - Contact, with clean fallback if one side is missing.
                             $customerCompany = trim((string) ($r->COMPANYNAME ?? ''));
@@ -198,7 +198,7 @@
                 <div class="dealer-table-footer">
                     @php
                         $leadsTotal = $leadsTotal ?? 0;
-                        $inquiriesPerPage = 8;
+                        $inquiriesPerPage = $inquiriesPerPage ?? 6;
                         $inquiriesTotalPages = max(1, (int) ceil($leadsTotal / $inquiriesPerPage));
                     @endphp
                     <span class="dealer-table-count" id="inquiriesCountText">Showing 0 of {{ $leadsTotal }} inquiries</span>
@@ -794,7 +794,7 @@
     if (!pagination || !countText) return;
 
     var total = parseInt(pagination.getAttribute('data-total') || '0', 10);
-    var perPage = parseInt(pagination.getAttribute('data-per-page') || '8', 10);
+    var perPage = parseInt(pagination.getAttribute('data-per-page') || '6', 10);
     var totalPages = Math.max(1, Math.ceil(total / perPage));
     var currentPage = 1;
 

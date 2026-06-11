@@ -39,7 +39,7 @@ class DealerController extends Controller
         $leadsTotal = 0;
         $inquiriesPage = 1;
         $inquiriesTotalPages = 1;
-        $inquiriesPerPage = 8;
+        $inquiriesPerPage = 7;
         $leadsPaginated = [];
         $activeInquiriesCount = 0;
         $closedCount = 0;
@@ -411,7 +411,7 @@ class DealerController extends Controller
                 ->all();
         }
 
-        $inquiriesPerPage = 8;
+        $inquiriesPerPage = 7;
         $leadsTotal = count($leads);
         $inquiriesTotalPages = max(1, (int) ceil($leadsTotal / $inquiriesPerPage));
 
