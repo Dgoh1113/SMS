@@ -27,26 +27,34 @@
 
 /* colored variations matching admin design */
 .dealer-metric-icon-inquiries {
-  background: #dbeafe; /* light blue */
-  color: #1d4ed8; /* dark blue */
+  background: #dbeafe;
+  /* light blue */
+  color: #1d4ed8;
+  /* dark blue */
   border-radius: 10px;
 }
 
 .dealer-metric-icon-conversion {
-  background: #dcfce7; /* light green */
-  color: #047857; /* dark green */
+  background: #dcfce7;
+  /* light green */
+  color: #047857;
+  /* dark green */
   border-radius: 10px;
 }
 
 .dealer-metric-icon-pending {
-  background: #fff7ed; /* light orange */
-  color: #c05621; /* dark orange */
+  background: #fff7ed;
+  /* light orange */
+  color: #c05621;
+  /* dark orange */
   border-radius: 10px;
 }
 
 .dealer-metric-icon-demos {
-  background: #ede9fe; /* light purple, matches admin leads */
-  color: #5b21b6; /* dark purple */
+  background: #ede9fe;
+  /* light purple, matches admin leads */
+  color: #5b21b6;
+  /* dark purple */
   border-radius: 10px;
 }
 
@@ -152,12 +160,36 @@
 }
 
 /* Match inquiries page status colors: PENDING, FOLLOW UP, DEMO, CONFIRMED, COMPLETED, REWARDED */
-.dealer-status-segment--filled.dealer-status-segment--0 { background: #FF4500; } /* Pending */
-.dealer-status-segment--filled.dealer-status-segment--1 { background: #FF8C00; } /* Follow Up */
-.dealer-status-segment--filled.dealer-status-segment--2 { background: #FFD700; } /* Demo */
-.dealer-status-segment--filled.dealer-status-segment--3 { background: #9ACD32; } /* Confirmed */
-.dealer-status-segment--filled.dealer-status-segment--4 { background: #32CD32; } /* Completed */
-.dealer-status-segment--filled.dealer-status-segment--5 { background: #008000; } /* Rewarded */
+.dealer-status-segment--filled.dealer-status-segment--0 {
+  background: #FF4500;
+}
+
+/* Pending */
+.dealer-status-segment--filled.dealer-status-segment--1 {
+  background: #FF8C00;
+}
+
+/* Follow Up */
+.dealer-status-segment--filled.dealer-status-segment--2 {
+  background: #FFD700;
+}
+
+/* Demo */
+.dealer-status-segment--filled.dealer-status-segment--3 {
+  background: #9ACD32;
+}
+
+/* Confirmed */
+.dealer-status-segment--filled.dealer-status-segment--4 {
+  background: #32CD32;
+}
+
+/* Completed */
+.dealer-status-segment--filled.dealer-status-segment--5 {
+  background: #008000;
+}
+
+/* Rewarded */
 
 .dealer-progress-text {
   font-size: 11px;
@@ -585,7 +617,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding:20px;
+  padding: 20px;
 }
 
 .dealer-panel-header--simple {
@@ -673,7 +705,8 @@
 .dealer-progress-segments {
   display: flex;
   gap: 6px;
-  min-width: 0; /* allow the cell to shrink/wrap */
+  min-width: 0;
+  /* allow the cell to shrink/wrap */
 }
 
 .dealer-dashboard-content .dealer-table-wrapper .dealer-progress-text {
@@ -766,7 +799,7 @@
   background: #94a3b8;
 }
 
-.dealer-inquiries-panel  {
+.dealer-inquiries-panel {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -1503,20 +1536,17 @@ button.dealer-pagination-btn:disabled {
   flex-shrink: 0;
   width: 100%;
 }
+
 .dealer-dashboard-content .dealer-inquiries-panel .dealer-panel-header {
   padding: 0 4px 16px;
 }
 
 /* 2. GRID LAYOUT (Slightly larger fonts & taller rows) */
-.dealer-table-header, 
+.dealer-table-header,
 .dealer-table-row {
   display: grid;
-  grid-template-columns: 
-      minmax(108px, 1.15fr)
-      minmax(240px, 2.35fr)
-      minmax(162px, 1.28fr)
-      minmax(228px, 1.75fr)
-      minmax(132px, 1.08fr);
+  grid-template-columns:
+    minmax(108px, 1.15fr) minmax(240px, 2.35fr) minmax(162px, 1.28fr) minmax(228px, 1.75fr) minmax(132px, 1.08fr);
   align-items: center;
   padding: 15.3px 24px;
   gap: 20px;
@@ -1568,8 +1598,8 @@ button.dealer-pagination-btn:disabled {
 }
 
 /* Dealer dashboard "Active Inquiries" table: wrap text + stack progress UI */
-.dealer-dashboard-content .dealer-table-wrapper .dealer-table-row > span,
-.dealer-dashboard-content .dealer-table-wrapper .dealer-table-header > span {
+.dealer-dashboard-content .dealer-table-wrapper .dealer-table-row>span,
+.dealer-dashboard-content .dealer-table-wrapper .dealer-table-header>span {
   white-space: normal;
   overflow-wrap: anywhere;
   word-break: break-word;
@@ -1947,8 +1977,8 @@ html.theme-dark .dealer-dashboard-content .dealer-table-wrapper:hover::-webkit-s
   pointer-events: none;
 }
 
-.dealer-dashboard-page .dashboard-metric-card > *,
-.dealer-dashboard-page .dealer-panel > * {
+.dealer-dashboard-page .dashboard-metric-card>*,
+.dealer-dashboard-page .dealer-panel>* {
   position: relative;
   z-index: 1;
 }
@@ -2149,7 +2179,7 @@ html.theme-dark .dealer-dashboard-content .dealer-table-wrapper:hover::-webkit-s
     padding: 18px 20px;
   }
 
-  .dealer-dashboard-page .dealer-dashboard-main-right > .dealer-panel,
+  .dealer-dashboard-page .dealer-dashboard-main-right>.dealer-panel,
   .dealer-dashboard-page .dealer-closed-case-panel,
   .dealer-dashboard-page .dealer-alert-panel {
     flex: 1 1 0;
@@ -2384,8 +2414,8 @@ html.theme-dark .dealer-dashboard-content .dealer-table-wrapper:hover::-webkit-s
     padding-bottom: 16px;
   }
 
-  .dealer-dashboard-page .dealer-table-header > span:nth-child(4),
-  .dealer-dashboard-page .dealer-table-row > span:nth-child(4) {
+  .dealer-dashboard-page .dealer-table-header>span:nth-child(4),
+  .dealer-dashboard-page .dealer-table-row>span:nth-child(4) {
     padding-left: 40px;
   }
 

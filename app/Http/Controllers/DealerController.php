@@ -1312,6 +1312,7 @@ class DealerController extends Controller
             return response()->json(['success' => false, 'message' => 'Lead not found or not assigned to you'], 404);
         }
         $statusDb = $this->mapStatusToDb($status);
+
         if (strtoupper($statusDb) === 'COMPLETED') {
             if (empty($products)) {
                 return response()->json([
@@ -1433,6 +1434,13 @@ class DealerController extends Controller
 
         // If dealer is "editing" the current status (same status again), allow it.
         $isSameStatusEdit = $toUpper === $fromUpper;
+
+        if ($isSameStatusEdit && in_array($toUpper, ['FOLLOW UP', 'DEMO', 'CONFIRMED'], true) && $remark === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'A remark is required when iteratively updating the ' . $formatTransitionLabel($toUpper) . ' status.',
+            ], 422);
+        }
 
         if (! $isSameStatusEdit) {
             $allowedTo = match ($fromUpper) {
