@@ -288,6 +288,18 @@ document.addEventListener('DOMContentLoaded', function() {
         return Array.from(table.querySelectorAll('tbody tr.history-row'));
     }
 
+    function fuzzyMatch(text, pattern) {
+        if (!pattern) return true;
+        var pIdx = 0;
+        for (var i = 0; i < text.length; i++) {
+            if (text[i] === pattern[pIdx]) {
+                pIdx++;
+                if (pIdx === pattern.length) return true;
+            }
+        }
+        return false;
+    }
+
     function getMatchingRows() {
         var failOnly = !!(systemMarkedFailOnly && systemMarkedFailOnly.checked);
         var cancelledOnly = !!(markedCancelledOnly && markedCancelledOnly.checked);
@@ -302,7 +314,7 @@ document.addEventListener('DOMContentLoaded', function() {
             for (var col in filters) {
                 var cell = row.querySelector('td[data-col="' + col + '"]');
                 var cellText = (cell && cell.textContent) ? cell.textContent.toLowerCase().trim() : '';
-                if (cellText.indexOf(filters[col]) === -1) { colMatch = false; break; }
+                if (!fuzzyMatch(cellText, filters[col])) { colMatch = false; break; }
             }
             var systemFailMatch = row.getAttribute('data-system-marked-fail') === '1';
             var cancelledMatch = row.getAttribute('data-marked-cancelled') === '1';

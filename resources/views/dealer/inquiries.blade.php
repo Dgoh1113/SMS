@@ -578,6 +578,18 @@ function initDealerInquiriesPage() {
     setDealerInquiryInitialOrder();
     initSortableDealerInquiries();
 
+    function fuzzyMatch(text, pattern) {
+        if (!pattern) return true;
+        var pIdx = 0;
+        for (var i = 0; i < text.length; i++) {
+            if (text[i] === pattern[pIdx]) {
+                pIdx++;
+                if (pIdx === pattern.length) return true;
+            }
+        }
+        return false;
+    }
+
     function applyDealerGridFilters() {
         var filters = {};
         table.querySelectorAll('.inquiries-grid-filter').forEach(function(inp) {
@@ -647,7 +659,7 @@ function initDealerInquiriesPage() {
                     }
                     continue;
                 }
-                if (cellText.toLowerCase().indexOf(filter.val) === -1) { colMatch = false; break; }
+                if (!fuzzyMatch(cellText.toLowerCase(), filter.val)) { colMatch = false; break; }
             }
             row.dataset.filterMatch = colMatch ? '1' : '0';
         });

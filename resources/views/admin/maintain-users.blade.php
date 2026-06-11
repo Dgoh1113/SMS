@@ -1039,6 +1039,18 @@
                 renderPage(window.maintainUsersPaginationState.currentPage || 1);
             }
 
+            function fuzzyMatch(text, pattern) {
+                if (!pattern) return true;
+                var pIdx = 0;
+                for (var i = 0; i < text.length; i++) {
+                    if (text[i] === pattern[pIdx]) {
+                        pIdx++;
+                        if (pIdx === pattern.length) return true;
+                    }
+                }
+                return false;
+            }
+
             // Live search: top search box + per-column filters (all apply as you type)
             function applyTableFilter(resetPage) {
                 if (!table) return;
@@ -1053,7 +1065,7 @@
                     for (const col in filters) {
                         const cell = row.querySelector('td[data-col="' + col + '"]');
                         const cellText = (cell && cell.textContent) ? cell.textContent.toLowerCase().trim() : '';
-                        if (cellText.indexOf(filters[col]) === -1) {
+                        if (!fuzzyMatch(cellText, filters[col])) {
                             colMatch = false;
                             break;
                         }

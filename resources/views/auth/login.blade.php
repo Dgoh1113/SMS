@@ -234,9 +234,7 @@
                                 <span>Add new passkey on new phone</span>
                             </button>
                         </div>
-                        <p class="login-passkey-note" style="margin-top: 12px;">
-                            On Windows or desktop, the phone option opens the browser passkey window so you can choose iPhone or Android and scan the QR code there.
-                        </p>
+
                         @if (empty($passkey_setup_required))
                             <p class="login-passkey-countdown" id="registerPasskeyCountdown" data-seconds="6" data-dashboard-url="{{ $dashboard_url ?? '/admin/dashboard' }}">
                                 Redirect to dashboard in <span>6</span> seconds.
@@ -607,9 +605,11 @@
                 if (button) button.disabled = !!disabled;
             });
         }
-        registerPasskeyBtn.addEventListener('click', function () {
-            startPasskeyRegistration('device');
-        });
+        if (registerPasskeyBtn) {
+            registerPasskeyBtn.addEventListener('click', function () {
+                startPasskeyRegistration('device');
+            });
+        }
         if (registerPasskeyPhoneBtn) {
             registerPasskeyPhoneBtn.addEventListener('click', function () {
                 startPasskeyRegistration('phone');
@@ -620,7 +620,7 @@
             var nicknamePromptDefault = preference === 'phone' ? 'My phone' : 'This device';
             var nickname = prompt(
                 preference === 'phone'
-                    ? 'How should we name this phone passkey? Example: "My iPhone" or "My Android".'
+                    ? 'How should we name this phone passkey? Example: "Alex\'s iPhone" or "Sarah\'s Android".'
                     : 'How should we name this passkey? Example: "My laptop" or "Office desktop".',
                 nicknamePromptDefault
             );

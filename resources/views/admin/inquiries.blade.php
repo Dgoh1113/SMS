@@ -2224,6 +2224,18 @@ document.addEventListener('DOMContentLoaded', function() {
         return filters;
     }
 
+    function fuzzyMatch(text, pattern) {
+        if (!pattern) return true;
+        var pIdx = 0;
+        for (var i = 0; i < text.length; i++) {
+            if (text[i] === pattern[pIdx]) {
+                pIdx++;
+                if (pIdx === pattern.length) return true;
+            }
+        }
+        return false;
+    }
+
     function inquiryRowMatchesColumnFilters(row, filters) {
         for (var col in filters) {
             var cell = row.querySelector('td[data-col="' + col + '"]');
@@ -2250,7 +2262,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         return false;
                     }
                 }
-            } else if (cellText.toLowerCase().indexOf(filter.val) === -1) {
+            } else if (!fuzzyMatch(cellText.toLowerCase(), filter.val)) {
                 return false;
             }
         }

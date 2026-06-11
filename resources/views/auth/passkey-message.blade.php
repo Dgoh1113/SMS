@@ -15,15 +15,17 @@
 <body>
 <div class="login-root">
     <main class="login-main">
-        <div class="login-card">
-            <div class="login-logo">
-                <img src="{{ asset('sql-logo.png') }}" alt="SQL logo" class="login-logo-img">
-                <span class="login-logo-lms">SMS</span>
+        <div class="login-main-layout">
+            <div class="login-card">
+                <div class="login-logo">
+                    <img src="{{ asset('sql-logo.png') }}" alt="SQL logo" class="login-logo-img">
+                    <span class="login-logo-lms">SMS</span>
+                </div>
+                <p class="login-subtitle">{{ $subtitle ?? 'Passkey Sign-In' }}</p>
+                <div class="login-message login-error">{{ $message }}</div>
+                <p class="login-passkey-note">{{ $helperText ?? 'Please request a new passkey setup link.' }}</p>
+                <a href="{{ route('login') }}" class="login-link-btn">Back to login</a>
             </div>
-            <p class="login-subtitle">{{ $subtitle ?? 'Passkey Sign-In' }}</p>
-            <div class="login-message login-error">{{ $message }}</div>
-            <p class="login-passkey-note">{{ $helperText ?? 'Please request a new passkey setup link.' }}</p>
-            <a href="{{ route('login') }}" class="login-link-btn">Back to login</a>
         </div>
     </main>
 </div>

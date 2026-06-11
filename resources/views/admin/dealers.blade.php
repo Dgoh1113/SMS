@@ -998,6 +998,18 @@ document.addEventListener('DOMContentLoaded', function() {
         renderPage(window.dealersPaginationState.currentPage || 1);
     }
 
+    function fuzzyMatch(text, pattern) {
+        if (!pattern) return true;
+        var pIdx = 0;
+        for (var i = 0; i < text.length; i++) {
+            if (text[i] === pattern[pIdx]) {
+                pIdx++;
+                if (pIdx === pattern.length) return true;
+            }
+        }
+        return false;
+    }
+
     function applyDealerGridFilters(resetPage) {
         var filters = {};
         table.querySelectorAll('.dealer-grid-filter').forEach(function(inp) {
@@ -1030,7 +1042,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     else if (f.op === '<') { if (cellNum >= filterNum) match = false; }
                     else if (f.op === '<=') { if (cellNum > filterNum) match = false; }
                 } else {
-                    if (cellText.toLowerCase().indexOf(f.val) === -1) match = false;
+                    if (!fuzzyMatch(cellText.toLowerCase(), f.val)) match = false;
                 }
                 if (!match) break;
             }

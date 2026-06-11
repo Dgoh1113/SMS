@@ -77,17 +77,8 @@ class AuthController extends Controller
             [$userId]
         );
         if ($existingPasskey) {
-            // Someone already registered — show "already registered" message
-            $registeredEmail = trim((string) ($row->EMAIL ?? ''));
-            $companyName = trim((string) ($row->COMPANY ?? ''));
-            $displayName = $companyName !== '' ? $companyName : ($row->ALIAS ?? $registeredEmail);
-
-            return view('auth.passkey-message', [
-                'message' => $registeredEmail.' has already registered for '.$displayName.'.',
-                'pageTitle' => 'Already Registered - SQL Sales Management System',
-                'subtitle' => 'Account Already Set Up',
-                'helperText' => 'If you need access, please contact your company administrator.',
-            ]);
+            $this->setupLinkStore()->forgetSetupToken($userId);
+            return $this->invalidPasskeySetupLinkView('Invalid or expired passkey setup link.');
         }
 
         $role = $this->systemRoleToSessionRole((string) ($row->SYSTEMROLE ?? ''));
