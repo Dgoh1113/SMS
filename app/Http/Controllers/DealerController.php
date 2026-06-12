@@ -201,15 +201,18 @@ class DealerController extends Controller
             // assigned to this dealer whose current status is Closed.
             $closedCount = $countClosedLeads();
 
-            $activeThisWeek = $activeInquiriesCount;
-            $activeLastWeek = 0;
-            $closedThisWeek = 0;
-            $closedLastWeek = 0;
+            $activeThisPeriod = $activeInquiriesCount;
+            $activeLastPeriod = 0;
+            $closedThisPeriod = 0;
+            $closedLastPeriod = 0;
+            $leadsThisPeriod = 0;
+            $leadsLastPeriod = 0;
 
             try {
-                $startThisWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
-                $endLastWeek = $startThisWeek->copy()->subSecond();
-                $startLastWeek = $startThisWeek->copy()->subWeek();
+                $rangeEnd = Carbon::today();
+                $startThisPeriod = $rangeEnd->copy()->subDays(29);
+                $endLastPeriod = $startThisPeriod->copy()->subDay()->endOfDay();
+                $startLastPeriod = $startThisPeriod->copy()->subDays(30);
 
                 $countActiveSnapshot = function (string $cutoff) use ($dealerId, $countMetricRow): int {
                     $row = DB::selectOne(
@@ -235,41 +238,71 @@ class DealerController extends Controller
                     return $countMetricRow($row);
                 };
 
-                $activeLastWeek = $countActiveSnapshot($endLastWeek->format('Y-m-d H:i:s'));
+                $countNewLeads = function (string $start, string $end) use ($dealerId, $countMetricRow): int {
+                    $sql = 'SELECT COUNT(*) AS "CNT"
+                            FROM "LEAD" l
+                            WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
+                              AND l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
+                              AND UPPER(TRIM(COALESCE(
+                                  (SELECT FIRST 1 la."STATUS"
+                                   FROM "LEAD_ACT" la
+                                   WHERE la."LEADID" = l."LEADID"
+                                   ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC),
+                                  \'PENDING\'
+                              ))) <> \'CANCELLED\'';
+                    return $countMetricRow(DB::selectOne($sql, [$dealerId, $start, $end]));
+                };
 
-                $closedThisWeek = $countClosedLeads(
-                    $startThisWeek->format('Y-m-d H:i:s'),
-                    Carbon::now()->format('Y-m-d H:i:s')
+                $activeLastPeriod = $countActiveSnapshot($endLastPeriod->format('Y-m-d H:i:s'));
+
+                $closedThisPeriod = $countClosedLeads(
+                    $startThisPeriod->format('Y-m-d 00:00:00'),
+                    $rangeEnd->format('Y-m-d 23:59:59')
                 );
 
-                $closedLastWeek = $countClosedLeads(
-                    $startLastWeek->format('Y-m-d H:i:s'),
-                    $endLastWeek->format('Y-m-d H:i:s')
+                $closedLastPeriod = $countClosedLeads(
+                    $startLastPeriod->format('Y-m-d H:i:s'),
+                    $endLastPeriod->format('Y-m-d H:i:s')
+                );
+
+                $leadsThisPeriod = $countNewLeads(
+                    $startThisPeriod->format('Y-m-d 00:00:00'),
+                    $rangeEnd->format('Y-m-d 23:59:59')
+                );
+
+                $leadsLastPeriod = $countNewLeads(
+                    $startLastPeriod->format('Y-m-d 00:00:00'),
+                    $endLastPeriod->format('Y-m-d 23:59:59')
                 );
             } catch (\Throwable $e) {
-                $activeLastWeek = 0;
-                $closedThisWeek = 0;
-                $closedLastWeek = 0;
+                $activeLastPeriod = 0;
+                $closedThisPeriod = 0;
+                $closedLastPeriod = 0;
+                $leadsThisPeriod = 0;
+                $leadsLastPeriod = 0;
             }
 
-            $pctActive = $activeLastWeek > 0
-                ? round((($activeThisWeek - $activeLastWeek) / $activeLastWeek) * 100, 1)
-                : ($activeThisWeek > 0 ? 100 : 0);
-            $pctClosed = $closedLastWeek > 0
-                ? round((($closedThisWeek - $closedLastWeek) / $closedLastWeek) * 100, 1)
-                : ($closedThisWeek > 0 ? 100 : 0);
+            $pctActive = $activeLastPeriod > 0
+                ? round((($activeThisPeriod - $activeLastPeriod) / $activeLastPeriod) * 100, 1)
+                : ($activeThisPeriod > 0 ? 100 : 0);
+            $pctClosed = $closedLastPeriod > 0
+                ? round((($closedThisPeriod - $closedLastPeriod) / $closedLastPeriod) * 100, 1)
+                : ($closedThisPeriod > 0 ? 100 : 0);
+            $pctTotalLeads = $leadsLastPeriod > 0
+                ? round((($leadsThisPeriod - $leadsLastPeriod) / $leadsLastPeriod) * 100, 1)
+                : ($leadsThisPeriod > 0 ? 100 : 0);
 
             $totalAssignedLeadCount = $countTotalAssignedLeads();
             $conversion = $totalAssignedLeadCount > 0 ? round(($closedCount / $totalAssignedLeadCount) * 100, 1) : 0;
             $conversionTrend = 0.0;
 
             try {
-                $endLastWeek = Carbon::now()->startOfWeek(Carbon::MONDAY)->subSecond()->format('Y-m-d H:i:s');
-                $totalAssignedLeadCountLastWeek = $countTotalAssignedLeads($endLastWeek);
-                $conversionRateLastWeek = $totalAssignedLeadCountLastWeek > 0
-                    ? ($closedLastWeek / $totalAssignedLeadCountLastWeek) * 100
+                $endLastPeriod = Carbon::today()->subDays(30)->endOfDay()->format('Y-m-d H:i:s');
+                $totalAssignedLeadCountLastPeriod = $countTotalAssignedLeads($endLastPeriod);
+                $conversionRateLastPeriod = $totalAssignedLeadCountLastPeriod > 0
+                    ? ($closedLastPeriod / $totalAssignedLeadCountLastPeriod) * 100
                     : 0;
-                $conversionTrend = round($conversion - $conversionRateLastWeek, 1);
+                $conversionTrend = round($conversion - $conversionRateLastPeriod, 1);
             } catch (\Throwable $e) {
                 $conversionTrend = 0.0;
             }
@@ -318,6 +351,8 @@ class DealerController extends Controller
             }
 
             $metrics = [
+                'totalLeads' => $totalAssignedLeadCount,
+                'pctTotalLeads' => $pctTotalLeads,
                 'activeInquiries' => $activeInquiriesCount,
                 'pctActive' => $pctActive,
                 'conversionRate' => $conversion,

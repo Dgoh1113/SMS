@@ -70,19 +70,25 @@
                     $p = (float) ($metrics['pctActive'] ?? 0);
                     $trendClass = $p > 0 ? 'dashboard-metric-pill-up' : ($p < 0 ? 'dashboard-metric-pill-down' : 'dashboard-metric-pill-neutral');
                     $trendSign = $p > 0 ? '+' : ($p < 0 ? '-' : '');
-                    $trendText = $p == 0.0 ? 'No change vs last week' : ($trendSign . abs($p) . '% vs last week');
+                    $trendText = $p == 0.0 ? 'No change vs previous 30 days' : ($trendSign . abs($p) . '% vs previous 30 days');
                 @endphp
                 <span class="dashboard-metric-pill {{ $trendClass }}">{{ $trendText }}</span>
             </div>
         </div>
         <div class="dashboard-metric-card">
-            <div class="dashboard-metric-icon dashboard-metric-icon-critical">
-                <i class="bi bi-clock"></i>
+            <div class="dashboard-metric-icon dashboard-metric-icon-inquiries" style="color: #6366f1; background-color: #e0e7ff;">
+                <i class="bi bi-people"></i>
             </div>
-            <div class="dashboard-metric-label">Pending Follow-ups</div>
+            <div class="dashboard-metric-label">Total Leads</div>
             <div class="dashboard-metric-value-row">
-                <div class="dashboard-metric-value">{{ number_format($metrics['pendingFollowups'] ?? 0) }}</div>
-                <span class="dashboard-metric-pill dashboard-metric-pill-critical">CRITICAL</span>
+                <div class="dashboard-metric-value">{{ number_format($metrics['totalLeads'] ?? 0) }}</div>
+                @php
+                    $p = (float) ($metrics['pctTotalLeads'] ?? 0);
+                    $trendClass = $p > 0 ? 'dashboard-metric-pill-up' : ($p < 0 ? 'dashboard-metric-pill-down' : 'dashboard-metric-pill-neutral');
+                    $trendSign = $p > 0 ? '+' : ($p < 0 ? '-' : '');
+                    $trendText = $p == 0.0 ? 'No change vs previous 30 days' : ($trendSign . abs($p) . '% vs previous 30 days');
+                @endphp
+                <span class="dashboard-metric-pill {{ $trendClass }}">{{ $trendText }}</span>
             </div>
         </div>
         <div class="dashboard-metric-card">
@@ -96,7 +102,7 @@
                     $p = (float) ($metrics['pctClosed'] ?? 0);
                     $trendClass = $p > 0 ? 'dashboard-metric-pill-up' : ($p < 0 ? 'dashboard-metric-pill-down' : 'dashboard-metric-pill-neutral');
                     $trendSign = $p > 0 ? '+' : ($p < 0 ? '-' : '');
-                    $trendText = $p == 0.0 ? 'No change vs last week' : ($trendSign . abs($p) . '% vs last week');
+                    $trendText = $p == 0.0 ? 'No change vs previous 30 days' : ($trendSign . abs($p) . '% vs previous 30 days');
                 @endphp
                 <span class="dashboard-metric-pill {{ $trendClass }}">{{ $trendText }}</span>
             </div>
@@ -112,7 +118,7 @@
                     $p = (float)($metrics['conversionTrend'] ?? 0);
                     $trendClass = $p > 0 ? 'dashboard-metric-pill-up' : ($p < 0 ? 'dashboard-metric-pill-down' : 'dashboard-metric-pill-neutral');
                     $trendSign = $p > 0 ? '+' : ($p < 0 ? '-' : '');
-                    $trendText = $p == 0.0 ? 'No change vs last week' : ($trendSign . abs($p) . '% vs last week');
+                    $trendText = $p == 0.0 ? 'No change vs previous 30 days' : ($trendSign . abs($p) . '% vs previous 30 days');
                 @endphp
                 <span class="dashboard-metric-pill {{ $trendClass }}">{{ $trendText }}</span>
             </div>

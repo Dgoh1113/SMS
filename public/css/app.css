@@ -5471,7 +5471,7 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
   scrollbar-width: thin; /* Firefox: always show thin scrollbar */
 }
 .inquiries-table-scroll.inquiries-table-scroll--no-x {
-  overflow-x: hidden;
+  overflow-x: scroll;
   overflow-y: hidden;
 }
 .inquiries-table-scroll::-webkit-scrollbar {
@@ -5485,7 +5485,7 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
 #completedPanel .inquiries-table-scroll,
 #rewardedPanel .inquiries-table-scroll {
   flex: 0 0 auto;
-  min-height: 460px;
+  min-height: 427px;
   max-height: none;
 }
 .inquiries-table-scroll.inquiries-table-scroll-empty {
@@ -5528,7 +5528,7 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
 }
 .dealer-inquiries-panel .inquiries-table-scroll {
   flex: 0 0 auto;
-  min-height: 460px;
+  min-height: 427px;
   max-height: none;
   overflow-x: auto;
   overflow-y: hidden;

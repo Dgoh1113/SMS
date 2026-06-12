@@ -2160,8 +2160,8 @@ html.theme-dark .dealer-dashboard-content .dealer-table-wrapper:hover::-webkit-s
   .dealer-dashboard-page .dealer-dashboard-main {
     margin-top: 10px;
     flex: 1 1 auto;
-    min-height: clamp(520px, calc(100vh - 300px), 620px);
-    max-height: clamp(520px, calc(100vh - 300px), 620px);
+    min-height: clamp(487px, calc(100vh - 333px), 587px);
+    max-height: clamp(487px, calc(100vh - 333px), 587px);
   }
 
   .dealer-dashboard-page .dealer-dashboard-main-left,
@@ -2404,8 +2404,8 @@ html.theme-dark .dealer-dashboard-content .dealer-table-wrapper:hover::-webkit-s
 
 @media (min-width: 1601px) and (max-height: 940px) {
   .dealer-dashboard-page .dealer-dashboard-main {
-    min-height: clamp(600px, calc(100vh - 250px), 685px);
-    max-height: clamp(600px, calc(100vh - 250px), 685px);
+    min-height: clamp(567px, calc(100vh - 283px), 652px);
+    max-height: clamp(567px, calc(100vh - 283px), 652px);
   }
 
   .dealer-dashboard-page .dealer-table-header {
@@ -2463,8 +2463,8 @@ html.theme-dark .dealer-dashboard-content .dealer-table-wrapper:hover::-webkit-s
 
   .dealer-dashboard-page .dealer-dashboard-main {
     margin-top: 4px;
-    min-height: clamp(615px, calc(100vh - 300px), 670px);
-    max-height: clamp(615px, calc(100vh - 300px), 670px);
+    min-height: clamp(582px, calc(100vh - 333px), 637px);
+    max-height: clamp(582px, calc(100vh - 333px), 637px);
   }
 
   .dealer-dashboard-page .dealer-dashboard-main-right {
@@ -2532,7 +2532,7 @@ html.theme-dark .dealer-dashboard-content .dealer-table-wrapper:hover::-webkit-s
   }
 
   .dealer-dashboard-page .dealer-alert-badge {
-    padding: 4.5px 21px 4.5px 8px;
+    padding: 5.5px 32px 5.5px 8px;
     font-size: 9px;
   }
 
@@ -2591,8 +2591,8 @@ html.theme-dark .dealer-dashboard-content .dealer-table-wrapper:hover::-webkit-s
   .dealer-dashboard-page .dealer-dashboard-main {
     margin-top: 4px;
     gap: 10px;
-    min-height: clamp(430px, calc(100vh - 280px), 520px);
-    max-height: clamp(430px, calc(100vh - 280px), 520px);
+    min-height: clamp(397px, calc(100vh - 313px), 487px);
+    max-height: clamp(397px, calc(100vh - 313px), 487px);
   }
 
   .dealer-dashboard-page .dealer-dashboard-sidebar-divider {
@@ -2897,5 +2897,16 @@ html.theme-dark .dealer-dashboard-page .dealer-alert-empty-card {
   border-color: rgba(112, 132, 176, 0.22);
   background: linear-gradient(180deg, rgba(18, 28, 48, 0.92), rgba(12, 20, 35, 0.96));
 }
-.dealer-inquiries-panel .inquiries-table-scroll.inquiries-table-scroll--none { min-height: 0 !important; height: auto !important; max-height: none !important; border: none !important; }
-.dealer-dashboard-main:has(.inquiries-table-scroll--none) { min-height: 0 !important; height: auto !important; max-height: none !important; }
+
+.dealer-inquiries-panel .inquiries-table-scroll.inquiries-table-scroll--none {
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  border: none !important;
+}
+
+.dealer-dashboard-main:has(.inquiries-table-scroll--none) {
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+}
