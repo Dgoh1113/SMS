@@ -209,201 +209,16 @@
 @push('scripts')
 <script>
 function initDealerInquiriesPage() {
-    var tables = document.querySelectorAll('.inquiries-table');
-    if (!tables.length) return;
+    var table = document.getElementById('dealerInquiriesTable');
+    if (!table) return;
 
     function normalizeDealerTableStructure() {
-        tables.forEach(function(table) { table.querySelectorAll('th[data-col="source"], td[data-col="source"]').forEach(function(el) { el.remove(); }); });
+        table.querySelectorAll('th[data-col="source"], td[data-col="source"]').forEach(function(el) {
+            el.remove();
+        });
     }
 
     normalizeDealerTableStructure();
-    window.setDealerTab = function(tabName) {
-        document.querySelectorAll('.dealer-console-tab').forEach(function(bt) {
-            var isActive = bt.getAttribute('data-tab') === tabName;
-            bt.classList.toggle('dealer-console-tab-active', isActive);
-            bt.setAttribute('aria-current', isActive ? 'page' : 'false');
-        });
-        document.querySelectorAll('.inquiries-tab-panel').forEach(function(panel) {
-            var isActive = panel.id === tabName + 'Panel';
-            panel.classList.toggle('active', isActive);
-            panel.hidden = !isActive;
-        });
-        var fn = window['refresh' + tabName + 'Pagination'];
-        if (typeof fn === 'function') fn();
-        var url = new URL(window.location.href);
-        url.searchParams.set('tab', tabName);
-        window.history.replaceState({}, '', url);
-        window.currentDealerTab = tabName;
-    };
-    document.querySelectorAll('.dealer-console-tab').forEach(function(btn) {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            window.setDealerTab(this.getAttribute('data-tab'));
-        });
-    });
-
-    function initDealerPaginationForTable(tabId) {
-        var pagination = document.getElementById(tabId + 'Pagination');
-        var panelTable = document.getElementById(tabId + 'Table');
-        if (!pagination || !panelTable) return;
-
-        var controls = Array.from(pagination.querySelectorAll('button[data-page]'));
-        var infoEl = pagination.querySelector('.inquiries-pagination-info');
-        var pageNumbersEl = document.getElementById(tabId + 'PageNumbers');
-        var perPage = parseInt(pagination.getAttribute('data-per-page') || '10', 10);
-        
-        if (!window.dealerPaginationStates) window.dealerPaginationStates = {};
-        window.dealerPaginationStates[tabId] = { currentPage: 1 };
-
-        function getAllRows() { return Array.from(panelTable.querySelectorAll('tbody tr.inquiry-row')); }
-        function getMatchingRows() {
-            return getAllRows().filter(function(r) { return r.style.display !== 'none' || r.hasAttribute('data-hidden-by-pagination'); });
-        }
-        
-        function clearPlaceholderRows() {
-            var tbody = panelTable.querySelector('tbody');
-            if (!tbody) return;
-            var placeholders = tbody.querySelectorAll('tr.inquiry-row-placeholder');
-            placeholders.forEach(function(r) { r.remove(); });
-        }
-
-        function ensureFixedHeight(visibleDataCount) {
-            var tbody = panelTable.querySelector('tbody');
-            if (!tbody) return;
-            clearPlaceholderRows();
-            var allowZeroFill = true;
-            var targetRows = perPage;
-            var placeholderRowHeight = 56;
-            
-            var effectiveVisibleCount = visibleDataCount;
-
-            if (effectiveVisibleCount < targetRows && (effectiveVisibleCount > 0 || allowZeroFill)) {
-                var needed = targetRows - effectiveVisibleCount;
-                for (var i = 0; i < needed; i++) {
-                    var tr = document.createElement('tr');
-                    tr.className = 'inquiry-row-placeholder';
-                    var td = document.createElement('td');
-                    td.colSpan = 100;
-                    td.style.height = placeholderRowHeight + 'px';
-                    tr.appendChild(td);
-                    tbody.appendChild(tr);
-                }
-            }
-        }
-
-        function buildSmartPageNumbers(container, current, lastPage) {
-            if (!container) return;
-            container.innerHTML = '';
-            if (lastPage <= 1) return;
-
-            var windowSize = window.innerWidth < 768 ? 1 : 2;
-            var addPage = function(p) {
-                var btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'inquiries-pagination-num' + (p === current ? ' inquiries-pagination-num-active' : '');
-                btn.setAttribute('data-page', String(p));
-                btn.textContent = String(p);
-                btn.addEventListener('click', function(e) { 
-                    e.stopPropagation();
-                    if (p !== current) window['goto' + tabId + 'Page'](p); 
-                });
-                container.appendChild(btn);
-            };
-
-            var addDots = function() {
-                var span = document.createElement('span');
-                span.className = 'inquiries-pagination-num inquiries-pagination-dots';
-                span.textContent = '...';
-                container.appendChild(span);
-            };
-
-            addPage(1);
-            var left = Math.max(2, current - windowSize);
-            var right = Math.min(lastPage - 1, current + windowSize);
-            if (left > 2) addDots();
-            for (var i = left; i <= right; i++) { addPage(i); }
-            if (right < lastPage - 1) addDots();
-            if (lastPage > 1) addPage(lastPage);
-        }
-
-        window['apply' + tabId + 'Pagination'] = function() {
-            var rows = getAllRows();
-            var matchingRows = getMatchingRows();
-            var total = matchingRows.length;
-            var lastPage = total > 0 ? Math.ceil(total / perPage) : 1;
-            var currentPage = parseInt(window.dealerPaginationStates[tabId].currentPage || '1', 10);
-
-            currentPage = Math.max(1, Math.min(currentPage, lastPage));
-            window.dealerPaginationStates[tabId].currentPage = currentPage;
-
-            var start = (currentPage - 1) * perPage;
-            var end = Math.min(start + perPage, total);
-            var pageRows = matchingRows.slice(start, end);
-
-            rows.forEach(function(row) {
-                if (matchingRows.indexOf(row) !== -1) {
-                    var show = pageRows.indexOf(row) !== -1;
-                    if (show) {
-                        row.style.display = '';
-                        row.removeAttribute('data-hidden-by-pagination');
-                    } else {
-                        row.style.display = 'none';
-                        row.setAttribute('data-hidden-by-pagination', '1');
-                    }
-                }
-            });
-            ensureFixedHeight(pageRows.length);
-
-            pagination.setAttribute('data-total', String(total));
-            pagination.setAttribute('data-last-page', String(lastPage));
-            pagination.setAttribute('data-current-page', String(currentPage));
-
-            if (infoEl) {
-                var from = total === 0 ? 0 : start + 1;
-                infoEl.textContent = 'Showing ' + from + ' to ' + end + ' of ' + total + ' entries (Page ' + currentPage + ')';
-            }
-
-            controls.forEach(function(btn) {
-                var type = btn.getAttribute('data-page');
-                if (type === 'first' || type === 'prev') {
-                    btn.disabled = currentPage <= 1;
-                } else if (type === 'next' || type === 'last') {
-                    btn.disabled = currentPage >= lastPage;
-                }
-            });
-
-            buildSmartPageNumbers(pageNumbersEl, currentPage, lastPage);
-        };
-
-        window['goto' + tabId + 'Page'] = function(page) {
-            window.dealerPaginationStates[tabId].currentPage = parseInt(page || '1', 10) || 1;
-            window['apply' + tabId + 'Pagination']();
-        };
-
-        window['refresh' + tabId + 'Pagination'] = function() {
-            window['apply' + tabId + 'Pagination']();
-        };
-
-        controls.forEach(function(btn) {
-            btn.onclick = function() {
-                var type = btn.getAttribute('data-page');
-                var currentPage = window.dealerPaginationStates[tabId].currentPage;
-                var currentLastPage = parseInt(pagination.getAttribute('data-last-page') || '1', 10);
-                if (type === 'first') window['goto' + tabId + 'Page'](1);
-                else if (type === 'prev') window['goto' + tabId + 'Page'](currentPage - 1);
-                else if (type === 'next') window['goto' + tabId + 'Page'](currentPage + 1);
-                else if (type === 'last') window['goto' + tabId + 'Page'](currentLastPage);
-            };
-        });
-
-        window['apply' + tabId + 'Pagination']();
-    }
-
-    document.querySelectorAll('.inquiries-tab-panel').forEach(function(panel) {
-        var tabId = panel.id.replace('Panel', '');
-        initDealerPaginationForTable(tabId);
-    });
-
 
     (function initMessageModal() {
         if (document.getElementById('inquiryMessageModal')) return;
@@ -431,7 +246,7 @@ function initDealerInquiriesPage() {
 
         document.addEventListener('click', function(e) {
             var cell = e.target && e.target.closest ? e.target.closest('.inquiries-msg-clickable[data-full-message]') : null;
-            if (cell && cell.closest('.inquiries-table')) {
+            if (cell && table.contains(cell)) {
                 open(cell.getAttribute('data-full-message') || '');
                 return;
             }
@@ -451,7 +266,7 @@ function initDealerInquiriesPage() {
     var colsAll = document.getElementById('dealerInquiryColumnsAll');
     var colsNone = document.getElementById('dealerInquiryColumnsNone');
     var colsReset = document.getElementById('dealerInquiryColumnsReset');
-    var currentDealerTab = window.currentDealerTab || '{{ $dealerConsoleTab ?? 'inquiries' }}';
+    var currentDealerTab = '{{ $dealerConsoleTab ?? 'inquiries' }}';
     var storageKey = 'dealer_assigned_visible_cols_v1';
     var legacyStorageKey = 'dealer_assigned_visible_cols_v1_disabled';
     var defaultCols = ['inquiryid','date','customer','email','postcode','city','assignby','status'];
@@ -873,36 +688,24 @@ function initDealerInquiriesPage() {
     var initialCols = loadCols() || getDefaultColsForViewport();
     applyVisibleCols(initialCols);
 
-    document.querySelectorAll('.inquiries-columns-dropdown').forEach(function(dropdown) {
-        var localColsBtn = dropdown.querySelector('button[aria-haspopup="true"]');
-        var localColsMenu = dropdown.querySelector('.inquiries-columns-menu');
-        if (localColsBtn && localColsMenu) {
-            localColsBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                var open = localColsMenu.hidden;
-                document.querySelectorAll('.inquiries-columns-menu').forEach(function(m) { m.hidden = true; });
-                document.querySelectorAll('.inquiries-columns-dropdown button[aria-haspopup="true"]').forEach(function(b) { b.setAttribute('aria-expanded', 'false'); });
-                localColsMenu.hidden = !open;
-                localColsBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (colsBtn && colsMenu) {
+        colsBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            setMenuOpen(colsMenu.hidden);
+        });
+        document.addEventListener('click', function() { setMenuOpen(false); });
+        colsMenu.addEventListener('click', function(e) { e.stopPropagation(); });
+
+        colsMenu.querySelectorAll('input[type="checkbox"][data-col]').forEach(function(cb) {
+            cb.addEventListener('change', function() {
+                var col = cb.getAttribute('data-col');
+                var cols = getSelectedColsFromMenu();
+                applyVisibleCols(cols);
+                saveCols(cols);
             });
-            localColsMenu.addEventListener('click', function(e) { e.stopPropagation(); });
-            localColsMenu.querySelectorAll('input[type="checkbox"][data-col]').forEach(function(cb) {
-                cb.addEventListener('change', function() {
-                    var cols = [];
-                    localColsMenu.querySelectorAll('input[type="checkbox"][data-col]').forEach(function(c) {
-                        if (c.checked) cols.push(c.getAttribute('data-col'));
-                    });
-                    applyVisibleCols(cols);
-                    saveCols(cols);
-                });
-            });
-        }
-    });
-    document.addEventListener('click', function() {
-        document.querySelectorAll('.inquiries-columns-menu').forEach(function(m) { m.hidden = true; });
-        document.querySelectorAll('.inquiries-columns-dropdown button[aria-haspopup="true"]').forEach(function(b) { b.setAttribute('aria-expanded', 'false'); });
-    });
+        });
+    }
     if (colsAll) {
         colsAll.addEventListener('click', function() {
             applyVisibleCols(allCols.slice());
