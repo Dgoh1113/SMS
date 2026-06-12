@@ -87,6 +87,9 @@
 .inquiries-page-wrap .inquiries-table td {
   white-space: nowrap !important;
   max-width: none !important;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  font-size: 13px;
 }
 
 .inquiries-page-wrap #unassignedTable.inquiries-table--fit th[data-col="customername"],
@@ -3277,3 +3280,13 @@ textarea.inquiry-form-input {
   overflow: hidden !important;
   text-overflow: ellipsis !important;
 }
+
+/* Smaller attachment button to prevent row expansion */
+.inquiries-page-wrap .inquiries-table td[data-col="attachment"] .inquiries-btn {
+  padding: 4px 10px !important;
+  font-size: 11px !important;
+  line-height: 1.2 !important;
+  border-radius: 6px !important;
+  height: auto !important;
+}
+

@@ -1,4 +1,4 @@
-@forelse ($users as $u)
+@foreach ($users as $u)
     @php
         $roleUpper = strtoupper(trim($u['SYSTEMROLE'] ?? ''));
         $roleClass = $roleUpper === 'ADMIN'
@@ -100,10 +100,4 @@
             </div>
         </td>
     </tr>
-@empty
-    <tr class="maintain-users-empty-row">
-        <td colspan="9">
-            <div class="maintain-users-empty">No users found.</div>
-        </td>
-    </tr>
-@endforelse
+@endforeach

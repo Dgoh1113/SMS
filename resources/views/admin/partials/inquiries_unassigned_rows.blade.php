@@ -1,4 +1,4 @@
-@forelse($unassigned as $r)
+@foreach($unassigned as $r)
 <tr class="inquiry-row" data-search="{{ strtolower(($r->COMPANYNAME ?? '') . ' ' . ($r->CONTACTNAME ?? '') . ' ' . ($r->LEADID ?? '')) }}">
     <td data-col="inquiryid">#SQL-{{ $r->LEADID }}</td>
     <td data-col="date">{{ $r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '-' }}</td>
@@ -33,21 +33,8 @@
     <td data-col="products">
         @php
             $ids = $r->PRODUCTID ? array_map('trim', explode(',', (string) $r->PRODUCTID)) : [];
-            $pillOrder = [
-                1 => 10, 3 => 11, 4 => 12,
-                2 => 20, 10 => 21,
-                8 => 30, 5 => 31,
-                6 => 40,
-                9 => 50,
-                7 => 60,
-                11 => 70,
-            ];
             $ids = array_values(array_filter(array_unique(array_map('intval', $ids)), fn ($v) => $v > 0));
-            usort($ids, function ($a, $b) use ($pillOrder) {
-                $oa = $pillOrder[$a] ?? (1000 + $a);
-                $ob = $pillOrder[$b] ?? (1000 + $b);
-                return $oa <=> $ob;
-            });
+            $ids = \App\Support\ProductConstants::sortProductIds($ids);
         @endphp
         @if(!empty($ids))
             <div class="inquiries-pill-group">
@@ -106,6 +93,4 @@
         <button type="button" class="inquiries-btn inquiries-btn-assign inquiries-delete-inquiry-btn" data-lead-id="{{ $r->LEADID }}" title="Delete" aria-label="Delete"><i class="bi bi-trash" aria-hidden="true"></i></button>
     </td>
 </tr>
-@empty
-<tr><td colspan="18" class="inquiries-empty">No unassigned inquiries.</td></tr>
-@endforelse
+@endforeach

@@ -445,28 +445,10 @@
                             $ids = $r->PRODUCTID ? array_map('trim', explode(',', (string)$r->PRODUCTID)) : [];
                             $dealtRaw = $r->DEALTPRODUCT ?? null;
                             $dealtProductIds = $dealtRaw ? array_map('trim', preg_split('/[\\s,\\(\\)]+/', (string)$dealtRaw)) : [];
-                            // Group same-color products together for a cleaner look
-                            $pillOrder = [
-                                1 => 10, 3 => 11, 4 => 12, // Account group
-                                2 => 20, 10 => 21,        // Payroll group
-                                8 => 30, 5 => 31,         // X-Store group
-                                6 => 40,                  // EBI POS
-                                9 => 50,                  // Vision
-                                7 => 60,                  // Sudu AI
-                                11 => 70,                 // Others
-                            ];
                             $ids = array_values(array_filter(array_unique(array_map('intval', $ids)), fn($v) => $v > 0));
                             $dealtProductIds = array_values(array_filter(array_unique(array_map('intval', $dealtProductIds)), fn($v) => $v > 0));
-                            usort($ids, function($a, $b) use ($pillOrder) {
-                                $oa = $pillOrder[$a] ?? (1000 + $a);
-                                $ob = $pillOrder[$b] ?? (1000 + $b);
-                                return $oa <=> $ob;
-                            });
-                            usort($dealtProductIds, function($a, $b) use ($pillOrder) {
-                                $oa = $pillOrder[$a] ?? (1000 + $a);
-                                $ob = $pillOrder[$b] ?? (1000 + $b);
-                                return $oa <=> $ob;
-                            });
+                            $ids = \App\Support\ProductConstants::sortProductIds($ids);
+                            $dealtProductIds = \App\Support\ProductConstants::sortProductIds($dealtProductIds);
                         @endphp
                         @if(!empty($ids))
                             <div class="inquiries-pill-group">
@@ -661,27 +643,10 @@
                             $ids = $r->PRODUCTID ? array_map('trim', explode(',', (string)$r->PRODUCTID)) : [];
                             $dealtRaw = $r->DEALTPRODUCT ?? null;
                             $dealtProductIds = $dealtRaw ? array_map('trim', preg_split('/[\s,\(\)]+/', (string)$dealtRaw)) : [];
-                            $pillOrder = [
-                                1 => 10, 3 => 11, 4 => 12,
-                                2 => 20, 10 => 21,
-                                8 => 30, 5 => 31,
-                                6 => 40,
-                                9 => 50,
-                                7 => 60,
-                                11 => 70,
-                            ];
                             $ids = array_values(array_filter(array_unique(array_map('intval', $ids)), fn($v) => $v > 0));
                             $dealtProductIds = array_values(array_filter(array_unique(array_map('intval', $dealtProductIds)), fn($v) => $v > 0));
-                            usort($ids, function($a, $b) use ($pillOrder) {
-                                $oa = $pillOrder[$a] ?? (1000 + $a);
-                                $ob = $pillOrder[$b] ?? (1000 + $b);
-                                return $oa <=> $ob;
-                            });
-                            usort($dealtProductIds, function($a, $b) use ($pillOrder) {
-                                $oa = $pillOrder[$a] ?? (1000 + $a);
-                                $ob = $pillOrder[$b] ?? (1000 + $b);
-                                return $oa <=> $ob;
-                            });
+                            $ids = \App\Support\ProductConstants::sortProductIds($ids);
+                            $dealtProductIds = \App\Support\ProductConstants::sortProductIds($dealtProductIds);
                         @endphp
                         @if(!empty($ids))
                             <div class="inquiries-pill-group">
@@ -2831,7 +2796,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 return rowHeight;
             }
         }
-        return 0;
+        
+        return 56;
     }
 
     function getInquiryTargetBodyHeight(tbody, table, perPage) {
@@ -2945,7 +2911,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var referenceRowHeight = getInquiryReferenceRowHeight(tbody, table);
         var placeholderRowHeight = getInquiryPlaceholderRowHeight(referenceRowHeight, table);
         if (visibleDataCount === 0 && shouldUseCompactZeroInquiryPlaceholders()) {
-            placeholderRowHeight = 46;
+            placeholderRowHeight = 56;
         }
         for (var i = 0; i < missingCount; i += 1) {
             var row = document.createElement('tr');

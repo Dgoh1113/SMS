@@ -64,8 +64,8 @@
         .dealer-inquiries-panel .inquiries-empty-row .inquiries-empty-cell {
             padding: 0 !important;
             vertical-align: middle;
+            border-bottom: none;
             background: #ffffff;
-            border-bottom: 1px solid #e5e7eb !important;
         }
         .dealer-inquiries-panel .inquiries-empty-row .dealer-table-empty {
             display: flex;
@@ -80,13 +80,14 @@
         }
         html.theme-dark .dealer-inquiries-panel .inquiries-empty-row .inquiries-empty-cell {
             background: transparent !important;
-            border-bottom: 1px solid #334155 !important;
+            border-bottom: none !important;
         }
         html.theme-dark .dealer-inquiries-panel .inquiries-table tbody tr.inquiries-placeholder-row td,
         html.theme-dark .dealer-inquiries-panel .inquiries-table tbody tr.inquiries-placeholder-row:hover td,
         html.theme-dark .dealer-inquiries-panel .inquiries-table tbody tr.inquiries-empty-row td,
         html.theme-dark .dealer-inquiries-panel .inquiries-table tbody tr.inquiries-empty-row:hover td {
             background: transparent !important;
+            border-color: transparent !important;
         }
         }
         @media (max-width: 768px) {
@@ -151,9 +152,43 @@
                 </div>
             '
         ])
-        <div class="inquiries-table-wrap">
+                @php
+            $panels = [
+                ['id' => 'pending', 'leads' => $categorizedLeads['pending'] ?? []],
+                ['id' => 'followup', 'leads' => $categorizedLeads['followup'] ?? []],
+                ['id' => 'demo', 'leads' => $categorizedLeads['demo'] ?? []],
+                ['id' => 'confirmed', 'leads' => $categorizedLeads['confirmed'] ?? []],
+                ['id' => 'completed', 'leads' => $categorizedLeads['completed'] ?? []],
+                ['id' => 'pending-payouts', 'leads' => $categorizedLeads['pending_payouts'] ?? []],
+                ['id' => 'rewarded', 'leads' => $categorizedLeads['rewarded'] ?? []],
+                ['id' => 'cancelled', 'leads' => $categorizedLeads['cancelled'] ?? []],
+                ['id' => 'failed', 'leads' => $categorizedLeads['failed'] ?? []],
+                ['id' => 'inquiries', 'leads' => $categorizedLeads['inquiries'] ?? []],
+            ];
+        @endphp
+
+        @foreach($panels as $panel)
+        <div id="{{ $panel['id'] }}Panel" class="dealer-tab-panel" style="display: {{ $dealerConsoleTab === $panel['id'] ? 'block' : 'none' }};">
+        @php
+            $panels = [
+                ['id' => 'pending', 'leads' => $categorizedLeads['pending'] ?? []],
+                ['id' => 'followup', 'leads' => $categorizedLeads['followup'] ?? []],
+                ['id' => 'demo', 'leads' => $categorizedLeads['demo'] ?? []],
+                ['id' => 'confirmed', 'leads' => $categorizedLeads['confirmed'] ?? []],
+                ['id' => 'completed', 'leads' => $categorizedLeads['completed'] ?? []],
+                ['id' => 'pending-payouts', 'leads' => $categorizedLeads['pending_payouts'] ?? []],
+                ['id' => 'rewarded', 'leads' => $categorizedLeads['rewarded'] ?? []],
+                ['id' => 'cancelled', 'leads' => $categorizedLeads['cancelled'] ?? []],
+                ['id' => 'failed', 'leads' => $categorizedLeads['failed'] ?? []],
+                ['id' => 'inquiries', 'leads' => $categorizedLeads['inquiries'] ?? []],
+            ];
+        @endphp
+
+        @foreach($panels as $panel)
+        <div id="{{ $panel['id'] }}Panel" class="dealer-tab-panel" style="display: {{ $dealerConsoleTab === $panel['id'] ? 'block' : 'none' }};">
+<div class="inquiries-table-wrap">
             <div class="inquiries-table-scroll">
-            <table class="inquiries-table" id="dealerInquiriesTable">
+            <table class="inquiries-table" id="dealerInquiriesTable_{{ $panel['id'] }}" data-tab="{{ $panel['id'] }}">
                 <thead>
                     <tr class="inquiries-header-row">
                         <x-tables.text-filter-header col="inquiryid" label="INQUIRY ID" />
@@ -181,14 +216,20 @@
                         @if(($dealerConsoleTab ?? 'inquiries') === 'inquiries')
                             <x-tables.status-multi-filter-header col="status" label="STATUS" :options="$statusFilterOptions" select-class="inquiries-grid-filter inquiries-grid-filter-select" />
                         @endif
-                        <x-tables.clear-filter-header button-id="dealerInquiryClearFilters" />
+                        <x-tables.clear-filter-header button-id="dealerInquiryClearFilters_{{ $panel['id'] }}" />
                     </tr>
                 </thead>
                 <tbody>
-                    @include('dealer.partials.inquiries_rows', ['leads' => $leads, 'productNames' => $productNames])
+                    @include('dealer.partials.inquiries_rows', ['leads' => $panel['leads'], 'productNames' => $productNames])
                 </tbody>
             </table>
             </div>
+        </div>
+        @endforeach
+
+        </div>
+        @endforeach
+
             @php
                 $dealerTotal = isset($leads) ? count($leads) : 0;
                 $dealerPerPage = 10;
@@ -209,12 +250,33 @@
 
 @push('scripts')
 <script>
+window.switchDealerTab = function(tabId) {
+    document.querySelectorAll('.dealer-tab-panel').forEach(function(el) { el.style.display = 'none'; });
+    var target = document.getElementById(tabId + 'Panel');
+    if (target) target.style.display = 'block';
+    
+    document.querySelectorAll('.dealer-console-tab').forEach(function(el) {
+        el.classList.remove('dealer-console-tab-active');
+        el.setAttribute('aria-current', 'false');
+        if (el.getAttribute('data-target') === tabId + 'Panel') {
+            el.classList.add('dealer-console-tab-active');
+            el.setAttribute('aria-current', 'page');
+        }
+    });
+    
+    var url = new URL(window.location.href);
+    url.searchParams.set('tab', tabId);
+    window.history.pushState(null, '', url.toString());
+
+    if (typeof window.dealerApplyPagination === 'function') {
+        window.dealerApplyPagination();
+    }
+};
 function initDealerInquiriesPage() {
-    var table = document.getElementById('dealerInquiriesTable');
-    if (!table) return;
+    
 
     function normalizeDealerTableStructure() {
-        table.querySelectorAll('th[data-col="source"], td[data-col="source"]').forEach(function(el) {
+        document.querySelectorAll('.inquiries-table th[data-col="source"], .inquiries-table td[data-col="source"]').forEach(function(el) {
             el.remove();
         });
     }
@@ -247,7 +309,7 @@ function initDealerInquiriesPage() {
 
         document.addEventListener('click', function(e) {
             var cell = e.target && e.target.closest ? e.target.closest('.inquiries-msg-clickable[data-full-message]') : null;
-            if (cell && table.contains(cell)) {
+            if (cell && cell.closest('.inquiries-table')) {
                 open(cell.getAttribute('data-full-message') || '');
                 return;
             }
@@ -267,7 +329,13 @@ function initDealerInquiriesPage() {
     var colsAll = document.getElementById('dealerInquiryColumnsAll');
     var colsNone = document.getElementById('dealerInquiryColumnsNone');
     var colsReset = document.getElementById('dealerInquiryColumnsReset');
-    var storageKey = 'dealerGlobalVisibleColumns_v1';
+    var storageKey = 'dealer_inquiries_visible_cols_v12';
+    var legacyStorageKey = 'dealer_inquiries_visible_cols_v12_disabled';
+    var legacyMobileStorageKey = 'dealer_inquiries_visible_cols_mobile_v1';
+    var olderLegacyStorageKey = 'dealer_inquiries_visible_cols_v8';
+    var oldestLegacyStorageKey = 'dealer_inquiries_visible_cols_v7';
+    var oldestLegacyStorageKeyV6 = 'dealer_inquiries_visible_cols_v6';
+    var oldestLegacyStorageKeyV5 = 'dealer_inquiries_visible_cols_v5';
     // Dealer defaults should stay the same on desktop and mobile.
     var legacyDefaultCols = ['inquiryid','date','customer','email','postcode','city','state','country','products','assignby','status'];
     var olderLegacyDefaultCols = ['inquiryid','date','customer','postcode','city','state','country','businessnature','products','assignby','status'];
@@ -294,7 +362,7 @@ function initDealerInquiriesPage() {
     }
 
     function setColVisible(col, visible) {
-        table.querySelectorAll('th[data-col="' + col + '"], td[data-col="' + col + '"]').forEach(function(el) {
+        document.querySelectorAll('th[data-col="' + col + '"], td[data-col="' + col + '"]').forEach(function(el) {
             el.style.display = visible ? '' : 'none';
         });
     }
@@ -313,7 +381,7 @@ function initDealerInquiriesPage() {
         // Hide/show data columns, and hide ACTION too when "None" is selected.
         allCols.forEach(function(c) { setColVisible(c, cols.indexOf(c) !== -1); });
         var showAction = Array.isArray(cols) && cols.length > 0;
-        table.querySelectorAll('th.inquiries-col-action, td.inquiries-col-action').forEach(function(el) {
+        document.querySelectorAll('th.inquiries-col-action, td.inquiries-col-action').forEach(function(el) {
             el.style.display = showAction ? '' : 'none';
         });
         clearDealerColumnWidths();
@@ -328,7 +396,7 @@ function initDealerInquiriesPage() {
     }
 
     function updateScrollMode(visibleCols) {
-        var scroller = table.closest('.inquiries-table-scroll');
+        var scroller = (document.querySelector('.dealer-tab-panel[style*="display: block"] .inquiries-table') || document.querySelector('.inquiries-table')).closest('.inquiries-table-scroll');
         if (!scroller) return;
         var activeCols = Array.isArray(visibleCols) ? visibleCols : [];
         var hasExtras = activeCols.some(function(col) { return defaultCols.indexOf(col) === -1; });
@@ -337,69 +405,62 @@ function initDealerInquiriesPage() {
 
         if (window.innerWidth && window.innerWidth < 1200) {
             scroller.classList.remove('inquiries-table-scroll--no-x');
-            table.classList.remove('inquiries-table--fit');
+            (document.querySelector('.dealer-tab-panel[style*="display: block"] .inquiries-table') || document.querySelector('.inquiries-table')).classList.remove('inquiries-table--fit');
             return;
         }
 
         scroller.classList.toggle('inquiries-table-scroll--no-x', enabled && !hasExtras && !hasProducts);
-        table.classList.toggle('inquiries-table--fit', enabled && !hasExtras && !hasProducts);
-
-        // If no columns are visible, hide placeholders by setting height to 0
-        if (!enabled) {
-            table.style.height = '0px';
-            table.style.minHeight = '0px';
-            var placeholders = table.querySelectorAll('.inquiries-placeholder-row');
-            placeholders.forEach(function(row) {
-                row.style.display = 'none';
-            });
-            var emptyRows = table.querySelectorAll('.inquiries-empty-row');
-            emptyRows.forEach(function(row) {
-                row.style.display = 'none';
-            });
-        } else {
-            table.style.height = '';
-            table.style.minHeight = '';
-            var placeholders = table.querySelectorAll('.inquiries-placeholder-row');
-            placeholders.forEach(function(row) {
-                row.style.display = '';
-            });
-            var emptyRows = table.querySelectorAll('.inquiries-empty-row');
-            emptyRows.forEach(function(row) {
-                row.style.display = '';
-            });
-        }
+        (document.querySelector('.dealer-tab-panel[style*="display: block"] .inquiries-table') || document.querySelector('.inquiries-table')).classList.toggle('inquiries-table--fit', enabled && !hasExtras && !hasProducts);
     }
 
     function saveCols(cols) {
-        try {
-            var globalCols = [];
-            var raw = localStorage.getItem(storageKey);
-            if (raw) {
-                var arr = JSON.parse(raw);
-                if (Array.isArray(arr)) globalCols = arr;
-            }
-            var newGlobal = globalCols.filter(function(c) {
-                return allCols.indexOf(c) === -1;
-            });
-            newGlobal = newGlobal.concat(cols);
-            var uniqueGlobal = [];
-            for (var i = 0; i < newGlobal.length; i++) {
-                if (uniqueGlobal.indexOf(newGlobal[i]) === -1) uniqueGlobal.push(newGlobal[i]);
-            }
-            localStorage.setItem(storageKey, JSON.stringify(uniqueGlobal));
-        } catch (e) {}
+        try { localStorage.setItem(storageKey, JSON.stringify(cols)); } catch (e) {}
     }
 
     function loadCols() {
         try {
             var raw = localStorage.getItem(storageKey);
+            if (!raw) raw = localStorage.getItem(legacyStorageKey);
+            if (!raw) raw = localStorage.getItem(legacyMobileStorageKey);
+            if (!raw) raw = localStorage.getItem(olderLegacyStorageKey);
+            if (!raw) raw = localStorage.getItem(oldestLegacyStorageKey);
+            if (!raw) raw = localStorage.getItem(oldestLegacyStorageKeyV6);
+            if (!raw) raw = localStorage.getItem(oldestLegacyStorageKeyV5);
             if (!raw) return null;
             var parsed = JSON.parse(raw);
             if (!Array.isArray(parsed)) return null;
 
-            return parsed.filter(function(col) {
+            var isLegacyDefault =
+                (parsed.length === legacyDefaultCols.length && parsed.every(function(col, index) {
+                    return col === legacyDefaultCols[index];
+                })) ||
+                (parsed.length === olderLegacyDefaultCols.length && parsed.every(function(col, index) {
+                    return col === olderLegacyDefaultCols[index];
+                })) ||
+                (parsed.length === previousDefaultCols.length && parsed.every(function(col, index) {
+                    return col === previousDefaultCols[index];
+                })) ||
+                (parsed.length === compactMobileLegacyCols.length && parsed.every(function(col, index) {
+                    return col === compactMobileLegacyCols[index];
+                })) ||
+                (parsed.length === defaultCols.length && parsed.every(function(col, index) {
+                    return col === defaultCols[index];
+                }));
+            var migrated = isLegacyDefault ? getDefaultColsForViewport() : parsed.filter(function(col) {
                 return allCols.indexOf(col) !== -1;
             });
+
+            try {
+                localStorage.setItem(storageKey, JSON.stringify(migrated));
+                localStorage.removeItem(legacyStorageKey);
+                localStorage.removeItem(legacyMobileStorageKey);
+                localStorage.removeItem(olderLegacyStorageKey);
+                localStorage.removeItem(oldestLegacyStorageKey);
+                localStorage.removeItem(oldestLegacyStorageKeyV6);
+                localStorage.removeItem(oldestLegacyStorageKeyV5);
+            } catch (e) {}
+
+            return migrated;
         } catch (e) {
             return null;
         }
@@ -407,7 +468,7 @@ function initDealerInquiriesPage() {
 
     function clearDealerColumnWidths() {
         allCols.forEach(function(col) {
-            var nodes = table.querySelectorAll('th[data-col="' + col + '"], td[data-col="' + col + '"]');
+            var nodes = document.querySelectorAll('th[data-col="' + col + '"], td[data-col="' + col + '"]');
             if (!nodes.length) return;
             nodes.forEach(function(node) {
                 node.style.removeProperty('width');
@@ -481,7 +542,7 @@ function initDealerInquiriesPage() {
     var dealerInquirySort = { col: null, dir: 1 };
 
     function clearDealerInquiryPlaceholderRows() {
-        Array.prototype.slice.call(table.querySelectorAll('tbody tr.inquiries-placeholder-row')).forEach(function(row) {
+        Array.prototype.slice.call(document.querySelectorAll('tbody tr.inquiries-placeholder-row')).forEach(function(row) {
             row.remove();
         });
     }
@@ -492,7 +553,7 @@ function initDealerInquiriesPage() {
     }
 
     function setDealerInquiryInitialOrder() {
-        table.querySelectorAll('tbody tr.inquiry-row').forEach(function(row, index) {
+        document.querySelectorAll('tbody tr.inquiry-row').forEach(function(row, index) {
             row.setAttribute('data-initial-index', String(index));
         });
     }
@@ -509,7 +570,7 @@ function initDealerInquiriesPage() {
     }
 
     function sortDealerInquiriesTable() {
-        var tbody = table.querySelector('tbody');
+        var tbody = document.querySelector('tbody');
         if (!tbody || !dealerInquirySort.col) return;
         clearDealerInquiryPlaceholderRows();
         var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr.inquiry-row'));
@@ -530,11 +591,11 @@ function initDealerInquiriesPage() {
     }
 
     function clearDealerInquiriesSort() {
-        var tbody = table.querySelector('tbody');
+        var tbody = document.querySelector('tbody');
         if (!tbody) return;
         dealerInquirySort.col = null;
         dealerInquirySort.dir = 1;
-        table.querySelectorAll('thead th[data-col]').forEach(function(header) {
+        document.querySelectorAll('thead th[data-col]').forEach(function(header) {
             header.classList.remove('inquiries-sort-asc', 'inquiries-sort-desc');
         });
         clearDealerInquiryPlaceholderRows();
@@ -555,7 +616,7 @@ function initDealerInquiriesPage() {
     }
 
     function initSortableDealerInquiries() {
-        table.querySelectorAll('thead th[data-col]').forEach(function(th) {
+        document.querySelectorAll('thead th[data-col]').forEach(function(th) {
             th.classList.add('inquiries-sortable');
             th.style.cursor = 'pointer';
             th.addEventListener('click', function(e) {
@@ -564,7 +625,7 @@ function initDealerInquiriesPage() {
                 if (!col) return;
                 dealerInquirySort.dir = (dealerInquirySort.col === col) ? -dealerInquirySort.dir : 1;
                 dealerInquirySort.col = col;
-                table.querySelectorAll('thead th[data-col]').forEach(function(header) {
+                document.querySelectorAll('thead th[data-col]').forEach(function(header) {
                     header.classList.remove('inquiries-sort-asc', 'inquiries-sort-desc');
                     if (header.getAttribute('data-col') === col) {
                         header.classList.add(dealerInquirySort.dir === 1 ? 'inquiries-sort-asc' : 'inquiries-sort-desc');
@@ -592,7 +653,7 @@ function initDealerInquiriesPage() {
 
     function applyDealerGridFilters() {
         var filters = {};
-        table.querySelectorAll('.inquiries-grid-filter').forEach(function(inp) {
+        document.querySelectorAll('.inquiries-table .inquiries-grid-filter').forEach(function(inp) {
             var col = inp.getAttribute('data-col');
             if (!col) return;
 
@@ -615,7 +676,7 @@ function initDealerInquiriesPage() {
                 return;
             }
             if (DEALER_INQUIRY_NUMERIC_FILTER_COLS.indexOf(col) !== -1) {
-                var opBtn = table.querySelector('.dealer-operator-btn[data-col="' + col + '"]');
+                var opBtn = document.querySelector('.dealer-operator-btn[data-col="' + col + '"]');
                 filters[col] = {
                     numeric: true,
                     op: opBtn ? (opBtn.getAttribute('data-op') || '=') : '=',
@@ -626,7 +687,7 @@ function initDealerInquiriesPage() {
             filters[col] = { numeric: false, val: val.toLowerCase() };
         });
 
-        table.querySelectorAll('tbody .inquiry-row').forEach(function(row) {
+        document.querySelectorAll('tbody .inquiry-row').forEach(function(row) {
             var colMatch = true;
             for (var col in filters) {
                 var cell = row.querySelector('td[data-col="' + col + '"]');
@@ -670,22 +731,22 @@ function initDealerInquiriesPage() {
         }
     }
 
-    table.querySelectorAll('.inquiries-grid-filter').forEach(function(inp) {
+    document.querySelectorAll('.inquiries-table .inquiries-grid-filter').forEach(function(inp) {
         inp.addEventListener('input', applyDealerGridFilters);
         inp.addEventListener('keyup', applyDealerGridFilters);
         inp.addEventListener('change', applyDealerGridFilters);
     });
     bindDealerInquiryOperatorMenus(table);
     document.addEventListener('click', function() {
-        table.querySelectorAll('.dealer-operator-dropdown').forEach(function(dropdown) { dropdown.hidden = true; });
-        table.querySelectorAll('.dealer-operator-btn').forEach(function(btn) { btn.setAttribute('aria-expanded', 'false'); });
+        document.querySelectorAll('.dealer-operator-dropdown').forEach(function(dropdown) { dropdown.hidden = true; });
+        document.querySelectorAll('.dealer-operator-btn').forEach(function(btn) { btn.setAttribute('aria-expanded', 'false'); });
     });
 
     var clearBtn = document.getElementById('dealerInquiryClearFilters');
     if (clearBtn) {
         clearBtn.addEventListener('click', function() {
-            table.querySelectorAll('.inquiries-grid-filter').forEach(function(inp) { inp.value = ''; });
-            table.querySelectorAll('.status-multi-filter').forEach(function(f) { if (f._resetStatusFilter) f._resetStatusFilter(); });
+            document.querySelectorAll('.inquiries-table .inquiries-grid-filter').forEach(function(inp) { inp.value = ''; });
+            document.querySelectorAll('.inquiries-table .status-multi-filter').forEach(function(f) { if (f._resetStatusFilter) f._resetStatusFilter(); });
             resetDealerInquiryOperatorMenus(table);
             applyDealerGridFilters();
             clearDealerInquiriesSort();
@@ -744,11 +805,11 @@ function initDealerInquiriesPage() {
         var pageNumbersEl = document.getElementById('dealerInquiriesPageNumbers');
         var controls = pagination.querySelectorAll('.inquiries-pagination-btn');
         var perPage = parseInt(pagination.getAttribute('data-per-page') || '10', 10);
-        var scrollWrap = table ? table.closest('.inquiries-table-scroll') : null;
+        var scrollWrap = (document.querySelector('.dealer-tab-panel[style*="display: block"] .inquiries-table') || document.querySelector('.inquiries-table')) ? (document.querySelector('.dealer-tab-panel[style*="display: block"] .inquiries-table') || document.querySelector('.inquiries-table')).closest('.inquiries-table-scroll') : null;
         window.dealerPaginationState.perPage = perPage;
 
         function getAllRows() {
-            return Array.prototype.slice.call(table.querySelectorAll('tbody .inquiry-row'));
+            return Array.prototype.slice.call(document.querySelectorAll('.dealer-tab-panel[style*="display: block"] tbody .inquiry-row, .dealer-tab-panel:not([style*="display: none"]) tbody .inquiry-row'));
         }
 
         function getMatchingRows() {
@@ -779,12 +840,12 @@ function initDealerInquiriesPage() {
             host.style.top = '0';
             host.style.visibility = 'hidden';
             host.style.pointerEvents = 'none';
-            host.style.width = Math.round((table.getBoundingClientRect().width || 0)) > 0
-                ? Math.round(table.getBoundingClientRect().width || 0) + 'px'
+            host.style.width = Math.round(((document.querySelector('.dealer-tab-panel[style*="display: block"] .inquiries-table') || document.querySelector('.inquiries-table')).getBoundingClientRect().width || 0)) > 0
+                ? Math.round((document.querySelector('.dealer-tab-panel[style*="display: block"] .inquiries-table') || document.querySelector('.inquiries-table')).getBoundingClientRect().width || 0) + 'px'
                 : '1400px';
 
             var measureTable = document.createElement('table');
-            measureTable.className = table.className || 'inquiries-table';
+            measureTable.className = (document.querySelector('.dealer-tab-panel[style*="display: block"] .inquiries-table') || document.querySelector('.inquiries-table')).className || 'inquiries-table';
             measureTable.style.width = '100%';
 
             var measureBody = document.createElement('tbody');
@@ -806,18 +867,32 @@ function initDealerInquiriesPage() {
                 return window.getComputedStyle(row).display !== 'none';
             });
             var referenceRow = visibleRow || tbody.querySelector('tr.inquiry-row');
-            
-            if (!referenceRow) {
-                return 56;
-            }
-            
             return measureDealerInquiryRowHeight(referenceRow);
         }
 
+        function resetDealerEmptyRowHeight(tbody) {
+            if (!tbody) return null;
+            var emptyRow = Array.prototype.slice.call(tbody.querySelectorAll('tr')).find(function(row) {
+                return !row.classList.contains('inquiry-row') && !!row.querySelector('.dealer-table-empty, .inquiries-empty, .inquiries-empty-cell');
+            }) || null;
+            if (!emptyRow) return null;
 
+            emptyRow.style.display = '';
+            var emptyCell = emptyRow.querySelector('.inquiries-empty-cell, .inquiries-empty');
+            if (emptyCell) {
+                emptyCell.style.height = '';
+                emptyCell.style.minHeight = '';
+            }
+            var emptyText = emptyRow.querySelector('.dealer-table-empty');
+            if (emptyText) {
+                emptyText.style.display = '';
+            }
+
+            return emptyRow;
+        }
 
         function ensureFixedHeight(visibleDataCount) {
-            var tbody = table.querySelector('tbody');
+            var tbody = document.querySelector('tbody');
             if (!tbody) return;
             clearPlaceholderRows();
             var allRows = getAllRows();
@@ -825,25 +900,35 @@ function initDealerInquiriesPage() {
             var useShortHeight = (visibleDataCount > 0 && visibleDataCount < perPage) || (visibleDataCount === 0 && allowZeroFill);
             var targetRows = getDealerPaginationTargetRows();
             
-            var defaultPlaceholderHeight = 36;
+            var defaultPlaceholderHeight = 56;
             if (window.innerWidth >= 1200 && window.innerHeight <= 900) {
-                defaultPlaceholderHeight = 36;
+                defaultPlaceholderHeight = 44;
             }
             var placeholderRowHeight = defaultPlaceholderHeight;
             
+            var emptyRow = resetDealerEmptyRowHeight(tbody);
+            var emptyCell = emptyRow ? emptyRow.querySelector('.inquiries-empty-cell, .inquiries-empty') : null;
+
             var effectiveVisibleCount = visibleDataCount;
+            if (visibleDataCount === 0 && emptyRow && window.getComputedStyle(emptyRow).display !== 'none') {
+                effectiveVisibleCount = 1;
+                if (placeholderRowHeight > 0) {
+                    emptyRow.style.height = placeholderRowHeight + 'px';
+                    if (emptyCell) {
+                        emptyCell.style.height = placeholderRowHeight + 'px';
+                        emptyCell.style.minHeight = placeholderRowHeight + 'px';
+                        var emptyText = emptyRow.querySelector('.dealer-table-empty');
+                        if (emptyText) {
+                            emptyText.style.display = 'none';
+                        }
+                    }
+                }
+            }
 
             if (effectiveVisibleCount < targetRows && (effectiveVisibleCount > 0 || allowZeroFill)) {
-                var visibleHeaderCount = Array.prototype.slice.call(table.querySelectorAll('thead tr:first-child th')).filter(function(cell) {
+                var visibleHeaderCount = Array.prototype.slice.call(document.querySelectorAll('thead tr:first-child th')).filter(function(cell) {
                     return cell.style.display !== 'none' && window.getComputedStyle(cell).display !== 'none';
-                }).length;
-
-                if (visibleHeaderCount === 0) return;
-
-                var actualRowHeight = getDealerReferenceRowHeight(tbody);
-                if (actualRowHeight > 0) {
-                    placeholderRowHeight = actualRowHeight;
-                }
+                }).length || 1;
 
                 for (var i = effectiveVisibleCount; i < targetRows; i++) {
                     var row = document.createElement('tr');
@@ -853,7 +938,6 @@ function initDealerInquiriesPage() {
                     var cell = document.createElement('td');
                     cell.className = 'inquiries-placeholder-cell';
                     cell.colSpan = visibleHeaderCount;
-                    cell.innerHTML = '&nbsp;';
                     if (placeholderRowHeight > 0) {
                         row.style.height = placeholderRowHeight + 'px';
                         cell.style.height = placeholderRowHeight + 'px';
@@ -1211,7 +1295,7 @@ if (document.readyState === 'loading') {
 @push('scripts')
 <script>
 (function() {
-    var table = document.getElementById('dealerInquiriesTable');
+    
     var modal = document.getElementById('inquiryUpdateModal');
     var subtitle = document.getElementById('inquiryModalSubtitle');
     var closeBtn = document.getElementById('inquiryModalClose');
@@ -2886,7 +2970,7 @@ if (document.readyState === 'loading') {
             return;
         }
 
-        var row = table.querySelector('tr.inquiry-row[data-lead-id="' + lead + '"]');
+        var row = document.querySelector('tr.inquiry-row[data-lead-id="' + lead + '"]');
         if (!row) {
             if (attempt >= 4) {
                 clearNotificationFocusParams();
@@ -2902,7 +2986,7 @@ if (document.readyState === 'loading') {
         }
 
         setTimeout(function() {
-            var activeRow = table.querySelector('tr.inquiry-row[data-lead-id="' + lead + '"]');
+            var activeRow = document.querySelector('tr.inquiry-row[data-lead-id="' + lead + '"]');
             if (!activeRow) {
                 if (attempt >= 4) {
                     clearNotificationFocusParams();
@@ -2931,7 +3015,7 @@ if (document.readyState === 'loading') {
             return;
         }
 
-        var row = table.querySelector('tr.inquiry-row[data-lead-id="' + lead + '"]');
+        var row = document.querySelector('tr.inquiry-row[data-lead-id="' + lead + '"]');
         if (!row) {
             if (attempt >= 4) {
                 clearNotificationFocusParams();
@@ -2947,7 +3031,7 @@ if (document.readyState === 'loading') {
         }
 
         setTimeout(function() {
-            var activeRow = table.querySelector('tr.inquiry-row[data-lead-id="' + lead + '"]');
+            var activeRow = document.querySelector('tr.inquiry-row[data-lead-id="' + lead + '"]');
             if (!activeRow) {
                 if (attempt >= 4) {
                     clearNotificationFocusParams();

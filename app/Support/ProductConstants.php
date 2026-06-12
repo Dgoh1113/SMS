@@ -109,4 +109,31 @@ class ProductConstants
     {
         return array_key_exists($id, self::all());
     }
+
+    /**
+     * Sort an array of product IDs based on the predefined UI color grouping order.
+     * 
+     * @param array $ids Array of product IDs to sort.
+     * @return array The sorted array of product IDs.
+     */
+    public static function sortProductIds(array $ids): array
+    {
+        $pillOrder = [
+            self::ACCOUNT => 10, self::PRODUCTION => 11, self::MOBILE_SALES => 12,
+            self::PAYROLL => 20, self::HRMS => 21,
+            self::X_STORE => 30, self::ECOMMERCE => 31,
+            self::EBI_POS => 40,
+            self::VISION => 50,
+            self::SUDU_AI => 60,
+            self::CTOS => 70, self::API => 80, self::OTHERS => 90
+        ];
+
+        usort($ids, function ($a, $b) use ($pillOrder) {
+            $oa = $pillOrder[$a] ?? (1000 + $a);
+            $ob = $pillOrder[$b] ?? (1000 + $b);
+            return $oa <=> $ob;
+        });
+
+        return array_values(array_unique($ids));
+    }
 }

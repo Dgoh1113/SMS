@@ -1,4 +1,4 @@
-@forelse($items as $r)
+@foreach($items as $r)
     @php
         $searchHaystack = strtolower(trim(($r->USERID ?? '').' '.($r->EMAIL ?? '').' '.($r->POSTCODE ?? '').' '.($r->CITY ?? '').' '.($r->COMPANY ?? '').' '.($r->ALIAS ?? '')));
         $convRate = (float)($r->CONVERSION_RATE ?? 0);
@@ -18,6 +18,4 @@
         <td data-col="conversionrate"><span class="dealer-conversion-label {{ $convClass }}">{{ number_format($convRate, 1) }}%</span></td>
         <td data-col="active">{{ ($r->ISACTIVE ?? 0) ? 'Yes' : 'No' }}</td>
     </tr>
-@empty
-    <tr><td colspan="12" class="inquiries-empty">No dealers yet.</td></tr>
-@endforelse
+@endforeach

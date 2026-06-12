@@ -6,8 +6,8 @@
         .dealer-inquiries-panel .inquiries-empty-row .inquiries-empty-cell {
             padding: 0 !important;
             vertical-align: middle;
-            border-bottom: none;
             background: #ffffff;
+            border-bottom: 1px solid #e5e7eb !important;
         }
         .dealer-inquiries-panel .inquiries-empty-row .dealer-table-empty {
             display: flex;
@@ -121,7 +121,7 @@
                     @endphp
                     @for ($i = 0; $i < $completedPlaceholderRows; $i++)
                         <tr class="inquiries-placeholder-row" aria-hidden="true">
-                            <td class="inquiries-placeholder-cell" colspan="22"></td>
+                            <td class="inquiries-placeholder-cell" colspan="22">&nbsp;</td>
                         </tr>
                     @endfor
                 </tbody>
@@ -264,9 +264,7 @@
 @push('scripts')
 <script>
 function initDealerPendingPayoutsPage() {
-    var COMPLETED_STORAGE_KEY = 'dealerPayoutCompletedVisibleColumns_v6';
-    var COMPLETED_LEGACY_STORAGE_KEY = 'dealerPayoutCompletedVisibleColumns_v6_disabled';
-    var COMPLETED_OLDER_LEGACY_STORAGE_KEY = 'dealerPayoutCompletedVisibleColumns_v2';
+    var COMPLETED_STORAGE_KEY = 'dealerGlobalVisibleColumns_v1';
     // Default + all columns: match dealer inquiries table column IDs
     var COMPLETED_LEGACY_DEFAULT_COLUMNS = ['inquiryid','completeddate','customer','dealtproducts','referralcode','assignby','status'];
     var COMPLETED_OLDER_LEGACY_DEFAULT_COLUMNS = ['inquiryid','completeddate','customer','dealtproducts','referralcode','attachment','assignby','status'];
@@ -281,37 +279,35 @@ function initDealerPendingPayoutsPage() {
     function getCompletedVisibleColumns() {
         try {
             var raw = localStorage.getItem(COMPLETED_STORAGE_KEY);
-            if (raw === null) raw = localStorage.getItem(COMPLETED_LEGACY_STORAGE_KEY);
-            if (raw === null) raw = localStorage.getItem(COMPLETED_OLDER_LEGACY_STORAGE_KEY);
             if (raw !== null) {
                 var arr = JSON.parse(raw);
                 if (Array.isArray(arr)) {
-                    var isLegacyDefault =
-                        (arr.length === COMPLETED_LEGACY_DEFAULT_COLUMNS.length && arr.every(function(col, index) {
-                            return col === COMPLETED_LEGACY_DEFAULT_COLUMNS[index];
-                        })) ||
-                        (arr.length === COMPLETED_OLDER_LEGACY_DEFAULT_COLUMNS.length && arr.every(function(col, index) {
-                            return col === COMPLETED_OLDER_LEGACY_DEFAULT_COLUMNS[index];
-                        })) ||
-                        (arr.length === COMPLETED_PREVIOUS_DEFAULT_COLUMNS.length && arr.every(function(col, index) {
-                            return col === COMPLETED_PREVIOUS_DEFAULT_COLUMNS[index];
-                        }));
-                    var migrated = isLegacyDefault ? COMPLETED_DEFAULT_COLUMNS.slice() : arr.filter(function(col) {
+                    return arr.filter(function(col) {
                         return COMPLETED_ALL_COLUMNS.indexOf(col) !== -1;
                     });
-                    try {
-                        localStorage.setItem(COMPLETED_STORAGE_KEY, JSON.stringify(migrated));
-                        localStorage.removeItem(COMPLETED_LEGACY_STORAGE_KEY);
-                        localStorage.removeItem(COMPLETED_OLDER_LEGACY_STORAGE_KEY);
-                    } catch (e) {}
-                    return migrated;
                 }
             }
         } catch (e) {}
         return COMPLETED_DEFAULT_COLUMNS.slice();
     }
     function setCompletedVisibleColumns(cols) {
-        try { localStorage.setItem(COMPLETED_STORAGE_KEY, JSON.stringify(cols)); } catch (e) {}
+        try {
+            var globalCols = [];
+            var raw = localStorage.getItem(COMPLETED_STORAGE_KEY);
+            if (raw) {
+                var arr = JSON.parse(raw);
+                if (Array.isArray(arr)) globalCols = arr;
+            }
+            var newGlobal = globalCols.filter(function(c) {
+                return COMPLETED_ALL_COLUMNS.indexOf(c) === -1;
+            });
+            newGlobal = newGlobal.concat(cols);
+            var uniqueGlobal = [];
+            for (var i = 0; i < newGlobal.length; i++) {
+                if (uniqueGlobal.indexOf(newGlobal[i]) === -1) uniqueGlobal.push(newGlobal[i]);
+            }
+            localStorage.setItem(COMPLETED_STORAGE_KEY, JSON.stringify(uniqueGlobal));
+        } catch (e) {}
     }
     function updateCompletedScrollMode(visible) {
         var table = document.getElementById('completedTable');
@@ -320,8 +316,34 @@ function initDealerPendingPayoutsPage() {
         var hasExtras = (visible || []).some(function(col) {
             return COMPLETED_DEFAULT_COLUMNS.indexOf(col) === -1;
         });
+        var enabled = (visible || []).length > 0;
         table.classList.toggle('payouts-default-layout', !hasExtras);
         scroller.classList.toggle('payouts-default-layout', !hasExtras);
+
+        // If no columns are visible, hide placeholders by setting height to 0
+        if (!enabled) {
+            table.style.height = '0px';
+            table.style.minHeight = '0px';
+            var placeholders = table.querySelectorAll('.inquiries-placeholder-row');
+            placeholders.forEach(function(row) {
+                row.style.display = 'none';
+            });
+            var emptyRows = table.querySelectorAll('.inquiries-empty-row');
+            emptyRows.forEach(function(row) {
+                row.style.display = 'none';
+            });
+        } else {
+            table.style.height = '';
+            table.style.minHeight = '';
+            var placeholders = table.querySelectorAll('.inquiries-placeholder-row');
+            placeholders.forEach(function(row) {
+                row.style.display = '';
+            });
+            var emptyRows = table.querySelectorAll('.inquiries-empty-row');
+            emptyRows.forEach(function(row) {
+                row.style.display = '';
+            });
+        }
     }
     function applyCompletedColumns(visible) {
         var table = document.getElementById('completedTable');
@@ -519,6 +541,9 @@ function initDealerPendingPayoutsPage() {
             return window.getComputedStyle(row).display !== 'none';
         });
         var referenceRow = visibleRow || tbody.querySelector('tr.payouts-row');
+        if (!referenceRow) {
+            return 56;
+        }
         return measurePayoutRowHeight(table, referenceRow);
     }
 
@@ -643,9 +668,9 @@ function initDealerPendingPayoutsPage() {
         var useShortHeight = (visibleDataCount > 0 && visibleDataCount < perPage) || (visibleDataCount === 0 && allowZeroFill);
         var targetRows = perPage;
         
-        var defaultPlaceholderHeight = 57;
+        var defaultPlaceholderHeight = 36;
         if (window.innerWidth >= 1200 && window.innerHeight <= 900) {
-            defaultPlaceholderHeight = 44;
+            defaultPlaceholderHeight = 36;
         }
         var placeholderRowHeight = getPayoutReferenceRowHeight(table, tbody) || defaultPlaceholderHeight;
         
@@ -671,7 +696,14 @@ function initDealerPendingPayoutsPage() {
         if (effectiveVisibleCount < targetRows && (effectiveVisibleCount > 0 || allowZeroFill)) {
             var visibleHeaderCount = Array.prototype.slice.call(table.querySelectorAll('thead tr:first-child th')).filter(function(cell) {
                 return cell.style.display !== 'none' && window.getComputedStyle(cell).display !== 'none';
-            }).length || 1;
+            }).length;
+
+            if (visibleHeaderCount === 0) return;
+
+            var actualRowHeight = getPayoutReferenceRowHeight(table, tbody);
+            if (actualRowHeight > 0) {
+                placeholderRowHeight = actualRowHeight;
+            }
 
             for (var i = effectiveVisibleCount; i < targetRows; i++) {
                 var row = document.createElement('tr');
@@ -681,6 +713,7 @@ function initDealerPendingPayoutsPage() {
                 var cell = document.createElement('td');
                 cell.className = 'inquiries-placeholder-cell';
                 cell.colSpan = visibleHeaderCount;
+                cell.innerHTML = '&nbsp;';
                 if (placeholderRowHeight > 0) {
                     row.style.height = placeholderRowHeight + 'px';
                     cell.style.height = placeholderRowHeight + 'px';

@@ -140,7 +140,7 @@ Artisan::command('leads:auto-fail', function () {
 Schedule::command('leads:auto-fail')->daily()->withoutOverlapping();
 
 // Run inquiry email fetch every minute
-Schedule::command('inquiries:fetch')->everyMinute()->withoutOverlapping();
+Schedule::command('inquiries:fetch')->everyMinute()->withoutOverlapping(5);
 
 // Run dealer sync hourly in the background
 Schedule::command('dealers:sync')->hourly()->withoutOverlapping(60);

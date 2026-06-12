@@ -1,4 +1,4 @@
-@forelse($allRows ?? [] as $r)
+@foreach($allRows ?? [] as $r)
 <tr class="inquiry-row" data-lead-id="{{ $r->LEADID }}" data-page="{{ (int) floor(($loop->index ?? 0) / 10) + 1 }}" data-search="{{ strtolower(($r->COMPANYNAME ?? '') . ' ' . ($r->CONTACTNAME ?? '') . ' ' . ($r->LEADID ?? '')) }}">
     <td data-col="inquiryid">#SQL-{{ $r->LEADID }}</td>
     <td data-col="date">{{ $r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '-' }}</td>
@@ -38,27 +38,10 @@
         $ids = $r->PRODUCTID ? array_map('trim', explode(',', (string) $r->PRODUCTID)) : [];
         $dealtRaw = $r->DEALTPRODUCT ?? null;
         $dealtProductIds = $dealtRaw ? array_map('trim', preg_split('/[\s,\(\)]+/', (string) $dealtRaw)) : [];
-        $pillOrder = [
-            1 => 10, 3 => 11, 4 => 12,
-            2 => 20, 10 => 21,
-            8 => 30, 5 => 31,
-            6 => 40,
-            9 => 50,
-            7 => 60,
-            11 => 70,
-        ];
         $ids = array_values(array_filter(array_unique(array_map('intval', $ids)), fn ($v) => $v > 0));
         $dealtProductIds = array_values(array_filter(array_unique(array_map('intval', $dealtProductIds)), fn ($v) => $v > 0));
-        usort($ids, function ($a, $b) use ($pillOrder) {
-            $oa = $pillOrder[$a] ?? (1000 + $a);
-            $ob = $pillOrder[$b] ?? (1000 + $b);
-            return $oa <=> $ob;
-        });
-        usort($dealtProductIds, function ($a, $b) use ($pillOrder) {
-            $oa = $pillOrder[$a] ?? (1000 + $a);
-            $ob = $pillOrder[$b] ?? (1000 + $b);
-            return $oa <=> $ob;
-        });
+        $ids = \App\Support\ProductConstants::sortProductIds($ids);
+        $dealtProductIds = \App\Support\ProductConstants::sortProductIds($dealtProductIds);
         $assignedAttachUrls = !empty($r->ASSIGNED_ATTACHMENT_URLS) && is_array($r->ASSIGNED_ATTACHMENT_URLS) ? $r->ASSIGNED_ATTACHMENT_URLS : [];
         $isAssignedRow = $assignedTo !== '';
         $canAssignRow = !$isAssignedRow && in_array($rawStatus, ['OPEN', 'CREATED'], true);
@@ -148,7 +131,5 @@
         @endif
     </td>
 </tr>
-@empty
-<tr><td colspan="25" class="inquiries-empty">No inquiries found.</td></tr>
-@endforelse
+@endforeach
 
