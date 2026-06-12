@@ -80,21 +80,6 @@
     <td data-col="assignedto">{{ $r->assignedToName ?? ($r->assignedTo ?? '-') }}</td>
     <td data-col="completiondate">{{ !empty($r->COMPLETED_AT) ? date('d/m/Y', strtotime($r->COMPLETED_AT)) : '-' }}</td>
     <td data-col="payoutsdate">{{ !empty($r->REWARDED_AT) ? date('d/m/Y', strtotime($r->REWARDED_AT)) : '-' }}</td>
-    <td data-col="attachment">
-        @php
-            $assignedAttachUrls = !empty($r->ASSIGNED_ATTACHMENT_URLS) && is_array($r->ASSIGNED_ATTACHMENT_URLS)
-                ? array_values(array_filter($r->ASSIGNED_ATTACHMENT_URLS, function ($url) {
-                    $normalized = is_string($url) ? trim($url) : '';
-                    return $normalized !== '' && !in_array(strtolower($normalized), ['-', 'null', 'undefined', '#'], true);
-                }))
-                : [];
-        @endphp
-        @if(!empty($assignedAttachUrls))
-            <a href="{{ $assignedAttachUrls[0] }}" target="_blank" rel="noopener" class="inquiries-btn inquiries-btn-secondary">Attachment</a>
-        @else
-            -
-        @endif
-    </td>
     <td data-col="assigndate">{{ $r->LASTMODIFIED ? date('d/m/Y', strtotime($r->LASTMODIFIED)) : ($r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '-') }}</td>
     @php
         $arawStatus = strtoupper(trim((string) ($r->CURRENTSTATUS ?? '')));

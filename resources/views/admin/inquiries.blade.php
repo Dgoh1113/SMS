@@ -565,7 +565,7 @@
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="assignedto"> ASSIGNED TO</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="completiondate"> COMPLETION DATE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="payoutsdate"> PAYOUTS DATE</label>
-                    <label class="inquiries-columns-check"><input type="checkbox" data-col="attachment"> ATTACHMENT</label>
+                    <!-- <label class="inquiries-columns-check"><input type="checkbox" data-col="attachment"> ATTACHMENT</label> -->
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="assigndate"> ASSIGN DATE</label>
                     <div class="inquiries-columns-actions">
                         <button type="button" class="inquiries-columns-action-btn" id="assignedColumnsAll">All</button>
@@ -604,7 +604,6 @@
                     <x-tables.text-filter-header col="assignedto" label="ASSIGNED TO" input-class="inquiries-grid-filter-assigned" />
                     <x-tables.text-filter-header col="completiondate" label="COMPLETION DATE" input-class="inquiries-grid-filter-assigned" />
                     <x-tables.text-filter-header col="payoutsdate" label="PAYOUTS DATE" input-class="inquiries-grid-filter-assigned" />
-                    <x-tables.text-filter-header col="attachment" label="ATTACHMENT" input-class="inquiries-grid-filter-assigned" />
                     <x-tables.text-filter-header col="assigndate" label="ASSIGN DATE" input-class="inquiries-grid-filter-assigned" />
                     <x-tables.status-multi-filter-header col="status" label="STATUS" :options="$assignedStatusFilterOptions" select-class="inquiries-grid-filter-assigned inquiries-grid-filter-select" />
                     <x-tables.clear-filter-header button-id="assignedClearFilters" />
@@ -688,21 +687,6 @@
                     <td data-col="assignedto">{{ $r->assignedToName ?? ($r->assignedTo ?? '—') }}</td>
                     <td data-col="completiondate">{{ !empty($r->COMPLETED_AT) ? date('d/m/Y', strtotime($r->COMPLETED_AT)) : '—' }}</td>
                     <td data-col="payoutsdate">{{ !empty($r->REWARDED_AT) ? date('d/m/Y', strtotime($r->REWARDED_AT)) : '—' }}</td>
-                    <td data-col="attachment">
-                        @php
-                            $assignedAttachUrls = !empty($r->ASSIGNED_ATTACHMENT_URLS) && is_array($r->ASSIGNED_ATTACHMENT_URLS)
-                                ? array_values(array_filter($r->ASSIGNED_ATTACHMENT_URLS, function ($url) {
-                                    $normalized = is_string($url) ? trim($url) : '';
-                                    return $normalized !== '' && !in_array(strtolower($normalized), ['-', 'null', 'undefined', '#'], true);
-                                }))
-                                : [];
-                        @endphp
-                        @if(!empty($assignedAttachUrls))
-                            <a href="{{ $assignedAttachUrls[0] }}" target="_blank" rel="noopener" class="inquiries-btn inquiries-btn-secondary">Attachment</a>
-                        @else
-                            —
-                        @endif
-                    </td>
                     <td data-col="assigndate">{{ $r->LASTMODIFIED ? date('d/m/Y', strtotime($r->LASTMODIFIED)) : ($r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '—') }}</td>
                     @php
                         $arawStatus = strtoupper(trim((string)($r->CURRENTSTATUS ?? '')));
@@ -790,7 +774,7 @@
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="assignedto"> ASSIGNED TO</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="completiondate"> COMPLETION DATE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="payoutsdate"> PAYOUTS DATE</label>
-                    <label class="inquiries-columns-check"><input type="checkbox" data-col="attachment"> ATTACHMENT</label>
+                    <!-- <label class="inquiries-columns-check"><input type="checkbox" data-col="attachment"> ATTACHMENT</label> -->
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="assigndate"> ASSIGN DATE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="status"> STATUS</label>
                     <div class="inquiries-columns-actions">
@@ -830,7 +814,6 @@
                     <x-tables.text-filter-header col="assignedto" label="ASSIGNED TO" input-class="inquiries-grid-filter-all" />
                     <x-tables.text-filter-header col="completiondate" label="COMPLETION DATE" input-class="inquiries-grid-filter-all" />
                     <x-tables.text-filter-header col="payoutsdate" label="PAYOUTS DATE" input-class="inquiries-grid-filter-all" />
-                    <x-tables.text-filter-header col="attachment" label="ATTACHMENT" input-class="inquiries-grid-filter-all" />
                     <x-tables.text-filter-header col="assigndate" label="ASSIGN DATE" input-class="inquiries-grid-filter-all" />
                     <x-tables.status-multi-filter-header col="status" label="STATUS" :options="$allStatusFilterOptions" select-class="inquiries-grid-filter-all inquiries-grid-filter-select" />
                     <x-tables.clear-filter-header button-id="allClearFilters" />
@@ -1783,7 +1766,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var ASSIGNED_LEGACY_DEFAULT_COLUMNS = ['inquiryid', 'customername', 'postcode', 'city', 'state', 'country', 'assignedto', 'assigndate', 'status'];
     // Default Assigned layout
     var ASSIGNED_DEFAULT_COLUMNS = ['inquiryid', 'date', 'customername', 'postcode', 'city', 'assignedto', 'assigndate', 'status'];
-    var ASSIGNED_ALL_COLUMNS = ['inquiryid','date','customername','email','source','city','state','country','postcode','address','contactno','businessnature','users','existingsw','demomode','products','dealtproducts','message','referralcode','assignedby','assignedto','completiondate','payoutsdate','attachment','assigndate','status'];
+    var ASSIGNED_ALL_COLUMNS = ['inquiryid','date','customername','email','source','city','state','country','postcode','address','contactno','businessnature','users','existingsw','demomode','products','dealtproducts','message','referralcode','assignedby','assignedto','completiondate','payoutsdate','assigndate','status'];
     var ALL_STORAGE_KEY = 'allInquiryVisibleColumns_v4';
     var ALL_DEFAULT_COLUMNS = ['inquiryid', 'date', 'customername', 'email', 'postcode', 'city', 'assignedto', 'status'];
     var ALL_TABLE_COLUMNS = ASSIGNED_ALL_COLUMNS.slice();

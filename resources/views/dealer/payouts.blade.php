@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Pending Payouts - SQL LMS Dealer Console')
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/pages/dealer-inquiries.css') }}?v=20260605-02">
+    <link rel="stylesheet" href="{{ asset('css/pages/dealer-inquiries.css') }}?v=20260605-06">
     <style>
         .dealer-inquiries-panel .inquiries-empty-row .inquiries-empty-cell {
             padding: 0 !important;
@@ -68,7 +68,7 @@
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="dealtproducts"> DEALT PRODUCTS</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="message"> MESSAGE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="referralcode"> REFERRAL CODE</label>
-                    <label class="inquiries-columns-check"><input type="checkbox" data-col="attachment"> ATTACHMENT</label>
+                    <!-- <label class="inquiries-columns-check"><input type="checkbox" data-col="attachment"> ATTACHMENT</label> -->
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="assignby"> ASSIGN BY</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="status"> STATUS</label>
                     <div class="inquiries-columns-actions">
@@ -106,7 +106,6 @@
                         <x-tables.text-filter-header col="existingsw" label="EXISTING SW" input-class="inquiries-grid-filter payouts-grid-filter" table="completed" />
                         <x-tables.text-filter-header col="demomode" label="DEMO MODE" input-class="inquiries-grid-filter payouts-grid-filter" table="completed" />
                         <x-tables.text-filter-header col="message" label="MESSAGE" input-class="inquiries-grid-filter payouts-grid-filter" table="completed" />
-                        <x-tables.text-filter-header col="attachment" label="ATTACHMENT" input-class="inquiries-grid-filter payouts-grid-filter" table="completed" />
                         <x-tables.text-filter-header col="assignby" label="ASSIGN BY" input-class="inquiries-grid-filter payouts-grid-filter" table="completed" />
                         <x-tables.clear-filter-header button-id="completedClearFilters" />
                     </tr>
@@ -270,11 +269,11 @@ function initDealerPendingPayoutsPage() {
     var COMPLETED_OLDER_LEGACY_DEFAULT_COLUMNS = ['inquiryid','completeddate','customer','dealtproducts','referralcode','attachment','assignby','status'];
     var COMPLETED_PREVIOUS_DEFAULT_COLUMNS = ['inquiryid','customer','assignedto','referralcode','completeddate','status','dealtproducts'];
     var COMPLETED_DEFAULT_COLUMNS = ['inquiryid','customer','assignedto','referralcode','completeddate','status','dealtproducts'];
-    var COMPLETED_ALL_COLUMNS = ['inquiryid','date','customer','assignedto','assigndate','referralcode','completeddate','status','dealtproducts','source','postcode','city','state','country','address','contactno','businessnature','users','existingsw','demomode','message','attachment','assignby'];
+    var COMPLETED_ALL_COLUMNS = ['inquiryid','date','customer','assignedto','assigndate','referralcode','completeddate','status','dealtproducts','source','postcode','city','state','country','address','contactno','businessnature','users','existingsw','demomode','message','assignby'];
 
     var REWARDED_STORAGE_KEY = 'dealerPayoutRewardedVisibleColumns_v4';
     var REWARDED_DEFAULT_COLUMNS = ['inquiryid','payoutdate','customer','dealtproducts','referralcode','attachment','assignby','status'];
-    var REWARDED_ALL_COLUMNS = ['inquiryid','date','payoutdate','completiondate','assigndate','customer','source','postcode','city','state','country','address','contactno','businessnature','users','existingsw','demomode','dealtproducts','message','referralcode','attachment','assignby','status'];
+    var REWARDED_ALL_COLUMNS = ['inquiryid','date','payoutdate','completiondate','assigndate','customer','source','postcode','city','state','country','address','contactno','businessnature','users','existingsw','demomode','dealtproducts','message','referralcode','assignby','status'];
 
     function getCompletedVisibleColumns() {
         try {

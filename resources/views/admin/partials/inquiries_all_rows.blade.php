@@ -100,21 +100,6 @@
     <td data-col="assignedto" title="{{ $r->assignedToName ?? ($r->assignedTo ?? '-') }}">{{ $r->assignedToName ?? ($r->assignedTo ?? '-') }}</td>
     <td data-col="completiondate">{{ !empty($r->COMPLETED_AT) ? date('d/m/Y', strtotime($r->COMPLETED_AT)) : '-' }}</td>
     <td data-col="payoutsdate">{{ !empty($r->REWARDED_AT) ? date('d/m/Y', strtotime($r->REWARDED_AT)) : '-' }}</td>
-    <td data-col="attachment">
-        @php
-            $assignedAttachUrls = !empty($assignedAttachUrls) && is_array($assignedAttachUrls)
-                ? array_values(array_filter($assignedAttachUrls, function ($url) {
-                    $normalized = is_string($url) ? trim($url) : '';
-                    return $normalized !== '' && !in_array(strtolower($normalized), ['-', 'null', 'undefined', '#'], true);
-                }))
-                : [];
-        @endphp
-        @if(!empty($assignedAttachUrls))
-            <a href="{{ $assignedAttachUrls[0] }}" target="_blank" rel="noopener" class="inquiries-btn inquiries-btn-secondary">Attachment</a>
-        @else
-            -
-        @endif
-    </td>
     <td data-col="assigndate">{{ $r->LASTMODIFIED ? date('d/m/Y', strtotime($r->LASTMODIFIED)) : ($r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '-') }}</td>
     <td data-col="status"><span class="inquiries-status {{ $statusClass }}">{{ $statusDisplay }}</span></td>
     <td class="inquiries-col-action inquiries-action-cell">

@@ -2,7 +2,7 @@
 @section('title', 'My Inquiries – SQL LMS Dealer Console')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/pages/dealer-inquiries.css') }}?v=20260605-02">
+    <link rel="stylesheet" href="{{ asset('css/pages/dealer-inquiries.css') }}?v=20260605-06">
     <style>
         .inquiry-progression-steps {
             gap: 12px 0px;
@@ -139,7 +139,7 @@
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="payoutsdate"> PAYOUTS DATE</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="message"> MESSAGE</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="referralcode"> REFERRAL CODE</label>
-                        <label class="inquiries-columns-check"><input type="checkbox" data-col="attachment"> ATTACHMENT</label>
+                        <!-- <label class="inquiries-columns-check"><input type="checkbox" data-col="attachment"> ATTACHMENT</label> -->
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="assignby"> ASSIGN BY</label>
                         '.(($dealerConsoleTab ?? 'inquiries') === 'inquiries' ? '<label class="inquiries-columns-check"><input type="checkbox" data-col="status"> STATUS</label>' : '').'
                         <div class="inquiries-columns-actions">
@@ -176,7 +176,6 @@
                         <x-tables.text-filter-header col="payoutsdate" label="PAYOUTS DATE" />
                         <x-tables.text-filter-header col="message" label="MESSAGE" />
                         <x-tables.text-filter-header col="referralcode" label="REFERRAL CODE" />
-                        <x-tables.text-filter-header col="attachment" label="ATTACHMENT" />
                         <x-tables.text-filter-header col="assignby" label="ASSIGN BY" />
                         @if(($dealerConsoleTab ?? 'inquiries') === 'inquiries')
                             <x-tables.status-multi-filter-header col="status" label="STATUS" :options="$statusFilterOptions" select-class="inquiries-grid-filter inquiries-grid-filter-select" />
@@ -281,7 +280,7 @@ function initDealerInquiriesPage() {
         legacyStorageKey = 'dealer_inquiries_visible_cols_v13_disabled';
     }
 
-    var allCols = ['inquiryid','date','customer','email','postcode','city','state','country','address','contactno','businessnature','users','existingsw','demomode','products','assigndate','completiondate','payoutsdate','message','referralcode','attachment','assignby'{!! ($dealerConsoleTab ?? 'inquiries') === 'inquiries' ? ",'status'" : "" !!}];
+    var allCols = ['inquiryid','date','customer','email','postcode','city','state','country','address','contactno','businessnature','users','existingsw','demomode','products','assigndate','completiondate','payoutsdate','message','referralcode','assignby'{!! ($dealerConsoleTab ?? 'inquiries') === 'inquiries' ? ",'status'" : "" !!}];
 
     function getDefaultColsForViewport() {
         return defaultCols.slice();

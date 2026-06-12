@@ -93,13 +93,6 @@
         <td data-col="existingsw">{{ $r->EXISTINGSOFTWARE ?? '-' }}</td>
         <td data-col="demomode">{{ $r->DEMOMODE ?? '-' }}</td>
         <td data-col="message">{{ $amsgPreview }}</td>
-        <td data-col="attachment">
-            @if(!empty($attachmentUrls))
-                <a href="{{ $attachmentUrls[0] }}" target="_blank" rel="noopener" class="inquiries-btn inquiries-btn-secondary">Attachment</a>
-            @else
-                -
-            @endif
-        </td>
         <td data-col="assignby">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '-') }}</td>
         <td class="inquiries-col-action inquiries-action-cell inquiries-action-cell-single">
             <button type="button"
