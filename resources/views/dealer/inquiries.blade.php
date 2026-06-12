@@ -3237,34 +3237,33 @@ if (document.readyState === 'loading') {
         .then(function(res) {
             updateBtn.disabled = false;
             if (res.ok && res.data && res.data.success) {
-                // Refresh only the Update Inquiry Status form/modal state instead of reloading the whole page
-                var leadIdNow = currentLeadId;
                 var newStatus = toStatus;
+                try {
+                    sessionStorage.setItem('dealer_inquiry_success_toast', res.data.message || 'Status updated successfully');
+                } catch (e) {}
 
-                userPickedStep = false;
-                openStartNext = false;
-                syncModalAfterSuccessfulStatusSave(newStatus);
-
-                // Reload activity/timeline and step labels from the database
-                if (leadIdNow) {
-                    loadActivity(leadIdNow);
+                var statusToTabMap = {
+                    'PENDING': 'pending',
+                    'FOLLOW UP': 'followup',
+                    'FOLLOWUP': 'followup',
+                    'DEMO': 'demo',
+                    'CONFIRMED': 'confirmed',
+                    'COMPLETED': 'completed',
+                    'FAILED': 'failed',
+                    'CANCELLED': 'cancelled',
+                    'REWARDED': 'rewarded',
+                    'REWARD': 'rewarded',
+                    'REWARD DISTRIBUTED': 'rewarded'
+                };
+                var tabId = statusToTabMap[newStatus.toUpperCase()];
+                if (tabId) {
+                    var url = new URL(window.location.href);
+                    url.searchParams.set('tab', tabId);
+                    url.searchParams.delete('lead');
+                    window.location.href = url.pathname + url.search + url.hash;
+                } else {
+                    window.location.reload();
                 }
-
-                // Update the row in the table (badge + button data-status) so it reflects the new status
-                if (currentUpdateButtonEl) {
-                    var meta = {
-                        date: activityDate,
-                        time: activityTime,
-                        remark: remark
-                    };
-                    applyRowStatusUpdate(currentUpdateButtonEl, newStatus, meta);
-                }
-
-                // Re‑evaluate controls for the new status
-                if (res.data.counts) {
-                    refreshDealerConsoleCounts(res.data.counts);
-                }
-                showDealerInquiryToast(res.data.message || 'Status updated successfully');
             } else {
                 var errMsg = (res.data && res.data.message) ? res.data.message : 'Update failed';
                 showDealerInquiryToast(errMsg);
@@ -3276,6 +3275,16 @@ if (document.readyState === 'loading') {
             showDealerInquiryToast('Update failed. Please try again.');
         });
     });
+
+    try {
+        var pendingToast = sessionStorage.getItem('dealer_inquiry_success_toast');
+        if (pendingToast) {
+            sessionStorage.removeItem('dealer_inquiry_success_toast');
+            setTimeout(function() {
+                showDealerInquiryToast(pendingToast);
+            }, 300);
+        }
+    } catch (e) {}
 })();
 </script>
 @endpush

@@ -1332,7 +1332,7 @@
                                         <input type="text" id="assignToDisplay" class="inquiry-form-input has-icon" style="padding-left: 34px; background: #f8f9fa; color: #4b5563; font-weight: 500;" readonly placeholder="Unassigned">
                                         <input type="hidden" name="assignedTo" id="assignToHidden" value="{{ old('assignedTo', $inquiry->ASSIGNEDTO ?? '') }}">
                                     </div>
-                                    <button type="button" class="inquiries-btn inquiries-btn-secondary" id="openAssignModalBtn" style="height: 30px; font-size: 13px; padding: 0 12px; min-width: 80px;">Assign</button>
+                                    <button type="button" class="inquiries-btn inquiries-btn-secondary" id="openAssignModalBtn" style="height: 30px; font-size: 13px; padding: 0 12px; min-width: 80px; {{ $isEdit && !empty($inquiry->ASSIGNEDTO) ? 'opacity: 0.6; cursor: not-allowed;' : '' }}" {{ $isEdit && !empty($inquiry->ASSIGNEDTO) ? 'disabled' : '' }}>Assign</button>
                                 </div>
                             </label>
                         </div>

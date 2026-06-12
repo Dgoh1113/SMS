@@ -1450,13 +1450,6 @@ class AdminController extends Controller
 
         try {
             DB::beginTransaction();
-            // Keep DB context so database-side assignment logic/triggers can use the assigner id.
-            if ($fromUserId !== '') {
-                DB::statement(
-                    "SELECT RDB\$SET_CONTEXT('USER_SESSION', 'ASSIGNER', ?) FROM RDB\$DATABASE",
-                    [$fromUserId]
-                );
-            }
             $updated = DB::update(
                 'UPDATE "LEAD"
                  SET "ASSIGNEDTO" = ?, "LASTMODIFIED" = CURRENT_TIMESTAMP
@@ -1482,6 +1475,15 @@ class AdminController extends Controller
 
                 return back()->with('error', 'This inquiry was updated by another user. Please sync and try again.');
             }
+
+            // Insert "Lead Assigned" activity (replaces TRD_LEAD_AFTER_UPDATE_ASSIGN trigger)
+            $createdByUser = $fromUserId !== '' ? $fromUserId : $assignedTo;
+            DB::insert(
+                'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS")
+                 VALUES (NEXT VALUE FOR GEN_LEAD_ACTID,?,?,CURRENT_TIMESTAMP,?,?,NULL,?)',
+                [$leadId, $createdByUser, 'Lead Assigned', 'Lead Assigned by '.$createdByUser.' to '.$assignedTo, 'Pending']
+            );
+
             DB::commit();
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -1869,9 +1871,10 @@ class AdminController extends Controller
 
     public function editInquiry(int $leadId): View|RedirectResponse
     {
-        $staleMessage = $this->incomingInquiryStaleMessage($leadId, true);
-        if ($staleMessage !== null && $staleMessage !== 'Lead not found.') {
-            return redirect()->route('admin.inquiries')->with('error', $staleMessage);
+        // Allow editing assigned/in-progress inquiries
+        $checkExist = DB::selectOne('SELECT "LEADID" FROM "LEAD" WHERE "LEADID" = ? AND COALESCE("ISDELETED", FALSE) = FALSE', [$leadId]);
+        if (! $checkExist) {
+            return redirect()->route('admin.inquiries')->with('error', 'Lead not found.');
         }
 
         $row = DB::selectOne(
@@ -2003,13 +2006,15 @@ class AdminController extends Controller
         $descriptionValue = $description !== '' ? $description : null;
 
         try {
-            DB::insert(
+            DB::beginTransaction();
+            $newLeadRow = DB::selectOne(
                 'INSERT INTO "LEAD" (
                     "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL",
                     "ADDRESS1","ADDRESS2","CITY","STATE","COUNTRY","POSTCODE","BUSINESSNATURE","USERCOUNT",
                     "EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION","REFERRALCODE",
                     "CREATEDAT","CREATEDBY","ASSIGNEDTO","LASTMODIFIED"
-                ) VALUES (GEN_ID(GEN_LEADID, 1),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,?,?,CURRENT_TIMESTAMP)',
+                ) VALUES (GEN_ID(GEN_LEADID, 1),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,?,?,CURRENT_TIMESTAMP)
+                RETURNING "LEADID"',
                 [
                     $productIdValue,
                     $validated['COMPANYNAME'],
@@ -2032,20 +2037,30 @@ class AdminController extends Controller
                     $validated['assignedTo'] ?? null,
                 ]
             );
+            $newLeadId = (int) ($newLeadRow->LEADID ?? $newLeadRow->leadid ?? 0);
+
+            // Insert initial "Lead Created" activity (replaces TRD_LEAD_AFTER_INSERT trigger)
+            if ($newLeadId > 0) {
+                DB::insert(
+                    'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS")
+                     VALUES (NEXT VALUE FOR GEN_LEAD_ACTID,?,?,CURRENT_TIMESTAMP,?,?,NULL,?)',
+                    [$newLeadId, $userId, 'Lead Created', 'Lead Created', 'Created']
+                );
+                DB::update('UPDATE "LEAD" SET "LASTMODIFIED" = CURRENT_TIMESTAMP WHERE "LEADID" = ?', [$newLeadId]);
+            }
+
+            DB::commit();
         } catch (\Throwable $e) {
+            DB::rollBack();
             return back()->withInput($request->only(array_keys($validated)))->with('error', 'Could not save the inquiry. Please try again.');
         }
 
         $assignedTo = trim((string) ($validated['assignedTo'] ?? ''));
-        if ($assignedTo !== '') {
-            $newLeadIdRow = DB::selectOne('SELECT GEN_ID(GEN_LEADID, 0) AS "ID" FROM RDB$DATABASE');
-            $newLeadId = (int) ($newLeadIdRow->ID ?? $newLeadIdRow->id ?? 0);
-            if ($newLeadId > 0) {
-                try {
-                    $this->sendInquiryAssignedEmail($assignedTo, $newLeadId);
-                } catch (\Throwable $e) {
-                    \Log::error('Failed to send assignment email: ' . $e->getMessage());
-                }
+        if ($assignedTo !== '' && $newLeadId > 0) {
+            try {
+                $this->sendInquiryAssignedEmail($assignedTo, $newLeadId);
+            } catch (\Throwable $e) {
+                \Log::error('Failed to send assignment email: ' . $e->getMessage());
             }
         }
 
@@ -2093,9 +2108,15 @@ class AdminController extends Controller
             ]
         );
 
-        $exists = DB::selectOne('SELECT "LEADID" FROM "LEAD" WHERE "LEADID" = ?', [$leadId]);
+        $exists = DB::selectOne('SELECT "LEADID", "ASSIGNEDTO" AS "oldAssignedTo" FROM "LEAD" WHERE "LEADID" = ?', [$leadId]);
         if (! $exists) {
             return redirect()->route('admin.inquiries')->with('error', 'Lead not found.');
+        }
+        $oldAssignedTo = trim((string) ($exists->oldAssignedTo ?? ''));
+
+        $newAssignedTo = trim((string) ($validated['assignedTo'] ?? ''));
+        if ($oldAssignedTo !== '' && $newAssignedTo !== $oldAssignedTo) {
+            return back()->withInput($request->only(array_keys($validated)))->with('error', 'Reassignment or unassignment is not allowed once a dealer is assigned.');
         }
 
         $snapshotMessage = $this->inquiryEditSnapshotMessage($leadId, $request->input('INQUIRY_SNAPSHOT_AT'));
@@ -2107,10 +2128,7 @@ class AdminController extends Controller
             return redirect()->route('admin.inquiries.edit', $leadId)->with('error', $snapshotMessage);
         }
 
-        $staleMessage = $this->incomingInquiryStaleMessage($leadId, true);
-        if ($staleMessage !== null) {
-            return redirect()->route('admin.inquiries')->with('error', $staleMessage);
-        }
+        // Allow updating assigned/in-progress inquiries without stale check
 
         // Same as create: if company name exists on another lead, show confirmation (exclude current lead)
         if (! $request->boolean('duplicate_ok')) {
@@ -2215,6 +2233,38 @@ class AdminController extends Controller
             );
         } catch (\Throwable $e) {
             return back()->withInput($request->only(array_keys($validated)))->with('error', 'Could not update the inquiry. Please try again.');
+        }
+
+        // Insert "Lead Assigned" / "Lead Unassigned" activity if ASSIGNEDTO changed
+        $newAssignedTo = trim((string) ($validated['assignedTo'] ?? ''));
+        if ($newAssignedTo !== $oldAssignedTo) {
+            $assignUserId = trim((string) ($request->session()->get('user_id') ?? ''));
+            
+            if ($newAssignedTo !== '') {
+                $createdByUser = $assignUserId !== '' ? $assignUserId : $newAssignedTo;
+                try {
+                    DB::insert(
+                        'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS")
+                         VALUES (NEXT VALUE FOR GEN_LEAD_ACTID,?,?,CURRENT_TIMESTAMP,?,?,NULL,?)',
+                        [$leadId, $createdByUser, 'Lead Assigned', 'Lead Assigned by '.$createdByUser.' to '.$newAssignedTo, 'Pending']
+                    );
+                    DB::update('UPDATE "LEAD" SET "LASTMODIFIED" = CURRENT_TIMESTAMP WHERE "LEADID" = ?', [$leadId]);
+                } catch (\Throwable $e) {
+                    \Log::error('Failed to insert Lead Assigned activity: '.$e->getMessage());
+                }
+            } else {
+                $createdByUser = $assignUserId !== '' ? $assignUserId : $oldAssignedTo;
+                try {
+                    DB::insert(
+                        'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS")
+                         VALUES (NEXT VALUE FOR GEN_LEAD_ACTID,?,?,CURRENT_TIMESTAMP,?,?,NULL,?)',
+                        [$leadId, $createdByUser, 'Lead Unassigned', 'Lead Unassigned by '.$createdByUser, 'Created']
+                    );
+                    DB::update('UPDATE "LEAD" SET "LASTMODIFIED" = CURRENT_TIMESTAMP WHERE "LEADID" = ?', [$leadId]);
+                } catch (\Throwable $e) {
+                    \Log::error('Failed to insert Lead Unassigned activity: '.$e->getMessage());
+                }
+            }
         }
 
         $activeTab = $request->input('return_tab');

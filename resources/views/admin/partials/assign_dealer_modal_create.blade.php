@@ -143,11 +143,11 @@
                                     data-assign-postcode="{{ $postcode }}"
                                     data-assign-city="{{ e($city) }}"
                                     data-assign-order="{{ $loop->index }}">
-                                    <td data-col="alias">{{ $alias ?: 'â€”' }}</td>
-                                    <td data-col="company">{{ $company ?: 'â€”' }}</td>
-                                    <td data-col="postcode">{{ $postcode ?: 'â€”' }}</td>
-                                    <td data-col="city">{{ $city ?: 'â€”' }}</td>
-                                    <td data-col="email">{{ $email ?: 'â€”' }}</td>
+                                    <td data-col="alias">{{ $alias ?: '-' }}</td>
+                                    <td data-col="company">{{ $company ?: '-' }}</td>
+                                    <td data-col="postcode">{{ $postcode ?: '-' }}</td>
+                                    <td data-col="city">{{ $city ?: '-' }}</td>
+                                    <td data-col="email">{{ $email ?: '-' }}</td>
                                     <td data-col="active">{{ $active }}</td>
                                     <td data-col="totallead">{{ $totalLead }}</td>
                                     <td data-col="totalclosed">{{ $totalClosed }}</td>

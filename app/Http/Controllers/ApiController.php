@@ -58,8 +58,8 @@ class ApiController extends Controller
         ]);
 
         $row = DB::selectOne(
-            'INSERT INTO "LEAD" ("COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL","CITY","STATE","COUNTRY","ASSIGNEDTO","CREATEDAT","LASTMODIFIED")
-             VALUES (?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
+            'INSERT INTO "LEAD" ("LEADID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL","CITY","STATE","COUNTRY","ASSIGNEDTO","CREATEDAT","LASTMODIFIED")
+             VALUES (GEN_ID(GEN_LEADID, 1),?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
              RETURNING "LEADID","CREATEDAT"',
             [
                 $validated['COMPANYNAME'],
@@ -72,6 +72,14 @@ class ApiController extends Controller
                 $validated['assignedTo'] ?? null,
             ]
         );
+
+        // Insert initial "Lead Created" activity (replaces TRD_LEAD_AFTER_INSERT trigger)
+        DB::insert(
+            'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS")
+             VALUES (NEXT VALUE FOR GEN_LEAD_ACTID,?,?,CURRENT_TIMESTAMP,?,?,NULL,?)',
+            [$row->LEADID, null, 'Lead Created', 'Lead Created', 'Created']
+        );
+        DB::update('UPDATE "LEAD" SET "LASTMODIFIED" = CURRENT_TIMESTAMP WHERE "LEADID" = ?', [$row->LEADID]);
 
         return response()->json(['LEADID' => $row->LEADID, 'CREATEDAT' => $row->CREATEDAT], 201);
     }

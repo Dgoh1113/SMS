@@ -1,4 +1,4 @@
-﻿<div class="inquiries-assign-modal" id="assignModal" hidden>
+<div class="inquiries-assign-modal" id="assignModal" hidden>
     <div class="inquiries-assign-backdrop" data-assign-close="1"></div>
     <div class="inquiries-assign-window" role="dialog" aria-modal="true" aria-labelledby="assignModalTitle">
         <div class="inquiries-assign-header">
@@ -11,7 +11,7 @@
             <input type="hidden" name="assignedTo" id="assignToHidden" required>
             <div class="inquiries-assign-row">
                 <div class="inquiries-assign-label">Lead</div>
-                <div class="inquiries-assign-value" id="assignLeadLabel">â€”</div>
+                <div class="inquiries-assign-value" id="assignLeadLabel">-</div>
             </div>
             <div class="inquiries-assign-dealers">
                 <div class="inquiries-assign-dealers-title">Select dealer</div>
@@ -138,11 +138,11 @@
                                     data-assign-postcode="{{ $postcode }}"
                                     data-assign-city="{{ e($city) }}"
                                     data-assign-order="{{ $loop->index }}">
-                                    <td data-col="alias">{{ $alias ?: 'â€”' }}</td>
-                                    <td data-col="company">{{ $company ?: 'â€”' }}</td>
-                                    <td data-col="postcode">{{ $postcode ?: 'â€”' }}</td>
-                                    <td data-col="city">{{ $city ?: 'â€”' }}</td>
-                                    <td data-col="email">{{ $email ?: 'â€”' }}</td>
+                                    <td data-col="alias">{{ $alias ?: '-' }}</td>
+                                    <td data-col="company">{{ $company ?: '-' }}</td>
+                                    <td data-col="postcode">{{ $postcode ?: '-' }}</td>
+                                    <td data-col="city">{{ $city ?: '-' }}</td>
+                                    <td data-col="email">{{ $email ?: '-' }}</td>
                                     <td data-col="active">{{ $active }}</td>
                                     <td data-col="totallead">{{ $totalLead }}</td>
                                     <td data-col="totalclosed">{{ $totalClosed }}</td>

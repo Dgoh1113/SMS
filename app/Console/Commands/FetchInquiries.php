@@ -149,13 +149,14 @@ class FetchInquiries extends Command
 
                     $userCount = isset($data['UserCount']) ? (int) $data['UserCount'] : null;
 
-                    DB::insert(
+                    $leadRow = DB::selectOne(
                         'INSERT INTO "LEAD" (
-                            "PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL",
+                            "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL",
                             "CITY","POSTCODE","COUNTRY","BUSINESSNATURE","USERCOUNT",
                             "EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION","REFERRALCODE",
                             "STATE","CREATEDAT","CREATEDBY","LASTMODIFIED"
-                        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,?,CURRENT_TIMESTAMP)',
+                        ) VALUES (GEN_ID(GEN_LEADID, 1),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP,?,CURRENT_TIMESTAMP)
+                        RETURNING "LEADID"',
                         [
                             $productId,
                             $companyName,
@@ -176,8 +177,17 @@ class FetchInquiries extends Command
                         ]
                     );
 
-                    $res = DB::selectOne('SELECT GEN_ID(GEN_LEADID, 0) as id FROM RDB$DATABASE');
-                    $leadId = $res->id ?? $res->ID ?? null;
+                    $leadId = $leadRow->LEADID ?? $leadRow->leadid ?? null;
+
+                    // Insert initial "Lead Created" activity (replaces TRD_LEAD_AFTER_INSERT trigger)
+                    if ($leadId) {
+                        DB::insert(
+                            'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS")
+                             VALUES (NEXT VALUE FOR GEN_LEAD_ACTID,?,?,CURRENT_TIMESTAMP,?,?,NULL,?)',
+                            [$leadId, 'U001', 'Lead Created', 'Lead Created', 'Created']
+                        );
+                        DB::update('UPDATE "LEAD" SET "LASTMODIFIED" = CURRENT_TIMESTAMP WHERE "LEADID" = ?', [$leadId]);
+                    }
 
                     DB::commit();
 
