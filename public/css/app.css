@@ -5514,20 +5514,20 @@ html.dashboard-root-sidebar-collapsed-preload .dashboard-sidebar {
   margin-top: 0;
 }
 
-/* Dealer inquiries: scrollbar at the very bottom of the table area */
 .dealer-inquiries-panel {
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
   min-height: 0;
 }
 .dealer-inquiries-panel .inquiries-table-wrap {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
 }
 .dealer-inquiries-panel .inquiries-table-scroll {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   min-height: 427px;
   max-height: none;
   overflow-x: auto;

@@ -78,6 +78,13 @@
             text-align: center;
             box-sizing: border-box;
         }
+        @media (max-width: 1600px) {
+            .dealer-inquiries-panel .inquiries-empty-row .dealer-table-empty {
+                height: auto;
+                min-height: 41px;
+                padding: 10px 24px;
+            }
+        }
         html.theme-dark .dealer-inquiries-panel .inquiries-empty-row .inquiries-empty-cell {
             background: transparent !important;
             border-bottom: 1px solid #334155 !important;
@@ -800,10 +807,14 @@ function initDealerInquiriesPage() {
             var referenceRow = visibleRow || tbody.querySelector('tr.inquiry-row');
             
             if (!referenceRow) {
-                return 56;
+                return window.innerWidth <= 1600 ? 44 : 56;
             }
             
-            return measureDealerInquiryRowHeight(referenceRow);
+            var measured = measureDealerInquiryRowHeight(referenceRow);
+            if (window.innerWidth <= 1600) {
+                return 44;
+            }
+            return measured;
         }
 
 
@@ -817,9 +828,9 @@ function initDealerInquiriesPage() {
             var useShortHeight = (visibleDataCount > 0 && visibleDataCount < perPage) || (visibleDataCount === 0 && allowZeroFill);
             var targetRows = getDealerPaginationTargetRows();
             
-            var defaultPlaceholderHeight = 36;
-            if (window.innerWidth >= 1200 && window.innerHeight <= 900) {
-                defaultPlaceholderHeight = 36;
+            var defaultPlaceholderHeight = 56;
+            if (window.innerWidth <= 1600) {
+                defaultPlaceholderHeight = 44;
             }
             var placeholderRowHeight = defaultPlaceholderHeight;
             
@@ -983,6 +994,7 @@ function initDealerInquiriesPage() {
             rows.forEach(function(row) {
                 row.style.display = pageRows.indexOf(row) !== -1 ? '' : 'none';
             });
+
             ensureFixedHeight(pageRows.length);
 
             pagination.setAttribute('data-total', String(total));
