@@ -2160,8 +2160,8 @@ html.theme-dark .dealer-dashboard-content .dealer-table-wrapper:hover::-webkit-s
   .dealer-dashboard-page .dealer-dashboard-main {
     margin-top: 10px;
     flex: 1 1 auto;
-    min-height: clamp(487px, calc(100vh - 333px), 587px);
-    max-height: clamp(487px, calc(100vh - 333px), 587px);
+    min-height: clamp(487px, calc(100vh - 333px), 800px);
+    max-height: clamp(487px, calc(100vh - 333px), 800px);
   }
 
   .dealer-dashboard-page .dealer-dashboard-main-left,
@@ -2564,35 +2564,36 @@ html.theme-dark .dealer-dashboard-content .dealer-table-wrapper:hover::-webkit-s
 
   .dealer-dashboard-page .dashboard-metric-card {
     padding: 15px 17px;
-    min-height: 110px;
   }
 
   .dealer-dashboard-page .dashboard-metric-icon {
-    width: 32px;
-    height: 32px;
-    margin-bottom: 5px;
-    font-size: 17px;
+    width: 33px;
+    height: 33px;
+    margin-bottom: 6px;
+    font-size: 18px;
   }
 
   .dealer-dashboard-page .dashboard-metric-label {
     margin-bottom: 4px;
-    font-size: 12.5px;
+    font-size: 12px;
+    line-height: 1.2;
   }
 
   .dealer-dashboard-page .dashboard-metric-value {
-    font-size: 24px;
+    font-size: 21px;
+    line-height: 1;
   }
 
   .dealer-dashboard-page .dashboard-metric-pill {
-    padding: 3.5px 8px;
-    font-size: 10.5px;
+    padding: 4px 9px;
+    font-size: 11.5px;
   }
 
   .dealer-dashboard-page .dealer-dashboard-main {
     margin-top: 4px;
     gap: 10px;
-    min-height: clamp(397px, calc(100vh - 313px), 487px);
-    max-height: clamp(397px, calc(100vh - 313px), 487px);
+    min-height: clamp(397px, calc(100vh - 285px), 700px);
+    max-height: clamp(397px, calc(100vh - 285px), 700px);
   }
 
   .dealer-dashboard-page .dealer-dashboard-sidebar-divider {
