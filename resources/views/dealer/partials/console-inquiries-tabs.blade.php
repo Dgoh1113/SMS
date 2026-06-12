@@ -20,7 +20,7 @@
         ['id' => 'demo', 'label' => 'Demo', 'count' => $demoCount, 'tooltip' => 'Leads in Demo status.'],
         ['id' => 'confirmed', 'label' => 'Confirmed', 'count' => $confirmedCount, 'tooltip' => 'Leads in Confirmed status.'],
         ['id' => 'completed', 'label' => 'Completed', 'count' => $completedCount, 'tooltip' => 'Leads in Completed status.'],
-        ['id' => 'pending-payouts', 'label' => 'Pending Payouts', 'count' => $payoutsCount, 'tooltip' => 'Total completed leads awaiting referral fee payouts.'],
+        ['id' => 'pending-payouts', 'label' => 'Pending Payouts', 'count' => $payoutsCount, 'tooltip' => 'Total completed leads awaiting referral fee payouts.', 'route' => 'dealer.payouts'],
         ['id' => 'rewarded', 'label' => 'Rewarded', 'count' => $rewardedCount, 'tooltip' => 'Leads in Rewarded status.'],
         ['id' => 'cancelled', 'label' => 'Cancelled', 'count' => $cancelledCount, 'tooltip' => 'Leads in Cancelled status.'],
         ['id' => 'failed', 'label' => 'Failed', 'count' => $failedCount, 'tooltip' => 'Leads in Failed status.'],
