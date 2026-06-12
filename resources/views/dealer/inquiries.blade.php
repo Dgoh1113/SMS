@@ -2,7 +2,7 @@
 @section('title', 'My Inquiries – SQL LMS Dealer Console')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/pages/dealer-inquiries.css') }}?v=20260605-01">
+    <link rel="stylesheet" href="{{ asset('css/pages/dealer-inquiries.css') }}?v=20260605-02">
     <style>
         .inquiry-progression-steps {
             gap: 12px 0px;
@@ -267,13 +267,20 @@ function initDealerInquiriesPage() {
     var colsAll = document.getElementById('dealerInquiryColumnsAll');
     var colsNone = document.getElementById('dealerInquiryColumnsNone');
     var colsReset = document.getElementById('dealerInquiryColumnsReset');
-    var storageKey = 'dealerGlobalVisibleColumns_v1';
-    // Dealer defaults should stay the same on desktop and mobile.
-    var legacyDefaultCols = ['inquiryid','date','customer','email','postcode','city','state','country','products','assignby','status'];
-    var olderLegacyDefaultCols = ['inquiryid','date','customer','postcode','city','state','country','businessnature','products','assignby','status'];
-    var previousDefaultCols = ['inquiryid','date','customer','email','postcode','city','state','country','products','status'];
-    var compactMobileLegacyCols = ['inquiryid','date','customer'];
-    var defaultCols = ['inquiryid','date','customer','email','postcode','city','products','assigndate'{!! ($dealerConsoleTab ?? 'inquiries') === 'inquiries' ? ",'status'" : "" !!}];
+    var currentDealerTab = '{{ $dealerConsoleTab ?? 'inquiries' }}';
+    var storageKey = 'dealer_assigned_visible_cols_v1';
+    var legacyStorageKey = 'dealer_assigned_visible_cols_v1_disabled';
+    var defaultCols = ['inquiryid','date','customer','email','postcode','city','assignby','status'];
+
+    if (currentDealerTab === 'pending') {
+        storageKey = 'dealer_pending_visible_cols_v1';
+        legacyStorageKey = 'dealer_pending_visible_cols_v1_disabled';
+        defaultCols = ['inquiryid','date','customer','email','postcode','city','products','status'];
+    } else if (currentDealerTab === 'inquiries') {
+        storageKey = 'dealer_inquiries_visible_cols_v13';
+        legacyStorageKey = 'dealer_inquiries_visible_cols_v13_disabled';
+    }
+
     var allCols = ['inquiryid','date','customer','email','postcode','city','state','country','address','contactno','businessnature','users','existingsw','demomode','products','assigndate','completiondate','payoutsdate','message','referralcode','attachment','assignby'{!! ($dealerConsoleTab ?? 'inquiries') === 'inquiries' ? ",'status'" : "" !!}];
 
     function getDefaultColsForViewport() {
@@ -334,6 +341,8 @@ function initDealerInquiriesPage() {
         var hasExtras = activeCols.some(function(col) { return defaultCols.indexOf(col) === -1; });
         var hasProducts = activeCols.indexOf('products') !== -1;
         var enabled = activeCols.length > 0;
+        
+        scroller.classList.toggle('inquiries-table-scroll--none', !enabled);
 
         if (window.innerWidth && window.innerWidth < 1200) {
             scroller.classList.remove('inquiries-table-scroll--no-x');
@@ -371,23 +380,7 @@ function initDealerInquiriesPage() {
     }
 
     function saveCols(cols) {
-        try {
-            var globalCols = [];
-            var raw = localStorage.getItem(storageKey);
-            if (raw) {
-                var arr = JSON.parse(raw);
-                if (Array.isArray(arr)) globalCols = arr;
-            }
-            var newGlobal = globalCols.filter(function(c) {
-                return allCols.indexOf(c) === -1;
-            });
-            newGlobal = newGlobal.concat(cols);
-            var uniqueGlobal = [];
-            for (var i = 0; i < newGlobal.length; i++) {
-                if (uniqueGlobal.indexOf(newGlobal[i]) === -1) uniqueGlobal.push(newGlobal[i]);
-            }
-            localStorage.setItem(storageKey, JSON.stringify(uniqueGlobal));
-        } catch (e) {}
+        try { localStorage.setItem(storageKey, JSON.stringify(cols)); } catch (e) {}
     }
 
     function loadCols() {

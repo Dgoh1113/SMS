@@ -6,7 +6,7 @@
     ];
 @endphp
 
-@forelse($completed as $r)
+@foreach($completed as $r)
     @php
         $ccompany = trim((string) ($r->COMPANYNAME ?? ''));
         $ccontact = trim((string) ($r->CONTACTNAME ?? ''));
@@ -115,11 +115,5 @@
             </button>
         </td>
     </tr>
-@empty
-    <tr class="inquiries-empty-row">
-        <td colspan="22" class="inquiries-empty-cell">
-            <div class="dealer-table-empty">No pending payouts found.</div>
-        </td>
-    </tr>
-@endforelse
+@endforeach
 

@@ -2897,3 +2897,5 @@ html.theme-dark .dealer-dashboard-page .dealer-alert-empty-card {
   border-color: rgba(112, 132, 176, 0.22);
   background: linear-gradient(180deg, rgba(18, 28, 48, 0.92), rgba(12, 20, 35, 0.96));
 }
+.dealer-inquiries-panel .inquiries-table-scroll.inquiries-table-scroll--none { min-height: 0 !important; height: auto !important; max-height: none !important; border: none !important; }
+.dealer-dashboard-main:has(.inquiries-table-scroll--none) { min-height: 0 !important; height: auto !important; max-height: none !important; }

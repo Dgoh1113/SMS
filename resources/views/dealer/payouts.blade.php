@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Pending Payouts - SQL LMS Dealer Console')
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/pages/dealer-inquiries.css') }}?v=20260605-01">
+    <link rel="stylesheet" href="{{ asset('css/pages/dealer-inquiries.css') }}?v=20260605-02">
     <style>
         .dealer-inquiries-panel .inquiries-empty-row .inquiries-empty-cell {
             padding: 0 !important;
@@ -264,7 +264,7 @@
 @push('scripts')
 <script>
 function initDealerPendingPayoutsPage() {
-    var COMPLETED_STORAGE_KEY = 'dealerGlobalVisibleColumns_v1';
+    var COMPLETED_STORAGE_KEY = 'dealerPayoutCompletedVisibleColumns_v6';
     // Default + all columns: match dealer inquiries table column IDs
     var COMPLETED_LEGACY_DEFAULT_COLUMNS = ['inquiryid','completeddate','customer','dealtproducts','referralcode','assignby','status'];
     var COMPLETED_OLDER_LEGACY_DEFAULT_COLUMNS = ['inquiryid','completeddate','customer','dealtproducts','referralcode','attachment','assignby','status'];
@@ -291,23 +291,7 @@ function initDealerPendingPayoutsPage() {
         return COMPLETED_DEFAULT_COLUMNS.slice();
     }
     function setCompletedVisibleColumns(cols) {
-        try {
-            var globalCols = [];
-            var raw = localStorage.getItem(COMPLETED_STORAGE_KEY);
-            if (raw) {
-                var arr = JSON.parse(raw);
-                if (Array.isArray(arr)) globalCols = arr;
-            }
-            var newGlobal = globalCols.filter(function(c) {
-                return COMPLETED_ALL_COLUMNS.indexOf(c) === -1;
-            });
-            newGlobal = newGlobal.concat(cols);
-            var uniqueGlobal = [];
-            for (var i = 0; i < newGlobal.length; i++) {
-                if (uniqueGlobal.indexOf(newGlobal[i]) === -1) uniqueGlobal.push(newGlobal[i]);
-            }
-            localStorage.setItem(COMPLETED_STORAGE_KEY, JSON.stringify(uniqueGlobal));
-        } catch (e) {}
+        try { localStorage.setItem(COMPLETED_STORAGE_KEY, JSON.stringify(cols)); } catch (e) {}
     }
     function updateCompletedScrollMode(visible) {
         var table = document.getElementById('completedTable');
@@ -319,6 +303,7 @@ function initDealerPendingPayoutsPage() {
         var enabled = (visible || []).length > 0;
         table.classList.toggle('payouts-default-layout', !hasExtras);
         scroller.classList.toggle('payouts-default-layout', !hasExtras);
+        scroller.classList.toggle('inquiries-table-scroll--none', !enabled);
 
         // If no columns are visible, hide placeholders by setting height to 0
         if (!enabled) {
@@ -408,9 +393,9 @@ function initDealerPendingPayoutsPage() {
             });
         });
     }
-    var completedReset = document.getElementById('completedColumnsReset');
-    if (completedReset) {
-        completedReset.addEventListener('click', function() {
+    var completedResetBtn = document.getElementById('completedColumnsReset');
+    if (completedResetBtn) {
+        completedResetBtn.addEventListener('click', function() {
             setCompletedVisibleColumns(COMPLETED_DEFAULT_COLUMNS.slice());
             refreshCompletedColumnState();
             var wrap = document.querySelector('#completedPanel .inquiries-table-scroll');
@@ -452,8 +437,10 @@ function initDealerPendingPayoutsPage() {
         var hasExtras = (visible || []).some(function(col) {
             return REWARDED_DEFAULT_COLUMNS.indexOf(col) === -1;
         });
+        var enabled = (visible || []).length > 0;
         table.classList.toggle('payouts-default-layout', !hasExtras);
         scroller.classList.toggle('payouts-default-layout', !hasExtras);
+        scroller.classList.toggle('inquiries-table-scroll--none', !enabled);
     }
     function applyRewardedColumns(visible) {
         var table = document.getElementById('rewardedTable');

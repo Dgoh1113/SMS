@@ -14,7 +14,7 @@
     $dealerEmptyMessage = $dealerEmptyMessages[$currentDealerTab] ?? 'No inquiries found.';
 @endphp
 
-@forelse($leads as $r)
+@foreach($leads as $r)
     @php
         $productIds = [];
         $attachmentUrls = is_array($r->ATTACHMENT_URLS ?? null) ? array_values(array_filter($r->ATTACHMENT_URLS, function ($url) {
@@ -124,10 +124,4 @@
             @endif
         </td>
     </tr>
-@empty
-    <tr class="inquiries-empty-row">
-        <td colspan="{{ ($dealerConsoleTab ?? 'inquiries') === 'inquiries' ? 24 : 23 }}" class="inquiries-empty-cell">
-            <div class="dealer-table-empty">{{ $dealerEmptyMessage }}</div>
-        </td>
-    </tr>
-@endforelse
+@endforeach

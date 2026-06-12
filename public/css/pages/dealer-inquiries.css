@@ -1081,3 +1081,5 @@ html.theme-dark .inquiries-placeholder-cell,
 html.theme-dark .inquiries-empty-cell {
   background: transparent !important;
 }
+.dealer-inquiries-panel .inquiries-table-scroll.inquiries-table-scroll--none, .inquiries-page-wrap .inquiries-table-scroll.inquiries-table-scroll--none { min-height: 0 !important; height: auto !important; max-height: none !important; border: none !important; }
+
