@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Concerns\DatabaseAggregates;
+
 use App\Http\Controllers\Concerns\ResolvesInquiryAttachments;
 use App\Http\Controllers\Concerns\UsesSetupLinkStore;
 use App\Mail\InquiryAssignedToDealer;
@@ -28,7 +28,7 @@ use Illuminate\View\View;
 
 class AdminController extends Controller
 {
-    use DatabaseAggregates;
+
     use ResolvesInquiryAttachments;
     use UsesSetupLinkStore;
 
@@ -1901,7 +1901,7 @@ class AdminController extends Controller
             [
                 'COMPANYNAME' => 'required|string|max:50',
                 'CONTACTNAME' => 'required|string|max:100',
-                'CONTACTNO' => 'required|string|min:10|max:15',
+                'CONTACTNO' => 'required|string|max:50',
                 'EMAIL' => 'required|email|max:255',
                 'ADDRESS1' => 'nullable|string|max:255',
                 'ADDRESS2' => 'nullable|string|max:255',
@@ -1920,8 +1920,6 @@ class AdminController extends Controller
                 'assignedTo' => 'nullable|string|max:50',
             ],
             [
-                'CONTACTNO.min' => 'Invalid Contact Number.',
-                'CONTACTNO.max' => 'Invalid Contact Number.',
                 'POSTCODE.digits' => 'Invalid PostCode.',
                 'product_interested.*' => 'Please select at least one product.',
                 'product_interested.min' => 'Please select at least one product.',
@@ -2076,7 +2074,7 @@ class AdminController extends Controller
             [
                 'COMPANYNAME' => 'required|string|max:50',
                 'CONTACTNAME' => 'required|string|max:100',
-                'CONTACTNO' => 'required|string|min:10|max:15',
+                'CONTACTNO' => 'required|string|max:50',
                 'EMAIL' => 'required|email|max:255',
                 'ADDRESS1' => 'nullable|string|max:255',
                 'ADDRESS2' => 'nullable|string|max:255',
@@ -2096,8 +2094,6 @@ class AdminController extends Controller
                 'assignedTo' => 'nullable|string|max:50',
             ],
             [
-                'CONTACTNO.min' => 'Invalid Contact Number.',
-                'CONTACTNO.max' => 'Invalid Contact Number.',
                 'POSTCODE.digits' => 'Invalid PostCode.',
                 'product_interested.*' => 'Please select at least one product.',
                 'product_interested.required' => 'Please select at least one product.',
@@ -3303,22 +3299,8 @@ class AdminController extends Controller
         ];
 
         // Product Conversion Rate (from LEAD_ACT.DEALTPRODUCT) for current month
-        $productIds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
-        $productNames = [
-            1 => 'SQL Account',
-            2 => 'SQL Payroll',
-            3 => 'SQL Production',
-            4 => 'SQL X-Mobile (SQL Mobile App)',
-            5 => 'SQL eCommerce',
-            6 => 'SQL EBI Wellness POS',
-            7 => 'SQL x SuDu.Ai',
-            8 => 'SQL X-Store',
-            9 => 'SQL Vision',
-            10 => 'SQL HRMS',
-            11 => 'SQL CTOS',
-            12 => 'SQL API',
-            13 => 'Others',
-        ];
+        $productIds = ProductConstants::ids();
+        $productNames = ProductConstants::fullNames();
         $productCounts = array_fill_keys($productIds, 0);
         $dealRows = DB::select(
             'SELECT a."DEALTPRODUCT" AS dealt
@@ -4397,7 +4379,6 @@ class AdminController extends Controller
         if (! empty($where)) {
             $sql .= ' WHERE '.implode(' AND ', $where);
         }
-        $sql .= ' ORDER BY "USERID"';
 
         $rows = DB::select($sql, $params);
         $setupLinks = $this->setupLinkStore()->allSetupLinks();
@@ -4436,6 +4417,18 @@ class AdminController extends Controller
                 'PASSKEY_SETUP_LINK_EXPIRES_AT' => $setupLinkExpiresAt !== '' ? $setupLinkExpiresAt : null,
             ];
         }, $rows);
+
+        usort($users, function ($a, $b) {
+            $aId = $a['USERID'];
+            $bId = $b['USERID'];
+            $aNum = preg_match('/^U(\d+)$/i', $aId, $m) ? (int)$m[1] : $aId;
+            $bNum = preg_match('/^U(\d+)$/i', $bId, $m) ? (int)$m[1] : $bId;
+            
+            if (is_int($aNum) && is_int($bNum)) {
+                return $aNum <=> $bNum;
+            }
+            return strcmp((string)$aId, (string)$bId);
+        });
 
         return $users;
     }
@@ -4499,16 +4492,14 @@ class AdminController extends Controller
             $city = '';
         }
 
-        if (!$isDealer) {
-            $existing = DB::selectOne(
-                'SELECT "USERID" FROM "USERS" WHERE UPPER(TRIM("EMAIL")) = UPPER(TRIM(?)) AND UPPER(TRIM("SYSTEMROLE")) = UPPER(TRIM(?))',
-                [$email, $systemRole]
-            );
-            if ($existing) {
-                return back()
-                    ->withInput()
-                    ->with('error', "User with this email already has the '{$systemRole}' role.");
-            }
+        $existing = DB::selectOne(
+            'SELECT "USERID" FROM "USERS" WHERE UPPER(TRIM("EMAIL")) = UPPER(TRIM(?)) AND UPPER(TRIM("SYSTEMROLE")) = UPPER(TRIM(?))',
+            [$email, $systemRole]
+        );
+        if ($existing) {
+            return back()
+                ->withInput()
+                ->with('error', "User with this email already has the '{$systemRole}' role.");
         }
 
         $users = DB::select('SELECT "USERID" FROM "USERS" WHERE "USERID" STARTING WITH ?', ['U']);
@@ -4607,16 +4598,14 @@ class AdminController extends Controller
             $city = '';
         }
 
-        // Email + Role unique except current user (non-dealers only)
+        // Email + Role unique except current user
         $roleValue = $existing->SYSTEMROLE ?? '';
-        if (!$isDealer) {
-            $emailConflict = DB::selectOne(
-                'SELECT "USERID" FROM "USERS" WHERE UPPER(TRIM("EMAIL")) = UPPER(TRIM(?)) AND UPPER(TRIM("SYSTEMROLE")) = UPPER(TRIM(?)) AND "USERID" <> ?',
-                [$email, $roleValue, $userid]
-            );
-            if ($emailConflict) {
-                return back()->withInput()->with('error', "Another user already has this email with the '{$roleValue}' role.");
-            }
+        $emailConflict = DB::selectOne(
+            'SELECT "USERID" FROM "USERS" WHERE UPPER(TRIM("EMAIL")) = UPPER(TRIM(?)) AND UPPER(TRIM("SYSTEMROLE")) = UPPER(TRIM(?)) AND "USERID" <> ?',
+            [$email, $roleValue, $userid]
+        );
+        if ($emailConflict) {
+            return back()->withInput()->with('error', "Another user already has this email with the '{$roleValue}' role.");
         }
 
         // Use actual USERS table column names (same as Full Database) for Firebird compatibility

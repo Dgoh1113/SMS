@@ -1,4 +1,5 @@
 @php
+    $productNames = $productNames ?? \App\Support\ProductConstants::fullNames();
     $currentDealerTab = $dealerConsoleTab ?? 'inquiries';
     $dealerEmptyMessages = [
         'pending' => 'No pending inquiries found.',

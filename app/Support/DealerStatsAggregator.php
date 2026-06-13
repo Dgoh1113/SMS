@@ -10,31 +10,6 @@ use Illuminate\Support\Facades\DB;
  */
 class DealerStatsAggregator
 {
-    public static function closingTimeStartStatuses(): array
-    {
-        return [
-            'PENDING',
-        ];
-    }
-
-    public static function closingTimeCompletedStatuses(): array
-    {
-        return [
-            'COMPLETED',
-            'REWARDED',
-        ];
-    }
-
-    public static function closingTimeStartStatusSql(): string
-    {
-        return self::toSqlStringList(self::closingTimeStartStatuses());
-    }
-
-    public static function closingTimeCompletedStatusSql(): string
-    {
-        return self::toSqlStringList(self::closingTimeCompletedStatuses());
-    }
-
     /**
      * Get all dealer statistics - fallback to per-dealer queries
      * Uses individual queries instead of GROUP BY to ensure accurate results
@@ -192,12 +167,5 @@ class DealerStatsAggregator
         $h2 = (int) floor($remM / 60);
 
         return $d2.'d '.$h2.'h';
-    }
-
-    private static function toSqlStringList(array $values): string
-    {
-        return implode(', ', array_map(function ($value) {
-            return '\''.str_replace('\'', '\'\'', strtoupper(trim((string) $value))).'\'';
-        }, $values));
     }
 }

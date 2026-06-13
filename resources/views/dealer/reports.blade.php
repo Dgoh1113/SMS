@@ -435,21 +435,7 @@
         };
         $statusGradient = $buildStatusGradient('color');
         $statusGradientDark = $buildStatusGradient('dark_color');
-        $productNames = [
-            1 => 'SQL Account',
-            2 => 'SQL Payroll',
-            3 => 'SQL Production',
-            4 => 'SQL X-Mobile (SQL Mobile App)',
-            5 => 'SQL eCommerce',
-            6 => 'SQL EBI Wellness POS',
-            7 => 'SQL x SuDu.Ai',
-            8 => 'SQL X-Store',
-            9 => 'SQL Vision',
-            10 => 'SQL HRMS',
-            11 => 'SQL CTOS',
-            12 => 'SQL API',
-            13 => 'Others',
-        ];
+        $productNames = \App\Support\ProductConstants::fullNames();
         $productCounts = $productCounts ?? array_fill(0, 13, 0);
         $productConversionDisplay = collect(range(1, 13))
             ->map(function ($productId) use ($productNames, $productCounts) {

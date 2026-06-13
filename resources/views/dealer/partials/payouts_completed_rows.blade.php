@@ -1,9 +1,5 @@
 @php
-    $productNames = $productNames ?? [
-        1 => 'SQL Account', 2 => 'SQL Payroll', 3 => 'SQL Production', 4 => 'SQL X-Mobile (SQL Mobile App)',
-        5 => 'SQL eCommerce', 6 => 'SQL EBI Wellness POS', 7 => 'SQL x SuDu.Ai', 8 => 'SQL X-Store',
-        9 => 'SQL Vision', 10 => 'SQL HRMS', 11 => 'SQL CTOS', 12 => 'SQL API', 13 => 'Others',
-    ];
+    $productNames = $productNames ?? \App\Support\ProductConstants::fullNames();
 @endphp
 
 @foreach($completed as $r)

@@ -147,15 +147,4 @@ ON USER_PASSKEY TO SYSDBA WITH GRANT OPTION;
 GRANT DELETE, INSERT, REFERENCES, SELECT, UPDATE
 ON "migrations" TO SYSDBA WITH GRANT OPTION;
 
-/* ---------------------------------------------------------------
-   TRIGGERS REMOVED — All trigger logic is now handled by the
-   PHP application codebase (controllers / commands).
 
-   To drop existing triggers from a live database, run:
-
-   DROP TRIGGER BI_USERS;
-   DROP TRIGGER TRG_LEAD_BEFORE_INSERT;
-   DROP TRIGGER TRD_LEAD_AFTER_INSERT;
-   DROP TRIGGER TRD_LEAD_AFTER_UPDATE_ASSIGN;
-   DROP TRIGGER TRG_LEAD_ACT_AFTER_INSERT;
-   --------------------------------------------------------------- */

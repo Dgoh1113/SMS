@@ -423,11 +423,59 @@
     <main class="dashboard-main">
         @include('partials.dashboard-topbar')
 
-        @if (session('error'))
-            <div class="login-message login-error" style="margin:16px;" data-flash-message="1">{{ session('error') }}</div>
-        @endif
-        @if (session('success'))
-            <div class="login-message login-success" style="margin:16px;" data-flash-message="1">{{ session('success') }}</div>
+        @if (session('success') || session('error') || $errors->any())
+            @php
+                $isSuccess = session('success') ? true : false;
+                $popupMessage = '';
+                if (session('success')) {
+                    $popupMessage = session('success');
+                } elseif (session('error')) {
+                    $popupMessage = session('error');
+                } elseif ($errors->any()) {
+                    $popupMessage = implode('<br>', $errors->all());
+                }
+                $headerBorder = $isSuccess ? '#d1fae5' : '#fee2e2';
+                $titleColor = $isSuccess ? '#10b981' : '#ef4444';
+                $iconClass = $isSuccess ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill';
+                $titleText = $isSuccess ? 'Success' : 'Error';
+            @endphp
+            <div class="inquiries-assign-modal" id="dashboardPopupMessageModal" style="z-index: 10050;">
+                <div class="inquiries-assign-backdrop" onclick="closeDashboardPopupMessage()"></div>
+                <div class="inquiries-assign-window" role="dialog" aria-modal="true" style="width: min(550px, calc(100vw - 32px)); margin: 25vh auto 0; position: relative;">
+                    <div class="inquiries-assign-header dashboard-popup-drag-handle" style="border-bottom: 1px solid {{ $headerBorder }}; cursor: move; user-select: none;">
+                        <div class="inquiries-assign-title" style="display: flex; align-items: center; gap: 8px; color: {{ $titleColor }}; font-weight: 700; font-size: 14px; pointer-events: none;">
+                            <i class="bi {{ $iconClass }}"></i>
+                            <span>{{ $titleText }}</span>
+                        </div>
+                        <button type="button" class="inquiries-assign-close" onclick="closeDashboardPopupMessage()" aria-label="Close" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #9ca3af; line-height: 1; pointer-events: auto;">&times;</button>
+                    </div>
+                    <div class="inquiries-assign-body" style="padding: 20px; font-size: 13px; color: #374151; line-height: 1.5; background: #fff;">
+                        <p style="margin: 0;">{!! $popupMessage !!}</p>
+                    </div>
+                    <div class="inquiries-assign-footer" style="padding: 12px 20px; border-top: 1px solid #f3f4f6; display: flex; justify-content: flex-end; gap: 12px; background: #f9fafb;">
+                        <button type="button" class="inquiries-btn inquiries-btn-primary" onclick="closeDashboardPopupMessage()" style="background: {{ $titleColor }}; border-color: {{ $titleColor }}; min-width: 100px; font-weight: 600;">OK</button>
+                    </div>
+                </div>
+            </div>
+            <script>
+                if (typeof window.closeDashboardPopupMessage === 'undefined') {
+                    window.closeDashboardPopupMessage = function() {
+                        var modal = document.getElementById('dashboardPopupMessageModal');
+                        if (modal) {
+                            modal.style.transition = 'opacity 200ms ease';
+                            modal.style.opacity = '0';
+                            setTimeout(function() {
+                                if (modal.parentNode) modal.parentNode.removeChild(modal);
+                            }, 200);
+                        }
+                    };
+                }
+                document.addEventListener('DOMContentLoaded', function() {
+                    if (typeof window.makeDashboardPopupDraggable === 'function') {
+                        window.makeDashboardPopupDraggable();
+                    }
+                });
+            </script>
         @endif
 
         <div class="dashboard-passkey-quick-modal" id="profilePasskeyQuickModal" hidden>
@@ -957,29 +1005,95 @@
         syncDashboardOverlayLock();
     }
 
+    if (typeof window.closeDashboardPopupMessage === 'undefined') {
+        window.closeDashboardPopupMessage = function() {
+            var modal = document.getElementById('dashboardPopupMessageModal');
+            if (modal) {
+                modal.style.transition = 'opacity 200ms ease';
+                modal.style.opacity = '0';
+                setTimeout(function() {
+                    if (modal.parentNode) modal.parentNode.removeChild(modal);
+                }, 200);
+            }
+        };
+    }
+
+    function makeDashboardPopupDraggable() {
+        var modal = document.getElementById('dashboardPopupMessageModal');
+        if (!modal) return;
+        var windowEl = modal.querySelector('.inquiries-assign-window');
+        var header = modal.querySelector('.dashboard-popup-drag-handle');
+        if (!windowEl || !header) return;
+
+        header.onmousedown = function(e) {
+            if (e.target.closest('.inquiries-assign-close')) return;
+            e.preventDefault();
+            
+            var startX = e.clientX;
+            var startY = e.clientY;
+            var currentX = parseFloat(windowEl.getAttribute('data-drag-x')) || 0;
+            var currentY = parseFloat(windowEl.getAttribute('data-drag-y')) || 0;
+
+            document.onmousemove = function(e) {
+                var dx = e.clientX - startX;
+                var dy = e.clientY - startY;
+                var newX = currentX + dx;
+                var newY = currentY + dy;
+                windowEl.style.transform = 'translate(' + newX + 'px, ' + newY + 'px)';
+                windowEl.setAttribute('data-drag-x', newX);
+                windowEl.setAttribute('data-drag-y', newY);
+                startX = e.clientX;
+                startY = e.clientY;
+                currentX = newX;
+                currentY = newY;
+            };
+
+            document.onmouseup = function() {
+                document.onmousemove = null;
+                document.onmouseup = null;
+            };
+        };
+    }
+
     function showFlashMessage(type, message) {
-        var mainBody = document.querySelector('.dashboard-main-body');
-        var host = document.querySelector('.dashboard-main');
-        if (!mainBody || !host) {
-            alert(message);
-            return;
+        var existing = document.getElementById('dashboardPopupMessageModal');
+        if (existing && existing.parentNode) {
+            existing.parentNode.removeChild(existing);
         }
 
-        var flash = document.createElement('div');
-        flash.className = 'login-message ' + (type === 'error' ? 'login-error' : 'login-success');
-        flash.style.margin = '16px';
-        flash.textContent = message;
-        host.insertBefore(flash, mainBody);
+        var isSuccess = type === 'success';
+        var headerBorder = isSuccess ? '#d1fae5' : '#fee2e2';
+        var titleColor = isSuccess ? '#10b981' : '#ef4444';
+        var iconClass = isSuccess ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill';
+        var titleText = isSuccess ? 'Success' : 'Error';
 
-        setTimeout(function() {
-            flash.style.transition = 'opacity 200ms ease';
-            flash.style.opacity = '0';
-            setTimeout(function() {
-                if (flash.parentNode) {
-                    flash.parentNode.removeChild(flash);
-                }
-            }, 250);
-        }, 3000);
+        var html = `
+            <div class="inquiries-assign-backdrop" onclick="closeDashboardPopupMessage()"></div>
+            <div class="inquiries-assign-window" role="dialog" aria-modal="true" style="width: min(550px, calc(100vw - 32px)); margin: 25vh auto 0; position: relative;">
+                <div class="inquiries-assign-header dashboard-popup-drag-handle" style="border-bottom: 1px solid ${headerBorder}; cursor: move; user-select: none;">
+                    <div class="inquiries-assign-title" style="display: flex; align-items: center; gap: 8px; color: ${titleColor}; font-weight: 700; font-size: 14px; pointer-events: none;">
+                        <i class="bi ${iconClass}"></i>
+                        <span>${titleText}</span>
+                    </div>
+                    <button type="button" class="inquiries-assign-close" onclick="closeDashboardPopupMessage()" aria-label="Close" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #9ca3af; line-height: 1; pointer-events: auto;">&times;</button>
+                </div>
+                <div class="inquiries-assign-body" style="padding: 20px; font-size: 13px; color: #374151; line-height: 1.5; background: #fff;">
+                    <p style="margin: 0;">${message}</p>
+                </div>
+                <div class="inquiries-assign-footer" style="padding: 12px 20px; border-top: 1px solid #f3f4f6; display: flex; justify-content: flex-end; gap: 12px; background: #f9fafb;">
+                    <button type="button" class="inquiries-btn inquiries-btn-primary" onclick="closeDashboardPopupMessage()" style="background: ${titleColor}; border-color: ${titleColor}; min-width: 100px; font-weight: 600;">OK</button>
+                </div>
+            </div>
+        `;
+
+        var modal = document.createElement('div');
+        modal.className = 'inquiries-assign-modal';
+        modal.id = 'dashboardPopupMessageModal';
+        modal.style.zIndex = '10050';
+        modal.innerHTML = html;
+
+        document.body.appendChild(modal);
+        makeDashboardPopupDraggable();
     }
 
     function enforceFourDigitYearOnDateInput(field) {

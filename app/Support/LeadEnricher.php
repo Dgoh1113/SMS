@@ -49,9 +49,6 @@ class LeadEnricher
         // Enrich with attachment information
         self::enrichWithAttachments($rows, $leadIds, $serveRoute, $activityRoute);
 
-        // Enrich with user display names
-        self::enrichWithUserNames($rows);
-
         return $rows;
     }
 
@@ -204,11 +201,5 @@ class LeadEnricher
                 $r->ASSIGNED_ATTACHMENT_URLS = $urls;
             }
         }
-    }
-
-    private static function enrichWithUserNames(array &$rows): void
-    {
-        // User enrichment is handled separately by the controller
-        // This is left as a placeholder for potential future consolidation
     }
 }

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\ResolvesInquiryAttachments;
+use App\Support\AttachmentUrlBuilder;
+use App\Support\ProductConstants;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -753,7 +755,7 @@ class DealerController extends Controller
                             if (isset($assignDateMap[$lid])) {
                                 $r->ASSIGNDATE = $assignDateMap[$lid];
                             }
-                            $r->ATTACHMENT_URLS = $this->buildInquiryActivityAttachmentUrls(
+                            $r->ATTACHMENT_URLS = AttachmentUrlBuilder::buildUrls(
                                 $attachmentMap[$lid] ?? null,
                                 $lid,
                                 $attachmentActMap[$lid] ?? 0,
@@ -788,21 +790,7 @@ class DealerController extends Controller
         // Ensure product name labels are available to the partial so it can
         // render friendly product names instead of "Product 1/2/3" fallbacks.
         if (! isset($data['productNames'])) {
-            $data['productNames'] = [
-                1 => 'SQL Account',
-                2 => 'SQL Payroll',
-                3 => 'SQL Production',
-                4 => 'SQL X-Mobile (SQL Mobile App)',
-                5 => 'SQL eCommerce',
-                6 => 'SQL EBI Wellness POS',
-                7 => 'SQL x SuDu.Ai',
-                8 => 'SQL X-Store',
-                9 => 'SQL Vision',
-                10 => 'SQL HRMS',
-                11 => 'SQL CTOS',
-                12 => 'SQL API',
-                13 => 'Others',
-            ];
+            $data['productNames'] = ProductConstants::fullNames();
         }
 
         $rowsHtml = view('dealer.partials.inquiries_rows', $data)->render();
@@ -820,21 +808,7 @@ class DealerController extends Controller
 
         // Ensure product name labels are available to the partial (used for dealt products pills).
         if (! isset($data['productNames'])) {
-            $data['productNames'] = [
-                1 => 'SQL Account',
-                2 => 'SQL Payroll',
-                3 => 'SQL Production',
-                4 => 'SQL X-Mobile (SQL Mobile App)',
-                5 => 'SQL eCommerce',
-                6 => 'SQL EBI Wellness POS',
-                7 => 'SQL x SuDu.Ai',
-                8 => 'SQL X-Store',
-                9 => 'SQL Vision',
-                10 => 'SQL HRMS',
-                11 => 'SQL CTOS',
-                12 => 'SQL API',
-                13 => 'Others',
-            ];
+            $data['productNames'] = ProductConstants::fullNames();
         }
 
         $completedRowsHtml = view('dealer.partials.payouts_completed_rows', $data)->render();
@@ -1933,7 +1907,7 @@ class DealerController extends Controller
 
             // Build attachment URLs for Completed list (dealer)
             foreach ($completed as $r) {
-                $r->COMPLETED_ATTACHMENT_URLS = $this->buildInquiryActivityAttachmentUrls(
+                $r->COMPLETED_ATTACHMENT_URLS = AttachmentUrlBuilder::buildUrls(
                     $r->COMPLETED_ATTACHMENT ?? null,
                     (int) ($r->LEADID ?? 0),
                     (int) ($r->COMPLETED_LEAD_ACT_ID ?? 0),
@@ -1944,7 +1918,7 @@ class DealerController extends Controller
 
             // Build attachment URLs for Rewarded list (dealer)
             foreach ($rewarded as $r) {
-                $r->REWARD_ATTACHMENT_URLS = $this->buildInquiryActivityAttachmentUrls(
+                $r->REWARD_ATTACHMENT_URLS = AttachmentUrlBuilder::buildUrls(
                     $r->REWARD_ATTACHMENT ?? null,
                     (int) ($r->LEADID ?? 0),
                     (int) ($r->REWARD_LEAD_ACT_ID ?? 0),
