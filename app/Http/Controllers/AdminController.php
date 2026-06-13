@@ -936,19 +936,15 @@ class AdminController extends Controller
             }
             $leadIds = array_keys($leadIds);
             if (! empty($leadIds)) {
-                $placeholders = implode(',', array_fill(0, count($leadIds), '?'));
                 $acts = DB::select(
                     'SELECT a."LEADID", a."STATUS"
                      FROM "LEAD_ACT" a
                      JOIN (
                          SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
                          FROM "LEAD_ACT"
-                         WHERE "LEADID" IN ('.$placeholders.')
                          GROUP BY "LEADID"
                      ) x
-                       ON x."LEADID" = a."LEADID" AND x.MAXCD = a."CREATIONDATE"
-                     WHERE a."LEADID" IN ('.$placeholders.')',
-                    array_merge($leadIds, $leadIds)
+                       ON x."LEADID" = a."LEADID" AND x.MAXCD = a."CREATIONDATE"'
                 );
                 $statusMap = [];
                 foreach ($acts as $a) {
@@ -1080,43 +1076,46 @@ class AdminController extends Controller
                  ORDER BY "COMPANY"'
             );
 
-            $leadStats = [];
-            try {
-                $statsRows = DB::select(
-                    'SELECT
-                        TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) AS UID,
-                        COUNT(*) AS TOTAL_LEAD,
-                        SUM(CASE WHEN ls."LATEST_STATUS" IN (\'COMPLETED\', \'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\') THEN 1 ELSE 0 END) AS TOTAL_CLOSED
-                     FROM "LEAD" l
-                     LEFT JOIN (
-                         SELECT a."LEADID", UPPER(TRIM(a."STATUS")) AS "LATEST_STATUS"
-                         FROM "LEAD_ACT" a
-                         JOIN (
-                             SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
-                             FROM "LEAD_ACT"
-                             GROUP BY "LEADID"
-                         ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
-                     ) ls ON ls."LEADID" = l."LEADID"
-                     WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
-                       AND l."ASSIGNEDTO" IS NOT NULL AND TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) <> \'\'
-                       AND COALESCE(ls."LATEST_STATUS", \'\') <> \'CANCELLED\'
-                     GROUP BY TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50)))'
-                );
-                foreach ($statsRows as $sr) {
-                    $uid = trim((string) ($sr->UID ?? $sr->uid ?? ''));
-                    if ($uid === '') {
-                        continue;
+            $leadStats = \App\Support\QueryCache::remember('admin_inquiries_dealer_stats', function () {
+                $stats = [];
+                try {
+                    $statsRows = DB::select(
+                        'SELECT
+                            TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) AS UID,
+                            COUNT(*) AS TOTAL_LEAD,
+                            SUM(CASE WHEN ls."LATEST_STATUS" IN (\'COMPLETED\', \'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\') THEN 1 ELSE 0 END) AS TOTAL_CLOSED
+                         FROM "LEAD" l
+                         LEFT JOIN (
+                             SELECT a."LEADID", UPPER(TRIM(a."STATUS")) AS "LATEST_STATUS"
+                             FROM "LEAD_ACT" a
+                             JOIN (
+                                 SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
+                                 FROM "LEAD_ACT"
+                                 GROUP BY "LEADID"
+                             ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
+                         ) ls ON ls."LEADID" = l."LEADID"
+                         WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
+                           AND l."ASSIGNEDTO" IS NOT NULL AND TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) <> \'\'
+                           AND COALESCE(ls."LATEST_STATUS", \'\') <> \'CANCELLED\'
+                         GROUP BY TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50)))'
+                    );
+                    foreach ($statsRows as $sr) {
+                        $uid = trim((string) ($sr->UID ?? $sr->uid ?? ''));
+                        if ($uid === '') {
+                            continue;
+                        }
+                        $totalLead = (int) ($sr->TOTAL_LEAD ?? $sr->total_lead ?? 0);
+                        $totalClosed = (int) ($sr->TOTAL_CLOSED ?? $sr->total_closed ?? 0);
+                        $stats[$uid] = [
+                            'totalLead' => $totalLead,
+                            'totalClosed' => $totalClosed,
+                        ];
                     }
-                    $totalLead = (int) ($sr->TOTAL_LEAD ?? $sr->total_lead ?? 0);
-                    $totalClosed = (int) ($sr->TOTAL_CLOSED ?? $sr->total_closed ?? 0);
-                    $leadStats[$uid] = [
-                        'totalLead' => $totalLead,
-                        'totalClosed' => $totalClosed,
-                    ];
+                } catch (\Throwable $e) {
+                    // leave stats empty
                 }
-            } catch (\Throwable $e) {
-                // leave stats empty
-            }
+                return $stats;
+            }, 10);
 
             $dealers = array_map(function ($r) use ($leadStats) {
                 $uid = trim((string) ($r->USERID ?? ''));
