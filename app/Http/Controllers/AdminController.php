@@ -2044,6 +2044,17 @@ class AdminController extends Controller
                      VALUES (NEXT VALUE FOR GEN_LEAD_ACTID,?,?,CURRENT_TIMESTAMP,?,?,NULL,?)',
                     [$newLeadId, $userId, 'Lead Created', 'Lead Created', 'Created']
                 );
+                
+                $assignedTo = trim((string) ($validated['assignedTo'] ?? ''));
+                if ($assignedTo !== '') {
+                    $createdByUser = $userId !== '' ? $userId : $assignedTo;
+                    DB::insert(
+                        'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS")
+                         VALUES (NEXT VALUE FOR GEN_LEAD_ACTID,?,?,CURRENT_TIMESTAMP,?,?,NULL,?)',
+                        [$newLeadId, $createdByUser, 'Lead Assigned', 'Lead Assigned by '.$createdByUser.' to '.$assignedTo, 'Pending']
+                    );
+                }
+
                 DB::update('UPDATE "LEAD" SET "LASTMODIFIED" = CURRENT_TIMESTAMP WHERE "LEADID" = ?', [$newLeadId]);
             }
 

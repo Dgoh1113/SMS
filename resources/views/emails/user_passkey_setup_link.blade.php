@@ -16,15 +16,20 @@
 <body>
     <div class="wrapper">
         <div class="card">
-            <p>Hi {{ $recipientName }},</p>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 12px;">
+                <tr>
+                    <td align="left" valign="middle">
+                        <p style="margin: 0;">Hi {{ $recipientName }},</p>
+                    </td>
+                    <td align="right" valign="middle">
+                        <img src="{{ $message->embed(public_path('sql-logo.png')) }}" alt="SQL Logo" style="height: 32px; width: auto; display: block; opacity: 0.25;">
+                    </td>
+                </tr>
+            </table>
             <p>{{ $introLine }}</p>
             <p>{{ $instructionLine }}</p>
-            <p>
-                <a
-                    href="{{ $setupUrl }}"
-                    class="btn"
-                    style="display:inline-block;padding:12px 22px;background:#4f46e5;color:#ffffff !important;text-decoration:none;border-radius:8px;font-weight:700;margin:8px 0 12px;"
-                >{{ $buttonLabel }}</a>
+            <p style="margin: 16px 0;">
+                <a href="{{ $setupUrl }}" style="color: #4f46e5; word-break: break-all; text-decoration: underline;">{{ $setupUrl }}</a>
             </p>
             <p>{{ $expiryLine }}</p>
             @if (!empty($ignoreLine))
