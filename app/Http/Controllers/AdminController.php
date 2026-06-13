@@ -4394,10 +4394,29 @@ class AdminController extends Controller
         $rows = DB::select($sql, $params);
         $setupLinks = $this->setupLinkStore()->allSetupLinks();
 
-        $users = array_map(function ($r) use ($setupLinks) {
+        $protectedEmailsRows = DB::select(
+            'SELECT DISTINCT UPPER(TRIM("EMAIL")) AS "EMAIL"
+             FROM "USERS"
+             WHERE "EMAIL" IS NOT NULL AND TRIM("EMAIL") != \'\' 
+               AND "LASTLOGIN" IS NOT NULL'
+        );
+        $protectedEmailSet = [];
+        foreach ($protectedEmailsRows as $pe) {
+            $peEmail = $pe->EMAIL ?? $pe->email ?? '';
+            if ($peEmail !== '') {
+                $protectedEmailSet[$peEmail] = true;
+            }
+        }
+
+        $users = array_map(function ($r) use ($setupLinks, $protectedEmailSet) {
             $userId = (string) ($r->USERID ?? '');
+            $email = trim((string) ($r->EMAIL ?? ''));
+            $emailUpper = strtoupper($email);
+            
             $hasLoggedIn = $r->LASTLOGIN !== null;
-            $setupLink = ! $hasLoggedIn && isset($setupLinks[$userId]) ? $setupLinks[$userId] : [];
+            $isProtected = $hasLoggedIn || ($emailUpper !== '' && isset($protectedEmailSet[$emailUpper]));
+            
+            $setupLink = ! $isProtected && isset($setupLinks[$userId]) ? $setupLinks[$userId] : [];
             $setupLinkEmailedAt = (string) ($setupLink['emailed_at'] ?? '');
             $setupLinkExpiresAt = (string) ($setupLink['expires_at'] ?? '');
             $setupLinkPending = $setupLinkExpiresAt !== '';
@@ -4420,7 +4439,7 @@ class AdminController extends Controller
                 'POSTCODE' => (string) ($r->POSTCODE ?? ''),
                 'CITY' => (string) ($r->CITY ?? ''),
                 'LASTLOGIN' => $r->LASTLOGIN ?? null,
-                'HAS_LOGGED_IN' => $hasLoggedIn,
+                'HAS_LOGGED_IN' => $isProtected,
                 'PASSKEY_SETUP_LINK_PENDING' => $setupLinkPending,
                 'PASSKEY_SETUP_LINK_SENT' => $setupLinkEmailedAt !== '',
                 'PASSKEY_SETUP_LINK_EXPIRED' => $setupLinkExpired,
@@ -4546,6 +4565,20 @@ class AdminController extends Controller
 
         $createAction = trim((string) $request->input('CREATE_ACTION', 'create'));
         if ($createAction === 'create_email' && $createdUser && trim((string) ($createdUser->USERID ?? '')) !== '') {
+            $driver = DB::connection()->getDriverName();
+            $activeClause = ($driver === 'sqlsrv') 
+                ? '"ISACTIVE" = 1 OR "ISACTIVE" IS NULL' 
+                : '"ISACTIVE" = true OR "ISACTIVE" IS NULL';
+
+            $isProtected = DB::selectOne(
+                'SELECT FIRST 1 "USERID" FROM "USERS" WHERE UPPER(TRIM("EMAIL")) = UPPER(TRIM(?)) AND "LASTLOGIN" IS NOT NULL AND (' . $activeClause . ')',
+                [$email]
+            );
+
+            if ($isProtected) {
+                return redirect()->route('admin.maintain-users')->with('success', 'User created succesfully, Setup link not sent because this user alraedy have existing passkey');
+            }
+
             try {
                 $newUser = $this->loadMaintainUserPasskeyTarget((string) $createdUser->USERID);
 
