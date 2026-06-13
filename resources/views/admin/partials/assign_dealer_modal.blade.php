@@ -9,6 +9,7 @@
             @csrf
             <input type="hidden" name="LEADID" id="assignLeadId">
             <input type="hidden" name="assignedTo" id="assignToHidden" required>
+            <input type="hidden" name="return_tab" id="assignReturnTab" value="{{ request()->query('tab', 'unassigned') }}">
             <div class="inquiries-assign-row">
                 <div class="inquiries-assign-label">Lead</div>
                 <div class="inquiries-assign-value" id="assignLeadLabel">-</div>

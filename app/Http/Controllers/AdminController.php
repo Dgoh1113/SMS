@@ -1496,7 +1496,8 @@ class AdminController extends Controller
             \Log::error('Failed to send assignment email: ' . $e->getMessage());
         }
 
-        return redirect()->route('admin.inquiries')
+        $activeTab = $request->input('return_tab', 'unassigned');
+        return redirect()->route('admin.inquiries', ['tab' => $activeTab])
             ->with('success', 'Lead assigned successfully.');
     }
 
@@ -4484,7 +4485,7 @@ class AdminController extends Controller
             'EMAIL' => 'required|email|max:50',
             'SYSTEMROLE' => 'required|string|in:ADMIN,MANAGER,DEALER',
             'ALIAS' => 'nullable|string|max:50',
-            'COMPANY' => 'nullable|string|max:40',
+            'COMPANY' => 'nullable|string|max:80',
             'POSTCODE' => 'nullable|string|digits:5',
             'CITY' => 'nullable|string|max:100',
             'ISACTIVE' => 'nullable|boolean',
@@ -4610,7 +4611,7 @@ class AdminController extends Controller
         $validated = $request->validate([
             'EMAIL' => 'required|email|max:50',
             'ALIAS' => 'nullable|string|max:50',
-            'COMPANY' => 'nullable|string|max:40',
+            'COMPANY' => 'nullable|string|max:80',
             'POSTCODE' => 'nullable|string|digits:5',
             'CITY' => 'nullable|string|max:100',
             'ISACTIVE' => 'nullable|boolean',
@@ -4910,9 +4911,9 @@ class AdminController extends Controller
                 return;
             }
             $dealerEmail = trim((string) $dealer->EMAIL);
-            $dealerName = trim((string) ($dealer->ALIAS ?? ''));
+            $dealerName = trim((string) ($dealer->COMPANY ?? ''));
             if ($dealerName === '') {
-                $dealerName = trim((string) ($dealer->COMPANY ?? ''));
+                $dealerName = trim((string) ($dealer->ALIAS ?? ''));
             }
             if ($dealerName === '') {
                 $dealerName = $dealerEmail;

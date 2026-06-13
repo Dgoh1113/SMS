@@ -1098,6 +1098,7 @@
 
                 <form method="POST" action="{{ $isEdit ? route('admin.inquiries.update', $inquiry->LEADID) : route('admin.inquiries.store') }}" class="inquiry-form" id="inquiryForm" style="position: relative;">
                     @csrf
+                    <input type="hidden" name="return_tab" value="{{ $tab ?? request()->query('tab', 'unassigned') }}">
                     @if ($isEdit)
                         @method('PUT')
                         <input type="hidden" name="INQUIRY_SNAPSHOT_AT" value="{{ $inquiry->SNAPSHOT_MODIFIED_AT ?? $inquiry->snapshot_modified_at ?? '' }}">
@@ -1349,7 +1350,7 @@
                 </div>
 
                 <div class="inquiry-form-actions" style="margin-top: auto; padding-top: 10px; display: flex; justify-content: flex-end; gap: 12px; align-items: center; width: 100%; flex-wrap: wrap;">
-                    <a href="{{ route('admin.inquiries') }}" class="inquiry-form-cancel" style="padding: 10px 24px; border-radius: 12px; font-weight: 700; color: #666; text-decoration: none; transition: all 0.2s; min-width: 150px; text-align: center; border: 1px solid #e0e0e0; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; flex-shrink: 0;">
+                    <a href="{{ route('admin.inquiries', ['tab' => $tab ?? request()->query('tab', 'unassigned')]) }}" class="inquiry-form-cancel" style="padding: 10px 24px; border-radius: 12px; font-weight: 700; color: #666; text-decoration: none; transition: all 0.2s; min-width: 150px; text-align: center; border: 1px solid #e0e0e0; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; flex-shrink: 0;">
                         <i class="bi bi-x-lg" style="font-size: 14px;"></i> Cancel
                     </a>
                     @if(!$isEdit)

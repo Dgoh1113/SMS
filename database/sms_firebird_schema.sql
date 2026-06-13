@@ -15,7 +15,7 @@ CREATE TABLE USERS
   ISACTIVE boolean DEFAULT TRUE,
   LASTLOGIN timestamp,
   CREATIONDATE timestamp DEFAULT CURRENT_TIMESTAMP,
-  COMPANY varchar(40),
+  COMPANY varchar(80),
   ALIAS varchar(50),
   POSTCODE varchar(10) NOT NULL,
   CITY varchar(100) NOT NULL,
@@ -29,7 +29,7 @@ CREATE TABLE LEAD
 (
   LEADID integer NOT NULL,
   PRODUCTID varchar(100),
-  COMPANYNAME varchar(50),
+  COMPANYNAME varchar(80),
   CONTACTNAME varchar(100),
   CONTACTNO varchar(15),
   EMAIL varchar(120),

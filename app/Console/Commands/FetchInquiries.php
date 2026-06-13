@@ -131,7 +131,7 @@ class FetchInquiries extends Command
                     $description = implode(', ', $descParts);
 
                     // 5. Exact Truncation based on Schema
-                    $companyName = Str::limit($data['CompanyName'] ?? '', 50, '');
+                    $companyName = Str::limit($data['CompanyName'] ?? '', 80, '');
                     $contactName = Str::limit($data['ContactName'] ?? '', 100, '');
                     $contactNo = Str::limit($data['ContactNo'] ?? '', 15, '');
                     
