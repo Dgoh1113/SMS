@@ -1134,35 +1134,35 @@ class AdminController extends Controller
 
         $duplicateGroups = [];
         try {
-            $dupKeys = DB::select(
-                'SELECT LOWER(TRIM("COMPANYNAME")) AS "comp", LOWER(TRIM("CONTACTNO")) AS "phone", LOWER(TRIM("EMAIL")) AS "email_addr", COUNT(*) AS "cnt"
-                 FROM "LEAD"
-                 WHERE COALESCE("ISDELETED", FALSE) = FALSE
-                 GROUP BY LOWER(TRIM("COMPANYNAME")), LOWER(TRIM("CONTACTNO")), LOWER(TRIM("EMAIL"))
-                 HAVING COUNT(*) > 1'
+            $dupLeads = DB::select(
+                'WITH "Duplicates" AS (
+                    SELECT LOWER(TRIM("COMPANYNAME")) AS "comp", LOWER(TRIM("CONTACTNO")) AS "phone", LOWER(TRIM("EMAIL")) AS "email_addr"
+                    FROM "LEAD"
+                    WHERE COALESCE("ISDELETED", FALSE) = FALSE
+                    GROUP BY LOWER(TRIM("COMPANYNAME")), LOWER(TRIM("CONTACTNO")), LOWER(TRIM("EMAIL"))
+                    HAVING COUNT(*) > 1
+                 )
+                 SELECT l."LEADID", l."PRODUCTID", l."COMPANYNAME", l."CONTACTNAME", l."CONTACTNO", l."EMAIL",
+                        l."ADDRESS1", l."ADDRESS2", l."CITY", l."STATE", l."COUNTRY", l."POSTCODE",
+                        l."BUSINESSNATURE", l."USERCOUNT", l."EXISTINGSOFTWARE", l."DEMOMODE", l."DESCRIPTION",
+                        l."REFERRALCODE", l."CREATEDAT", l."ASSIGNEDTO"
+                 FROM "LEAD" l
+                 JOIN "Duplicates" d
+                   ON LOWER(TRIM(l."COMPANYNAME")) = d."comp"
+                  AND LOWER(TRIM(l."CONTACTNO")) = d."phone"
+                  AND LOWER(TRIM(l."EMAIL")) = d."email_addr"
+                 WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
+                 ORDER BY l."COMPANYNAME" ASC, l."LEADID" DESC'
             );
 
-            if (! empty($dupKeys)) {
-                foreach ($dupKeys as $k) {
-                    $comp = $k->comp ?? '';
-                    $phone = $k->phone ?? '';
-                    $email_addr = $k->email_addr ?? '';
+            if (! empty($dupLeads)) {
+                $grouped = [];
+                foreach ($dupLeads as $l) {
+                    $key = strtolower(trim((string)$l->COMPANYNAME)) . '|' . strtolower(trim((string)$l->CONTACTNO)) . '|' . strtolower(trim((string)$l->EMAIL));
+                    $grouped[$key][] = $l;
+                }
 
-                    $leads = DB::select(
-                        'SELECT "LEADID","PRODUCTID","COMPANYNAME","CONTACTNAME","CONTACTNO","EMAIL",
-                                "ADDRESS1","ADDRESS2","CITY","STATE","COUNTRY","POSTCODE",
-                                "BUSINESSNATURE","USERCOUNT","EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION",
-                                "REFERRALCODE","CREATEDAT","ASSIGNEDTO"
-                         FROM "LEAD"
-                         WHERE COALESCE("ISDELETED", FALSE) = FALSE
-                           AND LOWER(TRIM("COMPANYNAME")) = ?
-                           AND LOWER(TRIM("CONTACTNO")) = ?
-                           AND LOWER(TRIM("EMAIL")) = ?
-                         ORDER BY "LEADID" DESC',
-                        [$comp, $phone, $email_addr]
-                    );
-
-                    // Check if there is at least one unassigned lead in the duplicate group
+                foreach ($grouped as $leads) {
                     $hasUnassigned = false;
                     $forceInclude = false;
                     foreach ($leads as $l) {
