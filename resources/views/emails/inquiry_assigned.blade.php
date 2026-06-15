@@ -22,7 +22,7 @@
     <div class="wrapper">
         <div class="card">
             <h1>New inquiry assigned to you</h1>
-            <p>Hi {{ $dealerName }},</p>
+            <p>Hi,</p>
             <p>A new inquiry has been assigned to you.</p>
             <div class="detail"><strong>Inquiry ID:</strong> <span class="inquiry-id">#{{ $inquiryId }}</span></div>
             <div class="detail"><strong>Company:</strong> {{ $companyName }}</div>

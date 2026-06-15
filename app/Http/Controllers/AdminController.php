@@ -2242,6 +2242,7 @@ class AdminController extends Controller
             return back()->withInput($request->only(array_keys($validated)))->with('error', 'Could not update the inquiry. Please try again.');
         }
 
+        $emailSent = false;
         // Insert "Lead Assigned" / "Lead Unassigned" activity if ASSIGNEDTO changed
         $newAssignedTo = trim((string) ($validated['assignedTo'] ?? ''));
         if ($newAssignedTo !== $oldAssignedTo) {
@@ -2258,6 +2259,13 @@ class AdminController extends Controller
                     DB::update('UPDATE "LEAD" SET "LASTMODIFIED" = CURRENT_TIMESTAMP WHERE "LEADID" = ?', [$leadId]);
                 } catch (\Throwable $e) {
                     \Log::error('Failed to insert Lead Assigned activity: '.$e->getMessage());
+                }
+
+                try {
+                    $this->sendInquiryAssignedEmail($newAssignedTo, $leadId);
+                    $emailSent = true;
+                } catch (\Throwable $e) {
+                    \Log::error('Failed to send assignment email: ' . $e->getMessage());
                 }
             } else {
                 $createdByUser = $assignUserId !== '' ? $assignUserId : $oldAssignedTo;
@@ -2280,7 +2288,8 @@ class AdminController extends Controller
             $activeTab = (! empty($leadAfterUpdate->assignedTo)) ? 'assigned' : 'incoming';
         }
 
-        return redirect()->route('admin.inquiries', ['tab' => $activeTab])->with('success', 'Inquiry updated.');
+        $successMsg = $emailSent ? 'Inquiry updated and email sent.' : 'Inquiry updated.';
+        return redirect()->route('admin.inquiries', ['tab' => $activeTab])->with('success', $successMsg);
     }
 
     public function deleteInquiry(Request $request, int $leadId): \Illuminate\Http\JsonResponse

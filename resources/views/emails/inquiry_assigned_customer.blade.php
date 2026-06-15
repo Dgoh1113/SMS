@@ -18,14 +18,22 @@
 <body>
     <div class="wrapper">
         <div class="card">
-            <p>Hi {{ $customerName }},</p>
-            <p>Thank you for contacting us. Your inquiry (#{{ $inquiryId }}) has been assigned to one of our authorized dealers who will be following up on your case shortly.</p>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 12px;">
+                <tr>
+                    <td align="left" valign="middle">
+                        <p style="margin: 0;">Hi {{ $customerName }},</p>
+                    </td>
+                    <td align="right" valign="middle">
+                        <img src="{{ $message->embed(public_path('sql-logo.png')) }}" alt="SQL Logo" style="height: 32px; width: auto; display: block; opacity: 0.25;">
+                    </td>
+                </tr>
+            </table>
+            <p>Thank you for contacting us. Your inquiry (#{{ $inquiryId }}) has been assigned to one of our authorized agent who will be following up on your case shortly.</p>
             
-            <p>Assigned Dealer Details:<br>
-            Dealer Name: {{ $dealerName }}<br>
+            <p>Assigned Agent Details:<br>
             Email: {{ $dealerEmail }}</p>
             
-            <p>Our dealer will get in touch with you soon to assist you with your request.</p>
+            <p>Our agent will get in touch with you soon to assist you with your request.</p>
         </div>
         <p class="footer">This is an automated message from SQL SMS.</p>
     </div>
