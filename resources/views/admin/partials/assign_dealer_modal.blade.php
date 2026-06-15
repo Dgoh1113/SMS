@@ -133,6 +133,9 @@
                                     $convLabel = $conv > 0 ? number_format($conv, 1) . '%' : '0%';
                                     $label = $alias !== '' ? $alias : ($company !== '' ? $company : ($email !== '' ? $email : $uid));
                                 @endphp
+                                @if($active === 'No')
+                                    @continue
+                                @endif
                                 <tr class="inquiries-assign-dealer-row"
                                     data-assign-userid="{{ $uid }}"
                                     data-assign-label="{{ e($label) }}"

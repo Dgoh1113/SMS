@@ -137,6 +137,9 @@
                                         $label = $uid;
                                     }
                                 @endphp
+                                @if($active === 'No')
+                                    @continue
+                                @endif
                                 <tr class="inquiries-assign-dealer-row"
                                     data-assign-userid="{{ $uid }}"
                                     data-assign-label="{{ e($label) }}"
