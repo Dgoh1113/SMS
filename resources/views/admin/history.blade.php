@@ -52,10 +52,12 @@
         @media (max-width: 768px) {
             .history-range-grid {
                 grid-template-columns: 1fr 1fr;
+                width: 100%;
             }
             .history-range-apply-col {
                 grid-column: span 2;
-                justify-content: flex-end;
+                justify-content: stretch;
+                width: 100%;
             }
         }
 

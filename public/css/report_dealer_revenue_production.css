@@ -371,6 +371,12 @@
 .rrp-panel-body {
   padding: 12px;
 }
+.rrp-panel-body .table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  min-width: 0;
+}
 
 .rrp-legend {
   display: flex;

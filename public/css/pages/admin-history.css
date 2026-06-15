@@ -314,15 +314,29 @@ html.theme-dark .history-checkbox-filter input[type="checkbox"]:checked + span {
   }
 
   .history-apply-btn {
-    width: 100%;
+    width: 100% !important;
+    display: inline-flex !important;
+    justify-content: center;
+    align-items: center;
   }
 
   .history-checkbox-filter {
-    width: auto;
+    width: 100% !important;
+    justify-content: center;
   }
 
   .history-toolbar-actions {
-    justify-content: flex-end;
+    display: grid !important;
+    grid-template-columns: 1fr;
+    gap: 8px !important;
+    width: 100%;
+  }
+
+  .history-toolbar .inquiries-btn {
+    width: 100% !important;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
   }
 }
 
