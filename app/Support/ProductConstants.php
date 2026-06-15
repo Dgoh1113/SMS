@@ -65,7 +65,7 @@ class ProductConstants
             self::ACCOUNT => 'SQL Account',
             self::PAYROLL => 'SQL Payroll',
             self::PRODUCTION => 'SQL Production',
-            self::MOBILE_SALES => 'SQL X-Mobile (SQL Mobile App)',
+            self::MOBILE_SALES => 'SQL X-Mobile',
             self::ECOMMERCE => 'SQL eCommerce',
             self::EBI_POS => 'SQL EBI Wellness POS',
             self::SUDU_AI => 'SQL x SuDu.Ai',

@@ -517,7 +517,7 @@
   }
 
   .inquiries-page-wrap > .inquiries-tabs {
-    margin-bottom: 6px;
+    margin-bottom: 25px;
   }
 
   .inquiries-page-wrap .inquiries-tab-panel .inquiries-mgmt-panel,
@@ -628,7 +628,7 @@
   }
 
   .inquiries-page-wrap > .inquiries-tabs {
-    margin-bottom: 6px;
+    margin-bottom: 25px;
   }
 
   .inquiries-panel-header {
@@ -803,7 +803,7 @@
 
 .inquiry-create-panel .dashboard-panel-body.inquiry-create-body {
   width: 94%;
-  max-width: 1360px;
+  max-width: 1100px;
   margin: 12px auto 24px;
   padding: 24px 28px 30px;
   border-radius: 18px;
@@ -850,7 +850,7 @@
 
   .inquiry-create-panel .dashboard-panel-body.inquiry-create-body {
     width: 96%;
-    max-width: 1500px;
+    max-width: 1200px;
     margin: 4px auto 12px;
     padding: 14px 16px 16px;
     border-radius: 16px;
@@ -910,7 +910,7 @@
   }
 
   .inquiry-form-checkboxes {
-    grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 6px 12px;
   }
 
@@ -1021,7 +1021,7 @@
   }
 
   .inquiry-form-checkboxes {
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 10px 12px;
   }
 
@@ -1132,7 +1132,7 @@
   }
 
   .inquiries-page-wrap > .inquiries-tabs {
-    margin-bottom: 5px;
+    margin-bottom: 25px;
   }
 
   .inquiries-page-wrap .inquiries-panel-header {
@@ -1959,13 +1959,12 @@
 .inquiry-form-actions-grid {
   display: flex;
   flex-direction: column;
-  align-items: stretch;
 }
 
-@media (min-width: 1280px) {
+@media (min-width: 1100px) {
   .inquiry-create-panel .dashboard-panel-body.inquiry-create-body {
     width: 96%;
-    max-width: 1500px;
+    max-width: 1200px;
     margin: 4px auto 12px;
     padding: 12px 14px 14px;
     border-radius: 16px;
@@ -2141,7 +2140,7 @@
 @media (min-width: 1280px) {
   .inquiry-create-panel .dashboard-panel-body.inquiry-create-body {
     width: 96%;
-    max-width: 1500px;
+    max-width: 1200px;
     margin: 4px auto 12px;
     padding: 12px 14px 14px;
     border-radius: 16px;
@@ -2438,7 +2437,7 @@
 }
 
 textarea.inquiry-form-input {
-  min-height: 140px;
+  min-height: 180px;
   resize: vertical;
 }
 
@@ -2645,7 +2644,7 @@ textarea.inquiry-form-input {
 }
 
 .inquiries-page-wrap > .inquiries-tabs {
-  margin-top: 0;
+  margin-top: -10px;
   margin-bottom: 20px;
   display: inline-flex;
   align-items: center;

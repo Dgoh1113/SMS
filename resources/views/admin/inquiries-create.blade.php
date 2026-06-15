@@ -24,7 +24,7 @@
         .vertical-title {
             position: absolute;
             top: 20px;
-            left: -40px; /* Sticks closely to the left edge of the container */
+            left: -30px; /* Sticks closely to the left edge of the container */
             transform: rotate(-90deg) translateX(-100%);
             transform-origin: top left;
             z-index: 100;
@@ -335,11 +335,21 @@
         /* ===== Form Body ===== */
         /* Stack top sections, but split Inquiry Details */
         /* Force stack top sections, but keep split in Inquiry Details */
-        .inquiry-create-panel .inquiry-form-body {
-            display: flex !important;
-            flex-direction: column !important;
+        .inquiry-form-body {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr;
+            align-items: stretch !important;
             gap: 16px !important;
             width: 100% !important;
+            margin-top: 25px !important;
+        }
+        
+        .inquiry-form-body > .inquiry-form-section {
+            height: 100% !important;
+        }
+        
+        .inquiry-form-actions {
+            grid-column: 1 / -1;
         }
 
         .inquiry-details-split {
@@ -536,9 +546,7 @@
 
             .inquiry-form-body {
                 gap: 8px !important;
-                display: flex !important;
-                flex-direction: column !important;
-                justify-content: flex-start !important;
+                display: grid !important;
                 width: 100% !important;
             }
 
@@ -661,13 +669,16 @@
                 font-size: 14px;
                 border-radius: 14px;
                 top: 20px !important;
-                left: -40px !important; /* Positioned outside the container */
+                left: -30px !important; /* Positioned outside the container */
                 z-index: 10;
             }
         }
 
         /* ===== Responsive: Tablet ===== */
         @media (max-width: 1024px) {
+            .inquiry-create-panel .inquiry-form-body {
+                grid-template-columns: 1fr !important;
+            }
             .inquiry-details-split {
                 grid-template-columns: 1fr !important;
                 gap: 16px !important;
@@ -758,13 +769,13 @@
         /* ===== Laptop Compact: fit form in one screen ===== */
         @media (min-width: 1280px) and (max-height: 900px) {
             .dashboard-root.inquiry-create-scroll .dashboard-main-body {
-                padding-bottom: 4px !important;
+                padding-bottom: 12px !important;
             }
             .inquiry-create-panel {
-                margin: 2px 10px 2px 45px !important;
+                margin: 2px 10px 10px 45px !important;
             }
             .inquiry-create-panel .dashboard-panel-body.inquiry-create-body {
-                padding: 0px 14px 2px !important;
+                padding: 0px 14px 12px !important;
             }
             .inquiry-form-body {
                 gap: 4px !important;
@@ -822,25 +833,27 @@
             }
             .inquiry-form-actions .login-primary-btn,
             .inquiry-form-actions .inquiry-form-cancel {
-                height: 30px !important;
-                font-size: 12px !important;
+                height: auto !important;
+                font-size: 13px !important;
+                padding: 8px 28px !important;
             }
             .inquiry-form-actions {
-                padding-top: 3px !important;
+                padding-top: 12px !important;
+                gap: 16px !important;
             }
             .inquiry-form-label {
                 gap: 1px !important;
             }
             img.inquiry-create-fox-img {
                 width: 120px !important;
-                top: 0px !important;
-                right: 5px !important;
+                top: 25px !important;
+                right: 25px !important;
             }
             .vertical-title {
                 font-size: 12px !important;
                 padding: 10px 3px !important;
                 top: 6px !important;
-                left: -40px !important;
+                left: -20px !important;
             }
             .inquiry-form-label[style*="margin-top: 8px"] {
                 margin-top: 2px !important;
@@ -1113,11 +1126,11 @@
                 <div class="inquiry-form-section" style="position: relative;">
                     <div class="inquiry-form-section-header">
                         <div>
-                            <h3 class="inquiry-form-section-title">Company Information</h3>
+                            <h3 class="inquiry-form-section-title"><i class="bi bi-building" style="margin-right: 6px; color: #7c5cff;"></i> Company Information</h3>
                         </div>
                     </div>
                     <div class="inquiry-form-grid">
-                        <div class="inquiry-form-label inquiry-company-field" style="grid-column: span 9;">
+                        <div class="inquiry-form-label inquiry-company-field" style="grid-column: span 12;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
                                 <label for="companyInput" class="inquiry-form-label-title" style="margin-bottom: 0;">Company name <span class="required">*</span></label>
                             </div>
@@ -1129,7 +1142,7 @@
                                 </button>
                             </div>
                         </div>
-                        <label class="inquiry-form-label" style="grid-column: span 4;">
+                        <label class="inquiry-form-label" style="grid-column: span 12;">
                             <span class="inquiry-form-label-title">Business nature <span class="required">*</span></span>
                             <div class="inquiry-form-input-wrapper">
                                 <i class="bi bi-briefcase inquiry-input-icon"></i>
@@ -1137,7 +1150,7 @@
                             </div>
                         </label>
  
-                        <label class="inquiry-form-label" style="grid-column: span 4;">
+                        <label class="inquiry-form-label" style="grid-column: span 6;">
                             <span class="inquiry-form-label-title">Existing software <span class="required">*</span></span>
                             <div class="inquiry-form-input-wrapper">
                                 <i class="bi bi-window-stack inquiry-input-icon"></i>
@@ -1145,7 +1158,7 @@
                             </div>
                         </label>
  
-                        <label class="inquiry-form-label" style="grid-column: span 2;">
+                        <label class="inquiry-form-label" style="grid-column: span 6;">
                             <span class="inquiry-form-label-title">User count <span class="required">*</span></span>
                             <div class="inquiry-form-input-wrapper">
                                 <i class="bi bi-people inquiry-input-icon"></i>
@@ -1159,25 +1172,25 @@
                 <div class="inquiry-form-section">
                     <div class="inquiry-form-section-header">
                         <div>
-                            <h3 class="inquiry-form-section-title">Contact Details</h3>
+                            <h3 class="inquiry-form-section-title"><i class="bi bi-person" style="margin-right: 6px; color: #7c5cff;"></i> Contact Information</h3>
                         </div>
                     </div>
                     <div class="inquiry-form-grid">
-                        <label class="inquiry-form-label third">
+                        <label class="inquiry-form-label full">
                             <span class="inquiry-form-label-title">Email <span class="required">*</span></span>
-                            <div class="inquiry-form-input-wrapper">
+                            <div class="inquiry-form-input-wrapper" style="padding-right: 170px;">
                                 <i class="bi bi-envelope inquiry-input-icon"></i>
                                 <input type="email" name="EMAIL" value="{{ old('EMAIL', $inquiry->EMAIL ?? '') }}" required maxlength="255" class="inquiry-form-input has-icon" placeholder="example@company.com">
                             </div>
                         </label>
-                        <label class="inquiry-form-label third">
+                        <label class="inquiry-form-label full">
                             <span class="inquiry-form-label-title">Contact name <span class="required">*</span></span>
-                            <div class="inquiry-form-input-wrapper">
+                            <div class="inquiry-form-input-wrapper" style="padding-right: 170px;">
                                 <i class="bi bi-person inquiry-input-icon"></i>
                                 <input type="text" name="CONTACTNAME" value="{{ old('CONTACTNAME', $inquiry->CONTACTNAME ?? '') }}" required maxlength="255" class="inquiry-form-input has-icon" placeholder="Enter contact name">
                             </div>
                         </label>
-                        <label class="inquiry-form-label third">
+                        <label class="inquiry-form-label full">
                             <span class="inquiry-form-label-title">Contact no <span class="required">*</span></span>
                             <div class="inquiry-form-input-wrapper">
                                 <i class="bi bi-telephone inquiry-input-icon"></i>
@@ -1194,11 +1207,11 @@
                 <div class="inquiry-form-section">
                     <div class="inquiry-form-section-header">
                         <div>
-                            <h3 class="inquiry-form-section-title">Address</h3>
+                            <h3 class="inquiry-form-section-title"><i class="bi bi-geo-alt" style="margin-right: 6px; color: #7c5cff;"></i> Address Information</h3>
                         </div>
                     </div>
                     <div class="inquiry-form-grid">
-                        <div class="inquiry-form-label half">
+                        <div class="inquiry-form-label full">
                             <label for="address1Input" class="inquiry-form-label-title">Address 1</label>
                             <div class="inquiry-form-input-wrapper">
                                 <i class="bi bi-building inquiry-input-icon"></i>
@@ -1206,7 +1219,7 @@
                             </div>
                         </div>
 
-                        <div class="inquiry-form-label half">
+                        <div class="inquiry-form-label full">
                             <label for="address2Input" class="inquiry-form-label-title">Address 2</label>
                             <div class="inquiry-form-input-wrapper">
                                 <i class="bi bi-building inquiry-input-icon"></i>
@@ -1275,13 +1288,55 @@
                 <div class="inquiry-form-section" style="z-index: 20; position: relative;">
                     <div class="inquiry-form-section-header">
                         <div>
-                            <h3 class="inquiry-form-section-title">Inquiry Details</h3>
+                            <h3 class="inquiry-form-section-title"><i class="bi bi-sliders" style="margin-right: 6px; color: #7c5cff;"></i> Inquiry Details</h3>
                         </div>
                     </div>
-                    <div class="inquiry-form-grid">
-                        <!-- Left Side: Products (6 columns) -->
-                        <div class="inquiry-form-label" style="grid-column: span 6;">
-                            <span class="inquiry-form-label-title">Product interested <span class="required">*</span></span>
+                    <div style="display: flex; flex-direction: column; gap: 16px; padding-top: 8px;">
+                        <div class="inquiry-form-label">
+                            <span class="inquiry-form-label-title">Demo mode <span class="required">*</span></span>
+                            @php
+                                $demoDefault = $isEdit && isset($inquiry->DEMOMODE) ? trim((string) $inquiry->DEMOMODE) : 'Zoom';
+                                if ($demoDefault !== 'Zoom' && $demoDefault !== 'On-site') $demoDefault = 'Zoom';
+                                $demoOld = old('DEMOMODE', $demoDefault);
+                            @endphp
+                            <div class="inquiry-toggle" data-toggle="demomode">
+                                <button type="button" class="inquiry-toggle-option {{ $demoOld === 'Zoom' ? 'is-active' : '' }}" data-value="Zoom">
+                                    <i class="bi bi-camera-video"></i> Zoom
+                                </button>
+                                <button type="button" class="inquiry-toggle-option {{ $demoOld === 'On-site' ? 'is-active' : '' }}" data-value="On-site">
+                                    <i class="bi bi-geo-alt"></i> On-site
+                                </button>
+                            </div>
+                            <input type="hidden" name="DEMOMODE" id="demoModeInput" value="{{ $demoOld }}">
+                        </div>
+
+                        <label class="inquiry-form-label">
+                            <span class="inquiry-form-label-title">Referral code</span>
+                            <div class="inquiry-form-input-wrapper">
+                                <i class="bi bi-ticket-perforated inquiry-input-icon"></i>
+                                <input type="text" name="REFERRALCODE" value="{{ old('REFERRALCODE', $inquiry->REFERRALCODE ?? '') }}" maxlength="100" class="inquiry-form-input has-icon" placeholder="Enter referral code">
+                            </div>
+                        </label>
+
+                        <label class="inquiry-form-label">
+                            <span class="inquiry-form-label-title">Assign To</span>
+                            <div style="display: flex; gap: 8px;">
+                                <div class="inquiry-form-input-wrapper" style="flex: 1;">
+                                    <i class="bi bi-person-badge inquiry-input-icon"></i>
+                                    <input type="text" id="assignToDisplay" class="inquiry-form-input has-icon" style="padding-left: 34px; background: #f8f9fa; color: #4b5563; font-weight: 500;" readonly placeholder="Unassigned">
+                                    <input type="hidden" name="assignedTo" id="assignToHidden" value="{{ old('assignedTo', $inquiry->ASSIGNEDTO ?? '') }}">
+                                </div>
+                                <button type="button" class="inquiries-btn inquiries-btn-secondary" id="openAssignModalBtn" style="height: 30px; font-size: 13px; padding: 0 12px; min-width: 80px; {{ $isEdit && !empty($inquiry->ASSIGNEDTO) ? 'opacity: 0.6; cursor: not-allowed;' : '' }}" {{ $isEdit && !empty($inquiry->ASSIGNEDTO) ? 'disabled' : '' }}>Assign</button>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Section 5: Product Interested -->
+                <div class="inquiry-form-section">
+                    <div class="inquiry-form-grid" style="grid-template-columns: 1fr;">
+                        <div class="inquiry-form-label" style="margin-top: 4px;">
+                            <span class="inquiry-form-label-title">Product Interested <span class="required">*</span></span>
                             <div class="inquiry-form-checkboxes @error('product_interested') inquiry-input-error @enderror">
                                 @php
                                     $defaultProducts = [];
@@ -1296,57 +1351,19 @@
                                         {{ $label }}
                                     </label>
                                 @endforeach
+                                <!-- Empty row to push height down so Message gets taller -->
+                                <div style="grid-column: 1 / -1; height: 38px; pointer-events: none;"></div>
                             </div>
                         </div>
+                    </div>
+                </div>
 
-                        <!-- Right Side: Demo & Referral (5 columns) -->
-                        <div style="grid-column: 8 / span 5; display: flex; flex-direction: column; gap: 16px;">
-                            <div class="inquiry-form-label">
-                                <span class="inquiry-form-label-title">Demo mode <span class="required">*</span></span>
-                                @php
-                                    $demoDefault = $isEdit && isset($inquiry->DEMOMODE) ? trim((string) $inquiry->DEMOMODE) : 'Zoom';
-                                    if ($demoDefault !== 'Zoom' && $demoDefault !== 'On-site') $demoDefault = 'Zoom';
-                                    $demoOld = old('DEMOMODE', $demoDefault);
-                                @endphp
-                                <div class="inquiry-toggle" data-toggle="demomode">
-                                    <button type="button" class="inquiry-toggle-option {{ $demoOld === 'Zoom' ? 'is-active' : '' }}" data-value="Zoom">
-                                        <i class="bi bi-camera-video"></i> Zoom
-                                    </button>
-                                    <button type="button" class="inquiry-toggle-option {{ $demoOld === 'On-site' ? 'is-active' : '' }}" data-value="On-site">
-                                        <i class="bi bi-geo-alt"></i> On-site
-                                    </button>
-                                </div>
-                                <input type="hidden" name="DEMOMODE" id="demoModeInput" value="{{ $demoOld }}">
-                            </div>
-
-                            <label class="inquiry-form-label">
-                                <span class="inquiry-form-label-title">Referral code</span>
-                                <div class="inquiry-form-input-wrapper">
-                                    <i class="bi bi-ticket-perforated inquiry-input-icon"></i>
-                                    <input type="text" name="REFERRALCODE" value="{{ old('REFERRALCODE', $inquiry->REFERRALCODE ?? '') }}" maxlength="100" class="inquiry-form-input has-icon" placeholder="Enter referral code">
-                                </div>
-                            </label>
-
-                            <label class="inquiry-form-label">
-                                <span class="inquiry-form-label-title">Assign To</span>
-                                <div style="display: flex; gap: 8px;">
-                                    <div class="inquiry-form-input-wrapper" style="flex: 1;">
-                                        <i class="bi bi-person-badge inquiry-input-icon"></i>
-                                        <input type="text" id="assignToDisplay" class="inquiry-form-input has-icon" style="padding-left: 34px; background: #f8f9fa; color: #4b5563; font-weight: 500;" readonly placeholder="Unassigned">
-                                        <input type="hidden" name="assignedTo" id="assignToHidden" value="{{ old('assignedTo', $inquiry->ASSIGNEDTO ?? '') }}">
-                                    </div>
-                                    <button type="button" class="inquiries-btn inquiries-btn-secondary" id="openAssignModalBtn" style="height: 30px; font-size: 13px; padding: 0 12px; min-width: 80px; {{ $isEdit && !empty($inquiry->ASSIGNEDTO) ? 'opacity: 0.6; cursor: not-allowed;' : '' }}" {{ $isEdit && !empty($inquiry->ASSIGNEDTO) ? 'disabled' : '' }}>Assign</button>
-                                </div>
-                            </label>
-                        </div>
-
-                        <!-- Bottom: Message (Full width) -->
-                        <label class="inquiry-form-label full inquiry-message-field" style="grid-column: span 12; margin-top: 8px;">
-                            <span class="inquiry-form-label-title">Message</span>
-                            <div class="inquiry-form-input-wrapper">
-                                <i class="bi bi-chat-left-text inquiry-input-icon" style="top: 14px;"></i>
-                                <textarea name="DESCRIPTION" rows="8" maxlength="4000" class="inquiry-form-input has-icon" placeholder="Type the customer message / notes..." style="padding-top: 10px; min-height: 120px;">{{ old('DESCRIPTION', $inquiry->DESCRIPTION ?? '') }}</textarea>
-                            </div>
+                <!-- Section 6: Message -->
+                <div class="inquiry-form-section inquiry-form-section-message" style="display: flex; flex-direction: column; height: 100%;">
+                    <div class="inquiry-form-grid" style="grid-template-columns: 1fr; flex: 1; display: flex; flex-direction: column; width: 100%; height: 100%;">
+                        <label class="inquiry-form-label full inquiry-message-field" style="margin-top: 0; display: flex; flex-direction: column; width: 100%; height: 100%; flex: 1;">
+                            <span class="inquiry-form-label-title" style="display: block; height: 20px; margin-bottom: 8px; flex-shrink: 0;">Message</span>
+                            <textarea name="DESCRIPTION" maxlength="4000" class="inquiry-form-input" placeholder="Type the customer message / notes..." style="width: 100%; flex: 1; min-height: 0 !important; height: auto !important; padding: 12px; resize: none; margin: 0; box-sizing: border-box;"></textarea>
                         </label>
                     </div>
                 </div>
