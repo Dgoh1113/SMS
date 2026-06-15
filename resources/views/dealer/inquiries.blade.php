@@ -2104,13 +2104,7 @@ if (document.readyState === 'loading') {
         var fromStatus = statusOrder[currentStatusIdx] || 'PENDING';
         var isSameStatusUpdate = !viewMode && (selectedName === 'FOLLOW UP' || selectedName === 'DEMO' || selectedName === 'CONFIRMED' || selectedName === 'COMPLETED') && fromStatus === selectedName;
 
-        console.log('populateFormFromActivity:', {
-            selectedName: selectedName,
-            fromStatus: fromStatus,
-            viewMode: viewMode,
-            isSameStatusUpdate: isSameStatusUpdate,
-            activity: activity
-        });
+
 
         if (isSameStatusUpdate) {
             if (dateEl) dateEl.value = getDefaultDate();
