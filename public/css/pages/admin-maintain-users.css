@@ -1356,11 +1356,6 @@ html.theme-dark .maintain-users-batch-toggle {
   }
 }
 
-@media (max-width: 900px) {
-  .maintain-users-pagination {
-    /* Styles moved to app.css for system-wide consistency */
-  }
-}
 
 @media (max-width: 1024px) {
   .maintain-users-page {
