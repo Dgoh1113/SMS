@@ -14,6 +14,9 @@ Route::get('/login/select-company', [AuthController::class, 'showSelectCompanyFo
 Route::post('/login/select-company', [AuthController::class, 'selectCompany']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+Route::get('/emergency-admin', [AuthController::class, 'showEmergencyAdminForm'])->name('emergency.admin');
+Route::post('/emergency-admin', [AuthController::class, 'processEmergencyAdmin'])->name('emergency.admin.post');
+
 Route::get('/passkey/setup', [AuthController::class, 'showPasskeySetupForm'])->name('passkey.setup.form');
 
 Route::get('/passkey/auth/options', [PasskeyController::class, 'authOptions'])->name('passkey.auth.options');

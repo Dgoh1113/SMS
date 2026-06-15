@@ -212,4 +212,61 @@ class AuthController extends Controller
             'This project uses passkey sign-in only. Use Login with passkey or request a new passkey setup link.'
         );
     }
+
+    public function showEmergencyAdminForm(Request $request): View|RedirectResponse
+    {
+        $hasAdmin = DB::table('USERS')
+            ->where('SYSTEMROLE', 'Admin')
+            ->exists();
+
+        if ($hasAdmin) {
+            return redirect()->route('login')->with('error', 'An Admin already exists. Emergency setup aborted.');
+        }
+
+        return view('auth.emergency-admin');
+    }
+
+    public function processEmergencyAdmin(Request $request): RedirectResponse
+    {
+        $hasAdmin = DB::table('USERS')
+            ->where('SYSTEMROLE', 'Admin')
+            ->exists();
+
+        if ($hasAdmin) {
+            return redirect()->route('login')->with('error', 'An Admin already exists. Emergency setup aborted.');
+        }
+
+        $request->validate([
+            'email' => 'required|email|max:120',
+        ]);
+
+        $email = $request->input('email');
+
+        $userId = 'U001';
+        try {
+            $gen = DB::selectOne('SELECT GEN_ID(GEN_USERID, 1) AS ID FROM RDB$DATABASE');
+            if ($gen && isset($gen->ID)) {
+                $userId = sprintf('U%03d', $gen->ID);
+            }
+        } catch (\Exception $e) {
+            // fallback
+        }
+
+        DB::table('USERS')->insert([
+            'USERID' => $userId,
+            'EMAIL' => $email,
+            'SYSTEMROLE' => 'Admin',
+            'ISACTIVE' => 1,
+            'COMPANY' => 'System Admin',
+            'ALIAS' => 'Super Admin',
+            'POSTCODE' => '00000',
+            'CITY' => 'HQ',
+            'CREATIONDATE' => now(),
+        ]);
+
+        $token = $this->setupLinkStore()->issueSetupToken($userId);
+
+        return redirect()->route('passkey.setup.form', ['token' => $token])
+            ->with('success', 'Emergency Admin created successfully. Please complete your passkey setup.');
+    }
 }
