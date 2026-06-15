@@ -28,5 +28,4 @@ return [
             // 'DISABLE_AUTHENTICATOR' => 'GSSAPI'
         ],
     ],
-    'flags' => ['RECENT', 'SEEN', 'ANSWERED', 'FLAGGED', 'DELETED', 'DRAFT'],
 ];

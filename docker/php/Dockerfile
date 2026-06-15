@@ -14,4 +14,8 @@ RUN apt-get update \
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
+# ── Performance configs ─────────────────────────────────────────
+COPY docker/php/opcache.ini /usr/local/etc/php/conf.d/zz-opcache-prod.ini
+COPY docker/php/www.conf    /usr/local/etc/php-fpm.d/zz-www.conf
+
 WORKDIR /var/www/html
