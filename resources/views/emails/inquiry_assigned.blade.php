@@ -21,8 +21,17 @@
 <body>
     <div class="wrapper">
         <div class="card">
-            <h1>New inquiry assigned to you</h1>
-            <p>Hi,</p>
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 12px;">
+                <tr>
+                    <td align="left" valign="top">
+                        <h1 style="margin-bottom: 8px;">New inquiry assigned to you</h1>
+                        <p style="margin: 0;">Hi,</p>
+                    </td>
+                    <td align="right" valign="top">
+                        <img src="{{ $message->embed(public_path('sql-logo.png')) }}" alt="SQL Logo" style="height: 32px; width: auto; display: block; opacity: 0.25;">
+                    </td>
+                </tr>
+            </table>
             <p>A new inquiry has been assigned to you.</p>
             <div class="detail"><strong>Inquiry ID:</strong> <span class="inquiry-id">#{{ $inquiryId }}</span></div>
             <div class="detail"><strong>Company:</strong> {{ $companyName }}</div>

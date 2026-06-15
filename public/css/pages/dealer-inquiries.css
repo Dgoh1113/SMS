@@ -1047,6 +1047,31 @@ html.theme-dark .dealer-inquiries-panel .inquiries-empty-row .inquiries-empty-ce
   background: transparent !important;
 }
 
+html.theme-dark .status-multi-filter-toggle {
+  background: transparent;
+  border-color: rgba(82, 98, 133, 0.5);
+  color: #cbd5e1;
+}
+
+html.theme-dark .status-multi-filter-toggle:hover {
+  border-color: #8f73ff;
+  background: rgba(16, 25, 43, 0.4);
+}
+
+html.theme-dark .status-multi-filter-menu {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+html.theme-dark .status-multi-filter-actions {
+  border-bottom-color: #334155;
+}
+
+html.theme-dark .status-multi-filter-options::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
 html.theme-dark .status-multi-filter-action-btn {
   color: #ccbfff;
   background: rgba(124, 92, 255, 0.12);
@@ -1071,6 +1096,7 @@ html.theme-dark .status-multi-filter-option .status-multi-filter-checkbox {
   background: transparent;
   border-color: #475569;
 }
+
 
 html.theme-dark .inquiries-table tbody tr.inquiries-placeholder-row:hover td,
 html.theme-dark .inquiries-table tbody tr.inquiries-empty-row:hover td {
