@@ -1868,7 +1868,11 @@ if (document.readyState === 'loading') {
             updateBtn.disabled = false;
             if (res.ok && res.data.success) {
                 closeModal();
-                window.location.reload();
+                if (toStatus === 'REWARDED') {
+                    window.location.href = '{{ route("dealer.inquiries", ["tab" => "rewarded"]) }}';
+                } else {
+                    window.location.reload();
+                }
             } else {
                 showDealerPayoutToast(res.data.message || 'Update failed');
             }

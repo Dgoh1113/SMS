@@ -799,6 +799,7 @@
             }
             textarea.inquiry-form-input {
                 min-height: 32px !important;
+                height: auto !important;
                 padding: 4px 10px 3px !important;
             }
             .inquiry-form-checkboxes {
@@ -831,8 +832,9 @@
                 gap: 1px !important;
             }
             img.inquiry-create-fox-img {
-                width: 90px !important;
+                width: 120px !important;
                 top: 0px !important;
+                right: 5px !important;
             }
             .vertical-title {
                 font-size: 12px !important;

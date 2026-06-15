@@ -285,14 +285,14 @@ class DealerController extends Controller
             }
 
             $pctActive = $activeLastPeriod > 0
-                ? round((($activeThisPeriod - $activeLastPeriod) / $activeLastPeriod) * 100, 1)
-                : ($activeThisPeriod > 0 ? 100 : 0);
+                ? min(100.0, round((($activeThisPeriod - $activeLastPeriod) / $activeLastPeriod) * 100, 1))
+                : ($activeThisPeriod > 0 ? 100.0 : 0.0);
             $pctClosed = $closedLastPeriod > 0
-                ? round((($closedThisPeriod - $closedLastPeriod) / $closedLastPeriod) * 100, 1)
-                : ($closedThisPeriod > 0 ? 100 : 0);
+                ? min(100.0, round((($closedThisPeriod - $closedLastPeriod) / $closedLastPeriod) * 100, 1))
+                : ($closedThisPeriod > 0 ? 100.0 : 0.0);
             $pctTotalLeads = $leadsLastPeriod > 0
-                ? round((($leadsThisPeriod - $leadsLastPeriod) / $leadsLastPeriod) * 100, 1)
-                : ($leadsThisPeriod > 0 ? 100 : 0);
+                ? min(100.0, round((($leadsThisPeriod - $leadsLastPeriod) / $leadsLastPeriod) * 100, 1))
+                : ($leadsThisPeriod > 0 ? 100.0 : 0.0);
 
             $totalAssignedLeadCount = $countTotalAssignedLeads();
             $conversion = $totalAssignedLeadCount > 0 ? round(($closedCount / $totalAssignedLeadCount) * 100, 1) : 0;
@@ -600,11 +600,21 @@ class DealerController extends Controller
 
             // Assigned By: same logic as admin assigned inquiries — SYSTEMROLE-ALIAS (e.g. Admin-Wei Jian)
             try {
+                $assignmentByLeadMap = $this->latestAssignmentUserMap(array_map(
+                    static fn ($row) => (int) ($row->LEADID ?? 0),
+                    $leads
+                ));
                 $ids = [];
                 foreach ($leads as $r) {
                     $by = trim((string) ($r->CREATEDBY ?? ''));
                     if ($by !== '') {
                         $ids[$by] = true;
+                    }
+                    $leadId = (int) ($r->LEADID ?? 0);
+                    $assignBy = $leadId > 0 ? trim((string) ($assignmentByLeadMap[$leadId] ?? '')) : '';
+                    if ($assignBy !== '') {
+                        $ids[$assignBy] = true;
+                        $r->ASSIGNEDBY_ID = $assignBy;
                     }
                 }
                 $ids = array_keys($ids);
@@ -639,6 +649,10 @@ class DealerController extends Controller
                         $by = trim((string) ($r->CREATEDBY ?? ''));
                         if ($by !== '' && isset($createdByMap[$by])) {
                             $r->CREATEDBY_NAME = $createdByMap[$by];
+                        }
+                        $assignBy = trim((string) ($r->ASSIGNEDBY_ID ?? ''));
+                        if ($assignBy !== '' && isset($createdByMap[$assignBy])) {
+                            $r->ASSIGNEDBY_NAME = $createdByMap[$assignBy];
                         }
                     }
                 }
@@ -1929,8 +1943,13 @@ class DealerController extends Controller
 
             // Resolve CREATEDBY_NAME and assignedToName for display (same as admin rewards)
             try {
+                $allLeads = array_merge($completed, $rewarded);
+                $assignmentByLeadMap = $this->latestAssignmentUserMap(array_map(
+                    static fn ($row) => (int) ($row->LEADID ?? 0),
+                    $allLeads
+                ));
                 $ids = [];
-                foreach (array_merge($completed, $rewarded) as $r) {
+                foreach ($allLeads as $r) {
                     $to = trim((string) ($r->assignedTo ?? ''));
                     $by = trim((string) ($r->CREATEDBY ?? ''));
                     if ($to !== '') {
@@ -1938,6 +1957,12 @@ class DealerController extends Controller
                     }
                     if ($by !== '') {
                         $ids[$by] = true;
+                    }
+                    $leadId = (int) ($r->LEADID ?? 0);
+                    $assignBy = $leadId > 0 ? trim((string) ($assignmentByLeadMap[$leadId] ?? '')) : '';
+                    if ($assignBy !== '') {
+                        $ids[$assignBy] = true;
+                        $r->ASSIGNEDBY_ID = $assignBy;
                     }
                 }
                 $ids = array_keys($ids);
@@ -1983,7 +2008,7 @@ class DealerController extends Controller
                         }
                     }
 
-                    foreach (array_merge($completed, $rewarded) as $r) {
+                    foreach ($allLeads as $r) {
                         $to = trim((string) ($r->assignedTo ?? ''));
                         $by = trim((string) ($r->CREATEDBY ?? ''));
                         if ($to !== '' && isset($assignedToMap[$to])) {
@@ -1991,6 +2016,10 @@ class DealerController extends Controller
                         }
                         if ($by !== '' && isset($createdByMap[$by])) {
                             $r->CREATEDBY_NAME = $createdByMap[$by];
+                        }
+                        $assignBy = trim((string) ($r->ASSIGNEDBY_ID ?? ''));
+                        if ($assignBy !== '' && isset($createdByMap[$assignBy])) {
+                            $r->ASSIGNEDBY_NAME = $createdByMap[$assignBy];
                         }
                     }
                 }
@@ -2310,7 +2339,8 @@ class DealerController extends Controller
                     return $current > 0 ? 100 : 0;
                 }
 
-                return (int) round(($current - $previous) / $previous * 100);
+                $change = (int) round(($current - $previous) / $previous * 100);
+                return min(100, $change);
             };
 
             $metricPercent = [
@@ -2435,5 +2465,47 @@ class DealerController extends Controller
         }, $rows);
 
         return response()->json(['items' => $items]);
+    }
+    private function latestAssignmentUserMap(array $leadIds): array
+    {
+        $leadIds = array_values(array_unique(array_filter(array_map('intval', $leadIds), static fn ($id) => $id > 0)));
+        if (empty($leadIds)) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($leadIds), '?'));
+        $rows = DB::select(
+            'SELECT "LEADID", "LEAD_ACTID", "USERID", "DESCRIPTION"
+             FROM "LEAD_ACT"
+             WHERE "LEADID" IN ('.$placeholders.')
+               AND (
+                   UPPER(TRIM(COALESCE("SUBJECT", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
+                   OR UPPER(TRIM(COALESCE("DESCRIPTION", \'\'))) STARTING WITH \'LEAD ASSIGNED\'
+               )
+             ORDER BY "LEADID" ASC, "CREATIONDATE" DESC, "LEAD_ACTID" DESC',
+            $leadIds
+        );
+
+        $map = [];
+        foreach ($rows as $row) {
+            $leadId = (int) ($row->LEADID ?? 0);
+            if ($leadId <= 0 || array_key_exists($leadId, $map)) {
+                continue;
+            }
+
+            $userId = trim((string) ($row->USERID ?? ''));
+            if ($userId === '') {
+                $desc = trim((string) ($row->DESCRIPTION ?? ''));
+                if ($desc !== '' && preg_match('/Lead Assigned by\s+(\S+)\s+to\s+(\S+)/i', $desc, $m)) {
+                    $userId = trim((string) ($m[1] ?? ''));
+                }
+            }
+
+            if ($userId !== '') {
+                $map[$leadId] = $userId;
+            }
+        }
+
+        return $map;
     }
 }

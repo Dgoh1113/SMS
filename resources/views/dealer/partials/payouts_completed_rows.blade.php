@@ -89,7 +89,7 @@
         <td data-col="existingsw">{{ $r->EXISTINGSOFTWARE ?? '-' }}</td>
         <td data-col="demomode">{{ $r->DEMOMODE ?? '-' }}</td>
         <td data-col="message">{{ $amsgPreview }}</td>
-        <td data-col="assignby">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '-') }}</td>
+        <td data-col="assignby">{{ $r->ASSIGNEDBY_NAME ?? $r->CREATEDBY_NAME ?? $r->ASSIGNED_BY_EMAIL ?? '-' }}</td>
         <td class="inquiries-col-action inquiries-action-cell inquiries-action-cell-single">
             <button type="button"
                     class="inquiries-btn inquiries-btn-assign inquiries-edit-inquiry-btn inquiries-update-btn"

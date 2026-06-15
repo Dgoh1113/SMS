@@ -84,7 +84,7 @@
         </td>
         <td data-col="message">{{ $amsgPreview }}</td>
         <td data-col="referralcode">{{ $r->REFERRALCODE ?? '-' }}</td>
-        <td data-col="assignby">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '-') }}</td>
+        <td data-col="assignby">{{ $r->ASSIGNEDBY_NAME ?? $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '-') }}</td>
         <td data-col="status"><span class="inquiries-status {{ $statusClass }}">{{ $statusDisp }}</span></td>
         <td class="inquiries-col-action inquiries-action-cell inquiries-action-cell-single">
             <button type="button"
