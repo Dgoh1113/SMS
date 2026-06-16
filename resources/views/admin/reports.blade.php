@@ -1061,30 +1061,14 @@
             </div>
         </div>
         <div class="dashboard-panel-body">
-            <div class="dealer-reports-card">
-                @if (!$hasInquiryTrendData)
-                    <p class="dealer-reports-empty">No leads created in this period yet.</p>
-                @else
-                    <div class="dealer-reports-chart-scroll-wrapper">
-                        <div class="dealer-reports-chart-wrapper" id="adminInquiryTrendChartWrapper" style="height: 272px;">
-                            <p class="dealer-reports-chart-fallback">Unable to load inquiry trend chart.</p>
-                            <canvas id="adminInquiryTrendChart"></canvas>
-                        </div>
-                    </div>
-
-                    <div class="admin-inquiry-trend-legend" id="adminInquiryTrendLegend" style="justify-content: center; gap: 20px; margin-top: 8px;">
-                        <button class="admin-inquiry-trend-legend-button" data-dataset-index="0" type="button">
-                            <span class="admin-inquiry-trend-legend-dot admin-inquiry-trend-legend-dot--trend"></span>
-                            <span>This {{ $days ?? 30 }} Days</span>
-                        </button>
-                        <button class="admin-inquiry-trend-legend-button" data-dataset-index="1" type="button">
-                            <span class="admin-inquiry-trend-legend-dot admin-inquiry-trend-legend-dot--ma"></span>
-                            <span>Previous {{ $days ?? 30 }} Days</span>
-                        </button>
-                    </div>
-
-                @endif
-            </div>
+                <x-reports.inquiry-trend 
+                    :has-data="$hasInquiryTrendData" 
+                    empty-message="No leads created in this period yet." 
+                    chart-id="adminInquiryTrendChart" 
+                    wrapper-id="adminInquiryTrendChartWrapper" 
+                    legend-id="adminInquiryTrendLegend" 
+                    :current-range-days="$days ?? 30" 
+                />
         </div>
     </section>
 
@@ -1116,27 +1100,11 @@
                     return $s['color'] . ' ' . $s['from'] . '% ' . $s['to'] . '%';
                 })->implode(', ');
             @endphp
-            <div class="dealer-reports-status-card">
-                <div class="report-donut-wrapper">
-                    <div class="report-donut"
-                         style="background: conic-gradient({{ $gradientParts ?: '#e5e7eb 0 100%' }});">
-                        <div class="report-donut-center">
-                            <div class="report-donut-total">{{ array_sum(array_column($statusReportData, 'value')) }}</div>
-                            <div class="report-donut-label">Activities</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <ul class="report-legend">
-                @foreach ($statusReportData as $item)
-                    <li>
-                        <span class="report-legend-color"
-                              style="background-color: {{ $item['color'] ?? '#e5e7eb' }}"></span>
-                        <span class="report-legend-label">{{ $item['label'] }}</span>
-                        <span class="report-legend-value">{{ $item['value'] }}</span>
-                    </li>
-                @endforeach
-            </ul>
+            <x-reports.status-distribution 
+                :status-report-data="$statusReportData" 
+                :status-gradient="$gradientParts" 
+                :status-gradient-dark="$gradientParts" 
+            />
         </div>
     </section>
 </section>
@@ -1198,31 +1166,13 @@
         </div>
     </div>
     <div class="dashboard-panel-body">
-        <div class="reports-product-card">
-        @if ($productConversionDisplay->isEmpty())
-            <p class="reports-product-empty">No closed cases this month yet.</p>
-        @else
-            @php
-                $itemCount = $productConversionDisplay->count();
-                $barHeightPx = 20;
-                $gapPx = 10;
-                $paddingPx = 44;
-                $chartHeightPx = max(220, $itemCount * ($barHeightPx + $gapPx) + $paddingPx);
-                $mobileChartWidthPx = max(750, $itemCount * 110);
-            @endphp
-            <div class="reports-product-chart-desktop-wrapper" id="productConversionChartDesktopWrapper" style="height: {{ $chartHeightPx }}px;">
-                <p class="reports-product-chart-fallback">Unable to load product conversion chart.</p>
-                <canvas id="productConversionChartDesktop"></canvas>
-            </div>
-            
-            <div class="dealer-reports-chart-scroll-wrapper reports-product-chart-mobile-wrapper" style="display: none;">
-                <div class="reports-product-chart-wrapper" id="productConversionChartMobileWrapper" style="width: {{ $mobileChartWidthPx }}px; min-width: {{ $mobileChartWidthPx }}px; height: 300px;">
-                    <p class="reports-product-chart-fallback">Unable to load product conversion chart.</p>
-                    <canvas id="productConversionChartMobile"></canvas>
-                </div>
-            </div>
-        @endif
-        </div>
+        <x-reports.product-conversion 
+            :product-conversion-display="$productConversionDisplay" 
+            desktop-wrapper-id="productConversionChartDesktopWrapper" 
+            desktop-chart-id="productConversionChartDesktop" 
+            mobile-wrapper-id="productConversionChartMobileWrapper" 
+            mobile-chart-id="productConversionChartMobile" 
+        />
     </div>
 </section>
 </div>

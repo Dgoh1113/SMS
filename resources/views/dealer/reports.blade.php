@@ -478,29 +478,14 @@
                 </div>
             </div>
             <div class="dashboard-panel-body">
-                <div class="dealer-reports-card">
-                    @if (!$hasInquiryTrendData)
-                        <p class="dealer-reports-empty">No leads created in this period yet.</p>
-                    @else
-                        <div class="dealer-reports-chart-scroll-wrapper">
-                            <div class="dealer-reports-chart-wrapper" id="dealerInquiryTrendChartWrapper" style="height: 272px;">
-                                <p class="dealer-reports-chart-fallback">Unable to load inquiry trend chart.</p>
-                                <canvas id="dealerInquiryTrendChart"></canvas>
-                            </div>
-                        </div>
-
-                        <div class="admin-inquiry-trend-legend" id="dealerInquiryTrendLegend" style="justify-content: center; gap: 20px; margin-top: 8px;">
-                            <button class="admin-inquiry-trend-legend-button" data-dataset-index="0" type="button">
-                                <span class="admin-inquiry-trend-legend-dot admin-inquiry-trend-legend-dot--trend"></span>
-                                <span>This {{ $currentRangeDays ?? 30 }} Days</span>
-                            </button>
-                            <button class="admin-inquiry-trend-legend-button" data-dataset-index="1" type="button">
-                                <span class="admin-inquiry-trend-legend-dot admin-inquiry-trend-legend-dot--ma"></span>
-                                <span>Previous {{ $currentRangeDays ?? 30 }} Days</span>
-                            </button>
-                        </div>
-                    @endif
-                </div>
+                <x-reports.inquiry-trend 
+                    :has-data="$hasInquiryTrendData" 
+                    empty-message="No leads created in this period yet." 
+                    chart-id="dealerInquiryTrendChart" 
+                    wrapper-id="dealerInquiryTrendChartWrapper" 
+                    legend-id="dealerInquiryTrendLegend" 
+                    :current-range-days="$currentRangeDays ?? 30" 
+                />
             </div>
         </section>
 
@@ -511,33 +496,11 @@
                     <div class="dealer-reports-status-subtitle">Current status distribution for {{ $periodLabel ?? 'Current Month' }}</div>
                 </div>
             </div>
-            <div class="dashboard-panel-body report-status-body">
-                <div class="dealer-reports-status-card">
-                    <div class="report-donut-wrapper">
-                        <div class="report-donut"
-                             data-light-gradient="{{ $statusGradient ?: '#e5e7eb 0 100%' }}"
-                             data-dark-gradient="{{ $statusGradientDark ?: '#334155 0 100%' }}"
-                             style="background: conic-gradient({{ $statusGradient ?: '#e5e7eb 0 100%' }});">
-                            <div class="report-donut-center">
-                                <div class="report-donut-total">{{ array_sum(array_column($statusReportData, 'value')) }}</div>
-                                <div class="report-donut-label">Activities</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <ul class="report-legend">
-                    @foreach ($statusReportData as $item)
-                        <li>
-                            <span class="report-legend-color{{ ($item['label'] ?? '') === 'Failed' ? ' report-legend-color--failed' : '' }}"
-                                  data-light-color="{{ $item['color'] ?? '#e5e7eb' }}"
-                                  data-dark-color="{{ $item['dark_color'] ?? ($item['color'] ?? '#e5e7eb') }}"
-                                  style="background-color: {{ $item['color'] ?? '#e5e7eb' }}"></span>
-                            <span class="report-legend-label">{{ $item['label'] }}</span>
-                            <span class="report-legend-value">{{ $item['value'] }}</span>
-                        </li>
-                    @endforeach
-                </ul>
-            </div>
+            <x-reports.status-distribution 
+                :status-report-data="$statusReportData" 
+                :status-gradient="$statusGradient" 
+                :status-gradient-dark="$statusGradientDark" 
+            />
         </section>
     </section>
 
@@ -559,27 +522,13 @@
             </div>
         </div>
         <div class="dashboard-panel-body">
-            <div class="reports-product-card">
-                @php
-                    $itemCount = $productConversionDisplay->count();
-                    $barHeightPx = 20;
-                    $gapPx = 10;
-                    $paddingPx = 44;
-                    $chartHeightPx = max(220, $itemCount * ($barHeightPx + $gapPx) + $paddingPx);
-                    $mobileChartWidthPx = max(750, $itemCount * 110);
-                @endphp
-                <div class="reports-product-chart-desktop-wrapper" id="dealerProductConversionChartDesktopWrapper" style="height: {{ $chartHeightPx }}px;">
-                    <p class="reports-product-chart-fallback">Unable to load product conversion chart.</p>
-                    <canvas id="dealerProductConversionChartDesktop"></canvas>
-                </div>
-                
-                <div class="dealer-reports-chart-scroll-wrapper reports-product-chart-mobile-wrapper" style="display: none;">
-                    <div class="reports-product-chart-wrapper" id="dealerProductConversionChartMobileWrapper" style="width: {{ $mobileChartWidthPx }}px; min-width: {{ $mobileChartWidthPx }}px; height: 300px;">
-                        <p class="reports-product-chart-fallback">Unable to load product conversion chart.</p>
-                        <canvas id="dealerProductConversionChartMobile"></canvas>
-                    </div>
-                </div>
-            </div>
+            <x-reports.product-conversion 
+                :product-conversion-display="$productConversionDisplay" 
+                desktop-wrapper-id="dealerProductConversionChartDesktopWrapper" 
+                desktop-chart-id="dealerProductConversionChartDesktop" 
+                mobile-wrapper-id="dealerProductConversionChartMobileWrapper" 
+                mobile-chart-id="dealerProductConversionChartMobile" 
+            />
         </div>
     </section>
 
