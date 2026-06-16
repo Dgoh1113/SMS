@@ -2328,11 +2328,27 @@ class DealerController extends Controller
 
             $statusCounts = $buildStatusCounts($dateFrom, $dateTo);
 
-            // Trend indicators logic (comparison with previous period)
             $currentRangeDays = (int) ($dateFrom->diffInDays($dateTo) + 1);
             $prevDateFrom = $dateFrom->copy()->subDays($currentRangeDays)->startOfDay();
             $prevDateTo = $dateFrom->copy()->subSecond();
             $prevStatusCounts = $buildStatusCounts($prevDateFrom, $prevDateTo);
+
+            $prevInquiryTrendData = [];
+            $prevCurrentDate = $prevDateFrom->copy();
+            while ($prevCurrentDate->lte($prevDateTo)) {
+                $d = $prevCurrentDate->format('Y-m-d');
+                $row = DB::selectOne(
+                    'SELECT COUNT(*) AS "CNT"
+                 FROM "LEAD" l
+                 JOIN ('.$dealerPendingDateSql.') p ON p."LEADID" = l."LEADID"
+                 WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" = ?
+                   AND UPPER(TRIM(COALESCE((SELECT FIRST 1 la2."STATUS" FROM "LEAD_ACT" la2 WHERE la2."LEADID" = l."LEADID" ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC), \'\'))) <> \'CANCELLED\'
+                   AND CAST(p."PENDING_AT" AS DATE) = ?',
+                    ['PENDING', $dealerId, $d]
+                );
+                $prevInquiryTrendData[] = (int) ($row->CNT ?? 0);
+                $prevCurrentDate->addDay();
+            }
 
             $percentChange = function ($current, $previous) {
                 if ($previous == 0) {
@@ -2379,12 +2395,14 @@ class DealerController extends Controller
             'statusCounts' => $statusCounts,
             'totalInquiry' => $totalInquiry,
             'inquiryTrendData' => $inquiryTrendData,
+            'prevInquiryTrendData' => $prevInquiryTrendData ?? [],
             'trendLabels' => $trendLabels,
             'metricPercent' => $metricPercent,
             'period' => $period,
             'periodLabel' => $periodLabel,
             'from' => $fromInput,
             'to' => $toInput,
+            'currentRangeDays' => $currentRangeDays ?? 30,
             'productCounts' => $productCounts,
         ]);
     }

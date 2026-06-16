@@ -29,6 +29,7 @@
                     $productIds[] = (int) $id;
                 }
             }
+            $productIds = \App\Support\ProductConstants::sortProductIds($productIds);
         }
         $rawStatus = strtoupper(trim($r->ACT_STATUS ?? ''));
         $statusClass = 'inquiries-status-new';

@@ -3284,6 +3284,39 @@ class AdminController extends Controller
             ];
         }
 
+        $prevTrendRows = DB::select(
+            'SELECT CAST(l."CREATEDAT" AS DATE) AS d, COUNT(*) AS c
+             FROM "LEAD" l
+             LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
+             WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
+             '.$leadScopeSql.'
+             GROUP BY CAST(l."CREATEDAT" AS DATE)
+             ORDER BY CAST(l."CREATEDAT" AS DATE)',
+            array_merge([$prevStartStr, $prevEndStr], $leadScopeBindings)
+        );
+        $prevTrendByDay = [];
+        for ($i = 0; $i < $currentRangeDays; $i++) {
+            $dateKey = $prevStartDate->copy()->addDays($i)->format('Y-m-d');
+            $prevTrendByDay[$dateKey] = 0;
+        }
+        foreach ($prevTrendRows as $row) {
+            $d = $get($row, 'd');
+            if ($d) {
+                $dateKey = Carbon::parse($d)->format('Y-m-d');
+                if (isset($prevTrendByDay[$dateKey])) {
+                    $prevTrendByDay[$dateKey] += (int) $get($row, 'c');
+                }
+            }
+        }
+        $prevInquiryTrend = [];
+        foreach ($prevTrendByDay as $dayKey => $count) {
+            $prevInquiryTrend[] = [
+                'day' => Carbon::parse($dayKey)->format('M j'),
+                'full_day' => Carbon::parse($dayKey)->format('d/m/Y'),
+                'count' => $count,
+            ];
+        }
+
         $currentMonthTotal = array_sum($trendByDay);
         $lastMonthRows = DB::select(
             'SELECT COUNT(*) AS c
@@ -3366,6 +3399,7 @@ class AdminController extends Controller
             'payoutStatus' => $payoutStatus,
             'metricPercent' => $metricPercent,
             'inquiryTrend' => $inquiryTrend,
+            'prevInquiryTrend' => $prevInquiryTrend,
             'inquiryTrendPercentChange' => $inquiryTrendPercentChange,
             'productConversion' => $productConversion,
             'days' => $days,

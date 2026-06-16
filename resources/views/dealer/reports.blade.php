@@ -492,11 +492,11 @@
                         <div class="admin-inquiry-trend-legend" id="dealerInquiryTrendLegend" style="justify-content: center; gap: 20px; margin-top: 8px;">
                             <button class="admin-inquiry-trend-legend-button" data-dataset-index="0" type="button">
                                 <span class="admin-inquiry-trend-legend-dot admin-inquiry-trend-legend-dot--trend"></span>
-                                <span>Trend</span>
+                                <span>This {{ $currentRangeDays ?? 30 }} Days</span>
                             </button>
                             <button class="admin-inquiry-trend-legend-button" data-dataset-index="1" type="button">
                                 <span class="admin-inquiry-trend-legend-dot admin-inquiry-trend-legend-dot--ma"></span>
-                                <span>Moving Average</span>
+                                <span>Previous {{ $currentRangeDays ?? 30 }} Days</span>
                             </button>
                         </div>
                     @endif
@@ -830,8 +830,8 @@ function initDealerReportsPage() {
             var axisColor = darkTheme ? 'rgba(148, 163, 184, 0.22)' : 'rgba(148, 163, 184, 0.28)';
             var legendColor = darkTheme ? '#c8d2eb' : '#334155';
             var tickColor = darkTheme ? '#9fb0d4' : '#8b95b5';
-            var inquiryLabels = rawInquiryLabels.map(function(label) {
-                return String(label || '').trim();
+            var inquiryLabels = rawInquiryLabels.map(function(label, index) {
+                return 'Day ' + (index + 1);
             });
             var tooltipLabels = rawInquiryLabels.map(function(label) {
                 var normalized = String(label || '').trim();
@@ -841,32 +841,7 @@ function initDealerReportsPage() {
                 return normalized;
             });
 
-            function calculateMovingAverage(values, period) {
-                var ma = [];
-                for (var i = 0; i < values.length; i++) {
-                    var sum = 0;
-                    var count = 0;
-                    var start = Math.max(0, i - period + 1);
-                    for (var j = start; j <= i; j++) {
-                        sum += Number(values[j] || 0);
-                        count++;
-                    }
-                    ma.push(count > 0 ? sum / count : 0);
-                }
-                return ma;
-            }
-
-            var maPeriod = 7;
-            if (inquiryValues.length <= 10) {
-                maPeriod = 3;
-            } else if (inquiryValues.length <= 30) {
-                maPeriod = 7;
-            } else if (inquiryValues.length <= 60) {
-                maPeriod = 14;
-            } else {
-                maPeriod = 30;
-            }
-            var movingAverageValues = calculateMovingAverage(inquiryValues, maPeriod);
+            var prevInquiryValues = @json(array_values($prevInquiryTrendData ?? []));
 
             var totalDays = inquiryLabels.length;
             var tickStep = 15;
@@ -883,7 +858,10 @@ function initDealerReportsPage() {
             }
 
             var maxTickCount = Math.ceil(totalDays / tickStep) + 2;
-            var maxInquiryValue = inquiryValues.length ? Math.max.apply(null, inquiryValues) : 0;
+            var maxInquiryValue = Math.max(
+                inquiryValues.length ? Math.max.apply(null, inquiryValues) : 0,
+                prevInquiryValues.length ? Math.max.apply(null, prevInquiryValues) : 0
+            );
             function clearInquiryHover(chart) {
                 chart.setActiveElements([]);
                 if (chart.tooltip) {
@@ -994,7 +972,7 @@ function initDealerReportsPage() {
                     datasets: [
                         {
                             type: 'line',
-                            label: 'Trend',
+                            label: 'This {{ $currentRangeDays ?? 30 }} Days',
                             data: inquiryValues,
                             borderColor: brandColor,
                             borderWidth: 3,
@@ -1026,8 +1004,8 @@ function initDealerReportsPage() {
                         },
                         {
                             type: 'line',
-                            label: 'Moving Average',
-                            data: movingAverageValues,
+                            label: 'Previous {{ $currentRangeDays ?? 30 }} Days',
+                            data: prevInquiryValues,
                             borderColor: darkTheme ? '#ffd384' : '#f59e0b',
                             borderWidth: 2.5,
                             pointBackgroundColor: darkTheme ? '#0e1424' : '#ffffff',
@@ -1082,13 +1060,10 @@ function initDealerReportsPage() {
                                         return '';
                                     }
                                     var item = items[0];
-                                    return tooltipLabels[item.dataIndex] || item.label || '';
+                                    return inquiryLabels[item.dataIndex] || item.label || '';
                                 },
                                 label: function(context) {
                                      var value = typeof context.parsed.y === 'number' ? context.parsed.y : 0;
-                                     if (context.dataset.label === 'Moving Average') {
-                                         return context.dataset.label + ': ' + (value % 1 === 0 ? value : value.toFixed(2));
-                                     }
                                      return context.dataset.label + ': ' + Math.round(value);
                                  }
                             }

@@ -692,8 +692,7 @@
             body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .top-nav,
             body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .reports-page-tabs-shell,
             body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .reports-filter-bar,
-            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .reports-page-filters-shell form,
-            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .admin-inquiry-trend-legend {
+            body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .reports-page-filters-shell form {
                 display: none !important;
             }
             body:not(.report-export-monthly-performance):not(.report-export-dealer-performance):not(.report-export-dealer-sales-overtime):not(.report-export-dealer-revenue-production) .dashboard-content {
@@ -920,6 +919,7 @@
     $adminInquiryTrendLabels = array_column($inquiryTrend ?? [], 'day');
     $adminInquiryTrendFullDates = array_column($inquiryTrend ?? [], 'full_day');
     $adminInquiryTrendData = array_column($inquiryTrend ?? [], 'count');
+    $adminPrevInquiryTrendData = array_column($prevInquiryTrend ?? [], 'count');
     $totalInquiry = array_sum($adminInquiryTrendData);
     $hasInquiryTrendData = $totalInquiry > 0;
 @endphp
@@ -1075,11 +1075,11 @@
                     <div class="admin-inquiry-trend-legend" id="adminInquiryTrendLegend" style="justify-content: center; gap: 20px; margin-top: 8px;">
                         <button class="admin-inquiry-trend-legend-button" data-dataset-index="0" type="button">
                             <span class="admin-inquiry-trend-legend-dot admin-inquiry-trend-legend-dot--trend"></span>
-                            <span>Trend</span>
+                            <span>This {{ $days ?? 30 }} Days</span>
                         </button>
                         <button class="admin-inquiry-trend-legend-button" data-dataset-index="1" type="button">
                             <span class="admin-inquiry-trend-legend-dot admin-inquiry-trend-legend-dot--ma"></span>
-                            <span>Moving Average</span>
+                            <span>Previous {{ $days ?? 30 }} Days</span>
                         </button>
                     </div>
 
@@ -1678,6 +1678,7 @@
                     const rawInquiryLabels = @json($adminInquiryTrendLabels ?? []);
                     const rawInquiryFullDates = @json($adminInquiryTrendFullDates ?? []);
                     const rawInquiryValues = @json($adminInquiryTrendData ?? []);
+                    const rawPrevInquiryValues = @json($adminPrevInquiryTrendData ?? []);
                     const reportPeriod = 'days';
                     const currentMonthName = @json(now()->format('F'));
                     const currentYear = @json((int) now()->year);
@@ -1687,10 +1688,11 @@
                     const gridColor = darkTheme ? 'rgba(148, 163, 184, 0.16)' : 'rgba(148, 163, 184, 0.25)';
                     const axisColor = darkTheme ? 'rgba(148, 163, 184, 0.22)' : 'rgba(148, 163, 184, 0.28)';
                     const tickColor = darkTheme ? '#9fb0d4' : '#8b95b5';
-                    let inquiryLabels = rawInquiryLabels.map(function (label) {
-                        return String(label || '').trim();
+                    let inquiryLabels = rawInquiryLabels.map(function (label, index) {
+                        return 'Day ' + (index + 1);
                     });
                     let inquiryValues = rawInquiryValues.slice();
+                    let prevInquiryValues = rawPrevInquiryValues.slice();
                     let tooltipLabels = rawInquiryFullDates.map(function (label) {
                         const normalized = String(label || '').trim();
                         if (reportPeriod === 'month' && normalized && /^\d+$/.test(normalized)) {
@@ -1759,32 +1761,7 @@
                         tooltipLabels = monthBuckets.tooltips;
                     }
 
-                    function calculateMovingAverage(values, period) {
-                        const ma = [];
-                        for (let i = 0; i < values.length; i++) {
-                            let sum = 0;
-                            let count = 0;
-                            const start = Math.max(0, i - period + 1);
-                            for (let j = start; j <= i; j++) {
-                                sum += Number(values[j] || 0);
-                                count++;
-                            }
-                            ma.push(count > 0 ? sum / count : 0);
-                        }
-                        return ma;
-                    }
 
-                    let maPeriod = 7;
-                    if (inquiryValues.length <= 10) {
-                        maPeriod = 3;
-                    } else if (inquiryValues.length <= 30) {
-                        maPeriod = 7;
-                    } else if (inquiryValues.length <= 60) {
-                        maPeriod = 14;
-                    } else {
-                        maPeriod = 30;
-                    }
-                    const movingAverageValues = calculateMovingAverage(inquiryValues, maPeriod);
 
                     const showAllWeekTicks = reportPeriod === 'month';
                     const totalDays = inquiryLabels.length;
@@ -1803,7 +1780,10 @@
                         tickStep = 15; // Standard (60, 90 days etc.)
                     }
                     const maxTickCount = Math.ceil(inquiryLabels.length / tickStep) + 2;
-                    const maxInquiryValue = inquiryValues.length ? Math.max.apply(null, inquiryValues) : 0;
+                    const maxInquiryValue = Math.max(
+                        inquiryValues.length ? Math.max.apply(null, inquiryValues) : 0,
+                        prevInquiryValues.length ? Math.max.apply(null, prevInquiryValues) : 0
+                    );
 
                     function clearInquiryHover(chart) {
                         chart.setActiveElements([]);
@@ -1964,7 +1944,7 @@
                             datasets: [
                                 {
                                     type: 'line',
-                                    label: 'Trend',
+                                    label: 'This {{ $days ?? 30 }} Days',
                                     data: inquiryValues,
                                     borderColor: brandColor,
                                     borderWidth: 3,
@@ -1995,8 +1975,8 @@
                                 },
                                 {
                                     type: 'line',
-                                    label: 'Moving Average',
-                                    data: movingAverageValues,
+                                    label: 'Previous {{ $days ?? 30 }} Days',
+                                    data: prevInquiryValues,
                                     borderColor: darkTheme ? '#ffd384' : '#f59e0b',
                                     borderWidth: 2.5,
                                     pointBackgroundColor: darkTheme ? '#0e1424' : '#ffffff',
@@ -2051,13 +2031,10 @@
                                                 return '';
                                             }
                                             const item = items[0];
-                                            return tooltipLabels[item.dataIndex] || item.label || '';
+                                            return inquiryLabels[item.dataIndex] || item.label || '';
                                         },
                                         label: function (context) {
                                             const value = typeof context.parsed.y === 'number' ? context.parsed.y : 0;
-                                            if (context.dataset.label === 'Moving Average') {
-                                                return context.dataset.label + ': ' + (value % 1 === 0 ? value : value.toFixed(2));
-                                            }
                                             return context.dataset.label + ': ' + Math.round(value);
                                         }
                                     }
