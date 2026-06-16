@@ -1478,8 +1478,8 @@ class AdminController extends Controller
             // Insert "Lead Assigned" activity (replaces TRD_LEAD_AFTER_UPDATE_ASSIGN trigger)
             $createdByUser = $fromUserId !== '' ? $fromUserId : $assignedTo;
             DB::insert(
-                'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS")
-                 VALUES (NEXT VALUE FOR GEN_LEAD_ACTID,?,?,CURRENT_TIMESTAMP,?,?,NULL,?)',
+                'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","STATUS")
+                 VALUES (NEXT VALUE FOR GEN_LEAD_ACTID,?,?,CURRENT_TIMESTAMP,?,?,?)',
                 [$leadId, $createdByUser, 'Lead Assigned', 'Lead Assigned by '.$createdByUser.' to '.$assignedTo, 'Pending']
             );
 
@@ -1568,12 +1568,19 @@ class AdminController extends Controller
             }
 
             if ($prev === '') {
-                DB::delete(
-                    'DELETE FROM "LEAD_ACT"
-                       WHERE "LEADID" = ?
-                         AND UPPER(TRIM(COALESCE("STATUS", \'\'))) = ?',
+                $actsToDelete = DB::select(
+                    'SELECT "LEAD_ACTID" FROM "LEAD_ACT" 
+                     WHERE "LEADID" = ? AND UPPER(TRIM(COALESCE("STATUS", \'\'))) = ?',
                     [$leadId, 'PENDING']
                 );
+                foreach ($actsToDelete as $act) {
+                    // Cascade delete attachments
+                    DB::delete('DELETE FROM "LEAD_ACT_ATTACHMENT" WHERE "LEAD_ACTID" = ?', [$act->LEAD_ACTID]);
+                    DB::delete('DELETE FROM "LEAD_ACT" WHERE "LEAD_ACTID" = ?', [$act->LEAD_ACTID]);
+                }
+                
+                // Cleanup orphaned attachments
+                DB::delete('DELETE FROM "ATTACHMENT" WHERE "SHA1" NOT IN (SELECT "SHA1" FROM "LEAD_ACT_ATTACHMENT")');
 
                 DB::update(
                     'UPDATE "LEAD"
@@ -1642,9 +1649,9 @@ class AdminController extends Controller
 
             DB::insert(
                 'INSERT INTO "LEAD_ACT"
-                    ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS")
-                 VALUES (NEXT VALUE FOR GEN_LEAD_ACTID,?,?,CURRENT_TIMESTAMP,?,?,?,?)',
-                [$leadId, $userId !== '' ? $userId : null, 'Status changed to Cancelled', $message, null, 'Cancelled']
+                    ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","STATUS")
+                 VALUES (NEXT VALUE FOR GEN_LEAD_ACTID,?,?,CURRENT_TIMESTAMP,?,?,?)',
+                [$leadId, $userId !== '' ? $userId : null, 'Status changed to Cancelled', $message, 'Cancelled']
             );
 
             DB::commit();
@@ -1661,8 +1668,11 @@ class AdminController extends Controller
     public function leadStatus(int $leadId): \Illuminate\Http\JsonResponse
     {
         $rows = DB::select(
-            'SELECT "LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS","SERIALACC","SERIALPAY","ATTACHMENT2"
-             FROM "LEAD_ACT" WHERE "LEADID" = ? ORDER BY "CREATIONDATE" DESC, "LEAD_ACTID" DESC',
+            'SELECT la."LEAD_ACTID",la."LEADID",la."USERID",la."CREATIONDATE",la."SUBJECT",la."DESCRIPTION",la."STATUS",la."SERIALACC",la."SERIALPAY", att."CONTENT" as "ATTACHMENT", att."SHA1" as "ATTACHMENT_HASH"
+             FROM "LEAD_ACT" la
+             LEFT JOIN "LEAD_ACT_ATTACHMENT" laa ON la."LEAD_ACTID" = laa."LEAD_ACTID"
+             LEFT JOIN "ATTACHMENT" att ON laa."SHA1" = att."SHA1"
+             WHERE la."LEADID" = ? ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC',
             [$leadId]
         );
 
@@ -1712,43 +1722,51 @@ class AdminController extends Controller
         }
 
         $activities = [];
+        $actMap = [];
+
         foreach ($rows as $r) {
-            $createdAtIso = null;
-            if (! empty($r->CREATIONDATE)) {
-                try {
-                    $createdAtIso = Carbon::parse($r->CREATIONDATE)->toIso8601String();
-                } catch (\Throwable $e) {
-                    $createdAtIso = (string) $r->CREATIONDATE;
+            $actId = $r->LEAD_ACTID;
+
+            if (!isset($actMap[$actId])) {
+                $createdAtIso = null;
+                if (! empty($r->CREATIONDATE)) {
+                    try {
+                        $createdAtIso = Carbon::parse($r->CREATIONDATE)->toIso8601String();
+                    } catch (\Throwable $e) {
+                        $createdAtIso = (string) $r->CREATIONDATE;
+                    }
                 }
+
+                $status = trim((string) ($r->STATUS ?? ''));
+                $userId = trim((string) ($r->USERID ?? ''));
+                $actMap[$actId] = [
+                    'type' => strtoupper($status) === 'CREATED' ? 'created' : 'activity',
+                    'user' => $userId !== '' ? ($userNameMap[$userId] ?? $userId) : 'System',
+                    'subject' => trim((string) ($r->SUBJECT ?? '')),
+                    'description' => trim((string) ($r->DESCRIPTION ?? '')),
+                    'status' => $status,
+                    'serial_acc' => trim((string) ($r->SERIALACC ?? '')),
+                    'serial_pay' => trim((string) ($r->SERIALPAY ?? '')),
+                    'created_at' => $createdAtIso,
+                    'attachment_urls' => [],
+                    'attachment2_urls' => [],
+                ];
             }
 
-            $status = trim((string) ($r->STATUS ?? ''));
-            $userId = trim((string) ($r->USERID ?? ''));
-            $activities[] = [
-                'type' => strtoupper($status) === 'CREATED' ? 'created' : 'activity',
-                'user' => $userId !== '' ? ($userNameMap[$userId] ?? $userId) : 'System',
-                'subject' => trim((string) ($r->SUBJECT ?? '')),
-                'description' => trim((string) ($r->DESCRIPTION ?? '')),
-                'status' => $status,
-                'serial_acc' => trim((string) ($r->SERIALACC ?? '')),
-                'serial_pay' => trim((string) ($r->SERIALPAY ?? '')),
-                'created_at' => $createdAtIso,
-                'attachment_urls' => AttachmentUrlBuilder::buildUrls(
-                    $r->ATTACHMENT ?? null,
+            if (isset($r->ATTACHMENT) && $r->ATTACHMENT !== null) {
+                $urls = AttachmentUrlBuilder::buildUrls(
+                    $r->ATTACHMENT,
                     (int) ($r->LEADID ?? $leadId),
-                    (int) ($r->LEAD_ACTID ?? 0),
+                    (int) $actId,
                     'admin.rewards.serve-attachment',
                     'admin.rewards.activity-attachment'
-                ),
-                'attachment2_urls' => AttachmentUrlBuilder::buildUrls(
-                    $r->ATTACHMENT2 ?? null,
-                    (int) ($r->LEADID ?? $leadId),
-                    (int) ($r->LEAD_ACTID ?? 0),
-                    'admin.rewards.serve-attachment',
-                    'admin.rewards.activity-attachment'
-                ),
-            ];
+                );
+                foreach ($urls as $url) {
+                    $actMap[$actId]['attachment_urls'][] = $url;
+                }
+            }
         }
+        $activities = array_values($actMap);
 
         $items = array_map(fn ($r) => [
             'LEAD_ACTID' => $r->LEAD_ACTID,
@@ -2040,8 +2058,8 @@ class AdminController extends Controller
             // Insert initial "Lead Created" activity (replaces TRD_LEAD_AFTER_INSERT trigger)
             if ($newLeadId > 0) {
                 DB::insert(
-                    'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS")
-                     VALUES (NEXT VALUE FOR GEN_LEAD_ACTID,?,?,CURRENT_TIMESTAMP,?,?,NULL,?)',
+                    'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","STATUS")
+                     VALUES (NEXT VALUE FOR GEN_LEAD_ACTID,?,?,CURRENT_TIMESTAMP,?,?,?)',
                     [$newLeadId, $userId, 'Lead Created', 'Lead Created', 'Created']
                 );
                 
@@ -2049,8 +2067,8 @@ class AdminController extends Controller
                 if ($assignedTo !== '') {
                     $createdByUser = $userId !== '' ? $userId : $assignedTo;
                     DB::insert(
-                        'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS")
-                         VALUES (NEXT VALUE FOR GEN_LEAD_ACTID,?,?,CURRENT_TIMESTAMP,?,?,NULL,?)',
+                        'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","STATUS")
+                         VALUES (NEXT VALUE FOR GEN_LEAD_ACTID,?,?,CURRENT_TIMESTAMP,?,?,?)',
                         [$newLeadId, $createdByUser, 'Lead Assigned', 'Lead Assigned by '.$createdByUser.' to '.$assignedTo, 'Pending']
                     );
                 }
@@ -2252,8 +2270,8 @@ class AdminController extends Controller
                 $createdByUser = $assignUserId !== '' ? $assignUserId : $newAssignedTo;
                 try {
                     DB::insert(
-                        'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS")
-                         VALUES (NEXT VALUE FOR GEN_LEAD_ACTID,?,?,CURRENT_TIMESTAMP,?,?,NULL,?)',
+                        'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","STATUS")
+                         VALUES (NEXT VALUE FOR GEN_LEAD_ACTID,?,?,CURRENT_TIMESTAMP,?,?,?)',
                         [$leadId, $createdByUser, 'Lead Assigned', 'Lead Assigned by '.$createdByUser.' to '.$newAssignedTo, 'Pending']
                     );
                     DB::update('UPDATE "LEAD" SET "LASTMODIFIED" = CURRENT_TIMESTAMP WHERE "LEADID" = ?', [$leadId]);
@@ -2271,8 +2289,8 @@ class AdminController extends Controller
                 $createdByUser = $assignUserId !== '' ? $assignUserId : $oldAssignedTo;
                 try {
                     DB::insert(
-                        'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS")
-                         VALUES (NEXT VALUE FOR GEN_LEAD_ACTID,?,?,CURRENT_TIMESTAMP,?,?,NULL,?)',
+                        'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","STATUS")
+                         VALUES (NEXT VALUE FOR GEN_LEAD_ACTID,?,?,CURRENT_TIMESTAMP,?,?,?)',
                         [$leadId, $createdByUser, 'Lead Unassigned', 'Lead Unassigned by '.$createdByUser, 'Created']
                     );
                     DB::update('UPDATE "LEAD" SET "LASTMODIFIED" = CURRENT_TIMESTAMP WHERE "LEADID" = ?', [$leadId]);
@@ -2478,7 +2496,13 @@ class AdminController extends Controller
      */
     public function rewardActivityAttachment(Request $request, int $leadId, int $leadActId): \Symfony\Component\HttpFoundation\Response
     {
-        $row = DB::selectOne('SELECT "ATTACHMENT" FROM "LEAD_ACT" WHERE "LEAD_ACTID" = ? AND "LEADID" = ?', [$leadActId, $leadId]);
+        $row = DB::selectOne('
+            SELECT FIRST 1 att."CONTENT" as "ATTACHMENT"
+            FROM "LEAD_ACT" a
+            JOIN "LEAD_ACT_ATTACHMENT" laa ON a."LEAD_ACTID" = laa."LEAD_ACTID"
+            JOIN "ATTACHMENT" att ON laa."SHA1" = att."SHA1"
+            WHERE a."LEAD_ACTID" = ? AND a."LEADID" = ?
+        ', [$leadActId, $leadId]);
         if (! $row) {
             return response('', 404);
         }
@@ -4228,7 +4252,7 @@ class AdminController extends Controller
         // Load all matching rows for client-side pagination/filtering
         $rows = DB::select(
             "SELECT
-                a.\"LEAD_ACTID\", a.\"LEADID\", a.\"USERID\", a.\"CREATIONDATE\", a.\"SUBJECT\", a.\"DESCRIPTION\", a.\"ATTACHMENT\", a.\"STATUS\",
+                a.\"LEAD_ACTID\", a.\"LEADID\", a.\"USERID\", a.\"CREATIONDATE\", a.\"SUBJECT\", a.\"DESCRIPTION\", a.\"STATUS\",
                 u.\"ALIAS\",
                 l.\"POSTCODE\", l.\"CITY\", l.\"COMPANYNAME\", l.\"CONTACTNAME\"
             FROM \"LEAD_ACT\" a

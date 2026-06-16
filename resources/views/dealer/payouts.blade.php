@@ -1426,7 +1426,7 @@ if (document.readyState === 'loading') {
                 html += '</div>';
             }
             if (a.attachment_urls && a.attachment_urls.length > 0) {
-                html += '<div class="inquiry-activity-attachments-label" style="margin-top: 5px; font-size: 0.85em; font-weight: bold; color: #555;">Company Invoice:</div>';
+                html += '<div class="inquiry-activity-attachments-label" style="margin-top: 5px; font-size: 0.85em; font-weight: bold; color: #555;">Attachment:</div>';
                 html += '<div class="inquiry-activity-attachments">';
                 a.attachment_urls.forEach(function(url) {
                     var safe = (url || '').replace(/"/g, '&quot;');

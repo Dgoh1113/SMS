@@ -188,8 +188,8 @@ class FetchInquiries extends Command
                     // Insert initial "Lead Created" activity (replaces TRD_LEAD_AFTER_INSERT trigger)
                     if ($leadId) {
                         DB::insert(
-                            'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS")
-                             VALUES (NEXT VALUE FOR GEN_LEAD_ACTID,?,?,CURRENT_TIMESTAMP,?,?,NULL,?)',
+                            'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","STATUS")
+                             VALUES (NEXT VALUE FOR GEN_LEAD_ACTID,?,?,CURRENT_TIMESTAMP,?,?,?)',
                             [$leadId, 'U001', 'Lead Created', 'Lead Created', 'Created']
                         );
                         DB::update('UPDATE "LEAD" SET "LASTMODIFIED" = CURRENT_TIMESTAMP WHERE "LEADID" = ?', [$leadId]);

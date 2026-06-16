@@ -161,10 +161,12 @@ class LeadEnricher
     {
         $placeholders = implode(',', array_fill(0, count($leadIds), '?'));
         $attachRows = DB::select(
-            "SELECT \"LEADID\", \"LEAD_ACTID\", \"ATTACHMENT\", \"CREATIONDATE\"
-             FROM \"LEAD_ACT\"
-             WHERE \"LEADID\" IN ($placeholders) AND \"ATTACHMENT\" IS NOT NULL
-             ORDER BY \"LEADID\" ASC, \"CREATIONDATE\" DESC, \"LEAD_ACTID\" DESC",
+            "SELECT a.\"LEADID\", a.\"LEAD_ACTID\", att.\"CONTENT\" as \"ATTACHMENT\", a.\"CREATIONDATE\"
+             FROM \"LEAD_ACT\" a
+             JOIN \"LEAD_ACT_ATTACHMENT\" laa ON a.\"LEAD_ACTID\" = laa.\"LEAD_ACTID\"
+             JOIN \"ATTACHMENT\" att ON laa.\"SHA1\" = att.\"SHA1\"
+             WHERE a.\"LEADID\" IN ($placeholders)
+             ORDER BY a.\"LEADID\" ASC, a.\"CREATIONDATE\" DESC, a.\"LEAD_ACTID\" DESC",
             $leadIds
         );
 

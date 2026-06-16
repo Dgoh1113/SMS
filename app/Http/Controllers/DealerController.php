@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\ResolvesInquiryAttachments;
 use App\Support\AttachmentUrlBuilder;
+use App\Support\AttachmentSaver;
 use App\Support\ProductConstants;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -274,7 +275,7 @@ class DealerController extends Controller
 
                 $leadsLastPeriod = $countNewLeads(
                     $startLastPeriod->format('Y-m-d 00:00:00'),
-                    $endLastPeriod->format('Y-m-d 23:59:59')
+                    $endLastPeriod->format('Y-m-d H:i:s')
                 );
             } catch (\Throwable $e) {
                 $activeLastPeriod = 0;
@@ -598,7 +599,6 @@ class DealerController extends Controller
                 }
             }
 
-            // Assigned By: same logic as admin assigned inquiries — SYSTEMROLE-ALIAS (e.g. Admin-Wei Jian)
             try {
                 $assignmentByLeadMap = $this->latestAssignmentUserMap(array_map(
                     static fn ($row) => (int) ($row->LEADID ?? 0),
@@ -737,23 +737,20 @@ class DealerController extends Controller
                         }
                     }
                     $attachRows = DB::select(
-                        'SELECT a."LEADID", a."LEAD_ACTID", a."ATTACHMENT"
-                         FROM "LEAD_ACT" a
-                         JOIN (
-                             SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD
-                             FROM "LEAD_ACT"
-                             WHERE "LEADID" IN ('.$placeholders.')
-                             GROUP BY "LEADID"
-                         ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
-                         WHERE a."LEADID" IN ('.$placeholders.')',
-                        array_merge($leadIds, $leadIds)
+                        'SELECT la."LEADID", la."LEAD_ACTID", a."CONTENT" AS "ATTACHMENT"
+                         FROM "LEAD_ACT" la
+                         JOIN "LEAD_ACT_ATTACHMENT" laa ON la."LEAD_ACTID" = laa."LEAD_ACTID"
+                         JOIN "ATTACHMENT" a ON laa."SHA1" = a."SHA1"
+                         WHERE la."LEADID" IN ('.implode(',', array_fill(0, count($leadIds), '?')).')
+                         ORDER BY la."CREATIONDATE" ASC',
+                        $leadIds
                     );
                     $attachmentMap = [];
                     $attachmentActMap = [];
                     foreach ($attachRows as $ar) {
                         $lid = (int) ($ar->LEADID ?? 0);
                         if ($lid > 0) {
-                            $attachmentMap[$lid] = $ar->ATTACHMENT ?? $ar->attachment ?? null;
+                            $attachmentMap[$lid][] = $ar->ATTACHMENT;
                             $attachmentActMap[$lid] = (int) ($ar->LEAD_ACTID ?? 0);
                         }
                     }
@@ -769,13 +766,22 @@ class DealerController extends Controller
                             if (isset($assignDateMap[$lid])) {
                                 $r->ASSIGNDATE = $assignDateMap[$lid];
                             }
-                            $r->ATTACHMENT_URLS = AttachmentUrlBuilder::buildUrls(
-                                $attachmentMap[$lid] ?? null,
-                                $lid,
-                                $attachmentActMap[$lid] ?? 0,
-                                'dealer.inquiries.serve-attachment',
-                                'dealer.inquiries.activity-attachment'
-                            );
+                            if (isset($attachmentMap[$lid])) {
+                                $urls = [];
+                                foreach ($attachmentMap[$lid] as $content) {
+                                    $mappedUrls = AttachmentUrlBuilder::buildUrls(
+                                        $content,
+                                        $lid,
+                                        $attachmentActMap[$lid] ?? 0,
+                                        'dealer.inquiries.serve-attachment',
+                                        'dealer.inquiries.activity-attachment'
+                                    );
+                                    $urls = array_merge($urls, $mappedUrls);
+                                }
+                                $r->ATTACHMENT_URLS = $urls;
+                            } else {
+                                $r->ATTACHMENT_URLS = [];
+                            }
                         }
                     }
                 }
@@ -849,21 +855,23 @@ class DealerController extends Controller
             return response()->json(['activities' => []], 200);
         }
 
-        $activities = [];
-        $lastProductIds = [];
-        $rows = DB::select(
-            'SELECT la."LEAD_ACTID", la."USERID", la."CREATIONDATE", la."SUBJECT", la."DESCRIPTION", la."STATUS", la."ATTACHMENT", la."DEALTPRODUCT", la."SERIALACC", la."SERIALPAY", la."ATTACHMENT2", u."EMAIL" AS "USER_EMAIL"
+        $activitiesRaw = DB::select(
+            'SELECT la.*, u."ALIAS", u."SYSTEMROLE", att."CONTENT" as "ATTACHMENT", att."SHA1" as "ATTACHMENT_HASH"
              FROM "LEAD_ACT" la
-             LEFT JOIN "USERS" u ON u."USERID" = la."USERID"
+             LEFT JOIN "USERS" u ON la."USERID" = u."USERID"
+             LEFT JOIN "LEAD_ACT_ATTACHMENT" laa ON la."LEAD_ACTID" = laa."LEAD_ACTID"
+             LEFT JOIN "ATTACHMENT" att ON laa."SHA1" = att."SHA1"
              WHERE la."LEADID" = ?
-             ORDER BY la."CREATIONDATE" ASC, la."LEAD_ACTID" ASC',
+             ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC',
             [$leadId]
         );
 
-        // Collect user IDs that appear either as activity USERID or inside
-        // assignment descriptions like "Lead Assigned by U001 to U003"
+        $activities = [];
+        $actMap = [];
+
+        // Collect user IDs for assignments just like old code
         $assignUserIds = [];
-        foreach ($rows as $r) {
+        foreach ($activitiesRaw as $r) {
             $desc = trim((string) ($r->DESCRIPTION ?? ''));
             if ($desc !== '' && stripos($desc, 'Lead Assigned by') === 0) {
                 if (preg_match('/Lead Assigned by\s+(\S+)\s+to\s+(\S+)/i', $desc, $m)) {
@@ -879,11 +887,11 @@ class DealerController extends Controller
             }
         }
 
-        // Resolve human-friendly names for activity user (same style as admin: SYSTEMROLE-ALIAS)
+        // Resolve human-friendly names
         $userNameMap = [];
         try {
             $ids = [];
-            foreach ($rows as $r) {
+            foreach ($activitiesRaw as $r) {
                 $uid = trim((string) ($r->USERID ?? ''));
                 if ($uid !== '') {
                     $ids[$uid] = true;
@@ -927,110 +935,81 @@ class DealerController extends Controller
             $userNameMap = [];
         }
 
-        foreach ($rows as $r) {
-            $status = trim($r->STATUS ?? '');
+        foreach ($activitiesRaw as $act) {
+            $actId = $act->LEAD_ACTID;
+            $status = trim($act->STATUS ?? '');
             if (strtoupper($status) === 'CREATED') {
                 continue;
             }
 
-            // Normalize activity timestamp to an ISO‑8601 string in the app's timezone
-            $createdAtIso = null;
-            if (! empty($r->CREATIONDATE)) {
-                try {
-                    $createdAtIso = Carbon::parse($r->CREATIONDATE)->toIso8601String();
-                } catch (\Throwable $e) {
-                    $createdAtIso = (string) $r->CREATIONDATE;
+            if (!isset($actMap[$actId])) {
+                $createdAtIso = null;
+                if (! empty($act->CREATIONDATE)) {
+                    try {
+                        $createdAtIso = Carbon::parse($act->CREATIONDATE)->toIso8601String();
+                    } catch (\Throwable $e) {
+                        $createdAtIso = (string) $act->CREATIONDATE;
+                    }
                 }
-            }
 
-            $attachmentUrls = [];
-            $attachmentRaw = $r->ATTACHMENT ?? $r->attachment ?? null;
-            if ($attachmentRaw !== null && trim((string) $attachmentRaw) !== '') {
-                $attachmentStr = trim((string) $attachmentRaw);
-                $attachmentStr = str_replace('\\', '/', $attachmentStr);
-                if (str_contains($attachmentStr, ',') || str_starts_with($attachmentStr, 'inquiry-attachments')) {
-                    foreach (explode(',', $attachmentStr) as $path) {
-                        $path = trim(str_replace('\\', '/', $path));
-                        if ($path !== '' && str_starts_with($path, 'inquiry-attachments/')) {
-                            $attachmentUrls[] = route('dealer.inquiries.serve-attachment', ['path' => $path]);
+                $productIds = [];
+                $dealtRaw = $act->DEALTPRODUCT ?? null;
+                if ($dealtRaw !== null && trim((string) $dealtRaw) !== '') {
+                    $tokens = preg_split('/[,\s\(\)]+/', (string) $dealtRaw);
+                    foreach ($tokens as $tok) {
+                        if ($tok === '') {
+                            continue;
+                        }
+                        $pid = (int) $tok;
+                        if ($pid >= 1 && $pid <= 13) {
+                            $productIds[] = $pid;
                         }
                     }
-                } else {
-                    if (str_starts_with($attachmentStr, 'inquiry-attachments/')) {
-                        $attachmentUrls[] = route('dealer.inquiries.serve-attachment', ['path' => $attachmentStr]);
-                    } elseif (preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', $attachmentStr)) {
-                        $attachmentUrls[] = route('dealer.inquiries.activity-attachment', ['leadId' => $leadId, 'leadActId' => (int) ($r->LEAD_ACTID ?? 0)]);
-                    }
+                    $productIds = array_values(array_unique($productIds));
+                }
+
+                if (! empty($productIds)) {
+                    $lastProductIds = $productIds;
+                } elseif (empty($productIds) && ! empty($lastProductIds) &&
+                    in_array(strtoupper($status), ['COMPLETED', 'REWARDED', 'REWARD DISTRIBUTED'], true)
+                ) {
+                    $productIds = $lastProductIds;
+                }
+
+                $userDisplay = $act->USERID ? ($userNameMap[trim($act->USERID)] ?? $act->USERID) : 'System';
+
+                $actMap[$actId] = [
+                    'type' => 'activity',
+                    'lead_act_id' => (int) $actId,
+                    'user' => $userDisplay,
+                    'user_id' => trim((string) ($act->USERID ?? '')),
+                    'subject' => trim($act->SUBJECT ?? ''),
+                    'description' => trim($act->DESCRIPTION ?? ''),
+                    'status' => $status,
+                    'created_at' => $createdAtIso,
+                    'attachment_urls' => [],
+                    'attachment2_urls' => [],
+                    'serial_acc' => trim((string) ($act->SERIALACC ?? '')),
+                    'serial_pay' => trim((string) ($act->SERIALPAY ?? '')),
+                    'product_ids' => $productIds,
+                ];
+            }
+            
+            if (isset($act->ATTACHMENT) && $act->ATTACHMENT !== null) {
+                $urls = AttachmentUrlBuilder::buildUrls(
+                    $act->ATTACHMENT,
+                    $leadId,
+                    $actId,
+                    'dealer.inquiries.serve-attachment',
+                    'dealer.inquiries.activity-attachment'
+                );
+                foreach ($urls as $url) {
+                    $actMap[$actId]['attachment_urls'][] = $url;
                 }
             }
-
-            $attachment2Urls = [];
-            $attachment2Raw = $r->ATTACHMENT2 ?? $r->attachment2 ?? null;
-            if ($attachment2Raw !== null && trim((string) $attachment2Raw) !== '') {
-                $attachment2Str = trim((string) $attachment2Raw);
-                $attachment2Str = str_replace('\\', '/', $attachment2Str);
-                if (str_contains($attachment2Str, ',') || str_starts_with($attachment2Str, 'inquiry-attachments')) {
-                    foreach (explode(',', $attachment2Str) as $path) {
-                        $path = trim(str_replace('\\', '/', $path));
-                        if ($path !== '' && str_starts_with($path, 'inquiry-attachments/')) {
-                            $attachment2Urls[] = route('dealer.inquiries.serve-attachment', ['path' => $path]);
-                        }
-                    }
-                } else {
-                    if (str_starts_with($attachment2Str, 'inquiry-attachments/')) {
-                        $attachment2Urls[] = route('dealer.inquiries.serve-attachment', ['path' => $attachment2Str]);
-                    } elseif (preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', $attachment2Str)) {
-                        $attachment2Urls[] = route('dealer.inquiries.activity-attachment', ['leadId' => $leadId, 'leadActId' => (int) ($r->LEAD_ACTID ?? 0)]);
-                    }
-                }
-            }
-
-            $productIds = [];
-            // Parse DEALTPRODUCT (e.g. "1, 2, 3") into numeric product IDs for the UI
-            $dealtRaw = $r->DEALTPRODUCT ?? null;
-            if ($dealtRaw !== null && trim((string) $dealtRaw) !== '') {
-                $tokens = preg_split('/[,\s\(\)]+/', (string) $dealtRaw);
-                foreach ($tokens as $tok) {
-                    if ($tok === '') {
-                        continue;
-                    }
-                    $pid = (int) $tok;
-                    if ($pid >= 1 && $pid <= 13) {
-                        $productIds[] = $pid;
-                    }
-                }
-                $productIds = array_values(array_unique($productIds));
-            }
-
-            // Carry forward last non-empty product selection so Rewarded steps
-            // inherit the same products as the preceding Completed step.
-            if (! empty($productIds)) {
-                $lastProductIds = $productIds;
-            } elseif (empty($productIds) && ! empty($lastProductIds) &&
-                in_array(strtoupper($status), ['COMPLETED', 'REWARDED', 'REWARD DISTRIBUTED'], true)
-            ) {
-                $productIds = $lastProductIds;
-            }
-
-            $userDisplay = $r->USERID ? ($userNameMap[trim($r->USERID)] ?? $r->USERID) : 'System';
-            $description = trim($r->DESCRIPTION ?? '');
-
-            $activities[] = [
-                'type' => 'activity',
-                'lead_act_id' => (int) ($r->LEAD_ACTID ?? 0),
-                'user' => $userDisplay,
-                'user_id' => trim((string) ($r->USERID ?? '')),
-                'subject' => trim($r->SUBJECT ?? ''),
-                'description' => $description,
-                'status' => $status,
-                'created_at' => $createdAtIso,
-                'attachment_urls' => $attachmentUrls,
-                'attachment2_urls' => $attachment2Urls,
-                'serial_acc' => trim((string) ($r->SERIALACC ?? '')),
-                'serial_pay' => trim((string) ($r->SERIALPAY ?? '')),
-                'product_ids' => $productIds,
-            ];
         }
+        
+        $activities = array_values($actMap);
 
         usort($activities, function ($a, $b) {
             $timeCompare = strtotime($b['created_at']) <=> strtotime($a['created_at']);
@@ -1043,7 +1022,7 @@ class DealerController extends Controller
 
         // Latest status by latest CREATIONDATE (and LEAD_ACTID tie-breaker)
         $latestRow = DB::selectOne(
-            'SELECT FIRST 1 la."STATUS", la."CREATIONDATE"
+            'SELECT FIRST 1 la."STATUS", la."CREATIONDATE", la."DEALTPRODUCT", la."SERIALACC", la."SERIALPAY"
                FROM "LEAD_ACT" la
               WHERE la."LEADID" = ?
                 AND UPPER(TRIM(COALESCE(la."STATUS", \'\'))) <> \'CREATED\'
@@ -1540,42 +1519,8 @@ class DealerController extends Controller
             $description = $description."\nProducts: ".implode(', ', $productNames);
         }
 
-        $attachmentValue = null;
-        if ($request->hasFile('attachments')) {
-            $paths = [];
-            $dir = 'inquiry-attachments/lead_'.$leadId;
-            foreach ($request->file('attachments') as $file) {
-                if ($file->isValid() && str_starts_with($file->getMimeType(), 'image/')) {
-                    $path = $file->store($dir, 'public');
-                    if ($path) {
-                        $paths[] = $path;
-                    }
-                }
-            }
-            if (! empty($paths)) {
-                $attachmentValue = implode(',', $paths);
-            }
-        }
-
         $serialAcc = trim((string) ($request->input('serial_acc') ?? ''));
         $serialPay = trim((string) ($request->input('serial_pay') ?? ''));
-
-        $attachment2Value = null;
-        if ($request->hasFile('attachments2')) {
-            $paths = [];
-            $dir = 'inquiry-attachments/lead_'.$leadId;
-            foreach ($request->file('attachments2') as $file) {
-                if ($file->isValid() && str_starts_with($file->getMimeType(), 'image/')) {
-                    $path = $file->store($dir, 'public');
-                    if ($path) {
-                        $paths[] = $path;
-                    }
-                }
-            }
-            if (! empty($paths)) {
-                $attachment2Value = implode(',', $paths);
-            }
-        }
 
         $isCompleted = strtoupper($statusDb) === 'COMPLETED' && ! empty($products);
         if ($isCompleted) {
@@ -1587,17 +1532,36 @@ class DealerController extends Controller
                 }
             }
             $dealtProduct = ! empty($productIds) ? implode(', ', $productIds) : null;
-            DB::insert(
-                'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS","DEALTPRODUCT","SERIALACC","SERIALPAY","ATTACHMENT2")
-                 VALUES (GEN_ID("GEN_LEAD_ACTID", 1),?,?,?,?,?,?,?,?,?,?,?)',
-                [$leadId, $dealerId, $creationDate, 'Updated Status', $description, $attachmentValue, $statusDb, $dealtProduct, $serialAcc, $serialPay, $attachment2Value]
+            $actRow = DB::selectOne(
+                'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","STATUS","DEALTPRODUCT","SERIALACC","SERIALPAY")
+                 VALUES (GEN_ID("GEN_LEAD_ACTID", 1),?,?,?,?,?,?,?,?,?) RETURNING "LEAD_ACTID"',
+                [$leadId, $dealerId, $creationDate, 'Updated Status', $description, $statusDb, $dealtProduct, $serialAcc, $serialPay]
             );
+            $leadActId = $actRow->LEAD_ACTID ?? $actRow->lead_actid ?? 0;
+            if ($leadActId) {
+                if ($request->hasFile('attachments')) {
+                    foreach ($request->file('attachments') as $file) {
+                        AttachmentSaver::saveFileAsAttachment($leadActId, $file);
+                    }
+                }
+                if ($request->hasFile('attachments2')) {
+                    foreach ($request->file('attachments2') as $file) {
+                        AttachmentSaver::saveFileAsAttachment($leadActId, $file);
+                    }
+                }
+            }
         } else {
-            DB::insert(
-                'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS")
-                 VALUES (GEN_ID("GEN_LEAD_ACTID", 1),?,?,?,?,?,?,?)',
-                [$leadId, $dealerId, $creationDate, 'Updated Status', $description, $attachmentValue, $statusDb]
+            $actRow = DB::selectOne(
+                'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","STATUS")
+                 VALUES (GEN_ID("GEN_LEAD_ACTID", 1),?,?,?,?,?,?) RETURNING "LEAD_ACTID"',
+                [$leadId, $dealerId, $creationDate, 'Updated Status', $description, $statusDb]
             );
+            $leadActId = $actRow->LEAD_ACTID ?? $actRow->lead_actid ?? 0;
+            if ($leadActId && $request->hasFile('attachments')) {
+                foreach ($request->file('attachments') as $file) {
+                    AttachmentSaver::saveFileAsAttachment($leadActId, $file);
+                }
+            }
         }
 
         // Sync the main lead status for non-iterative updates too
@@ -1810,25 +1774,20 @@ class DealerController extends Controller
                 if (! empty($completedIds)) {
                     $placeholders = implode(',', array_fill(0, count($completedIds), '?'));
                     $attachRows = DB::select(
-                        'SELECT a."LEADID", a."LEAD_ACTID", a."ATTACHMENT"
-                         FROM "LEAD_ACT" a
-                         JOIN (
-                             SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD, MAX("LEAD_ACTID") AS MAXID
-                             FROM "LEAD_ACT"
-                             WHERE UPPER(TRIM("STATUS")) = \'COMPLETED\'
-                               AND "LEADID" IN ('.$placeholders.')
-                             GROUP BY "LEADID"
-                         ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE" AND m.MAXID = a."LEAD_ACTID"
-                         WHERE UPPER(TRIM(a."STATUS")) = \'COMPLETED\'
-                           AND a."LEADID" IN ('.$placeholders.')',
-                        array_merge($completedIds, $completedIds)
+                        'SELECT la."LEADID", la."LEAD_ACTID", a."CONTENT" AS "ATTACHMENT"
+                         FROM "LEAD_ACT" la
+                         JOIN "LEAD_ACT_ATTACHMENT" laa ON la."LEAD_ACTID" = laa."LEAD_ACTID"
+                         JOIN "ATTACHMENT" a ON laa."SHA1" = a."SHA1"
+                         WHERE UPPER(TRIM(la."STATUS")) = \'COMPLETED\'
+                           AND la."LEADID" IN ('.$placeholders.')',
+                        $completedIds
                     );
                     $attachmentMap = [];
                     $attachmentActMap = [];
                     foreach ($attachRows as $ar) {
                         $lid = (int) ($ar->LEADID ?? 0);
                         if ($lid > 0) {
-                            $attachmentMap[$lid] = $ar->ATTACHMENT ?? $ar->attachment ?? null;
+                            $attachmentMap[$lid][] = $ar->ATTACHMENT;
                             $attachmentActMap[$lid] = (int) ($ar->LEAD_ACTID ?? 0);
                         }
                     }
@@ -1836,8 +1795,17 @@ class DealerController extends Controller
                         foreach ($completed as $r) {
                             $lid = (int) ($r->LEADID ?? 0);
                             if ($lid > 0 && array_key_exists($lid, $attachmentMap)) {
-                                $r->COMPLETED_ATTACHMENT = $attachmentMap[$lid];
-                                $r->COMPLETED_LEAD_ACT_ID = $attachmentActMap[$lid] ?? 0;
+                                $r->COMPLETED_ATTACHMENT_URLS = [];
+                                foreach ($attachmentMap[$lid] as $content) {
+                                    $urls = AttachmentUrlBuilder::buildUrls(
+                                        $content,
+                                        $lid,
+                                        $attachmentActMap[$lid] ?? 0,
+                                        'dealer.inquiries.serve-attachment',
+                                        'dealer.inquiries.activity-attachment'
+                                    );
+                                    $r->COMPLETED_ATTACHMENT_URLS = array_merge($r->COMPLETED_ATTACHMENT_URLS, $urls);
+                                }
                             }
                         }
                     }
@@ -1876,18 +1844,13 @@ class DealerController extends Controller
                         }
                     }
                     $attachRows = DB::select(
-                        'SELECT a."LEADID", a."LEAD_ACTID", a."ATTACHMENT", a."CREATIONDATE"
-                         FROM "LEAD_ACT" a
-                         JOIN (
-                             SELECT "LEADID", MAX("CREATIONDATE") AS MAXCD, MAX("LEAD_ACTID") AS MAXID
-                             FROM "LEAD_ACT"
-                             WHERE UPPER(TRIM("STATUS")) IN (\'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\')
-                               AND "LEADID" IN ('.$placeholders.')
-                             GROUP BY "LEADID"
-                         ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE" AND m.MAXID = a."LEAD_ACTID"
-                         WHERE UPPER(TRIM(a."STATUS")) IN (\'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\')
-                           AND a."LEADID" IN ('.$placeholders.')',
-                        array_merge($rewardedIds, $rewardedIds)
+                        'SELECT la."LEADID", la."LEAD_ACTID", a."CONTENT" AS "ATTACHMENT", la."CREATIONDATE"
+                         FROM "LEAD_ACT" la
+                         JOIN "LEAD_ACT_ATTACHMENT" laa ON la."LEAD_ACTID" = laa."LEAD_ACTID"
+                         JOIN "ATTACHMENT" a ON laa."SHA1" = a."SHA1"
+                         WHERE UPPER(TRIM(la."STATUS")) IN (\'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\')
+                           AND la."LEADID" IN ('.$placeholders.')',
+                        $rewardedIds
                     );
                     $attachmentMap = [];
                     $attachmentActMap = [];
@@ -1895,7 +1858,7 @@ class DealerController extends Controller
                     foreach ($attachRows as $ar) {
                         $lid = (int) ($ar->LEADID ?? 0);
                         if ($lid > 0) {
-                            $attachmentMap[$lid] = $ar->ATTACHMENT ?? $ar->attachment ?? null;
+                            $attachmentMap[$lid][] = $ar->ATTACHMENT;
                             $attachmentActMap[$lid] = (int) ($ar->LEAD_ACTID ?? 0);
                             $rewardDateMap[$lid] = $ar->CREATIONDATE ?? null;
                         }
@@ -1909,36 +1872,23 @@ class DealerController extends Controller
                             $r->COMPLETED_AT = $completedDateMap[$lid];
                         }
                         if (array_key_exists($lid, $attachmentMap)) {
-                            $r->REWARD_ATTACHMENT = $attachmentMap[$lid];
-                            $r->REWARD_LEAD_ACT_ID = $attachmentActMap[$lid] ?? 0;
+                            $r->REWARD_ATTACHMENT_URLS = [];
+                            foreach ($attachmentMap[$lid] as $content) {
+                                $urls = AttachmentUrlBuilder::buildUrls(
+                                    $content,
+                                    $lid,
+                                    $attachmentActMap[$lid] ?? 0,
+                                    'dealer.inquiries.serve-attachment',
+                                    'dealer.inquiries.activity-attachment'
+                                );
+                                $r->REWARD_ATTACHMENT_URLS = array_merge($r->REWARD_ATTACHMENT_URLS, $urls);
+                            }
                             $r->REWARD_DATE = $rewardDateMap[$lid] ?? null;
                         }
                     }
                 }
             } catch (\Throwable $e) {
                 // ignore attachment mapping failures
-            }
-
-            // Build attachment URLs for Completed list (dealer)
-            foreach ($completed as $r) {
-                $r->COMPLETED_ATTACHMENT_URLS = AttachmentUrlBuilder::buildUrls(
-                    $r->COMPLETED_ATTACHMENT ?? null,
-                    (int) ($r->LEADID ?? 0),
-                    (int) ($r->COMPLETED_LEAD_ACT_ID ?? 0),
-                    'dealer.inquiries.serve-attachment',
-                    'dealer.inquiries.activity-attachment'
-                );
-            }
-
-            // Build attachment URLs for Rewarded list (dealer)
-            foreach ($rewarded as $r) {
-                $r->REWARD_ATTACHMENT_URLS = AttachmentUrlBuilder::buildUrls(
-                    $r->REWARD_ATTACHMENT ?? null,
-                    (int) ($r->LEADID ?? 0),
-                    (int) ($r->REWARD_LEAD_ACT_ID ?? 0),
-                    'dealer.inquiries.serve-attachment',
-                    'dealer.inquiries.activity-attachment'
-                );
             }
 
             // Resolve CREATEDBY_NAME and assignedToName for display (same as admin rewards)

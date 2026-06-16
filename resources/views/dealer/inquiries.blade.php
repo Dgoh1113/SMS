@@ -2255,8 +2255,8 @@ if (document.readyState === 'loading') {
             }
             var rawStatusForReward = String(a.status || '').trim();
             var isRewarded = rawStatusForReward.toUpperCase() === 'REWARDED';
-            var labelText1 = isRewarded ? 'Payouts Prove:' : 'Company Invoice:';
-            var filePrefix1 = isRewarded ? ' Payouts Prove' : ' Customer Invoice';
+            var labelText1 = isRewarded ? 'Payouts Prove:' : 'Attachment:';
+            var filePrefix1 = isRewarded ? ' Payouts Prove' : ' Attachment';
 
             if (a.attachment_urls && a.attachment_urls.length > 0) {
                 html += '<div class="inquiry-activity-attachments-label" style="margin-top: 5px; font-size: 0.85em; font-weight: bold; color: #555;">' + labelText1 + '</div>';

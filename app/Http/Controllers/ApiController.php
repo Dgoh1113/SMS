@@ -6,6 +6,7 @@ use App\Support\AppConstants;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Support\AttachmentSaver;
 
 class ApiController extends Controller
 {
@@ -75,8 +76,8 @@ class ApiController extends Controller
 
         // Insert initial "Lead Created" activity (replaces TRD_LEAD_AFTER_INSERT trigger)
         DB::insert(
-            'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS")
-             VALUES (NEXT VALUE FOR GEN_LEAD_ACTID,?,?,CURRENT_TIMESTAMP,?,?,NULL,?)',
+            'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","STATUS")
+             VALUES (NEXT VALUE FOR GEN_LEAD_ACTID,?,?,CURRENT_TIMESTAMP,?,?,?)',
             [$row->LEADID, null, 'Lead Created', 'Lead Created', 'Created']
         );
         DB::update('UPDATE "LEAD" SET "LASTMODIFIED" = CURRENT_TIMESTAMP WHERE "LEADID" = ?', [$row->LEADID]);
@@ -88,10 +89,12 @@ class ApiController extends Controller
     {
         $rows = DB::select(
             'SELECT
-                "LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS"
-            FROM "LEAD_ACT"
-            WHERE "LEADID" = ?
-            ORDER BY "LEAD_ACTID" DESC',
+                la."LEAD_ACTID",la."LEADID",la."USERID",la."CREATIONDATE",la."SUBJECT",la."DESCRIPTION",la."STATUS", att."CONTENT" as "ATTACHMENT", att."SHA1" as "ATTACHMENT_HASH"
+            FROM "LEAD_ACT" la
+            LEFT JOIN "LEAD_ACT_ATTACHMENT" laa ON la."LEAD_ACTID" = laa."LEAD_ACTID"
+            LEFT JOIN "ATTACHMENT" att ON laa."SHA1" = att."SHA1"
+            WHERE la."LEADID" = ?
+            ORDER BY la."LEAD_ACTID" DESC',
             [$leadId]
         );
 
@@ -110,18 +113,21 @@ class ApiController extends Controller
         ]);
 
         $row = DB::selectOne(
-            'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","ATTACHMENT","STATUS")
-             VALUES (GEN_ID("GEN_LEAD_ACTID", 1),?,?,CURRENT_TIMESTAMP,?,?,?,?)
+            'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","STATUS")
+             VALUES (GEN_ID("GEN_LEAD_ACTID", 1),?,?,CURRENT_TIMESTAMP,?,?,?)
              RETURNING "LEAD_ACTID","CREATIONDATE"',
             [
                 $validated['LEADID'],
                 $validated['USERID'],
                 $validated['SUBJECT'] ?? null,
                 $validated['DESCRIPTION'] ?? null,
-                $validated['ATTACHMENT'] ?? null,
                 $validated['STATUS'] ?? null,
             ]
         );
+
+        if ($row && isset($validated['ATTACHMENT'])) {
+            AttachmentSaver::saveAttachments($row->LEAD_ACTID, $validated['ATTACHMENT']);
+        }
 
         DB::update('UPDATE "LEAD" SET "LASTMODIFIED" = CURRENT_TIMESTAMP WHERE "LEADID" = ?', [$validated['LEADID']]);
 

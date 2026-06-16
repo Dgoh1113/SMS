@@ -1405,8 +1405,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     html += '</div>';
                     var isRewarded = rawStatus.toUpperCase() === 'REWARDED';
-                    var labelText1 = isRewarded ? 'Payouts Prove:' : 'Company Invoice:';
-                    var filePrefix1 = isRewarded ? ' Payouts Prove' : ' Customer Invoice';
+                    var labelText1 = isRewarded ? 'Payouts Prove:' : 'Attachment:';
+                    var filePrefix1 = isRewarded ? ' Payouts Prove' : ' Attachment';
 
                     if (it.attachment_urls && it.attachment_urls.length > 0) {
                         html += '<div class="inquiry-activity-attachments-label" style="margin-top: 5px; font-size: 0.85em; font-weight: bold; color: #555;">' + labelText1 + '</div>';
