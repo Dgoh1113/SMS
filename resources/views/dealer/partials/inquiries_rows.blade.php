@@ -127,7 +127,7 @@
         </td>
         <td data-col="referralcode">{{ $r->REFERRALCODE ?? '-' }}</td>
         <td data-col="assignby">{{ $r->ASSIGNEDBY_NAME ?? $r->CREATEDBY_NAME ?? $r->ASSIGNED_BY_EMAIL ?? '-' }}</td>
-        @if(in_array(($dealerConsoleTab ?? 'inquiries'), ['inquiries', 'completed', 'pending-payouts', 'rewarded']))
+        @if(($dealerConsoleTab ?? 'inquiries') === 'inquiries')
             <td data-col="status"><span class="inquiries-status {{ $statusClass }}">{{ $statusDisplay }}</span></td>
         @endif
         <td class="inquiries-col-action inquiries-action-cell">

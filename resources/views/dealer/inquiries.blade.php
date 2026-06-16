@@ -145,7 +145,7 @@
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="referralcode"> REFERRAL CODE</label>
                         <!-- <label class="inquiries-columns-check"><input type="checkbox" data-col="attachment"> ATTACHMENT</label> -->
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="assignby"> ASSIGN BY</label>
-                        '.(in_array(($dealerConsoleTab ?? 'inquiries'), ['inquiries', 'completed', 'pending-payouts', 'rewarded']) ? '<label class="inquiries-columns-check"><input type="checkbox" data-col="status"> STATUS</label>' : '').'
+                        '.(($dealerConsoleTab ?? 'inquiries') === 'inquiries' ? '<label class="inquiries-columns-check"><input type="checkbox" data-col="status"> STATUS</label>' : '').'
                         <div class="inquiries-columns-actions">
                             <button type="button" class="inquiries-columns-action-btn" id="dealerInquiryColumnsAll">All</button>
                             <button type="button" class="inquiries-columns-action-btn" id="dealerInquiryColumnsNone">None</button>
@@ -182,16 +182,8 @@
                         <x-tables.text-filter-header col="message" label="MESSAGE" />
                         <x-tables.text-filter-header col="referralcode" label="REFERRAL CODE" placeholder="{{ ($dealerConsoleTab ?? 'inquiries') === 'pending-payouts' ? 'Has code' : '' }}" />
                         <x-tables.text-filter-header col="assignby" label="ASSIGN BY" />
-                        @if(in_array(($dealerConsoleTab ?? 'inquiries'), ['inquiries', 'completed', 'pending-payouts', 'rewarded']))
-                            @if(($dealerConsoleTab ?? 'inquiries') === 'pending-payouts')
-                                <x-tables.text-filter-header col="status" label="STATUS" placeholder="Completed only" :icon="false" :disabled="true" :readonly="true" />
-                            @elseif(($dealerConsoleTab ?? 'inquiries') === 'completed')
-                                <x-tables.text-filter-header col="status" label="STATUS" placeholder="Completed only" :icon="false" :disabled="true" :readonly="true" />
-                            @elseif(($dealerConsoleTab ?? 'inquiries') === 'rewarded')
-                                <x-tables.text-filter-header col="status" label="STATUS" placeholder="Rewarded only" :icon="false" :disabled="true" :readonly="true" />
-                            @else
-                                <x-tables.status-multi-filter-header col="status" label="STATUS" :options="$statusFilterOptions" select-class="inquiries-grid-filter inquiries-grid-filter-select" />
-                            @endif
+                        @if(($dealerConsoleTab ?? 'inquiries') === 'inquiries')
+                            <x-tables.status-multi-filter-header col="status" label="STATUS" :options="$statusFilterOptions" select-class="inquiries-grid-filter inquiries-grid-filter-select" />
                         @endif
                         <x-tables.clear-filter-header button-id="dealerInquiryClearFilters" />
                     </tr>
@@ -285,32 +277,32 @@ function initDealerInquiriesPage() {
     var defaultCols = ['inquiryid','date','customer','email','postcode','city','assignby','status'];
 
     if (currentDealerTab === 'pending') {
-        storageKey = 'dealer_pending_visible_cols_v1';
-        legacyStorageKey = 'dealer_pending_visible_cols_v1_disabled';
-        defaultCols = ['inquiryid','date','customer','email','postcode','city','products','status'];
+        storageKey = 'dealer_pending_visible_cols_v2';
+        legacyStorageKey = 'dealer_pending_visible_cols_v2_disabled';
+        defaultCols = ['inquiryid','date','customer','email','postcode','city','products'];
     } else if (currentDealerTab === 'completed') {
-        storageKey = 'dealer_completed_visible_cols_v1';
-        legacyStorageKey = 'dealer_completed_visible_cols_v1_disabled';
-        defaultCols = ['inquiryid','customer','referralcode','completiondate','status','dealtproducts'];
+        storageKey = 'dealer_completed_visible_cols_v2';
+        legacyStorageKey = 'dealer_completed_visible_cols_v2_disabled';
+        defaultCols = ['inquiryid','customer','referralcode','completiondate','dealtproducts'];
     } else if (currentDealerTab === 'pending-payouts') {
-        storageKey = 'dealer_pending_payouts_visible_cols_v1';
-        legacyStorageKey = 'dealer_pending_payouts_visible_cols_v1_disabled';
-        defaultCols = ['inquiryid','customer','referralcode','completiondate','status','dealtproducts'];
+        storageKey = 'dealer_pending_payouts_visible_cols_v2';
+        legacyStorageKey = 'dealer_pending_payouts_visible_cols_v2_disabled';
+        defaultCols = ['inquiryid','customer','referralcode','completiondate','dealtproducts'];
     } else if (currentDealerTab === 'rewarded') {
-        storageKey = 'dealer_rewarded_visible_cols_v1';
-        legacyStorageKey = 'dealer_rewarded_visible_cols_v1_disabled';
-        defaultCols = ['inquiryid','payoutsdate','customer','referralcode','status','dealtproducts'];
+        storageKey = 'dealer_rewarded_visible_cols_v2';
+        legacyStorageKey = 'dealer_rewarded_visible_cols_v2_disabled';
+        defaultCols = ['inquiryid','payoutsdate','customer','referralcode','dealtproducts'];
     } else if (currentDealerTab === 'inquiries') {
-        storageKey = 'dealer_inquiries_visible_cols_v13';
-        legacyStorageKey = 'dealer_inquiries_visible_cols_v13_disabled';
+        storageKey = 'dealer_inquiries_visible_cols_v14';
+        legacyStorageKey = 'dealer_inquiries_visible_cols_v14_disabled';
         defaultCols = ['inquiryid','date','customer','email','postcode','city','dealtproducts','assignby','status'];
     } else {
-        storageKey = 'dealer_' + currentDealerTab + '_visible_cols_v1';
-        legacyStorageKey = 'dealer_' + currentDealerTab + '_visible_cols_v1_disabled';
-        defaultCols = ['inquiryid','date','customer','email','postcode','city','assignby','status'];
+        storageKey = 'dealer_' + currentDealerTab + '_visible_cols_v2';
+        legacyStorageKey = 'dealer_' + currentDealerTab + '_visible_cols_v2_disabled';
+        defaultCols = ['inquiryid','date','customer','email','postcode','city','assignby'];
     }
 
-    var allCols = ['inquiryid','date','customer','email','postcode','city','state','country','address','contactno','businessnature','users','existingsw','demomode','products','dealtproducts','assigndate','completiondate','payoutsdate','message','referralcode','assignby'{!! in_array(($dealerConsoleTab ?? 'inquiries'), ['inquiries', 'completed', 'pending-payouts', 'rewarded']) ? ",'status'" : "" !!}];
+    var allCols = ['inquiryid','date','customer','email','postcode','city','state','country','address','contactno','businessnature','users','existingsw','demomode','products','dealtproducts','assigndate','completiondate','payoutsdate','message','referralcode','assignby'{!! ($dealerConsoleTab ?? 'inquiries') === 'inquiries' ? ",'status'" : "" !!}];
 
     function getDefaultColsForViewport() {
         return defaultCols.slice();
