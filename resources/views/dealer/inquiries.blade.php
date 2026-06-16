@@ -137,6 +137,7 @@
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="existingsw"> EXISTING SW</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="demomode"> DEMO MODE</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="products"> PRODUCTS</label>
+                        <label class="inquiries-columns-check"><input type="checkbox" data-col="dealtproducts"> DEALT PRODUCTS</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="assigndate"> ASSIGN DATE</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="completiondate"> COMPLETION DATE</label>
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="payoutsdate"> PAYOUTS DATE</label>
@@ -144,7 +145,7 @@
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="referralcode"> REFERRAL CODE</label>
                         <!-- <label class="inquiries-columns-check"><input type="checkbox" data-col="attachment"> ATTACHMENT</label> -->
                         <label class="inquiries-columns-check"><input type="checkbox" data-col="assignby"> ASSIGN BY</label>
-                        '.(($dealerConsoleTab ?? 'inquiries') === 'inquiries' ? '<label class="inquiries-columns-check"><input type="checkbox" data-col="status"> STATUS</label>' : '').'
+                        '.(in_array(($dealerConsoleTab ?? 'inquiries'), ['inquiries', 'completed', 'pending-payouts', 'rewarded']) ? '<label class="inquiries-columns-check"><input type="checkbox" data-col="status"> STATUS</label>' : '').'
                         <div class="inquiries-columns-actions">
                             <button type="button" class="inquiries-columns-action-btn" id="dealerInquiryColumnsAll">All</button>
                             <button type="button" class="inquiries-columns-action-btn" id="dealerInquiryColumnsNone">None</button>
@@ -174,14 +175,23 @@
                         <x-tables.text-filter-header col="existingsw" label="EXISTING SW" />
                         <x-tables.text-filter-header col="demomode" label="DEMO MODE" />
                         <x-tables.text-filter-header col="products" label="PRODUCTS" />
+                        <x-tables.text-filter-header col="dealtproducts" label="DEALT PRODUCTS" />
                         <x-tables.text-filter-header col="assigndate" label="ASSIGN DATE" />
                         <x-tables.text-filter-header col="completiondate" label="COMPLETION DATE" />
                         <x-tables.text-filter-header col="payoutsdate" label="PAYOUTS DATE" />
                         <x-tables.text-filter-header col="message" label="MESSAGE" />
-                        <x-tables.text-filter-header col="referralcode" label="REFERRAL CODE" />
+                        <x-tables.text-filter-header col="referralcode" label="REFERRAL CODE" placeholder="{{ ($dealerConsoleTab ?? 'inquiries') === 'pending-payouts' ? 'Has code' : '' }}" />
                         <x-tables.text-filter-header col="assignby" label="ASSIGN BY" />
-                        @if(($dealerConsoleTab ?? 'inquiries') === 'inquiries')
-                            <x-tables.status-multi-filter-header col="status" label="STATUS" :options="$statusFilterOptions" select-class="inquiries-grid-filter inquiries-grid-filter-select" />
+                        @if(in_array(($dealerConsoleTab ?? 'inquiries'), ['inquiries', 'completed', 'pending-payouts', 'rewarded']))
+                            @if(($dealerConsoleTab ?? 'inquiries') === 'pending-payouts')
+                                <x-tables.text-filter-header col="status" label="STATUS" placeholder="Completed only" :icon="false" :disabled="true" :readonly="true" />
+                            @elseif(($dealerConsoleTab ?? 'inquiries') === 'completed')
+                                <x-tables.text-filter-header col="status" label="STATUS" placeholder="Completed only" :icon="false" :disabled="true" :readonly="true" />
+                            @elseif(($dealerConsoleTab ?? 'inquiries') === 'rewarded')
+                                <x-tables.text-filter-header col="status" label="STATUS" placeholder="Rewarded only" :icon="false" :disabled="true" :readonly="true" />
+                            @else
+                                <x-tables.status-multi-filter-header col="status" label="STATUS" :options="$statusFilterOptions" select-class="inquiries-grid-filter inquiries-grid-filter-select" />
+                            @endif
                         @endif
                         <x-tables.clear-filter-header button-id="dealerInquiryClearFilters" />
                     </tr>
@@ -278,12 +288,29 @@ function initDealerInquiriesPage() {
         storageKey = 'dealer_pending_visible_cols_v1';
         legacyStorageKey = 'dealer_pending_visible_cols_v1_disabled';
         defaultCols = ['inquiryid','date','customer','email','postcode','city','products','status'];
+    } else if (currentDealerTab === 'completed') {
+        storageKey = 'dealer_completed_visible_cols_v1';
+        legacyStorageKey = 'dealer_completed_visible_cols_v1_disabled';
+        defaultCols = ['inquiryid','customer','referralcode','completiondate','status','dealtproducts'];
+    } else if (currentDealerTab === 'pending-payouts') {
+        storageKey = 'dealer_pending_payouts_visible_cols_v1';
+        legacyStorageKey = 'dealer_pending_payouts_visible_cols_v1_disabled';
+        defaultCols = ['inquiryid','customer','referralcode','completiondate','status','dealtproducts'];
+    } else if (currentDealerTab === 'rewarded') {
+        storageKey = 'dealer_rewarded_visible_cols_v1';
+        legacyStorageKey = 'dealer_rewarded_visible_cols_v1_disabled';
+        defaultCols = ['inquiryid','payoutsdate','customer','referralcode','status','dealtproducts'];
     } else if (currentDealerTab === 'inquiries') {
         storageKey = 'dealer_inquiries_visible_cols_v13';
         legacyStorageKey = 'dealer_inquiries_visible_cols_v13_disabled';
+        defaultCols = ['inquiryid','date','customer','email','postcode','city','dealtproducts','assignby','status'];
+    } else {
+        storageKey = 'dealer_' + currentDealerTab + '_visible_cols_v1';
+        legacyStorageKey = 'dealer_' + currentDealerTab + '_visible_cols_v1_disabled';
+        defaultCols = ['inquiryid','date','customer','email','postcode','city','assignby','status'];
     }
 
-    var allCols = ['inquiryid','date','customer','email','postcode','city','state','country','address','contactno','businessnature','users','existingsw','demomode','products','assigndate','completiondate','payoutsdate','message','referralcode','assignby'{!! ($dealerConsoleTab ?? 'inquiries') === 'inquiries' ? ",'status'" : "" !!}];
+    var allCols = ['inquiryid','date','customer','email','postcode','city','state','country','address','contactno','businessnature','users','existingsw','demomode','products','dealtproducts','assigndate','completiondate','payoutsdate','message','referralcode','assignby'{!! in_array(($dealerConsoleTab ?? 'inquiries'), ['inquiries', 'completed', 'pending-payouts', 'rewarded']) ? ",'status'" : "" !!}];
 
     function getDefaultColsForViewport() {
         return defaultCols.slice();
@@ -806,11 +833,7 @@ function initDealerInquiriesPage() {
                 return window.innerWidth <= 1600 ? 44 : 56;
             }
             
-            var measured = measureDealerInquiryRowHeight(referenceRow);
-            if (window.innerWidth <= 1600) {
-                return 44;
-            }
-            return measured;
+            return measureDealerInquiryRowHeight(referenceRow);
         }
 
 
@@ -821,7 +844,7 @@ function initDealerInquiriesPage() {
             clearPlaceholderRows();
             var allRows = getAllRows();
             var allowZeroFill = true;
-            var useShortHeight = (visibleDataCount > 0 && visibleDataCount < perPage) || (visibleDataCount === 0 && allowZeroFill);
+            var useShortHeight = false; // Maintain equal size / full height
             var targetRows = getDealerPaginationTargetRows();
             
             var defaultPlaceholderHeight = 56;

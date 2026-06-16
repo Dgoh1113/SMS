@@ -221,7 +221,6 @@ html.theme-dark .inquiry-row--notif-highlight td span:not(.inquiries-badge):not(
   padding-bottom: 0 !important;
   line-height: 0;
   box-sizing: border-box;
-  border-bottom: none;
   background: #ffffff;
 }
 
@@ -950,13 +949,11 @@ html.theme-dark .inquiries-empty-cell {
 
 /* Sync placeholder height with Admin */
 .dealer-inquiries-panel .inquiries-table .inquiries-placeholder-cell {
-  height: 46px !important;
   padding-top: 0 !important;
   padding-bottom: 0 !important;
 }
 @media (max-width: 1279px) {
   .dealer-inquiries-panel .inquiries-table .inquiries-placeholder-cell {
-    height: 31px !important;
     padding-top: 0 !important;
     padding-bottom: 0 !important;
   }

@@ -31,6 +31,19 @@
             }
             $productIds = \App\Support\ProductConstants::sortProductIds($productIds);
         }
+        $dealtRaw = $r->DEALTPRODUCT ?? null;
+        $dealtProductIds = [];
+        if ($dealtRaw !== null && trim((string) $dealtRaw) !== '') {
+            $tokens = preg_split('/[,\s\(\)]+/', (string) $dealtRaw);
+            foreach ($tokens as $tok) {
+                if ($tok === '') continue;
+                $pid = (int) $tok;
+                if ($pid >= 1 && $pid <= 13) {
+                    $dealtProductIds[] = $pid;
+                }
+            }
+            $dealtProductIds = array_values(array_unique($dealtProductIds));
+        }
         $rawStatus = strtoupper(trim($r->ACT_STATUS ?? ''));
         $statusClass = 'inquiries-status-new';
         switch ($rawStatus) {
@@ -88,6 +101,17 @@
                 -
             @endif
         </td>
+        <td data-col="dealtproducts">
+            @if(!empty($dealtProductIds))
+                <div class="inquiries-pill-group">
+                    @foreach($dealtProductIds as $id)
+                        <span class="inquiries-pill inquiries-pill-p{{ $id }}">{{ $productNames[$id] ?? ('Product ' . $id) }}</span>
+                    @endforeach
+                </div>
+            @else
+                -
+            @endif
+        </td>
         <td data-col="assigndate">{{ !empty($r->ASSIGNDATE) ? date('d/m/Y', strtotime($r->ASSIGNDATE)) : ($r->CREATEDAT ? date('d/m/Y', strtotime($r->CREATEDAT)) : '-') }}</td>
         <td data-col="completiondate">{{ !empty($r->COMPLETED_AT) ? date('d/m/Y', strtotime($r->COMPLETED_AT)) : '-' }}</td>
         <td data-col="payoutsdate">{{ !empty($r->REWARDED_AT) ? date('d/m/Y', strtotime($r->REWARDED_AT)) : '-' }}</td>
@@ -103,7 +127,7 @@
         </td>
         <td data-col="referralcode">{{ $r->REFERRALCODE ?? '-' }}</td>
         <td data-col="assignby">{{ $r->ASSIGNEDBY_NAME ?? $r->CREATEDBY_NAME ?? $r->ASSIGNED_BY_EMAIL ?? '-' }}</td>
-        @if(($dealerConsoleTab ?? 'inquiries') === 'inquiries')
+        @if(in_array(($dealerConsoleTab ?? 'inquiries'), ['inquiries', 'completed', 'pending-payouts', 'rewarded']))
             <td data-col="status"><span class="inquiries-status {{ $statusClass }}">{{ $statusDisplay }}</span></td>
         @endif
         <td class="inquiries-col-action inquiries-action-cell">
