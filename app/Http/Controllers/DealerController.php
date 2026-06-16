@@ -1204,14 +1204,16 @@ class DealerController extends Controller
 
     public function updateInquiryStatus(Request $request): JsonResponse
     {
-        $isMultipart = $request->hasFile('attachments');
+        $isMultipart = $request->hasFile('attachments') || $request->hasFile('attachments2');
         if ($isMultipart) {
             $request->validate([
                 'lead_id' => 'required|integer',
                 'status' => 'required|string|max:15',
                 'remark' => 'nullable|string|max:150',
                 'attachments' => 'nullable|array',
-                'attachments.*' => 'image|max:5120',
+                'attachments.*' => 'image|max:2048',
+                'attachments2' => 'nullable|array',
+                'attachments2.*' => 'image|max:2048',
             ]);
             $products = [];
             $productsJson = $request->input('products');
@@ -1473,107 +1475,121 @@ class DealerController extends Controller
             }
         }
 
-        // For FOLLOW UP and DEMO, we always try to update the existing record (iterative editing)
-        // rather than creating a new row, regardless of whether it's a backtrack or current status.
-        if (in_array($toUpper, ['FOLLOW UP', 'DEMO', 'CONFIRMED'])) {
-            $latestActRow = DB::selectOne(
-                'SELECT FIRST 1 "LEAD_ACTID", "DESCRIPTION", "CREATIONDATE" FROM "LEAD_ACT"
-                 WHERE "LEADID" = ? AND UPPER(TRIM("STATUS")) = ?
-                 ORDER BY "CREATIONDATE" DESC, "LEAD_ACTID" DESC',
-                [$leadId, $toUpper === 'FOLLOW UP' ? 'FOLLOWUP' : $toUpper]
-            );
+        DB::beginTransaction();
+        try {
+            // For FOLLOW UP and DEMO, we always try to update the existing record (iterative editing)
+            // rather than creating a new row, regardless of whether it's a backtrack or current status.
+            if (in_array($toUpper, ['FOLLOW UP', 'DEMO', 'CONFIRMED'])) {
+                $latestActRow = DB::selectOne(
+                    'SELECT FIRST 1 "LEAD_ACTID", "DESCRIPTION", "CREATIONDATE" FROM "LEAD_ACT"
+                     WHERE "LEADID" = ? AND UPPER(TRIM("STATUS")) = ?
+                     ORDER BY "CREATIONDATE" DESC, "LEAD_ACTID" DESC',
+                    [$leadId, $toUpper === 'FOLLOW UP' ? 'FOLLOWUP' : $toUpper]
+                );
 
-            if ($latestActRow) {
-                // If remark is empty, we just update the inquiry status (e.g. backtracking without a new note)
-                // If remark is provided, we append it.
-                if ($remark !== '') {
-                    $oldDesc = trim((string) ($latestActRow->DESCRIPTION ?? ''));
-                    if ($oldDesc !== '' && !str_contains($oldDesc, '------------------------------')) {
-                        $origDt = $parseFlexibleTimestamp($latestActRow->CREATIONDATE) ?? Carbon::now();
-                        $oldDesc = $origDt->format('d/m/Y H:i').":\n".$oldDesc;
+                if ($latestActRow) {
+                    // If remark is empty, we just update the inquiry status (e.g. backtracking without a new note)
+                    // If remark is provided, we append it.
+                    if ($remark !== '') {
+                        $oldDesc = trim((string) ($latestActRow->DESCRIPTION ?? ''));
+                        if ($oldDesc !== '' && !str_contains($oldDesc, '------------------------------')) {
+                            $origDt = $parseFlexibleTimestamp($latestActRow->CREATIONDATE) ?? Carbon::now();
+                            $oldDesc = $origDt->format('d/m/Y H:i').":\n".$oldDesc;
+                        }
+                        $parsedNewDt = $parseFlexibleTimestamp($creationDate) ?? Carbon::now();
+                        $divider = "\n".str_repeat('-', 30)."\n".$parsedNewDt->format('d/m/Y H:i').":\n";
+                        $newDesc = $oldDesc.($oldDesc !== '' ? $divider : '').$remark;
+                        DB::update('UPDATE "LEAD_ACT" SET "DESCRIPTION" = ?, "CREATIONDATE" = ? WHERE "LEAD_ACTID" = ?', [$newDesc, $creationDate, $latestActRow->LEAD_ACTID]);
+                    } else {
+                        DB::update('UPDATE "LEAD_ACT" SET "CREATIONDATE" = ? WHERE "LEAD_ACTID" = ?', [$creationDate, $latestActRow->LEAD_ACTID]);
                     }
-                    $parsedNewDt = $parseFlexibleTimestamp($creationDate) ?? Carbon::now();
-                    $divider = "\n".str_repeat('-', 30)."\n".$parsedNewDt->format('d/m/Y H:i').":\n";
-                    $newDesc = $oldDesc.($oldDesc !== '' ? $divider : '').$remark;
-                    DB::update('UPDATE "LEAD_ACT" SET "DESCRIPTION" = ?, "CREATIONDATE" = ? WHERE "LEAD_ACTID" = ?', [$newDesc, $creationDate, $latestActRow->LEAD_ACTID]);
-                } else {
-                    DB::update('UPDATE "LEAD_ACT" SET "CREATIONDATE" = ? WHERE "LEAD_ACTID" = ?', [$creationDate, $latestActRow->LEAD_ACTID]);
-                }
 
-                // Sync the main lead status
-                DB::update('UPDATE "LEAD" SET "LASTMODIFIED" = CURRENT_TIMESTAMP WHERE "LEADID" = ?', [$leadId]);
+                    // Sync the main lead status
+                    DB::update('UPDATE "LEAD" SET "LASTMODIFIED" = CURRENT_TIMESTAMP WHERE "LEADID" = ?', [$leadId]);
 
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Status updated iteratively',
-                    'counts' => $this->getDealerConsoleCounts($dealerId),
-                ]);
-            }
-        }
-
-        $toStatus = $statusDb;
-        $description = $remark !== '' ? $remark : ('Update Status from '.$fromStatus.' to '.$toStatus);
-
-        if (! empty($products)) {
-            $productNames = array_map(fn ($p) => $p['name'] ?? 'Product '.($p['id'] ?? ''), $products);
-            $description = $description."\nProducts: ".implode(', ', $productNames);
-        }
-
-        $serialAcc = trim((string) ($request->input('serial_acc') ?? ''));
-        $serialPay = trim((string) ($request->input('serial_pay') ?? ''));
-
-        $isCompleted = strtoupper($statusDb) === 'COMPLETED' && ! empty($products);
-        if ($isCompleted) {
-            $productIds = [];
-            foreach ($products as $p) {
-                $pid = (int) ($p['id'] ?? 0);
-                if ($pid >= 1 && $pid <= 13) {
-                    $productIds[] = $pid;
+                    DB::commit();
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Status updated iteratively',
+                        'counts' => $this->getDealerConsoleCounts($dealerId),
+                    ]);
                 }
             }
-            $dealtProduct = ! empty($productIds) ? implode(', ', $productIds) : null;
-            $actRow = DB::selectOne(
-                'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","STATUS","DEALTPRODUCT","SERIALACC","SERIALPAY")
-                 VALUES (GEN_ID("GEN_LEAD_ACTID", 1),?,?,?,?,?,?,?,?,?) RETURNING "LEAD_ACTID"',
-                [$leadId, $dealerId, $creationDate, 'Updated Status', $description, $statusDb, $dealtProduct, $serialAcc, $serialPay]
-            );
-            $leadActId = $actRow->LEAD_ACTID ?? $actRow->lead_actid ?? 0;
-            if ($leadActId) {
-                if ($request->hasFile('attachments')) {
+
+            $toStatus = $statusDb;
+            $description = $remark !== '' ? $remark : ('Update Status from '.$fromStatus.' to '.$toStatus);
+
+            if (! empty($products)) {
+                $productNames = array_map(fn ($p) => $p['name'] ?? 'Product '.($p['id'] ?? ''), $products);
+                $description = $description."\nProducts: ".implode(', ', $productNames);
+            }
+
+            $serialAcc = trim((string) ($request->input('serial_acc') ?? ''));
+            $serialPay = trim((string) ($request->input('serial_pay') ?? ''));
+
+            $isCompleted = strtoupper($statusDb) === 'COMPLETED' && ! empty($products);
+            if ($isCompleted) {
+                $productIds = [];
+                foreach ($products as $p) {
+                    $pid = (int) ($p['id'] ?? 0);
+                    if ($pid >= 1 && $pid <= 13) {
+                        $productIds[] = $pid;
+                    }
+                }
+                $dealtProduct = ! empty($productIds) ? implode(', ', $productIds) : null;
+                $actRow = DB::selectOne(
+                    'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","STATUS","DEALTPRODUCT","SERIALACC","SERIALPAY")
+                     VALUES (GEN_ID("GEN_LEAD_ACTID", 1),?,?,?,?,?,?,?,?,?) RETURNING "LEAD_ACTID"',
+                    [$leadId, $dealerId, $creationDate, 'Updated Status', $description, $statusDb, $dealtProduct, $serialAcc, $serialPay]
+                );
+                $leadActId = $actRow->LEAD_ACTID ?? $actRow->lead_actid ?? 0;
+                if ($leadActId) {
+                    if ($request->hasFile('attachments')) {
+                        foreach ($request->file('attachments') as $file) {
+                            AttachmentSaver::saveFileAsAttachment($leadActId, $file);
+                        }
+                    }
+                    if ($request->hasFile('attachments2')) {
+                        foreach ($request->file('attachments2') as $file) {
+                            AttachmentSaver::saveFileAsAttachment($leadActId, $file);
+                        }
+                    }
+                }
+            } else {
+                $actRow = DB::selectOne(
+                    'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","STATUS")
+                     VALUES (GEN_ID("GEN_LEAD_ACTID", 1),?,?,?,?,?,?) RETURNING "LEAD_ACTID"',
+                    [$leadId, $dealerId, $creationDate, 'Updated Status', $description, $statusDb]
+                );
+                $leadActId = $actRow->LEAD_ACTID ?? $actRow->lead_actid ?? 0;
+                if ($leadActId && $request->hasFile('attachments')) {
                     foreach ($request->file('attachments') as $file) {
                         AttachmentSaver::saveFileAsAttachment($leadActId, $file);
                     }
                 }
-                if ($request->hasFile('attachments2')) {
-                    foreach ($request->file('attachments2') as $file) {
-                        AttachmentSaver::saveFileAsAttachment($leadActId, $file);
-                    }
-                }
             }
-        } else {
-            $actRow = DB::selectOne(
-                'INSERT INTO "LEAD_ACT" ("LEAD_ACTID","LEADID","USERID","CREATIONDATE","SUBJECT","DESCRIPTION","STATUS")
-                 VALUES (GEN_ID("GEN_LEAD_ACTID", 1),?,?,?,?,?,?) RETURNING "LEAD_ACTID"',
-                [$leadId, $dealerId, $creationDate, 'Updated Status', $description, $statusDb]
-            );
-            $leadActId = $actRow->LEAD_ACTID ?? $actRow->lead_actid ?? 0;
-            if ($leadActId && $request->hasFile('attachments')) {
-                foreach ($request->file('attachments') as $file) {
-                    AttachmentSaver::saveFileAsAttachment($leadActId, $file);
-                }
-            }
+
+            // Sync the main lead status for non-iterative updates too
+            DB::update('UPDATE "LEAD" SET "LASTMODIFIED" = CURRENT_TIMESTAMP WHERE "LEADID" = ?', [$leadId]);
+
+            $updatedCounts = $this->getDealerConsoleCounts($dealerId);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Status updated',
+                'counts' => $updatedCounts,
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Illuminate\Support\Facades\Log::error("Failed to update status: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'A database error occurred while saving. Please try again.',
+            ], 500);
         }
-
-        // Sync the main lead status for non-iterative updates too
-        DB::update('UPDATE "LEAD" SET "LASTMODIFIED" = CURRENT_TIMESTAMP WHERE "LEADID" = ?', [$leadId]);
-
-        $updatedCounts = $this->getDealerConsoleCounts($dealerId);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Status updated',
-            'counts' => $updatedCounts,
-        ]);
     }
 
     private function mapStatusToDb(string $status): string

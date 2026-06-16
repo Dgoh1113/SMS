@@ -11,6 +11,8 @@ use Illuminate\Support\Str;
 
 class SyncDealers extends Command
 {
+    private $cityMapping = null;
+
     /**
      * The name and signature of the console command.
      */
@@ -135,6 +137,10 @@ class SyncDealers extends Command
                         $city = $branches[0]['city'] ?? '';
                     }
 
+                    if (empty($city) && !empty($postcode)) {
+                        $city = $this->getCityFromPostcode($postcode);
+                    }
+
                     // Clean and validate email – take only the first valid email
                     $email = '';
                     if (! empty($emailRaw)) {
@@ -246,5 +252,56 @@ class SyncDealers extends Command
 
             return 1;
         }
+    }
+
+    /**
+     * Load the malaysia-postcodes.json into memory for fast lookup of cities.
+     */
+    private function loadCityMapping()
+    {
+        if ($this->cityMapping !== null) {
+            return;
+        }
+
+        $this->cityMapping = [];
+        $jsonPath = base_path('malaysia-postcodes.json');
+
+        if (!file_exists($jsonPath)) {
+            Log::warning('malaysia-postcodes.json not found in ' . $jsonPath);
+            return;
+        }
+
+        $jsonContent = file_get_contents($jsonPath);
+        $data = json_decode($jsonContent, true);
+
+        if (isset($data['state']) && is_array($data['state'])) {
+            foreach ($data['state'] as $stateData) {
+                if (isset($stateData['city']) && is_array($stateData['city'])) {
+                    foreach ($stateData['city'] as $cityData) {
+                        $cityName = $cityData['name'] ?? '';
+                        if (isset($cityData['postcode']) && is_array($cityData['postcode'])) {
+                            foreach ($cityData['postcode'] as $pc) {
+                                $this->cityMapping[$pc] = $cityName;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Map Malaysia postcode to City.
+     */
+    private function getCityFromPostcode($postcode)
+    {
+        $postcode = preg_replace('/[^0-9]/', '', $postcode);
+        if (strlen($postcode) !== 5) {
+            return '';
+        }
+
+        $this->loadCityMapping();
+
+        return $this->cityMapping[$postcode] ?? '';
     }
 }

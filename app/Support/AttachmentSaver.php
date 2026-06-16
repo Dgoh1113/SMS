@@ -30,6 +30,7 @@ class AttachmentSaver
                         DB::insert('INSERT INTO "ATTACHMENT" ("SHA1", "CONTENT") VALUES (?, ?)', [$sha1, $path]);
                     } catch (\Exception $e) {
                         Log::error("Failed to insert into ATTACHMENT: " . $e->getMessage());
+                        throw $e;
                     }
                 }
             }
@@ -47,6 +48,7 @@ class AttachmentSaver
                     );
                 } catch (\Exception $e) {
                     Log::error("Failed to insert into LEAD_ACT_ATTACHMENT: " . $e->getMessage());
+                    throw $e;
                 }
             }
         }
