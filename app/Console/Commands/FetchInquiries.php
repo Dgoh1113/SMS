@@ -10,6 +10,8 @@ use Webklex\PHPIMAP\ClientManager;
 
 class FetchInquiries extends Command
 {
+    private $postcodeMapping = null;
+
     /**
      * The name and signature of the console command.
      */
@@ -145,7 +147,11 @@ class FetchInquiries extends Command
                     $existingSoftware = Str::limit($existingSoftware, 40, '');
                     $description = Str::limit($description, 500, '');
                     $country = Str::limit($data['Country'] ?? 'MY', 100, '');
+                    
                     $state = Str::limit($data['State'] ?? '', 100, '');
+                    if (empty($state) && !empty($postcode)) {
+                        $state = Str::limit($this->getStateFromPostcode($postcode), 100, '');
+                    }
 
                     $userCount = isset($data['UserCount']) ? (int) $data['UserCount'] : null;
 
@@ -323,5 +329,56 @@ class FetchInquiries extends Command
         ];
 
         return strtr($str, $replacements);
+    }
+
+    /**
+     * Load the malaysia-postcodes.json into memory for fast lookup.
+     */
+    private function loadPostcodeMapping()
+    {
+        if ($this->postcodeMapping !== null) {
+            return;
+        }
+
+        $this->postcodeMapping = [];
+        $jsonPath = base_path('malaysia-postcodes.json');
+
+        if (!file_exists($jsonPath)) {
+            Log::warning('malaysia-postcodes.json not found in ' . $jsonPath);
+            return;
+        }
+
+        $jsonContent = file_get_contents($jsonPath);
+        $data = json_decode($jsonContent, true);
+
+        if (isset($data['state']) && is_array($data['state'])) {
+            foreach ($data['state'] as $stateData) {
+                $stateName = $stateData['name'] ?? '';
+                if (isset($stateData['city']) && is_array($stateData['city'])) {
+                    foreach ($stateData['city'] as $cityData) {
+                        if (isset($cityData['postcode']) && is_array($cityData['postcode'])) {
+                            foreach ($cityData['postcode'] as $pc) {
+                                $this->postcodeMapping[$pc] = $stateName;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Map Malaysia postcode to State.
+     */
+    private function getStateFromPostcode($postcode)
+    {
+        $postcode = preg_replace('/[^0-9]/', '', $postcode);
+        if (strlen($postcode) !== 5) {
+            return '';
+        }
+
+        $this->loadPostcodeMapping();
+
+        return $this->postcodeMapping[$postcode] ?? '';
     }
 }
