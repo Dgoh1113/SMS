@@ -14,26 +14,30 @@ return new class extends Migration
     {
         $driver = Schema::getConnection()->getDriverName();
 
-        if ($driver === 'pgsql') {
-            DB::statement('
-                CREATE TABLE IF NOT EXISTS "User_Passkey" (
-                    "AutoID" SERIAL PRIMARY KEY,
-                    "UserID" INTEGER NOT NULL,
-                    "Nickname" VARCHAR(255) NOT NULL,
-                    "Credential" TEXT NOT NULL,
-                    "CreationDate" TIMESTAMP(0) NOT NULL DEFAULT CURRENT_TIMESTAMP
-                )
-            ');
-            DB::statement('CREATE INDEX IF NOT EXISTS "User_Passkey_UserID_idx" ON "User_Passkey" ("UserID")');
-        } else {
-            Schema::create('User_Passkey', function ($table) {
-                $table->id();
-                $table->unsignedBigInteger('UserID');
-                $table->string('Nickname');
-                $table->text('Credential');
-                $table->timestamp('CreationDate')->useCurrent();
-                $table->index('UserID');
-            });
+        try {
+            if ($driver === 'pgsql') {
+                DB::statement('
+                    CREATE TABLE IF NOT EXISTS "User_Passkey" (
+                        "AutoID" SERIAL PRIMARY KEY,
+                        "UserID" INTEGER NOT NULL,
+                        "Nickname" VARCHAR(255) NOT NULL,
+                        "Credential" TEXT NOT NULL,
+                        "CreationDate" TIMESTAMP(0) NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    )
+                ');
+                DB::statement('CREATE INDEX IF NOT EXISTS "User_Passkey_UserID_idx" ON "User_Passkey" ("UserID")');
+            } else {
+                Schema::create('User_Passkey', function ($table) {
+                    $table->id();
+                    $table->unsignedBigInteger('UserID');
+                    $table->string('Nickname');
+                    $table->text('Credential');
+                    $table->timestamp('CreationDate')->useCurrent();
+                    $table->index('UserID');
+                });
+            }
+        } catch (\Throwable $e) {
+            // Table might already exist from the raw .sql schema, safe to ignore
         }
     }
 

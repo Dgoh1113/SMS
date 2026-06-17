@@ -61,7 +61,7 @@ class AdminController extends Controller
                          GROUP BY "LEADID"
                      ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
                  ) ls ON ls."LEADID" = l."LEADID"
-                 WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL AND TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) <> \'\'
+                 WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE) AND l."ASSIGNEDTO" IS NOT NULL AND TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) <> \'\'
                  AND COALESCE(ls."LATEST_STATUS", \'\') <> \'CANCELLED\'
                  GROUP BY TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50)))'
             );
@@ -328,7 +328,7 @@ class AdminController extends Controller
         // Total leads: all rows in LEAD (excluding Cancelled)
         $leadCountRow = DB::selectOne(
             'SELECT COUNT(*) as cnt FROM "LEAD" l
-             WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
+             WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE)
              AND COALESCE((SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
                            FROM "LEAD_ACT" la
                            WHERE la."LEADID" = l."LEADID"
@@ -346,7 +346,7 @@ class AdminController extends Controller
         // Active inquiries: leads whose latest LEAD_ACT status is ongoing
         $activeRow = DB::selectOne(
             'SELECT COUNT(*) as cnt FROM "LEAD" l
-             WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
+             WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE)
                AND l."ASSIGNEDTO" IS NOT NULL
                AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
                     FROM "LEAD_ACT" la
@@ -494,7 +494,7 @@ class AdminController extends Controller
                          GROUP BY "LEADID"
                      ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
                  ) ls ON ls."LEADID" = l."LEADID"
-                 WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."CREATEDAT" >= ?
+                 WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE) AND l."CREATEDAT" >= ?
                  GROUP BY CAST(l."CREATEDAT" AS DATE), COALESCE(ls."LATEST_STATUS", \'\')',
                 [$leadQueryStart]
             );
@@ -530,7 +530,7 @@ class AdminController extends Controller
                              GROUP BY "LEADID"
                          ) m ON m."LEADID" = a."LEADID" AND m.max_created = a."CREATIONDATE"
                      ) la ON la."LEADID" = l."LEADID"
-                     WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
+                     WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE)
                        AND l."CREATEDAT" <= ?
                        AND UPPER(TRIM(COALESCE(la."STATUS", \'\'))) <> \'CANCELLED\'
                        AND UPPER(TRIM(COALESCE(la."STATUS", \'\'))) IN (\'PENDING\', \'FOLLOWUP\', \'DEMO\', \'CONFIRMED\')',
@@ -854,7 +854,7 @@ class AdminController extends Controller
                 'SELECT FIRST 10
                     "LEADID", "COMPANYNAME", "CONTACTNAME", "CREATEDAT", "DESCRIPTION"
                  FROM "LEAD"
-                 WHERE COALESCE("ISDELETED", FALSE) = FALSE
+                 WHERE ("ISDELETED" IS NULL OR "ISDELETED" = FALSE)
                    AND ("ASSIGNEDTO" IS NULL OR TRIM("ASSIGNEDTO") = \'\')
                  ORDER BY "LEADID" DESC'
             );
@@ -897,7 +897,7 @@ class AdminController extends Controller
                 "BUSINESSNATURE","USERCOUNT","EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION","REFERRALCODE",
                 "CREATEDAT","CREATEDBY","ASSIGNEDTO" AS "assignedTo","LASTMODIFIED"
             FROM "LEAD"
-            WHERE COALESCE("ISDELETED", FALSE) = FALSE
+            WHERE ("ISDELETED" IS NULL OR "ISDELETED" = FALSE)
             ORDER BY "LEADID" DESC'
         );
 
@@ -916,7 +916,7 @@ class AdminController extends Controller
                         "BUSINESSNATURE","USERCOUNT","EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION","REFERRALCODE",
                         "CREATEDAT","CREATEDBY","ASSIGNEDTO" AS "assignedTo","LASTMODIFIED"
                     FROM "LEAD"
-                    WHERE "LEADID" = ? AND COALESCE("ISDELETED", FALSE) = FALSE',
+                    WHERE "LEADID" = ? AND ("ISDELETED" IS NULL OR "ISDELETED" = FALSE)',
                     [$focusLeadId]
                 );
                 if ($focusRow) {
@@ -1094,7 +1094,7 @@ class AdminController extends Controller
                                  GROUP BY "LEADID"
                              ) m ON m."LEADID" = a."LEADID" AND m.MAXCD = a."CREATIONDATE"
                          ) ls ON ls."LEADID" = l."LEADID"
-                         WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
+                         WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE)
                            AND l."ASSIGNEDTO" IS NOT NULL AND TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50))) <> \'\'
                            AND COALESCE(ls."LATEST_STATUS", \'\') <> \'CANCELLED\'
                          GROUP BY TRIM(CAST(l."ASSIGNEDTO" AS VARCHAR(50)))'
@@ -1138,7 +1138,7 @@ class AdminController extends Controller
                 'WITH "Duplicates" AS (
                     SELECT LOWER(TRIM("COMPANYNAME")) AS "comp", LOWER(TRIM("CONTACTNO")) AS "phone", LOWER(TRIM("EMAIL")) AS "email_addr"
                     FROM "LEAD"
-                    WHERE COALESCE("ISDELETED", FALSE) = FALSE
+                    WHERE ("ISDELETED" IS NULL OR "ISDELETED" = FALSE)
                     GROUP BY LOWER(TRIM("COMPANYNAME")), LOWER(TRIM("CONTACTNO")), LOWER(TRIM("EMAIL"))
                     HAVING COUNT(*) > 1
                  )
@@ -1151,7 +1151,7 @@ class AdminController extends Controller
                    ON LOWER(TRIM(l."COMPANYNAME")) = d."comp"
                   AND LOWER(TRIM(l."CONTACTNO")) = d."phone"
                   AND LOWER(TRIM(l."EMAIL")) = d."email_addr"
-                 WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
+                 WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE)
                  ORDER BY l."COMPANYNAME" ASC, l."LEADID" DESC'
             );
 
@@ -1239,7 +1239,7 @@ class AdminController extends Controller
                 "BUSINESSNATURE","USERCOUNT","EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION","REFERRALCODE",
                 "CREATEDAT","CREATEDBY","ASSIGNEDTO" AS "assignedTo","LASTMODIFIED"
             FROM "LEAD"
-            WHERE COALESCE("ISDELETED", FALSE) = FALSE
+            WHERE ("ISDELETED" IS NULL OR "ISDELETED" = FALSE)
             ORDER BY "LEADID" DESC'
         );
         $assigned = [];
@@ -1801,7 +1801,7 @@ class AdminController extends Controller
                     "BUSINESSNATURE","USERCOUNT","EXISTINGSOFTWARE","DEMOMODE","DESCRIPTION",
                     "REFERRALCODE","CREATEDAT","ASSIGNEDTO"
              FROM "LEAD"
-             WHERE COALESCE("ISDELETED", FALSE) = FALSE
+             WHERE ("ISDELETED" IS NULL OR "ISDELETED" = FALSE)
                AND LOWER(TRIM("COMPANYNAME")) = ?
              ORDER BY "LEADID" DESC',
             [$comp]
@@ -1850,7 +1850,7 @@ class AdminController extends Controller
                     "ADDRESS1","ADDRESS2","CITY","STATE","COUNTRY","POSTCODE","BUSINESSNATURE",
                     "EXISTINGSOFTWARE","USERCOUNT","DEMOMODE"
                  FROM "LEAD"
-                 WHERE COALESCE("ISDELETED", FALSE) = FALSE
+                 WHERE ("ISDELETED" IS NULL OR "ISDELETED" = FALSE)
                    AND UPPER(TRIM("COMPANYNAME")) = UPPER(TRIM(?))
                  ORDER BY "LEADID" DESC',
                 [$name]
@@ -1890,7 +1890,7 @@ class AdminController extends Controller
     public function editInquiry(int $leadId): View|RedirectResponse
     {
         // Allow editing assigned/in-progress inquiries
-        $checkExist = DB::selectOne('SELECT "LEADID" FROM "LEAD" WHERE "LEADID" = ? AND COALESCE("ISDELETED", FALSE) = FALSE', [$leadId]);
+        $checkExist = DB::selectOne('SELECT "LEADID" FROM "LEAD" WHERE "LEADID" = ? AND ("ISDELETED" IS NULL OR "ISDELETED" = FALSE)', [$leadId]);
         if (! $checkExist) {
             return redirect()->route('admin.inquiries')->with('error', 'Lead not found.');
         }
@@ -1964,7 +1964,7 @@ class AdminController extends Controller
                         ) AS "CURRENTSTATUS",
                         l."CREATEDAT"
                      FROM "LEAD" l
-                     WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
+                     WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE)
                        AND UPPER(TRIM(l."COMPANYNAME")) = UPPER(TRIM(?))
                      ORDER BY
                         CASE
@@ -2169,7 +2169,7 @@ class AdminController extends Controller
                         ) AS "CURRENTSTATUS",
                         l."CREATEDAT"
                      FROM "LEAD" l
-                     WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
+                     WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE)
                        AND UPPER(TRIM(l."COMPANYNAME")) = UPPER(TRIM(?)) AND l."LEADID" <> ?
                      ORDER BY
                         CASE
@@ -2313,7 +2313,7 @@ class AdminController extends Controller
     public function deleteInquiry(Request $request, int $leadId): \Illuminate\Http\JsonResponse
     {
         $row = DB::selectOne(
-            'SELECT "LEADID" FROM "LEAD" WHERE "LEADID" = ? AND COALESCE("ISDELETED", FALSE) = FALSE',
+            'SELECT "LEADID" FROM "LEAD" WHERE "LEADID" = ? AND ("ISDELETED" IS NULL OR "ISDELETED" = FALSE)',
             [$leadId]
         );
         if (! $row) {
@@ -2992,7 +2992,7 @@ class AdminController extends Controller
         $unassignedCount = 0;
         if ($selectedReportScope === 'all' && ! $selectedArea) {
             $unassignedRow = DB::selectOne(
-                'SELECT COUNT(*) as c FROM "LEAD" WHERE COALESCE("ISDELETED", FALSE) = FALSE AND ("ASSIGNEDTO" IS NULL OR TRIM(CAST("ASSIGNEDTO" AS VARCHAR(50))) = \'\') AND "CREATEDAT" >= ? AND "CREATEDAT" <= ?',
+                'SELECT COUNT(*) as c FROM "LEAD" WHERE ("ISDELETED" IS NULL OR "ISDELETED" = FALSE) AND ("ASSIGNEDTO" IS NULL OR TRIM(CAST("ASSIGNEDTO" AS VARCHAR(50))) = \'\') AND "CREATEDAT" >= ? AND "CREATEDAT" <= ?',
                 [$startStr, $endStr]
             );
             $unassignedCount = (int) ($unassignedRow->C ?? $unassignedRow->c ?? 0);
@@ -3171,7 +3171,7 @@ class AdminController extends Controller
              ) m ON m."LEADID" = a."LEADID" AND m.max_created = a."CREATIONDATE"
              JOIN "LEAD" l ON l."LEADID" = a."LEADID"
              LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
-             WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
+             WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE)
              '.$leadScopeSql.'
              GROUP BY a."STATUS"',
             array_merge([$startStr, $endStr], $leadScopeBindings)
@@ -3206,7 +3206,7 @@ class AdminController extends Controller
              ) m ON m."LEADID" = a."LEADID" AND m.max_created = a."CREATIONDATE"
              JOIN "LEAD" l ON l."LEADID" = a."LEADID"
              LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
-             WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
+             WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE)
              '.$leadScopeSql.'
              GROUP BY a."STATUS"',
             array_merge([$prevStartStr, $prevEndStr], $leadScopeBindings)
@@ -3279,7 +3279,7 @@ class AdminController extends Controller
             'SELECT CAST(l."CREATEDAT" AS DATE) AS d, COUNT(*) AS c
              FROM "LEAD" l
              LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
-             WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
+             WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE) AND l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
              '.$leadScopeSql.'
              GROUP BY CAST(l."CREATEDAT" AS DATE)
              ORDER BY CAST(l."CREATEDAT" AS DATE)',
@@ -3312,7 +3312,7 @@ class AdminController extends Controller
             'SELECT CAST(l."CREATEDAT" AS DATE) AS d, COUNT(*) AS c
              FROM "LEAD" l
              LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
-             WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
+             WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE) AND l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
              '.$leadScopeSql.'
              GROUP BY CAST(l."CREATEDAT" AS DATE)
              ORDER BY CAST(l."CREATEDAT" AS DATE)',
@@ -3346,7 +3346,7 @@ class AdminController extends Controller
             'SELECT COUNT(*) AS c
              FROM "LEAD" l
              LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
-             WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
+             WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE) AND l."CREATEDAT" >= ? AND l."CREATEDAT" <= ?
              '.$leadScopeSql,
             array_merge([$prevStartStr, $prevEndStr], $leadScopeBindings)
         );
@@ -3384,7 +3384,7 @@ class AdminController extends Controller
              FROM "LEAD_ACT" a
              JOIN "LEAD" l ON l."LEADID" = a."LEADID"
              LEFT JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
-             WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
+             WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE)
                AND a."DEALTPRODUCT" IS NOT NULL
                AND TRIM(a."DEALTPRODUCT") <> \'\'
                AND a."CREATIONDATE" >= ?
@@ -3523,7 +3523,7 @@ class AdminController extends Controller
                                       ) IN (\'COMPLETED\', \'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\') THEN 1 ELSE 0 END) AS closed_c
                  FROM "LEAD" l
                  JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
-                 WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL
+                 WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE) AND l."ASSIGNEDTO" IS NOT NULL
                    AND l."CREATEDAT" >= CAST(? AS TIMESTAMP) AND l."CREATEDAT" <= CAST(? AS TIMESTAMP)
                    AND COALESCE((SELECT FIRST 1 UPPER(TRIM(la2."STATUS")) FROM "LEAD_ACT" la2 WHERE la2."LEADID" = l."LEADID" ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC), \'\') <> \'CANCELLED\'
                    '.$dealerScopeSql.'
@@ -3542,7 +3542,7 @@ class AdminController extends Controller
                                       ) IN (\'COMPLETED\', \'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\') THEN 1 ELSE 0 END) AS closed_c
                  FROM "LEAD" l
                  JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
-                 WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL
+                 WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE) AND l."ASSIGNEDTO" IS NOT NULL
                    AND l."CREATEDAT" >= DATEADD(DAY, ?, CURRENT_DATE)
                    AND COALESCE((SELECT FIRST 1 UPPER(TRIM(la2."STATUS")) FROM "LEAD_ACT" la2 WHERE la2."LEADID" = l."LEADID" ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC), \'\') <> \'CANCELLED\'
                    '.$dealerScopeSql.'
@@ -3580,7 +3580,7 @@ class AdminController extends Controller
             $rejectedRows = DB::select(
                 'SELECT l."ASSIGNEDTO" AS dealer_id, COUNT(*) AS c
                  FROM "LEAD" l
-                 WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL
+                 WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE) AND l."ASSIGNEDTO" IS NOT NULL
                    AND l."CREATEDAT" >= CAST(? AS TIMESTAMP) AND l."CREATEDAT" <= CAST(? AS TIMESTAMP)
                    AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
                         FROM "LEAD_ACT" la
@@ -3596,7 +3596,7 @@ class AdminController extends Controller
             $rejectedRows = DB::select(
                 'SELECT l."ASSIGNEDTO" AS dealer_id, COUNT(*) AS c
                  FROM "LEAD" l
-                 WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL
+                 WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE) AND l."ASSIGNEDTO" IS NOT NULL
                    AND l."CREATEDAT" >= DATEADD(DAY, ?, CURRENT_DATE)
                    AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
                         FROM "LEAD_ACT" la
@@ -3625,7 +3625,7 @@ class AdminController extends Controller
             $failedCountRows = DB::select(
                 'SELECT l."ASSIGNEDTO" AS dealer_id, COUNT(*) AS failed_c
                  FROM "LEAD" l
-                 WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL
+                 WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE) AND l."ASSIGNEDTO" IS NOT NULL
                    AND l."CREATEDAT" >= CAST(? AS TIMESTAMP) AND l."CREATEDAT" <= CAST(? AS TIMESTAMP)
                    AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
                         FROM "LEAD_ACT" la
@@ -3640,7 +3640,7 @@ class AdminController extends Controller
             $failedCountRows = DB::select(
                 'SELECT l."ASSIGNEDTO" AS dealer_id, COUNT(*) AS failed_c
                 FROM "LEAD" l
-                WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL
+                WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE) AND l."ASSIGNEDTO" IS NOT NULL
                    AND l."CREATEDAT" >= DATEADD(DAY, ?, CURRENT_DATE)
                    AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
                         FROM "LEAD_ACT" la
@@ -3679,7 +3679,7 @@ class AdminController extends Controller
                                        ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
                                       ) = \'FAILED\' THEN 1 ELSE 0 END) AS failed_c
                  FROM "LEAD" l
-                 WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL
+                 WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE) AND l."ASSIGNEDTO" IS NOT NULL
                    AND l."CREATEDAT" >= CAST(? AS TIMESTAMP) AND l."CREATEDAT" <= CAST(? AS TIMESTAMP)
                    AND COALESCE((SELECT FIRST 1 UPPER(TRIM(la2."STATUS")) FROM "LEAD_ACT" la2 WHERE la2."LEADID" = l."LEADID" ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC), \'\') <> \'CANCELLED\'
                    '.$dealerScopeSql.'
@@ -3696,7 +3696,7 @@ class AdminController extends Controller
                                        ORDER BY la."CREATIONDATE" DESC, la."LEAD_ACTID" DESC
                                       ) = \'FAILED\' THEN 1 ELSE 0 END) AS failed_c
                  FROM "LEAD" l
-                 WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL
+                 WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE) AND l."ASSIGNEDTO" IS NOT NULL
                    AND l."CREATEDAT" >= DATEADD(DAY, ?, CURRENT_DATE)
                    AND COALESCE((SELECT FIRST 1 UPPER(TRIM(la2."STATUS")) FROM "LEAD_ACT" la2 WHERE la2."LEADID" = l."LEADID" ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC), \'\') <> \'CANCELLED\'
                    AND l."CREATEDAT" <= CURRENT_DATE
@@ -3738,7 +3738,7 @@ class AdminController extends Controller
                         SUM(CASE WHEN l."CREATEDAT" >= CAST(? AS TIMESTAMP) AND l."CREATEDAT" <= CAST(? AS TIMESTAMP) THEN 1 ELSE 0 END) AS curr_c,
                         SUM(CASE WHEN l."CREATEDAT" >= CAST(? AS TIMESTAMP) AND l."CREATEDAT" <= CAST(? AS TIMESTAMP) THEN 1 ELSE 0 END) AS last_c
                  FROM "LEAD" l
-                 WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL
+                 WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE) AND l."ASSIGNEDTO" IS NOT NULL
                    '.$dealerScopeSql.'
                  GROUP BY l."ASSIGNEDTO"',
                 array_merge([$primaryStartStr, $primaryEndStr, $compareStartStr, $compareEndStr], $dealerScopeBindings)
@@ -3749,7 +3749,7 @@ class AdminController extends Controller
                         SUM(CASE WHEN l."CREATEDAT" >= DATEADD(DAY, ?, CURRENT_DATE) AND l."CREATEDAT" <= CURRENT_DATE THEN 1 ELSE 0 END) AS curr_c,
                         SUM(CASE WHEN l."CREATEDAT" >= DATEADD(DAY, ?, DATEADD(YEAR, -1, CURRENT_DATE)) AND l."CREATEDAT" <= DATEADD(YEAR, -1, CURRENT_DATE) THEN 1 ELSE 0 END) AS last_c
                  FROM "LEAD" l
-                 WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL
+                 WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE) AND l."ASSIGNEDTO" IS NOT NULL
                    '.$dealerScopeSql.'
                  GROUP BY l."ASSIGNEDTO"',
                 array_merge([-$days, -$days], $dealerScopeBindings)
@@ -3777,7 +3777,7 @@ class AdminController extends Controller
                     MAX(a."CREATIONDATE") AS last_at
              FROM "LEAD_ACT" a
              JOIN "LEAD" l ON l."LEADID" = a."LEADID"
-             WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL
+             WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE) AND l."ASSIGNEDTO" IS NOT NULL
                '.$dealerScopeSql.'
              GROUP BY l."ASSIGNEDTO"',
             $dealerScopeBindings
@@ -3842,7 +3842,7 @@ class AdminController extends Controller
                         COUNT(*) AS failed_c
                  FROM "LEAD" l
                  JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
-                 WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL
+                 WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE) AND l."ASSIGNEDTO" IS NOT NULL
                    AND l."CREATEDAT" >= CAST(? AS TIMESTAMP) AND l."CREATEDAT" <= CAST(? AS TIMESTAMP)
                    AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
                         FROM "LEAD_ACT" la
@@ -3861,7 +3861,7 @@ class AdminController extends Controller
                         COUNT(*) AS failed_c
                  FROM "LEAD" l
                  JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
-                 WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL
+                 WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE) AND l."ASSIGNEDTO" IS NOT NULL
                    AND l."CREATEDAT" >= DATEADD(DAY, ?, CURRENT_DATE)
                    AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
                         FROM "LEAD_ACT" la
@@ -3896,7 +3896,7 @@ class AdminController extends Controller
                         COUNT(*) AS closed_c
                  FROM "LEAD" l
                  JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
-                 WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL
+                 WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE) AND l."ASSIGNEDTO" IS NOT NULL
                    AND l."CREATEDAT" >= CAST(? AS TIMESTAMP) AND l."CREATEDAT" <= CAST(? AS TIMESTAMP)
                    AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
                         FROM "LEAD_ACT" la
@@ -3915,7 +3915,7 @@ class AdminController extends Controller
                         COUNT(*) AS closed_c
                  FROM "LEAD" l
                  JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
-                 WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL
+                 WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE) AND l."ASSIGNEDTO" IS NOT NULL
                    AND l."CREATEDAT" >= DATEADD(DAY, ?, CURRENT_DATE)
                    AND (SELECT FIRST 1 UPPER(TRIM(la."STATUS"))
                         FROM "LEAD_ACT" la
@@ -3974,7 +3974,7 @@ class AdminController extends Controller
         $rows = DB::select(
             'SELECT a."LEAD_ACTID", a."LEADID", a."USERID", a."CREATIONDATE", a."SUBJECT", a."DESCRIPTION", a."STATUS"
              FROM "LEAD_ACT" a
-             INNER JOIN "LEAD" l ON l."LEADID" = a."LEADID" AND l."ASSIGNEDTO" = ? AND COALESCE(l."ISDELETED", FALSE) = FALSE
+             INNER JOIN "LEAD" l ON l."LEADID" = a."LEADID" AND l."ASSIGNEDTO" = ? AND (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE)
              ORDER BY a."CREATIONDATE" DESC, a."LEAD_ACTID" DESC',
             [$userid]
         );
@@ -4071,7 +4071,7 @@ class AdminController extends Controller
                      WHERE UPPER(TRIM(COALESCE(a."STATUS", \'\'))) IN (\'REWARDED\', \'PAID\', \'REWARD DISTRIBUTED\')) AS rewarded_leads
              FROM "LEAD" l
               JOIN "USERS" u ON u."USERID" = l."ASSIGNEDTO"
-               WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND l."ASSIGNEDTO" IS NOT NULL
+               WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE) AND l."ASSIGNEDTO" IS NOT NULL
                 AND l."CREATEDAT" >= ?
                 AND l."CREATEDAT" <= ?
                 AND COALESCE((SELECT FIRST 1 UPPER(TRIM(la2."STATUS")) FROM "LEAD_ACT" la2 WHERE la2."LEADID" = l."LEADID" ORDER BY la2."CREATIONDATE" DESC, la2."LEAD_ACTID" DESC), \'\') <> \'CANCELLED\'
@@ -4130,7 +4130,7 @@ class AdminController extends Controller
              FROM "LEAD_ACT" a
              JOIN "LEAD" l ON l."LEADID" = a."LEADID"
              LEFT JOIN "USERS" u ON u."USERID" = a."USERID"
-             WHERE COALESCE(l."ISDELETED", FALSE) = FALSE AND a."USERID" IS NOT NULL
+             WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE) AND a."USERID" IS NOT NULL
                AND UPPER(TRIM(COALESCE(a."USERID", \'\'))) = UPPER(TRIM(COALESCE(l."ASSIGNEDTO", \'\')))
                AND a."DEALTPRODUCT" IS NOT NULL
                AND TRIM(a."DEALTPRODUCT") <> \'\'
@@ -5032,7 +5032,7 @@ class AdminController extends Controller
             $dupKeys = DB::select(
                 'SELECT LOWER(TRIM("COMPANYNAME")) AS "comp", LOWER(TRIM("CONTACTNO")) AS "phone", LOWER(TRIM("EMAIL")) AS "email_addr", COUNT(*) AS "cnt"
                  FROM "LEAD"
-                 WHERE COALESCE("ISDELETED", FALSE) = FALSE
+                 WHERE ("ISDELETED" IS NULL OR "ISDELETED" = FALSE)
                  GROUP BY LOWER(TRIM("COMPANYNAME")), LOWER(TRIM("CONTACTNO")), LOWER(TRIM("EMAIL"))
                  HAVING COUNT(*) > 1'
             );
@@ -5045,7 +5045,7 @@ class AdminController extends Controller
 
                     $leads = DB::select(
                         'SELECT "LEADID", "ASSIGNEDTO" FROM "LEAD"
-                         WHERE COALESCE("ISDELETED", FALSE) = FALSE
+                         WHERE ("ISDELETED" IS NULL OR "ISDELETED" = FALSE)
                            AND LOWER(TRIM("COMPANYNAME")) = ?
                            AND LOWER(TRIM("CONTACTNO")) = ?
                            AND LOWER(TRIM("EMAIL")) = ?',

@@ -38,7 +38,7 @@ class ApiController extends Controller
                 ) AS "CURRENTSTATUS",
                 l."CREATEDAT",l."CREATEDBY",l."ASSIGNEDTO" AS "assignedTo",l."LASTMODIFIED"
             FROM "LEAD" l
-            WHERE COALESCE(l."ISDELETED", FALSE) = FALSE
+            WHERE (l."ISDELETED" IS NULL OR l."ISDELETED" = FALSE)
             ORDER BY l."LEADID" DESC'
         );
 
