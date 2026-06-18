@@ -38,6 +38,10 @@ class AdminController extends Controller
             'SELECT "USERID","EMAIL","POSTCODE","CITY","ISACTIVE","COMPANY","ALIAS"
              FROM "USERS"
              WHERE TRIM("SYSTEMROLE") = ?
+               AND "ISACTIVE" = TRUE
+               AND "EMAIL" IS NOT NULL
+               AND TRIM("EMAIL") <> \'\'
+               AND LOWER("EMAIL") NOT LIKE \'%@noemail%\'
              ORDER BY "USERID"',
             [AppConstants::ROLE_DEALER]
         );
@@ -84,7 +88,14 @@ class AdminController extends Controller
             // Leave stats empty if aggregation fails
         }
 
-        return array_map(function ($r) use ($leadStats) {
+        $dealers = [];
+        foreach ($rows as $r) {
+            $emailRaw = trim((string) ($r->EMAIL ?? ''));
+            $isActive = (bool) ($r->ISACTIVE ?? false);
+            if (!$isActive || $emailRaw === '' || str_contains(strtolower($emailRaw), '@noemail')) {
+                continue;
+            }
+
             $uid = StringHelper::normalize($r->USERID ?? '');
             $stats = $leadStats[$uid] ?? [];
             $totalLead = $stats['totalLead'] ?? 0;
@@ -99,8 +110,24 @@ class AdminController extends Controller
             $r->TOTAL_FAILED = $totalFailed;
             $r->CONVERSION_RATE = $conversion;
 
-            return $r;
-        }, $rows);
+            $dealers[] = $r;
+        }
+
+        usort($dealers, function ($a, $b) {
+            $convA = (float) ($a->CONVERSION_RATE ?? 0);
+            $convB = (float) ($b->CONVERSION_RATE ?? 0);
+            if (abs($convA - $convB) > 0.001) {
+                return $convB <=> $convA;
+            }
+            $closedA = (int) ($a->TOTAL_CLOSED ?? 0);
+            $closedB = (int) ($b->TOTAL_CLOSED ?? 0);
+            if ($closedA !== $closedB) {
+                return $closedB <=> $closedA;
+            }
+            return strcmp(trim((string) ($a->COMPANY ?? '')), trim((string) ($b->COMPANY ?? '')));
+        });
+
+        return $dealers;
     }
 
     private function loadInquiryPostcodeCityLookup(): array
@@ -1117,17 +1144,38 @@ class AdminController extends Controller
                 return $stats;
             }, 10);
 
-            $dealers = array_map(function ($r) use ($leadStats) {
+            $dealers = [];
+            foreach ($baseDealers as $r) {
+                $emailRaw = trim((string) ($r->EMAIL ?? ''));
+                if ($emailRaw === '' || str_contains(strtolower($emailRaw), '@noemail')) {
+                    continue;
+                }
+
                 $uid = trim((string) ($r->USERID ?? ''));
                 $totalLead = $leadStats[$uid]['totalLead'] ?? 0;
                 $totalClosed = $leadStats[$uid]['totalClosed'] ?? 0;
                 $conversion = $totalLead > 0 ? ($totalClosed / $totalLead) * 100 : 0;
+
                 $r->TOTAL_LEAD = $totalLead;
                 $r->TOTAL_CLOSED = $totalClosed;
                 $r->CONVERSION_RATE = $conversion;
 
-                return $r;
-            }, $baseDealers);
+                $dealers[] = $r;
+            }
+
+            usort($dealers, function ($a, $b) {
+                $convA = (float) ($a->CONVERSION_RATE ?? 0);
+                $convB = (float) ($b->CONVERSION_RATE ?? 0);
+                if (abs($convA - $convB) > 0.001) {
+                    return $convB <=> $convA;
+                }
+                $closedA = (int) ($a->TOTAL_CLOSED ?? 0);
+                $closedB = (int) ($b->TOTAL_CLOSED ?? 0);
+                if ($closedA !== $closedB) {
+                    return $closedB <=> $closedA;
+                }
+                return strcmp(trim((string) ($a->COMPANY ?? '')), trim((string) ($b->COMPANY ?? '')));
+            });
         } catch (\Throwable $e) {
             // leave empty
         }

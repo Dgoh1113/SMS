@@ -54,13 +54,13 @@
         @endif
     </td>
     <td data-col="email">{{ $r->EMAIL ?? '-' }}</td>
+    <td data-col="contactno">{{ $r->CONTACTNO ?? '-' }}</td>
     <td data-col="source">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '-') }}</td>
     <td data-col="postcode">{{ $r->POSTCODE ?? '-' }}</td>
     <td data-col="city">{{ $r->CITY ?? '—' }}</td>
     <td data-col="state">{{ $r->STATE ?? '—' }}</td>
     <td data-col="country">{{ $r->COUNTRY ?? '—' }}</td>
     <td data-col="address">{{ $addressDisplay !== '' ? $addressDisplay : '-' }}</td>
-    <td data-col="contactno">{{ $r->CONTACTNO ?? '-' }}</td>
     <td data-col="businessnature">{{ $r->BUSINESSNATURE ?? '-' }}</td>
     <td data-col="users">{{ $r->USERCOUNT ?? '-' }}</td>
     <td data-col="existingsw">{{ $r->EXISTINGSOFTWARE ?? '-' }}</td>

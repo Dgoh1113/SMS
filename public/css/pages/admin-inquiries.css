@@ -65,21 +65,10 @@
   margin-top: 0 !important;
 }
 
-.inquiries-page-wrap #allTable {
-  width: max-content;
-  min-width: 100%;
-  table-layout: auto;
-}
-
-.inquiries-page-wrap #allTable {
+.inquiries-page-wrap #allTable,
+.inquiries-page-wrap #unassignedTable,
+.inquiries-page-wrap #assignedTable {
   width: max-content !important;
-  min-width: 100% !important;
-  table-layout: auto !important;
-}
-
-.inquiries-page-wrap #unassignedTable {
-  width: max-content !important;
-  min-width: 100% !important;
   table-layout: auto !important;
 }
 
@@ -94,9 +83,8 @@
 
 .inquiries-page-wrap #unassignedTable.inquiries-table--fit th[data-col="customername"],
 .inquiries-page-wrap #unassignedTable.inquiries-table--fit td[data-col="customername"] {
-  min-width: max-content;
-  width: auto;
-  max-width: none !important;
+  width: 1% !important;
+  white-space: nowrap !important;
 }
 
 .inquiries-page-wrap #unassignedTable.inquiries-table--fit th[data-col="email"],
@@ -162,9 +150,8 @@
 
 .inquiries-page-wrap #assignedTable th[data-col="customername"],
 .inquiries-page-wrap #assignedTable td[data-col="customername"] {
-  width: auto;
-  min-width: 180px;
-  white-space: nowrap;
+  width: 1% !important;
+  white-space: nowrap !important;
 }
 
 .inquiries-page-wrap #assignedTable th[data-col="assignedto"],
@@ -232,9 +219,8 @@
 
 .inquiries-page-wrap #allTable.inquiries-table--fit th[data-col="customername"],
 .inquiries-page-wrap #allTable.inquiries-table--fit td[data-col="customername"] {
-  min-width: max-content;
-  width: auto;
-  max-width: none !important;
+  width: 1% !important;
+  white-space: nowrap !important;
 }
 
 .inquiries-page-wrap #allTable.inquiries-table--fit th[data-col="email"],
@@ -290,7 +276,8 @@
 
 .inquiries-page-wrap #allTable:not(.inquiries-table--fit) th[data-col="customername"],
 .inquiries-page-wrap #allTable:not(.inquiries-table--fit) td[data-col="customername"] {
-  min-width: 300px;
+  width: 1% !important;
+  white-space: nowrap !important;
 }
 
 .inquiries-page-wrap #allTable:not(.inquiries-table--fit) th[data-col="source"],
@@ -674,16 +661,13 @@
   .inquiries-page-wrap #unassignedTable.inquiries-table--fit td[data-col="customername"],
   .inquiries-page-wrap #allTable.inquiries-table--fit th[data-col="customername"],
   .inquiries-page-wrap #allTable.inquiries-table--fit td[data-col="customername"] {
-    min-width: max-content !important;
-    width: auto !important;
-    max-width: none !important;
+    width: 1% !important;
+    white-space: nowrap !important;
   }
 
   .inquiries-page-wrap #assignedTable th[data-col="customername"],
   .inquiries-page-wrap #assignedTable td[data-col="customername"] {
-    width: auto !important;
-    min-width: 170px !important;
-    max-width: none !important;
+    width: 1% !important;
     white-space: nowrap !important;
   }
 

@@ -1833,6 +1833,55 @@ document.addEventListener('DOMContentLoaded', function () {
             if (submitBtnText) submitBtnText.textContent = isEdit ? 'Update inquiry and assign' : 'Save inquiry and assign';
         }
         
+        function normalizeAssignPostcode(value) {
+            return String(value || '').replace(/\D+/g, '').slice(0, 5);
+        }
+
+        function normalizeAssignCity(value) {
+            var normalized = String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
+            return (normalized === '-' || normalized === '—') ? '' : normalized;
+        }
+
+        function sortAssignDealerRowsForInquiry(preferredPostcode, preferredCity) {
+            dealerRows.forEach(function(row, index) {
+                if (!row.hasAttribute('data-assign-order')) {
+                    row.setAttribute('data-assign-order', String(index));
+                }
+            });
+
+            var rows = Array.prototype.slice.call(dealerRows);
+            if (!rows.length) return;
+
+            var normalizedPostcode = normalizeAssignPostcode(preferredPostcode);
+            var normalizedCity = normalizeAssignCity(preferredCity);
+
+            var hasPostcodeMatch = normalizedPostcode !== '' && rows.some(function(row) {
+                return normalizeAssignPostcode(row.getAttribute('data-assign-postcode')) === normalizedPostcode;
+            });
+
+            var hasCityMatch = !hasPostcodeMatch && normalizedCity !== '' && rows.some(function(row) {
+                return normalizeAssignCity(row.getAttribute('data-assign-city')) === normalizedCity;
+            });
+
+            rows.sort(function(a, b) {
+                var rankA = 1, rankB = 1;
+                if (hasPostcodeMatch) {
+                    rankA = normalizeAssignPostcode(a.getAttribute('data-assign-postcode')) === normalizedPostcode ? 0 : 1;
+                    rankB = normalizeAssignPostcode(b.getAttribute('data-assign-postcode')) === normalizedPostcode ? 0 : 1;
+                } else if (hasCityMatch) {
+                    rankA = normalizeAssignCity(a.getAttribute('data-assign-city')) === normalizedCity ? 0 : 1;
+                    rankB = normalizeAssignCity(b.getAttribute('data-assign-city')) === normalizedCity ? 0 : 1;
+                }
+                if (rankA !== rankB) return rankA - rankB;
+                return (parseInt(a.getAttribute('data-assign-order'), 10) || 0) - (parseInt(b.getAttribute('data-assign-order'), 10) || 0);
+            });
+
+            var tbody = document.querySelector('#createAssignModal .inquiries-assign-dealers-table tbody');
+            if (tbody) {
+                rows.forEach(function(row) { tbody.appendChild(row); });
+            }
+        }
+
         updateAssignDisplay();
 
         if (openAssignModalBtn) {
@@ -1850,11 +1899,18 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
                     
                     // Set the Lead label in the modal
-                    var companyInput = document.getElementById('companyNameInput');
+                    var companyInput = document.getElementById('companyInput');
                     var leadLabel = document.getElementById('createAssignLeadLabel');
                     if (companyInput && leadLabel) {
                         leadLabel.textContent = companyInput.value || 'New Lead';
                     }
+
+                    var postcodeInput = document.getElementById('postcodeInput');
+                    var cityInput = document.getElementById('cityInput');
+                    sortAssignDealerRowsForInquiry(
+                        postcodeInput ? postcodeInput.value : '',
+                        cityInput ? cityInput.value : ''
+                    );
                     
                     // Clear selection
                     dealerRows.forEach(function(r) { r.classList.remove('selected'); });

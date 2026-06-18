@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Inquiries Management – Admin')
 @push('styles')
-<link rel="stylesheet" href="{{ asset('css/pages/admin-inquiries.css') }}?v=20260424-03">
+<link rel="stylesheet" href="{{ asset('css/pages/admin-inquiries.css') }}?v=20260618-02">
 <style>
     @keyframes inquiryHighlightBeam {
         0% { background-color: rgba(168, 85, 247, 0.25); box-shadow: inset 6px 0 0 #a855f7, 0 0 20px rgba(168, 85, 247, 0.15); }
@@ -346,13 +346,13 @@
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="date"> INQUIRY DATE</label>
                 <label class="inquiries-columns-check"><input type="checkbox" data-col="customername"> CUSTOMER NAME</label>
                 <label class="inquiries-columns-check"><input type="checkbox" data-col="email"> EMAIL</label>
+                <label class="inquiries-columns-check"><input type="checkbox" data-col="contactno"> CONTACT NO</label>
                 <label class="inquiries-columns-check"><input type="checkbox" data-col="source"> SOURCE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="postcode"> POSTCODE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="city"> CITY</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="state"> STATE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="country"> COUNTRY</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="address"> ADDRESS</label>
-                    <label class="inquiries-columns-check"><input type="checkbox" data-col="contactno"> CONTACT NO</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="businessnature"> BUSINESS NATURE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="users"> USERS</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="existingsw"> EXISTING SW</label>
@@ -389,13 +389,13 @@
                     <x-tables.text-filter-header col="date" label="INQUIRY DATE" />
                     <x-tables.text-filter-header col="customername" label="CUSTOMER NAME" />
                     <x-tables.text-filter-header col="email" label="EMAIL" />
+                    <x-tables.text-filter-header col="contactno" label="CONTACT NO" />
                     <x-tables.text-filter-header col="source" label="SOURCE" />
                     <x-tables.text-filter-header col="postcode" label="POSTCODE" />
                     <x-tables.text-filter-header col="city" label="CITY" />
                     <x-tables.text-filter-header col="state" label="STATE" />
                     <x-tables.text-filter-header col="country" label="COUNTRY" />
                     <x-tables.text-filter-header col="address" label="ADDRESS" />
-                    <x-tables.text-filter-header col="contactno" label="CONTACT NO" />
                     <x-tables.text-filter-header col="businessnature" label="BUSINESS NATURE" />
                     <x-tables.operator-filter-header col="users" label="USERS" />
                     <x-tables.text-filter-header col="existingsw" label="EXISTING SW" />
@@ -424,6 +424,7 @@
                         @endif
                     </td>
                     <td data-col="email">{{ $r->EMAIL ?? '—' }}</td>
+                    <td data-col="contactno">{{ $r->CONTACTNO ?? '—' }}</td>
                     <td data-col="source">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '—') }}</td>
                     <td data-col="postcode">{{ $r->POSTCODE ?? '—' }}</td>
                     <td data-col="city">{{ $r->CITY ?? '—' }}</td>
@@ -435,7 +436,6 @@
                         $addr = trim($addr1 . ' ' . $addr2);
                     @endphp
                     <td data-col="address">{{ $addr !== '' ? $addr : '—' }}</td>
-                    <td data-col="contactno">{{ $r->CONTACTNO ?? '—' }}</td>
                     <td data-col="businessnature">{{ $r->BUSINESSNATURE ?? '—' }}</td>
                     <td data-col="users">{{ $r->USERCOUNT ?? '—' }}</td>
                     <td data-col="existingsw">{{ $r->EXISTINGSOFTWARE ?? '—' }}</td>
@@ -546,13 +546,13 @@
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="date"> INQUIRY DATE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="customername"> CUSTOMER NAME</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="email"> EMAIL</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="contactno"> CONTACT NO</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="source"> SOURCE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="postcode"> POSTCODE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="city"> CITY</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="state"> STATE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="country"> COUNTRY</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="address"> ADDRESS</label>
-                    <label class="inquiries-columns-check"><input type="checkbox" data-col="contactno"> CONTACT NO</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="businessnature"> BUSINESS NATURE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="users"> USERS</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="existingsw"> EXISTING SW</label>
@@ -585,13 +585,13 @@
                     <x-tables.text-filter-header col="date" label="INQUIRY DATE" input-class="inquiries-grid-filter-assigned" />
                     <x-tables.text-filter-header col="customername" label="CUSTOMER NAME" input-class="inquiries-grid-filter-assigned" />
                     <x-tables.text-filter-header col="email" label="EMAIL" input-class="inquiries-grid-filter-assigned" />
+                    <x-tables.text-filter-header col="contactno" label="CONTACT NO" input-class="inquiries-grid-filter-assigned" />
                     <x-tables.text-filter-header col="source" label="SOURCE" input-class="inquiries-grid-filter-assigned" />
                     <x-tables.text-filter-header col="postcode" label="POSTCODE" input-class="inquiries-grid-filter-assigned" />
                     <x-tables.text-filter-header col="city" label="CITY" input-class="inquiries-grid-filter-assigned" />
                     <x-tables.text-filter-header col="state" label="STATE" input-class="inquiries-grid-filter-assigned" />
                     <x-tables.text-filter-header col="country" label="COUNTRY" input-class="inquiries-grid-filter-assigned" />
                     <x-tables.text-filter-header col="address" label="ADDRESS" input-class="inquiries-grid-filter-assigned" />
-                    <x-tables.text-filter-header col="contactno" label="CONTACT NO" input-class="inquiries-grid-filter-assigned" />
                     <x-tables.text-filter-header col="businessnature" label="BUSINESS NATURE" input-class="inquiries-grid-filter-assigned" />
                     <x-tables.operator-filter-header col="users" label="USERS" input-class="inquiries-grid-filter-assigned" />
                     <x-tables.text-filter-header col="existingsw" label="EXISTING SW" input-class="inquiries-grid-filter-assigned" />
@@ -621,6 +621,7 @@
                     @endphp
                     <td data-col="customername">{{ $custDisp }}</td>
                     <td data-col="email">{{ $r->EMAIL ?? '—' }}</td>
+                    <td data-col="contactno">{{ $r->CONTACTNO ?? '—' }}</td>
                     <td data-col="source">{{ $r->CREATEDBY_NAME ?? ($r->CREATEDBY ?? '—') }}</td>
                     <td data-col="postcode">{{ $r->POSTCODE ?? '—' }}</td>
                     <td data-col="city">{{ $r->CITY ?? '—' }}</td>
@@ -632,7 +633,6 @@
                         $addr = trim($addr1 . ' ' . $addr2);
                     @endphp
                     <td data-col="address">{{ $addr !== '' ? $addr : '—' }}</td>
-                    <td data-col="contactno">{{ $r->CONTACTNO ?? '—' }}</td>
                     <td data-col="businessnature">{{ $r->BUSINESSNATURE ?? '—' }}</td>
                     <td data-col="users">{{ $r->USERCOUNT ?? '—' }}</td>
                     <td data-col="existingsw">{{ $r->EXISTINGSOFTWARE ?? '—' }}</td>
@@ -755,13 +755,13 @@
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="date"> INQUIRY DATE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="customername"> CUSTOMER NAME</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="email"> EMAIL</label>
+                    <label class="inquiries-columns-check"><input type="checkbox" data-col="contactno"> CONTACT NO</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="source"> SOURCE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="postcode"> POSTCODE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="city"> CITY</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="state"> STATE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="country"> COUNTRY</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="address"> ADDRESS</label>
-                    <label class="inquiries-columns-check"><input type="checkbox" data-col="contactno"> CONTACT NO</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="businessnature"> BUSINESS NATURE</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="users"> USERS</label>
                     <label class="inquiries-columns-check"><input type="checkbox" data-col="existingsw"> EXISTING SW</label>
@@ -795,13 +795,13 @@
                     <x-tables.text-filter-header col="date" label="INQUIRY DATE" input-class="inquiries-grid-filter-all" />
                     <x-tables.text-filter-header col="customername" label="CUSTOMER NAME" input-class="inquiries-grid-filter-all" />
                     <x-tables.text-filter-header col="email" label="EMAIL" input-class="inquiries-grid-filter-all" />
+                    <x-tables.text-filter-header col="contactno" label="CONTACT NO" input-class="inquiries-grid-filter-all" />
                     <x-tables.text-filter-header col="source" label="SOURCE" input-class="inquiries-grid-filter-all" />
                     <x-tables.text-filter-header col="postcode" label="POSTCODE" input-class="inquiries-grid-filter-all" />
                     <x-tables.text-filter-header col="city" label="CITY" input-class="inquiries-grid-filter-all" />
                     <x-tables.text-filter-header col="state" label="STATE" input-class="inquiries-grid-filter-all" />
                     <x-tables.text-filter-header col="country" label="COUNTRY" input-class="inquiries-grid-filter-all" />
                     <x-tables.text-filter-header col="address" label="ADDRESS" input-class="inquiries-grid-filter-all" />
-                    <x-tables.text-filter-header col="contactno" label="CONTACT NO" input-class="inquiries-grid-filter-all" />
                     <x-tables.text-filter-header col="businessnature" label="BUSINESS NATURE" input-class="inquiries-grid-filter-all" />
                     <x-tables.operator-filter-header col="users" label="USERS" input-class="inquiries-grid-filter-all" />
                     <x-tables.text-filter-header col="existingsw" label="EXISTING SW" input-class="inquiries-grid-filter-all" />
@@ -1756,19 +1756,17 @@ document.addEventListener('DOMContentLoaded', function() {
     })();
     @endif
 
-    var STORAGE_KEY = 'inquiryVisibleColumns_v5';
-    var LEGACY_STORAGE_KEY = 'inquiryVisibleColumns_v5_disabled';
-    var LEGACY_DEFAULT_COLUMNS = ['inquiryid', 'date', 'customername', 'postcode', 'city', 'state', 'country', 'businessnature', 'products', 'status'];
-    var DEFAULT_COLUMNS = ['inquiryid', 'date', 'customername', 'email', 'postcode', 'city', 'products', 'status'];
-    var INCOMING_ALL_COLUMNS = ['inquiryid','date','customername','email','source','city','state','country','postcode','address','contactno','businessnature','users','existingsw','demomode','products','message','referralcode','status'];
-    var ASSIGNED_STORAGE_KEY = 'assignedVisibleColumns_v5';
-    var ASSIGNED_LEGACY_STORAGE_KEY = 'assignedVisibleColumns_v5_disabled';
+    var STORAGE_KEY = 'inquiryVisibleColumns_v7';
+    var LEGACY_DEFAULT_COLUMNS = ['inquiryid', 'date', 'customername', 'email', 'postcode', 'city', 'products', 'status'];
+    var DEFAULT_COLUMNS = ['inquiryid', 'date', 'customername', 'email', 'contactno', 'postcode', 'city', 'products'];
+    var INCOMING_ALL_COLUMNS = ['inquiryid','date','customername','email','contactno','source','city','state','country','postcode','address','businessnature','users','existingsw','demomode','products','message','referralcode','status'];
+    var ASSIGNED_STORAGE_KEY = 'assignedVisibleColumns_v7';
     var ASSIGNED_LEGACY_DEFAULT_COLUMNS = ['inquiryid', 'customername', 'postcode', 'city', 'state', 'country', 'assignedto', 'assigndate', 'status'];
     // Default Assigned layout
-    var ASSIGNED_DEFAULT_COLUMNS = ['inquiryid', 'date', 'customername', 'postcode', 'city', 'assignedto', 'assigndate', 'status'];
-    var ASSIGNED_ALL_COLUMNS = ['inquiryid','date','customername','email','source','city','state','country','postcode','address','contactno','businessnature','users','existingsw','demomode','products','dealtproducts','message','referralcode','assignedby','assignedto','completiondate','payoutsdate','assigndate','status'];
-    var ALL_STORAGE_KEY = 'allInquiryVisibleColumns_v4';
-    var ALL_DEFAULT_COLUMNS = ['inquiryid', 'date', 'customername', 'email', 'postcode', 'city', 'assignedto', 'status'];
+    var ASSIGNED_DEFAULT_COLUMNS = ['inquiryid', 'date', 'customername', 'contactno', 'postcode', 'city', 'assignedto', 'assigndate', 'status'];
+    var ASSIGNED_ALL_COLUMNS = ['inquiryid','date','customername','email','contactno','source','city','state','country','postcode','address','businessnature','users','existingsw','demomode','products','dealtproducts','message','referralcode','assignedby','assignedto','completiondate','payoutsdate','assigndate','status'];
+    var ALL_STORAGE_KEY = 'allInquiryVisibleColumns_v7';
+    var ALL_DEFAULT_COLUMNS = ['inquiryid', 'date', 'customername', 'email', 'contactno', 'postcode', 'city', 'assignedto', 'status'];
     var ALL_TABLE_COLUMNS = ASSIGNED_ALL_COLUMNS.slice();
 
     function updateTableScrollMode(table, visible, defaults) {
@@ -1795,7 +1793,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function getVisibleColumns() {
         try {
             var raw = localStorage.getItem(STORAGE_KEY);
-            if (raw === null) raw = localStorage.getItem(LEGACY_STORAGE_KEY);
             if (raw !== null) {
                 var arr = JSON.parse(raw);
                 if (Array.isArray(arr)) {
@@ -1823,7 +1820,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function getAssignedVisibleColumns() {
         try {
             var raw = localStorage.getItem(ASSIGNED_STORAGE_KEY);
-            if (raw === null) raw = localStorage.getItem(ASSIGNED_LEGACY_STORAGE_KEY);
             if (raw !== null) {
                 var arr = JSON.parse(raw);
                 if (Array.isArray(arr)) {

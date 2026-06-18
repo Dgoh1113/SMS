@@ -19,7 +19,7 @@
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 12px;">
                 <tr>
                     <td align="left" valign="middle">
-                        <p style="margin: 0;">Hi {{ $recipientName }},</p>
+                        <p style="margin: 0;">Hi,</p>
                     </td>
                     <td align="right" valign="middle">
                         <img src="{{ $message->embed(public_path('sql-logo.png')) }}" alt="SQL Logo" style="height: 32px; width: auto; display: block; opacity: 0.25;">
